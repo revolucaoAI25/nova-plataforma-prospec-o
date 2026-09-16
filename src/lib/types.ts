@@ -36,6 +36,9 @@ export interface Lead {
   estado_busca: string;
   comentario: string;
   fonte: string;
+
+  instagram_id: string;
+  username: string;
 }
 
 export function emptyLead(): Lead {
@@ -48,6 +51,7 @@ export function emptyLead(): Lead {
     simples_optante: "", mei_optante: "", situacao_especial: "",
     socio_principal: "", porte: "", nicho_busca: "", subnicho_busca: "",
     cidade_busca: "", estado_busca: "", comentario: "", fonte: "",
+    instagram_id: "", username: "",
   };
 }
 
@@ -87,5 +91,14 @@ export interface MapsSearchFilters {
   limite: number;
   showPhone: boolean;
   showRating: boolean;
+  apenasNovos: boolean;
+}
+
+export type InstagramTipo = "seguidores" | "seguindo";
+
+export interface InstagramSearchFilters {
+  tipo: InstagramTipo;
+  alvo: string; // username ou URL
+  limite: number;
   apenasNovos: boolean;
 }

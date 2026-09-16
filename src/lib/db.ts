@@ -77,6 +77,8 @@ function leadToRow(userId: string, searchId: string, r: Lead) {
     estado_busca: r.estado_busca || "",
     comentario: r.comentario || "",
     fonte: r.fonte || "",
+    instagram_id: r.instagram_id || "",
+    username: r.username || "",
   };
 }
 
@@ -159,6 +161,31 @@ export async function buscarIdentificadoresExistentes(
     offset += pageSize;
   }
   return { telefones, cnpjs };
+}
+
+/** Retorna set de instagram_id já salvos pelo usuário — usado na deduplicação da busca Instagram. */
+export async function buscarInstagramIdsExistentes(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<Set<string>> {
+  const ids = new Set<string>();
+  const pageSize = 1000;
+  let offset = 0;
+  for (;;) {
+    const { data } = await supabase
+      .from("leads")
+      .select("instagram_id")
+      .eq("user_id", userId)
+      .not("instagram_id", "is", null)
+      .range(offset, offset + pageSize - 1);
+    const linhas = (data as Array<{ instagram_id: string }>) ?? [];
+    for (const r of linhas) {
+      if (r.instagram_id) ids.add(r.instagram_id);
+    }
+    if (linhas.length < pageSize) break;
+    offset += pageSize;
+  }
+  return ids;
 }
 
 export async function deletarPesquisa(

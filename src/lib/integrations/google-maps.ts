@@ -21,17 +21,17 @@ const DETAIL_FIELDS =
 export class QuotaExceededError extends Error {}
 export class MapsAccessError extends Error {}
 
-const MODIFICADORES_CIDADE = [
+export const MODIFICADORES_CIDADE = [
   "", "centro", "zona norte", "zona sul", "zona leste", "zona oeste",
   "região central", "região metropolitana", "bairros", "periferia",
   "centro histórico", "arredores",
 ];
 
-const MODIFICADORES_ESTADO = [
+export const MODIFICADORES_ESTADO = [
   "", "capital", "interior", "litoral", "região metropolitana", "norte", "sul",
 ];
 
-function shuffle<T>(arr: T[]): T[] {
+export function shuffle<T>(arr: T[]): T[] {
   const a = [...arr];
   for (let i = a.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));

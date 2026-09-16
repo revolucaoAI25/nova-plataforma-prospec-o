@@ -1,21 +1,42 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { selecionarChaveMaps, registrarUsoMaps } from "@/lib/credits";
-import type { Profile } from "@/lib/database.types";
+import { createAdminClient } from "@/lib/supabase/admin";
+import type { MapsKeyPoolEntry, Profile } from "@/lib/database.types";
 
 export interface ChaveMapsResolvida {
   key: string;
-  source: "own" | "pool" | "env" | "none";
+  source: "own" | "pool" | "trial" | "env" | "none";
   poolIdx: number;
   bloqueado: boolean;
 }
 
+async function obterPoolTeste(): Promise<MapsKeyPoolEntry[]> {
+  const admin = createAdminClient();
+  const { data } = await admin.from("platform_settings").select("maps_pool_teste").eq("id", 1).single();
+  return (data?.maps_pool_teste as MapsKeyPoolEntry[]) || [];
+}
+
+async function salvarPoolTeste(pool: MapsKeyPoolEntry[]): Promise<void> {
+  const admin = createAdminClient();
+  await admin.from("platform_settings").update({ maps_pool_teste: pool }).eq("id", 1);
+}
+
 /**
  * Resolve qual chave Google Maps usar para este usuário, na mesma ordem de
- * prioridade do produto atual: chave própria > pool administrado (com
- * rodízio) > chave padrão da plataforma. Quando o pool esgota, respeita a
- * preferência "pausar ao esgotar" (maps_pausar_ao_esgotar).
+ * prioridade do produto atual: contas de teste sempre usam o pool
+ * compartilhado da plataforma (nunca configuram chave própria); contas
+ * normais usam chave própria > pool administrado (com rodízio) > chave
+ * padrão da plataforma. Quando o pool esgota, respeita a preferência
+ * "pausar ao esgotar" (maps_pausar_ao_esgotar).
  */
-export function resolverChaveMaps(profile: Profile): ChaveMapsResolvida {
+export async function resolverChaveMaps(profile: Profile): Promise<ChaveMapsResolvida> {
+  if (profile.conta_teste) {
+    const poolTeste = await obterPoolTeste();
+    const r = selecionarChaveMaps(poolTeste);
+    if (r.key) return { key: r.key, source: "trial", poolIdx: r.index, bloqueado: false };
+    return { key: "", source: "trial", poolIdx: -1, bloqueado: true };
+  }
+
   if (profile.google_maps_api_key) {
     return { key: profile.google_maps_api_key, source: "own", poolIdx: -1, bloqueado: false };
   }
@@ -42,7 +63,7 @@ export function resolverChaveMaps(profile: Profile): ChaveMapsResolvida {
   return { key: "", source: "none", poolIdx: -1, bloqueado: false };
 }
 
-/** Persiste o uso da chave no pool do usuário, se a resolução veio do pool. */
+/** Persiste o uso da chave no pool (do usuário ou compartilhado de teste), se a resolução veio de um pool. */
 export async function registrarUsoChaveMaps(
   supabase: SupabaseClient,
   userId: string,
@@ -51,7 +72,13 @@ export async function registrarUsoChaveMaps(
   calls: number,
   textSearchCalls: number,
 ): Promise<void> {
-  if (resolucao.source !== "pool" || resolucao.poolIdx < 0) return;
+  if (resolucao.poolIdx < 0) return;
+  if (resolucao.source === "trial") {
+    const poolTeste = await obterPoolTeste();
+    await salvarPoolTeste(registrarUsoMaps(poolTeste, resolucao.poolIdx, calls, textSearchCalls));
+    return;
+  }
+  if (resolucao.source !== "pool") return;
   const novoPool = registrarUsoMaps(profile.maps_keys_pool, resolucao.poolIdx, calls, textSearchCalls);
   await supabase.from("profiles").update({ maps_keys_pool: novoPool }).eq("id", userId);
 }

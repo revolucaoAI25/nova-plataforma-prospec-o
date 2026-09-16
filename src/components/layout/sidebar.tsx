@@ -2,19 +2,48 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Building2, MapPin, History, Settings, ShieldCheck } from "lucide-react";
+import {
+  LayoutDashboard, Building2, MapPin, AtSign, History, Settings,
+  ShieldCheck, Send, CalendarClock,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const NAV = [
+interface NavItem {
+  href: string;
+  label: string;
+  icon: typeof LayoutDashboard;
+}
+
+const NAV_BASE: NavItem[] = [
   { href: "/", label: "Visão geral", icon: LayoutDashboard },
   { href: "/busca/cnpj", label: "Busca CNPJ", icon: Building2 },
   { href: "/busca/maps", label: "Busca Google Maps", icon: MapPin },
+];
+
+const NAV_END: NavItem[] = [
   { href: "/historico", label: "Histórico", icon: History },
+  { href: "/automacoes", label: "Automações", icon: CalendarClock },
   { href: "/configuracoes", label: "Configurações", icon: Settings },
 ];
 
-export function Sidebar({ role }: { role: "user" | "admin" }) {
+export function Sidebar({
+  role,
+  instagramVisible,
+  disparoHabilitado,
+}: {
+  role: "user" | "admin";
+  instagramVisible: boolean;
+  disparoHabilitado: boolean;
+}) {
   const pathname = usePathname();
+  const isAdmin = role === "admin";
+
+  const nav: NavItem[] = [
+    ...NAV_BASE,
+    ...(instagramVisible ? [{ href: "/busca/instagram", label: "Busca Instagram", icon: AtSign }] : []),
+    ...(disparoHabilitado || isAdmin ? [{ href: "/disparo", label: "Disparo WhatsApp", icon: Send }] : []),
+    ...NAV_END,
+  ];
 
   return (
     <aside className="fixed inset-y-0 left-0 hidden w-64 flex-col border-r border-border bg-card md:flex">
@@ -24,8 +53,8 @@ export function Sidebar({ role }: { role: "user" | "admin" }) {
         </div>
         <span className="font-semibold">Prospecção Ativa</span>
       </div>
-      <nav className="flex-1 space-y-1 p-3">
-        {NAV.map((item) => {
+      <nav className="flex-1 space-y-1 overflow-y-auto p-3">
+        {nav.map((item) => {
           const active = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href));
           const Icon = item.icon;
           return (
@@ -42,7 +71,7 @@ export function Sidebar({ role }: { role: "user" | "admin" }) {
             </Link>
           );
         })}
-        {role === "admin" && (
+        {isAdmin && (
           <Link
             href="/admin"
             className={cn(

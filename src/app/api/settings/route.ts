@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 const bodySchema = z.object({
   google_maps_api_key: z.string().nullable().optional(),
   maps_pausar_ao_esgotar: z.boolean().optional(),
+  apify_api_key: z.string().nullable().optional(),
 });
 
 export async function PATCH(request: Request) {
@@ -17,12 +18,22 @@ export async function PATCH(request: Request) {
   const parsed = bodySchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "Dados inválidos." }, { status: 400 });
 
+  const { data: profile } = await supabase.from("profiles").select("conta_teste").eq("id", user.id).single();
+
   const patch: Record<string, unknown> = {};
   if (parsed.data.google_maps_api_key !== undefined) {
+    // Contas de teste nunca configuram chave própria — sempre usam o pool
+    // compartilhado da plataforma (ver src/lib/maps-key.ts).
+    if (profile?.conta_teste) {
+      return NextResponse.json({ error: "Contas de teste não podem configurar uma chave Google Maps própria." }, { status: 403 });
+    }
     patch.google_maps_api_key = parsed.data.google_maps_api_key || null;
   }
   if (parsed.data.maps_pausar_ao_esgotar !== undefined) {
     patch.maps_pausar_ao_esgotar = parsed.data.maps_pausar_ao_esgotar;
+  }
+  if (parsed.data.apify_api_key !== undefined) {
+    patch.apify_api_key = parsed.data.apify_api_key || null;
   }
 
   const { error } = await supabase.from("profiles").update(patch).eq("id", user.id);

@@ -11,6 +11,7 @@ import {
 } from "@/lib/integrations/casa-dos-dados";
 import { enriquecerComMaps, QuotaExceededError, MapsAccessError } from "@/lib/integrations/google-maps";
 import { salvarPesquisa, salvarLeads, buscarIdentificadoresExistentes } from "@/lib/db";
+import { autoExportarSheetsSeConfigurado } from "@/lib/auto-export";
 import { CODIGO_PARA_DESC } from "@/lib/data/cnaes";
 
 const bodySchema = z.object({
@@ -147,7 +148,7 @@ export async function POST(request: Request) {
   const usarMaps = filtros.mapsModo !== "nao_usar" && resultados.length > 0;
 
   if (usarMaps) {
-    const resolucao = resolverChaveMaps(profile);
+    const resolucao = await resolverChaveMaps(profile);
     if (resolucao.bloqueado) {
       avisoMaps =
         "Todas as chaves Google Maps atingiram o limite mensal. Você optou por pausar a busca nesse caso — mude isso em Configurações se quiser continuar além da cota. Os leads de CNPJ já buscados foram mantidos, só a etapa do Maps não rodou.";
@@ -220,10 +221,12 @@ export async function POST(request: Request) {
     await debitarCreditos(supabase, user.id, "maps_credits", mapsVerificados);
   }
 
+  const avisoSheets = await autoExportarSheetsSeConfigurado(supabase, user.id, searchId);
+
   return NextResponse.json({
     searchId,
     total: resultados.length,
     leads: resultados,
-    avisos: [avisoSaldo, avisoMaps, avisoHistorico].filter(Boolean),
+    avisos: [avisoSaldo, avisoMaps, avisoHistorico, avisoSheets].filter(Boolean),
   });
 }

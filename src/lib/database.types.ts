@@ -1,6 +1,6 @@
 /**
- * Tipos do schema Supabase (supabase/migrations/0001_init.sql), escritos à
- * mão — não há projeto Supabase vivo nesta sessão para rodar
+ * Tipos do schema Supabase (supabase/migrations/*.sql), escritos à mão —
+ * não há projeto Supabase vivo nesta sessão para rodar
  * `supabase gen types typescript`. Ao conectar um projeto real, regenerar
  * com o Supabase CLI e substituir este arquivo.
  */
@@ -12,12 +12,34 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[];
 
-export interface MapsKeyPoolEntry {
+export interface ApiKeyPoolEntry {
   key: string;
   limit: number;
   usage: number;
   text_search_usage?: number;
   month: string; // "YYYY-MM"
+}
+export type MapsKeyPoolEntry = ApiKeyPoolEntry;
+
+export interface SheetConfig {
+  id: string;
+  nome: string;
+  aba: string;
+  modo: "substituir" | "acrescentar";
+  padrao?: boolean;
+}
+
+export interface GoogleSheetsCreds {
+  oauth?: {
+    token: string;
+    refresh_token?: string;
+    token_uri: string;
+    client_id: string;
+    client_secret: string;
+    scopes: string[];
+  } | null;
+  planilhas?: SheetConfig[];
+  auto_export?: boolean;
 }
 
 export interface Profile {
@@ -35,11 +57,27 @@ export interface Profile {
   cdd_api_key_admin: string | null;
   maps_keys_pool: MapsKeyPoolEntry[];
   maps_pausar_ao_esgotar: boolean;
+
+  apify_api_key: string | null;
+  apify_api_key_admin: string | null;
+  apify_keys_pool: ApiKeyPoolEntry[];
+  instagram_credits: number;
+  monthly_instagram_credits: number;
+  instagram_credits_enabled: boolean;
+  instagram_visible: boolean;
+  disparo_habilitado: boolean;
+  conta_teste: boolean;
+  teste_expira_em: string | null;
+
+  google_client_id: string | null;
+  google_client_secret: string | null;
+  google_sheets_creds: GoogleSheetsCreds | null;
+
   created_at: string;
   updated_at: string;
 }
 
-export type SearchFonte = "cnpj" | "google_maps";
+export type SearchFonte = "cnpj" | "google_maps" | "instagram";
 
 export interface SearchRow {
   id: string;
@@ -91,6 +129,8 @@ export interface LeadRow {
   estado_busca: string | null;
   comentario: string | null;
   fonte: string | null;
+  instagram_id: string | null;
+  username: string | null;
   created_at: string;
 }
 
@@ -108,6 +148,140 @@ export interface UserStatsRow {
   total_searches: number;
   total_leads: number;
   last_search_at: string | null;
+  instagram_credits: number;
+  monthly_instagram_credits: number;
+  instagram_credits_enabled: boolean;
+  instagram_visible: boolean;
+  disparo_habilitado: boolean;
+  conta_teste: boolean;
+  teste_expira_em: string | null;
+}
+
+export type InstanceCanal = "evolution" | "oficial";
+export type InstanceStatus = "desconectado" | "conectando" | "conectado";
+
+export interface WhatsappInstanceRow {
+  id: string;
+  user_id: string;
+  nome: string;
+  canal: InstanceCanal;
+  evolution_instance_name: string | null;
+  status: InstanceStatus;
+  numero_conectado: string | null;
+  ultimo_envio_em: string | null;
+  proximo_envio_liberado_em: string | null;
+  limite_diario_envios: number | null;
+  token_oficial: string | null;
+  phone_number_id: string | null;
+  waba_id: string | null;
+  criado_em: string;
+}
+
+export type CampaignStatus = "rascunho" | "ativa" | "pausada" | "concluida";
+export type CampaignOrigem = "busca_existente" | "upload" | "manual" | "auto_trigger" | "sheet_watch";
+
+export interface DispatchCampaignRow {
+  id: string;
+  user_id: string;
+  nome: string;
+  instance_id: string | null;
+  status: CampaignStatus;
+  tipo_origem: CampaignOrigem;
+  origem_search_id: string | null;
+  filtro_nicho: string | null;
+  filtro_subnicho: string | null;
+  filtro_uf: string | null;
+  ultimo_trigger_em: string | null;
+  intervalo_min_seg: number;
+  intervalo_max_seg: number;
+  criado_em: string;
+}
+
+export interface CadenceStepRow {
+  id: string;
+  campaign_id: string;
+  ordem: number;
+  atraso_horas: number;
+  corpo_mensagem: string;
+  midia_url: string | null;
+  template_id: string | null;
+  parametros_template: string[];
+  criado_em: string;
+}
+
+export type TargetStatus = "pendente" | "enviando" | "enviado" | "concluido" | "falhou" | "removido";
+
+export interface DispatchTargetRow {
+  id: string;
+  campaign_id: string;
+  nome: string | null;
+  telefone: string;
+  lead_snapshot: Json;
+  status: TargetStatus;
+  current_step_id: string | null;
+  proxima_etapa_em: string;
+  reservado_em: string | null;
+  criado_em: string;
+  atualizado_em: string;
+}
+
+export interface MessageTemplateRow {
+  id: string;
+  user_id: string;
+  instance_id: string | null;
+  nome: string;
+  categoria: string | null;
+  corpo: string;
+  variaveis: Json;
+  canal: InstanceCanal;
+  status_aprovacao: string;
+  nome_meta: string | null;
+  idioma: string | null;
+  componentes: Json;
+  meta_template_id: string | null;
+  criado_em: string;
+}
+
+export interface OficialConnectionRequestRow {
+  id: string;
+  user_id: string;
+  nome_desejado: string | null;
+  telefone_contato: string | null;
+  status: "pendente" | "em_andamento" | "concluido";
+  observacao: string | null;
+  instance_id: string | null;
+  criado_em: string;
+  atualizado_em: string;
+}
+
+export type AutomationTipo = "maps" | "cnpj";
+
+export interface AutomationRow {
+  id: string;
+  user_id: string;
+  nome: string;
+  tipo: AutomationTipo;
+  filtros: Json;
+  sheet_id: string | null;
+  sheet_aba: string | null;
+  dias_semana: number[];
+  horario: string;
+  ativa: boolean;
+  ultima_execucao: string | null;
+  proxima_execucao: string | null;
+  dispatch_campaign_id: string | null;
+  created_at: string;
+}
+
+export interface AutomationRunRow {
+  id: string;
+  automation_id: string;
+  user_id: string;
+  iniciada_em: string;
+  concluida_em: string | null;
+  leads_encontrados: number;
+  status: "running" | "success" | "error" | "sem_creditos" | "sem_sheets";
+  erro: string | null;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

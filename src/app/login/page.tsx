@@ -15,7 +15,9 @@ function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(
+    searchParams.get("expirado") ? "Sua sessão expirou porque o prazo da conta de teste terminou." : null,
+  );
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -23,7 +25,7 @@ function LoginForm() {
     setError(null);
 
     const supabase = createClient();
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data: signInData, error } = await supabase.auth.signInWithPassword({ email, password });
 
     if (error) {
       setError(
@@ -31,6 +33,21 @@ function LoginForm() {
           ? "E-mail ou senha incorretos."
           : error.message,
       );
+      setLoading(false);
+      return;
+    }
+
+    // Conta de teste expirada: nunca deixa a sessão de pé, mesmo que a senha
+    // esteja correta — mesma regra aplicada a cada navegação em (app)/layout.tsx.
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("conta_teste, teste_expira_em")
+      .eq("id", signInData.user.id)
+      .single();
+    if (profile?.conta_teste && profile.teste_expira_em && new Date(profile.teste_expira_em) <= new Date()) {
+      await supabase.auth.signOut();
+      const dataExp = new Date(profile.teste_expira_em).toLocaleDateString("pt-BR");
+      setError(`Sua conta de teste expirou em ${dataExp}. Fale com o administrador para renovar.`);
       setLoading(false);
       return;
     }

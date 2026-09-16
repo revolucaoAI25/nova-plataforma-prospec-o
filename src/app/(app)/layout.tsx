@@ -15,9 +15,17 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const profile = await getProfile(supabase, user.id);
   if (!profile) redirect("/login");
 
+  // Contas de teste: checado a cada navegação, não só no login — bloqueia
+  // em tempo real mesmo se o usuário já estava com a aba aberta quando o
+  // prazo bateu (ver seção 5.2 do plano de reconstrução).
+  if (profile.conta_teste && profile.teste_expira_em && new Date(profile.teste_expira_em) <= new Date()) {
+    await supabase.auth.signOut();
+    redirect("/login?expirado=1");
+  }
+
   return (
     <div className="flex min-h-screen bg-background">
-      <Sidebar role={profile.role} />
+      <Sidebar role={profile.role} instagramVisible={profile.instagram_visible} disparoHabilitado={profile.disparo_habilitado} />
       <div className="flex flex-1 flex-col md:pl-64">
         <Topbar profile={profile} />
         <main className="flex-1 p-4 md:p-8">{children}</main>

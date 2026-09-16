@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { MapsKeyPoolEntry, Profile } from "@/lib/database.types";
+import type { ApiKeyPoolEntry, MapsKeyPoolEntry, Profile } from "@/lib/database.types";
 
 // Lógica de créditos e rodízio de chaves de API — portada de
 // modules/database.py do produto atual. Ver seção 5.5 do plano:
@@ -19,7 +19,7 @@ export async function getProfile(
 export async function debitarCreditos(
   supabase: SupabaseClient,
   userId: string,
-  campo: "cdd_credits" | "maps_credits",
+  campo: "cdd_credits" | "maps_credits" | "instagram_credits",
   quantidade: number,
 ): Promise<void> {
   if (quantidade <= 0) return;
@@ -81,6 +81,46 @@ export function registrarUsoMaps(
     if (textSearchCalls) {
       poolCopia[keyIdx].text_search_usage = (poolCopia[keyIdx].text_search_usage || 0) + textSearchCalls;
     }
+  }
+  return poolCopia;
+}
+
+/**
+ * Seleciona a primeira chave Apify disponível no mês atual (dentro do
+ * limite). Retorna (chave, índice, pool, esgotado) — esgotado=true e sem
+ * chave quando todas passaram do limite e permitirOverflow=false; pool
+ * vazio não é "esgotado", é "não configurado".
+ */
+export function selecionarChaveApify(
+  pool: ApiKeyPoolEntry[],
+  permitirOverflow = false,
+): { key: string; index: number; pool: ApiKeyPoolEntry[]; esgotado: boolean } {
+  if (!pool.length) return { key: "", index: -1, pool, esgotado: false };
+  const mes = mesAtual();
+  const poolCopia = pool.map((k) => ({ ...k }));
+
+  for (let i = 0; i < poolCopia.length; i++) {
+    const entry = poolCopia[i];
+    if (entry.month !== mes) {
+      entry.usage = 0;
+      entry.month = mes;
+    }
+    if (entry.usage < (entry.limit || 900)) {
+      return { key: entry.key, index: i, pool: poolCopia, esgotado: false };
+    }
+  }
+
+  if (permitirOverflow) {
+    const ultimo = poolCopia.length - 1;
+    return { key: poolCopia[ultimo].key, index: ultimo, pool: poolCopia, esgotado: true };
+  }
+  return { key: "", index: -1, pool: poolCopia, esgotado: true };
+}
+
+export function registrarUsoApify(pool: ApiKeyPoolEntry[], keyIdx: number, calls: number): ApiKeyPoolEntry[] {
+  const poolCopia = pool.map((k) => ({ ...k }));
+  if (keyIdx >= 0 && keyIdx < poolCopia.length) {
+    poolCopia[keyIdx].usage = (poolCopia[keyIdx].usage || 0) + calls;
   }
   return poolCopia;
 }

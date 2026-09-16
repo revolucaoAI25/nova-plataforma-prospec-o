@@ -5,17 +5,16 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import type { Profile } from "@/lib/database.types";
 
-export function SettingsForm({ profile }: { profile: Profile }) {
-  const [googleMapsKey, setGoogleMapsKey] = useState(profile.google_maps_api_key || "");
-  const [pausarAoEsgotar, setPausarAoEsgotar] = useState(profile.maps_pausar_ao_esgotar);
+export function ApifySettings({ profile }: { profile: Profile }) {
+  const [apifyKey, setApifyKey] = useState(profile.apify_api_key || "");
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState<{ ok: boolean; msg: string } | null>(null);
 
-  const gerenciadoPeloAdmin = !profile.google_maps_api_key && (profile.maps_keys_pool?.length ?? 0) > 0;
+  const gerenciadoPeloAdmin =
+    !profile.apify_api_key && ((profile.apify_keys_pool?.length ?? 0) > 0 || Boolean(profile.apify_api_key_admin));
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -24,10 +23,7 @@ export function SettingsForm({ profile }: { profile: Profile }) {
     const resp = await fetch("/api/settings", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        google_maps_api_key: googleMapsKey || null,
-        maps_pausar_ao_esgotar: pausarAoEsgotar,
-      }),
+      body: JSON.stringify({ apify_api_key: apifyKey || null }),
     });
     setFeedback(resp.ok ? { ok: true, msg: "Configurações salvas." } : { ok: false, msg: "Não foi possível salvar." });
     setSaving(false);
@@ -37,34 +33,25 @@ export function SettingsForm({ profile }: { profile: Profile }) {
     <form onSubmit={handleSubmit} className="flex flex-col gap-6">
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Google Maps</CardTitle>
+          <CardTitle className="text-base">Instagram / Apify</CardTitle>
           <CardDescription>
             {gerenciadoPeloAdmin
-              ? "Sua conta usa a chave/pool administrado pela plataforma — não é necessário configurar nada aqui."
-              : "Configure sua própria chave da API do Google Maps (Places API legado)."}
+              ? "Sua conta usa a chave/pool Apify administrado pela plataforma — não é necessário configurar nada aqui."
+              : "Configure sua própria chave da API do Apify (api.apify.com), usada para extrair Instagram e como alternativa quando a cota do Google Maps esgotar."}
           </CardDescription>
         </CardHeader>
-        <CardContent className="flex flex-col gap-4">
+        <CardContent>
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="gmaps-key">Chave da API</Label>
+            <Label htmlFor="apify-key">Chave da API Apify</Label>
             <Input
-              id="gmaps-key"
+              id="apify-key"
               type="password"
-              value={googleMapsKey}
-              onChange={(e) => setGoogleMapsKey(e.target.value)}
-              placeholder="AIza…"
+              value={apifyKey}
+              onChange={(e) => setApifyKey(e.target.value)}
+              placeholder="apify_api_…"
               disabled={gerenciadoPeloAdmin}
             />
           </div>
-          <label className="flex items-center justify-between rounded-md border border-border p-3 text-sm">
-            <span>
-              Ao esgotar o limite das chaves: continuar buscando
-              <span className="block text-xs font-normal text-muted-foreground">
-                Quando desligado, a busca pausa ao esgotar a cota em vez de continuar (o que pode gerar custo extra).
-              </span>
-            </span>
-            <Switch checked={!pausarAoEsgotar} onCheckedChange={(v) => setPausarAoEsgotar(!v)} />
-          </label>
         </CardContent>
       </Card>
 
