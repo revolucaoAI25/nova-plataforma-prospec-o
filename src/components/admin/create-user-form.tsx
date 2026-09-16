@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export function CreateUserForm() {
@@ -14,6 +15,9 @@ export function CreateUserForm() {
   const [open, setOpen] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [cddCredits, setCddCredits] = useState(0);
+  const [contaTeste, setContaTeste] = useState(false);
+  const [testeExpiraEm, setTesteExpiraEm] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -24,7 +28,7 @@ export function CreateUserForm() {
     const resp = await fetch("/api/admin/users", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ email, password, cddCredits, contaTeste, testeExpiraEm: testeExpiraEm || undefined }),
     });
     const data = await resp.json();
     if (!resp.ok) {
@@ -34,6 +38,9 @@ export function CreateUserForm() {
     }
     setEmail("");
     setPassword("");
+    setCddCredits(0);
+    setContaTeste(false);
+    setTesteExpiraEm("");
     setOpen(false);
     setLoading(false);
     router.refresh();
@@ -51,20 +58,46 @@ export function CreateUserForm() {
     <Card>
       <CardHeader>
         <CardTitle className="text-base">Criar novo usuário</CardTitle>
-        <CardDescription>O perfil é criado automaticamente com 0 créditos — ajuste na tabela abaixo.</CardDescription>
+        <CardDescription>Outros campos de crédito e permissões ficam editáveis na tabela abaixo.</CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="flex flex-wrap items-end gap-3">
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="new-email">E-mail</Label>
-            <Input id="new-email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="w-64" />
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <div className="flex flex-wrap items-end gap-3">
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="new-email">E-mail</Label>
+              <Input id="new-email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="w-64" />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="new-password">Senha inicial</Label>
+              <Input id="new-password" type="text" required minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} className="w-48" />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="new-credits">Créditos CNPJ iniciais</Label>
+              <Input id="new-credits" type="number" min={0} value={cddCredits} onChange={(e) => setCddCredits(Number(e.target.value))} className="w-36" />
+            </div>
           </div>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="new-password">Senha inicial</Label>
-            <Input id="new-password" type="text" required minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} className="w-48" />
+
+          <label className="flex max-w-md items-center justify-between rounded-md border border-border p-3 text-sm">
+            <span>
+              Conta de teste
+              <span className="block text-xs font-normal text-muted-foreground">
+                Créditos pré-carregados, prazo de validade, usa a chave Maps compartilhada da plataforma (nunca chave própria).
+              </span>
+            </span>
+            <Switch checked={contaTeste} onCheckedChange={setContaTeste} />
+          </label>
+
+          {contaTeste && (
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="teste-expira">Expira em</Label>
+              <Input id="teste-expira" type="date" value={testeExpiraEm} onChange={(e) => setTesteExpiraEm(e.target.value)} className="w-48" />
+            </div>
+          )}
+
+          <div className="flex gap-2">
+            <Button type="submit" disabled={loading}>{loading ? "Criando…" : "Criar"}</Button>
+            <Button type="button" variant="ghost" onClick={() => setOpen(false)}>Cancelar</Button>
           </div>
-          <Button type="submit" disabled={loading}>{loading ? "Criando…" : "Criar"}</Button>
-          <Button type="button" variant="ghost" onClick={() => setOpen(false)}>Cancelar</Button>
         </form>
         {error && (
           <Alert variant="destructive" className="mt-3">

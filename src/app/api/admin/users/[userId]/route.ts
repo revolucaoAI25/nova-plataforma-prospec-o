@@ -4,6 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/require-admin";
 
+const poolEntrySchema = z.object({ key: z.string(), limit: z.number(), usage: z.number(), month: z.string() });
+
 const patchSchema = z.object({
   role: z.enum(["user", "admin"]).optional(),
   cdd_credits: z.number().int().min(0).optional(),
@@ -12,9 +14,16 @@ const patchSchema = z.object({
   monthly_maps_credits: z.number().int().min(0).optional(),
   maps_credits_enabled: z.boolean().optional(),
   cdd_api_key_admin: z.string().nullable().optional(),
-  maps_keys_pool: z
-    .array(z.object({ key: z.string(), limit: z.number(), usage: z.number(), month: z.string() }))
-    .optional(),
+  maps_keys_pool: z.array(poolEntrySchema).optional(),
+  apify_api_key_admin: z.string().nullable().optional(),
+  apify_keys_pool: z.array(poolEntrySchema).optional(),
+  instagram_credits: z.number().int().min(0).optional(),
+  monthly_instagram_credits: z.number().int().min(0).optional(),
+  instagram_credits_enabled: z.boolean().optional(),
+  instagram_visible: z.boolean().optional(),
+  disparo_habilitado: z.boolean().optional(),
+  conta_teste: z.boolean().optional(),
+  teste_expira_em: z.string().nullable().optional(),
 });
 
 export async function PATCH(

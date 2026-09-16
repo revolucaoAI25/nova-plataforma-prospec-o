@@ -22,6 +22,9 @@ const createSchema = z.object({
   email: z.string().email(),
   password: z.string().min(8),
   role: z.enum(["user", "admin"]).default("user"),
+  contaTeste: z.boolean().default(false),
+  testeExpiraEm: z.string().optional(),
+  cddCredits: z.number().int().min(0).default(0),
 });
 
 export async function POST(request: Request) {
@@ -47,8 +50,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: error?.message || "Não foi possível criar o usuário." }, { status: 500 });
   }
 
-  // O trigger handle_new_user já cria o perfil — garante que o role pedido seja aplicado.
-  await admin.from("profiles").update({ role: parsed.data.role }).eq("id", data.user.id);
+  // O trigger handle_new_user já cria o perfil — garante que o role pedido
+  // e os campos de conta de teste (se houver) sejam aplicados.
+  const patch: Record<string, unknown> = { role: parsed.data.role, cdd_credits: parsed.data.cddCredits };
+  if (parsed.data.contaTeste) {
+    patch.conta_teste = true;
+    patch.teste_expira_em = parsed.data.testeExpiraEm ? new Date(parsed.data.testeExpiraEm).toISOString() : null;
+  }
+  await admin.from("profiles").update(patch).eq("id", data.user.id);
 
   return NextResponse.json({ ok: true, userId: data.user.id });
 }

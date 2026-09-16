@@ -2,7 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { normalizarE164 } from "@/lib/phone";
 import type {
   WhatsappInstanceRow, DispatchCampaignRow, CadenceStepRow, DispatchTargetRow,
-  MessageTemplateRow, OficialConnectionRequestRow, InstanceCanal, CampaignOrigem,
+  MessageTemplateRow, OficialConnectionRequestRow, SheetWatcherRow, InstanceCanal, CampaignOrigem,
 } from "@/lib/database.types";
 
 // CRUD do disparo WhatsApp — portado de modules/dispatch_db.py. Diferente
@@ -132,6 +132,35 @@ export async function listarCampanhasAtivas(sb: SupabaseClient): Promise<Dispatc
 
 export async function deletarCampanha(sb: SupabaseClient, campaignId: string) {
   const { error } = await sb.from("dispatch_campaigns").delete().eq("id", campaignId);
+  return !error;
+}
+
+// ── Monitoramento de Planilha Google (sheet_watch) ────────────────────────
+
+export async function criarSheetWatcher(
+  sb: SupabaseClient,
+  campaignId: string,
+  params: { sheetId: string; abaNome: string; colunaTelefone: string; colunaNome?: string; ultimaLinhaProcessada?: number },
+) {
+  const { data } = await sb
+    .from("dispatch_sheet_watchers")
+    .insert({
+      campaign_id: campaignId, sheet_id: params.sheetId, aba_nome: params.abaNome,
+      coluna_telefone: params.colunaTelefone, coluna_nome: params.colunaNome || null,
+      ultima_linha_processada: params.ultimaLinhaProcessada ?? 0,
+    })
+    .select("id")
+    .single();
+  return data?.id as string | undefined;
+}
+
+export async function obterSheetWatcher(sb: SupabaseClient, campaignId: string): Promise<SheetWatcherRow | null> {
+  const { data } = await sb.from("dispatch_sheet_watchers").select("*").eq("campaign_id", campaignId).limit(1);
+  return (data?.[0] as SheetWatcherRow) || null;
+}
+
+export async function atualizarSheetWatcher(sb: SupabaseClient, watcherId: string, campos: Partial<SheetWatcherRow>) {
+  const { error } = await sb.from("dispatch_sheet_watchers").update(campos).eq("id", watcherId);
   return !error;
 }
 
@@ -275,7 +304,6 @@ export async function registrarOptOut(sb: SupabaseClient, telefone: string, user
 export interface LeadParaEnroll {
   nome?: string | null;
   telefone?: string | null;
-  [key: string]: unknown;
 }
 
 export interface EnrollResultado {

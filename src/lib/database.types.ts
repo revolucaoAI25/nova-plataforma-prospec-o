@@ -242,6 +242,17 @@ export interface MessageTemplateRow {
   criado_em: string;
 }
 
+export interface SheetWatcherRow {
+  id: string;
+  campaign_id: string;
+  sheet_id: string;
+  aba_nome: string;
+  coluna_telefone: string;
+  coluna_nome: string | null;
+  ultima_linha_processada: number;
+  criado_em: string;
+}
+
 export interface OficialConnectionRequestRow {
   id: string;
   user_id: string;

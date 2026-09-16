@@ -18,6 +18,8 @@ function UserRow({ user, isSelf }: { user: UserStatsRow; isSelf: boolean }) {
   const [monthlyCdd, setMonthlyCdd] = useState(user.monthly_cdd_credits);
   const [mapsCredits, setMapsCredits] = useState(user.maps_credits);
   const [mapsEnabled, setMapsEnabled] = useState(user.maps_credits_enabled);
+  const [instagramVisible, setInstagramVisible] = useState(user.instagram_visible);
+  const [disparoHabilitado, setDisparoHabilitado] = useState(user.disparo_habilitado);
   const [role, setRole] = useState(user.role);
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
@@ -39,6 +41,8 @@ function UserRow({ user, isSelf }: { user: UserStatsRow; isSelf: boolean }) {
         monthly_cdd_credits: monthlyCdd,
         maps_credits: mapsCredits,
         maps_credits_enabled: mapsEnabled,
+        instagram_visible: instagramVisible,
+        disparo_habilitado: disparoHabilitado,
         role,
       }),
     });
@@ -51,7 +55,10 @@ function UserRow({ user, isSelf }: { user: UserStatsRow; isSelf: boolean }) {
 
   return (
     <TableRow>
-      <TableCell className="max-w-[200px] truncate font-medium">{user.email}</TableCell>
+      <TableCell className="max-w-[200px] truncate font-medium">
+        {user.email}
+        {user.conta_teste && <Badge variant="outline" className="ml-2">Teste</Badge>}
+      </TableCell>
       <TableCell>
         <Select value={role} onValueChange={(v) => markDirty(setRole)(v as "user" | "admin")} disabled={isSelf}>
           <SelectTrigger className="h-8 w-28"><SelectValue /></SelectTrigger>
@@ -72,6 +79,12 @@ function UserRow({ user, isSelf }: { user: UserStatsRow; isSelf: boolean }) {
       </TableCell>
       <TableCell>
         <Switch checked={mapsEnabled} onCheckedChange={markDirty(setMapsEnabled)} />
+      </TableCell>
+      <TableCell>
+        <Switch checked={instagramVisible} onCheckedChange={markDirty(setInstagramVisible)} />
+      </TableCell>
+      <TableCell>
+        <Switch checked={disparoHabilitado} onCheckedChange={markDirty(setDisparoHabilitado)} />
       </TableCell>
       <TableCell>
         <Badge variant="secondary">{user.total_searches}</Badge>
@@ -97,7 +110,7 @@ function UserRow({ user, isSelf }: { user: UserStatsRow; isSelf: boolean }) {
 
 export function AdminUsersTable({ users, currentUserId }: { users: UserStatsRow[]; currentUserId: string }) {
   return (
-    <div className="rounded-lg border border-border">
+    <div className="overflow-x-auto rounded-lg border border-border">
       <Table>
         <TableHeader>
           <TableRow>
@@ -107,6 +120,8 @@ export function AdminUsersTable({ users, currentUserId }: { users: UserStatsRow[
             <TableHead>Renovação mensal</TableHead>
             <TableHead>Créditos Maps</TableHead>
             <TableHead>Debita Maps?</TableHead>
+            <TableHead>Instagram</TableHead>
+            <TableHead>Disparo</TableHead>
             <TableHead>Buscas</TableHead>
             <TableHead>Leads</TableHead>
             <TableHead className="text-right">Ações</TableHead>
