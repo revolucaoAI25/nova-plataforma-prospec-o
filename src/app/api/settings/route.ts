@@ -1,0 +1,31 @@
+import { NextResponse } from "next/server";
+import { z } from "zod";
+import { createClient } from "@/lib/supabase/server";
+
+const bodySchema = z.object({
+  google_maps_api_key: z.string().nullable().optional(),
+  maps_pausar_ao_esgotar: z.boolean().optional(),
+});
+
+export async function PATCH(request: Request) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: "Não autenticado." }, { status: 401 });
+
+  const parsed = bodySchema.safeParse(await request.json().catch(() => null));
+  if (!parsed.success) return NextResponse.json({ error: "Dados inválidos." }, { status: 400 });
+
+  const patch: Record<string, unknown> = {};
+  if (parsed.data.google_maps_api_key !== undefined) {
+    patch.google_maps_api_key = parsed.data.google_maps_api_key || null;
+  }
+  if (parsed.data.maps_pausar_ao_esgotar !== undefined) {
+    patch.maps_pausar_ao_esgotar = parsed.data.maps_pausar_ao_esgotar;
+  }
+
+  const { error } = await supabase.from("profiles").update(patch).eq("id", user.id);
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json({ ok: true });
+}
