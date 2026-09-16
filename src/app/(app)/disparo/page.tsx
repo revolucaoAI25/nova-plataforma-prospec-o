@@ -1,0 +1,44 @@
+import { redirect } from "next/navigation";
+import Link from "next/link";
+import { createClient } from "@/lib/supabase/server";
+import { getProfile } from "@/lib/credits";
+import { listarInstancias, listarCampanhas } from "@/lib/dispatch-db";
+import { InstancesPanel } from "@/components/dispatch/instances-panel";
+import { CampaignsPanel } from "@/components/dispatch/campaigns-panel";
+import { Button } from "@/components/ui/button";
+import { Send } from "lucide-react";
+
+export const metadata = { title: "Disparo WhatsApp" };
+
+export default async function DisparoPage() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  const profile = await getProfile(supabase, user.id);
+  if (!profile || (!profile.disparo_habilitado && profile.role !== "admin")) redirect("/");
+
+  const [instancias, campanhas] = await Promise.all([
+    listarInstancias(supabase, user.id),
+    listarCampanhas(supabase, user.id),
+  ]);
+
+  return (
+    <div className="flex flex-col gap-8">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold">Disparo WhatsApp</h1>
+          <p className="text-muted-foreground">Instâncias conectadas e campanhas de cadência.</p>
+        </div>
+        <Button asChild variant="outline" size="sm">
+          <Link href="/disparo/solicitar-oficial">
+            <Send className="h-4 w-4" /> Solicitar canal oficial
+          </Link>
+        </Button>
+      </div>
+
+      <InstancesPanel instanciasIniciais={instancias} />
+      <CampaignsPanel campanhasIniciais={campanhas} instancias={instancias} />
+    </div>
+  );
+}

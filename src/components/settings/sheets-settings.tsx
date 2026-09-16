@@ -17,7 +17,7 @@ export function SheetsSettings({ profile, initialFeedback }: { profile: Profile;
   const [disponiveis, setDisponiveis] = useState<Array<{ id: string; name: string }>>([]);
   const [abasPorSheet, setAbasPorSheet] = useState<Record<string, string[]>>({});
   const [novaPlanilha, setNovaPlanilha] = useState("");
-  const [loadingList, setLoadingList] = useState(false);
+  const [loadingList, setLoadingList] = useState(conectado);
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState<{ ok: boolean; msg: string } | null>(
     initialFeedback === "conectado" ? { ok: true, msg: "Conta Google conectada com sucesso." } : initialFeedback === "erro" ? { ok: false, msg: "Não foi possível conectar sua conta Google." } : null,
@@ -25,7 +25,6 @@ export function SheetsSettings({ profile, initialFeedback }: { profile: Profile;
 
   useEffect(() => {
     if (!conectado) return;
-    setLoadingList(true);
     fetch("/api/integrations/google-sheets/spreadsheets")
       .then((r) => r.json())
       .then((d) => setDisponiveis(d.planilhas || []))

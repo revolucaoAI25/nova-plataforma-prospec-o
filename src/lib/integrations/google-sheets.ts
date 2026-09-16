@@ -114,7 +114,6 @@ async function garantirLinhas(
   abaNome: string,
   linhasNecessarias: number,
 ) {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   for (const sheet of meta.data.sheets || []) {
     const props = sheet.properties || {};
     if (props.title !== abaNome) continue;
