@@ -124,11 +124,10 @@ mas nada é processado — é só fila).
   passam o cliente autenticado do usuário — RLS restringe automaticamente ao
   próprio dono ou admin — e só o worker de background passa o cliente
   service-role (que precisa operar entre usuários). Mais seguro por padrão.
-- **Não implementado nesta reconstrução** (gaps conhecidos, não são bugs):
-  a UI de disparo não tem uma tela dedicada para configurar o monitoramento de
-  planilha (`sheet_watch`) — a rota de API e o worker já suportam, falta o botão;
-  templates do canal oficial não têm preview de aprovação em tempo real (é preciso
-  recarregar a página do template pra ver o status atualizado).
+- **Templates do canal oficial e monitoramento de planilha (`sheet_watch`)**:
+  a UI de disparo agora cobre os dois (painel de templates em `/disparo`, card
+  "Monitorar planilha" no detalhe da campanha) — rota de API, worker e tela
+  todos ligados. Etapa de cadência pode ser texto livre ou template aprovado.
 
 ## Estrutura
 
