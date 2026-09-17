@@ -13,7 +13,14 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   if (!user) redirect("/login");
 
   const profile = await getProfile(supabase, user.id);
-  if (!profile) redirect("/login");
+  if (!profile) {
+    // Sessão válida mas sem linha em `profiles` (ex: usuário criado em
+    // auth.users antes de rodar as migrations, ou RLS bloqueando a leitura).
+    // Sem o signOut aqui, isso vira um loop infinito: o proxy manda de volta
+    // pra "/" por ver sessão válida, e aqui manda de novo pra "/login".
+    await supabase.auth.signOut();
+    redirect("/login?perfil_ausente=1");
+  }
 
   // Contas de teste: checado a cada navegação, não só no login — bloqueia
   // em tempo real mesmo se o usuário já estava com a aba aberta quando o

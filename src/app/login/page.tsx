@@ -16,7 +16,11 @@ function LoginForm() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(
-    searchParams.get("expirado") ? "Sua sessão expirou porque o prazo da conta de teste terminou." : null,
+    searchParams.get("expirado")
+      ? "Sua sessão expirou porque o prazo da conta de teste terminou."
+      : searchParams.get("perfil_ausente")
+        ? "Sua conta não tem um perfil configurado ainda. Veja em Table Editor → profiles no Supabase se existe uma linha com o mesmo id do seu usuário em Authentication → Users — se não existir, crie uma manualmente (ou peça pro administrador)."
+        : null,
   );
 
   async function handleSubmit(e: React.FormEvent) {
@@ -37,14 +41,24 @@ function LoginForm() {
       return;
     }
 
-    // Conta de teste expirada: nunca deixa a sessão de pé, mesmo que a senha
-    // esteja correta — mesma regra aplicada a cada navegação em (app)/layout.tsx.
+    // Perfil ausente (linha em `profiles` não existe pra este usuário) ou
+    // conta de teste expirada: nunca deixa a sessão de pé nesses casos —
+    // mesma checagem repetida a cada navegação em (app)/layout.tsx, mas
+    // resolvida aqui já dá feedback imediato em vez de um round-trip extra.
     const { data: profile } = await supabase
       .from("profiles")
       .select("conta_teste, teste_expira_em")
       .eq("id", signInData.user.id)
       .single();
-    if (profile?.conta_teste && profile.teste_expira_em && new Date(profile.teste_expira_em) <= new Date()) {
+    if (!profile) {
+      await supabase.auth.signOut();
+      setError(
+        "Sua conta não tem um perfil configurado ainda. Veja em Table Editor → profiles no Supabase se existe uma linha com o mesmo id do seu usuário em Authentication → Users — se não existir, crie uma manualmente (ou peça pro administrador).",
+      );
+      setLoading(false);
+      return;
+    }
+    if (profile.conta_teste && profile.teste_expira_em && new Date(profile.teste_expira_em) <= new Date()) {
       await supabase.auth.signOut();
       const dataExp = new Date(profile.teste_expira_em).toLocaleDateString("pt-BR");
       setError(`Sua conta de teste expirou em ${dataExp}. Fale com o administrador para renovar.`);
