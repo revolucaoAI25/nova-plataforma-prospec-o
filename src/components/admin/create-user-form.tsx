@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { FieldGroup, FieldRow } from "@/components/ui/field-group";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export function CreateUserForm() {
@@ -77,15 +78,13 @@ export function CreateUserForm() {
             </div>
           </div>
 
-          <label className="flex max-w-md items-center justify-between rounded-xl border border-border p-3 text-sm">
-            <span>
-              Conta de teste
-              <span className="block text-xs font-normal text-muted-foreground">
-                Créditos pré-carregados, prazo de validade, usa a chave Maps compartilhada da plataforma (nunca chave própria).
-              </span>
-            </span>
-            <Switch checked={contaTeste} onCheckedChange={setContaTeste} />
-          </label>
+          <FieldGroup className="max-w-md">
+            <FieldRow
+              label="Conta de teste"
+              description="Créditos pré-carregados, prazo de validade, usa a chave Maps compartilhada da plataforma (nunca chave própria)."
+              control={<Switch checked={contaTeste} onCheckedChange={setContaTeste} />}
+            />
+          </FieldGroup>
 
           {contaTeste && (
             <div className="flex flex-col gap-1.5">

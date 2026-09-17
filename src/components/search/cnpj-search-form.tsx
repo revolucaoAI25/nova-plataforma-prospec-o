@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { FieldGroup, FieldRow, FieldGroupLabel } from "@/components/ui/field-group";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { MultiSelect, type MultiSelectOption } from "@/components/search/multi-select";
@@ -156,10 +157,10 @@ export function CnpjSearchForm() {
               </TabsList>
 
               <TabsContent value="setor" className="flex flex-col gap-5">
-            <div className="flex items-center justify-between rounded-xl border border-border p-3">
-              <div>
-                <Label htmlFor="rj">Modo Recuperação Judicial</Label>
-                <p className="text-xs text-muted-foreground">Busca textual por &quot;recuperação judicial&quot; na razão social — dispensa CNAE.</p>
+            <div className="flex items-center justify-between gap-4 rounded-xl border border-primary/25 bg-accent p-3.5 text-sm">
+              <div className="flex flex-col gap-0.5">
+                <Label htmlFor="rj" className="text-accent-foreground">Modo Recuperação Judicial</Label>
+                <span className="text-xs text-accent-foreground/70">Busca textual por &quot;recuperação judicial&quot; na razão social — dispensa CNAE.</span>
               </div>
               <Switch id="rj" checked={recuperacaoJudicial} onCheckedChange={setRecuperacaoJudicial} />
             </div>
@@ -206,6 +207,8 @@ export function CnpjSearchForm() {
               </TabsContent>
 
               <TabsContent value="empresa" className="flex flex-col gap-5">
+            <div>
+              <FieldGroupLabel>Classificação</FieldGroupLabel>
             <div className="grid gap-5 sm:grid-cols-2">
               <div className="flex flex-col gap-2">
                 <Label>Porte</Label>
@@ -257,7 +260,10 @@ export function CnpjSearchForm() {
                 </RadioGroup>
               </div>
             </div>
+            </div>
 
+            <div>
+              <FieldGroupLabel>Abertura e capital social</FieldGroupLabel>
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="flex flex-col gap-2">
                 <Label htmlFor="dt-ini">Abertura — de</Label>
@@ -276,19 +282,10 @@ export function CnpjSearchForm() {
                 <Input id="cap-max" type="number" min={0} value={capMax} onChange={(e) => setCapMax(e.target.value)} />
               </div>
             </div>
+            </div>
               </TabsContent>
 
-              <TabsContent value="contato" className="flex flex-col gap-4">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <label className="flex items-center justify-between rounded-xl border border-border p-3 text-sm">
-                Apenas com telefone
-                <Switch checked={comTelefone} onCheckedChange={setComTelefone} />
-              </label>
-              <label className="flex items-center justify-between rounded-xl border border-border p-3 text-sm">
-                Apenas com e-mail
-                <Switch checked={comEmail} onCheckedChange={setComEmail} />
-              </label>
-            </div>
+              <TabsContent value="contato" className="flex flex-col gap-5">
             <div className="flex flex-col gap-2">
               <Label>Tipo de telefone</Label>
               <RadioGroup value={tipoTelefone} onValueChange={(v) => setTipoTelefone(v as typeof tipoTelefone)} className="grid-flow-col justify-start gap-6">
@@ -304,17 +301,23 @@ export function CnpjSearchForm() {
                 ))}
               </RadioGroup>
             </div>
-            <label className="flex items-center justify-between rounded-xl border border-border p-3 text-sm">
-              Excluir e-mails de contabilidade
-              <Switch checked={excluirEmailContab} onCheckedChange={setExcluirEmailContab} />
-            </label>
-            <label className="flex items-center justify-between rounded-xl border border-border p-3 text-sm">
-              <span>
-                Apenas leads novos
-                <span className="block text-xs font-normal text-muted-foreground">Remove empresas com CNPJ ou telefone já salvos em buscas anteriores.</span>
-              </span>
-              <Switch checked={apenasNovos} onCheckedChange={setApenasNovos} />
-            </label>
+
+            <div>
+              <FieldGroupLabel>Filtros</FieldGroupLabel>
+              <FieldGroup>
+                <FieldRow label="Apenas com telefone" control={<Switch checked={comTelefone} onCheckedChange={setComTelefone} />} />
+                <FieldRow label="Apenas com e-mail" control={<Switch checked={comEmail} onCheckedChange={setComEmail} />} />
+                <FieldRow
+                  label="Excluir e-mails de contabilidade"
+                  control={<Switch checked={excluirEmailContab} onCheckedChange={setExcluirEmailContab} />}
+                />
+                <FieldRow
+                  label="Apenas leads novos"
+                  description="Remove empresas com CNPJ ou telefone já salvos em buscas anteriores."
+                  control={<Switch checked={apenasNovos} onCheckedChange={setApenasNovos} />}
+                />
+              </FieldGroup>
+            </div>
               </TabsContent>
 
               <TabsContent value="maps" className="flex flex-col gap-4">
@@ -340,6 +343,7 @@ export function CnpjSearchForm() {
                 </div>
               )}
             </div>
+            <hr className="divider-fade" />
             <div className="flex max-w-xs flex-col gap-1.5">
               <Label htmlFor="limite">Limite de resultados (até 2000)</Label>
               <Input id="limite" type="number" min={1} max={2000} value={limite} onChange={(e) => setLimite(Number(e.target.value))} />

@@ -66,6 +66,7 @@ export function buildNavSections({
       label: "Prospecção",
       items: [
         { type: "group", label: "Busca", icon: Search, children: buscaChildren },
+        { type: "link", href: "/historico", label: "Histórico", icon: History },
         { type: "link", href: "/automacoes", label: "Automações", icon: CalendarClock },
       ],
     },
@@ -90,10 +91,7 @@ export function buildNavSections({
 
   sections.push({
     label: "Conta",
-    items: [
-      { type: "link", href: "/historico", label: "Histórico", icon: History },
-      { type: "link", href: "/configuracoes", label: "Configurações", icon: Settings },
-    ],
+    items: [{ type: "link", href: "/configuracoes", label: "Configurações", icon: Settings }],
   });
 
   if (isAdmin) {

@@ -5,6 +5,7 @@ import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { buildNavSections } from "./nav-items";
 import { SidebarNav } from "./sidebar-nav";
+import { Logo } from "./logo";
 
 const STORAGE_KEY = "pa:sidebar-collapsed";
 
@@ -57,9 +58,7 @@ export function Sidebar({
           collapsed && "justify-center px-0",
         )}
       >
-        <div className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary text-sm font-bold text-primary-foreground shadow-[0_0_0_1px_rgba(0,200,83,0.4),0_4px_16px_-4px_rgba(0,200,83,0.6)]">
-          R
-        </div>
+        <Logo />
         {!collapsed && <span className="truncate font-bold tracking-tight">Revolução AI</span>}
       </div>
 

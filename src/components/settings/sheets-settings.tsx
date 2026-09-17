@@ -8,6 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
+import { FieldGroup, FieldRow, FieldGroupLabel } from "@/components/ui/field-group";
 import type { Profile, SheetConfig } from "@/lib/database.types";
 
 export function SheetsSettings({ profile, initialFeedback }: { profile: Profile; initialFeedback?: string | null }) {
@@ -109,16 +110,16 @@ export function SheetsSettings({ profile, initialFeedback }: { profile: Profile;
                 </Button>
               </div>
 
-              <label className="flex items-center justify-between rounded-xl border border-border p-3 text-sm">
-                <span>
-                  Exportar automaticamente após cada busca
-                  <span className="block text-xs font-normal text-muted-foreground">Usa a planilha marcada como principal, no modo configurado.</span>
-                </span>
-                <Switch checked={autoExport} onCheckedChange={setAutoExport} />
-              </label>
+              <FieldGroup>
+                <FieldRow
+                  label="Exportar automaticamente após cada busca"
+                  description="Usa a planilha marcada como principal, no modo configurado."
+                  control={<Switch checked={autoExport} onCheckedChange={setAutoExport} />}
+                />
+              </FieldGroup>
 
               <div className="flex flex-col gap-3">
-                <span className="text-sm font-medium">Planilhas configuradas</span>
+                <FieldGroupLabel className="mb-0">Planilhas configuradas</FieldGroupLabel>
                 {planilhas.length === 0 && <p className="text-sm text-muted-foreground">Nenhuma planilha adicionada ainda.</p>}
                 {planilhas.map((p) => (
                   <div key={p.id} className="flex flex-col gap-2 rounded-xl border border-border p-3">

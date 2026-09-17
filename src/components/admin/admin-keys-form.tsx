@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { FieldGroup, FieldRow } from "@/components/ui/field-group";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { KeyPoolEditor } from "@/components/admin/key-pool-editor";
 import type { ApiKeyPoolEntry, Profile } from "@/lib/database.types";
@@ -49,10 +50,9 @@ export function AdminKeysForm({ userId, profile }: { userId: string; profile: Pr
           <CardDescription>Créditos pré-carregados e prazo de validade — bloqueia o acesso automaticamente ao expirar.</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-3">
-          <label className="flex items-center justify-between rounded-xl border border-border p-3 text-sm">
-            É conta de teste
-            <Switch checked={contaTeste} onCheckedChange={setContaTeste} />
-          </label>
+          <FieldGroup>
+            <FieldRow label="É conta de teste" control={<Switch checked={contaTeste} onCheckedChange={setContaTeste} />} />
+          </FieldGroup>
           {contaTeste && (
             <div className="flex max-w-xs flex-col gap-1.5">
               <Label htmlFor="teste-expira-em">Expira em</Label>

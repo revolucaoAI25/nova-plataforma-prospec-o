@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Logo } from "@/components/layout/logo";
 
 function LoginForm() {
   const router = useRouter();
@@ -74,9 +75,7 @@ function LoginForm() {
   return (
     <Card className="w-full max-w-sm backdrop-blur-sm">
       <CardHeader className="items-center text-center">
-        <div className="mb-2 flex h-11 w-11 items-center justify-center rounded-2xl bg-primary text-lg font-bold text-primary-foreground shadow-[0_0_0_1px_rgba(0,200,83,0.4),0_8px_24px_-8px_rgba(0,200,83,0.6)]">
-          R
-        </div>
+        <Logo size="lg" className="mb-2" />
         <span className="eyebrow">Revolução AI</span>
         <CardTitle className="text-2xl">Entrar</CardTitle>
         <CardDescription>Acesse sua conta de prospecção ativa.</CardDescription>

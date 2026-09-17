@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { Menu, X } from "lucide-react";
 import { buildNavSections } from "./nav-items";
 import { SidebarNav } from "./sidebar-nav";
+import { Logo } from "./logo";
 
 /** Sidebar não aparece abaixo de md — sem isso não havia NENHUMA forma de navegar no mobile. */
 export function MobileNav({
@@ -59,9 +60,7 @@ export function MobileNav({
           <div className="animate-slide-in-left relative flex h-full w-72 max-w-[85vw] flex-col border-r border-border bg-card">
             <div className="flex h-16 items-center justify-between border-b border-border px-5">
               <div className="flex items-center gap-2.5">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-sm font-bold text-primary-foreground">
-                  R
-                </div>
+                <Logo />
                 <span className="font-bold tracking-tight">Revolução AI</span>
               </div>
               <button

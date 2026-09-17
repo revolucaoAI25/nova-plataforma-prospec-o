@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { FieldGroup, FieldRow } from "@/components/ui/field-group";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { ResultsTable } from "@/components/search/results-table";
@@ -86,13 +87,13 @@ export function InstagramSearchForm() {
               <Label htmlFor="alvo">Username ou URL do perfil</Label>
               <Input id="alvo" value={alvo} onChange={(e) => setAlvo(e.target.value)} placeholder="ex: nomeusuario ou https://instagram.com/nomeusuario" />
             </div>
-            <label className="flex items-center justify-between rounded-xl border border-border p-3 text-sm">
-              <span>
-                Apenas leads novos
-                <span className="block text-xs font-normal text-muted-foreground">Remove perfis já salvos em buscas anteriores.</span>
-              </span>
-              <Switch checked={apenasNovos} onCheckedChange={setApenasNovos} />
-            </label>
+            <FieldGroup>
+              <FieldRow
+                label="Apenas leads novos"
+                description="Remove perfis já salvos em buscas anteriores."
+                control={<Switch checked={apenasNovos} onCheckedChange={setApenasNovos} />}
+              />
+            </FieldGroup>
             <div className="flex max-w-xs flex-col gap-1.5">
               <Label htmlFor="limite">Limite de resultados</Label>
               <Input id="limite" type="number" min={1} max={2000} value={limite} onChange={(e) => setLimite(Number(e.target.value))} />

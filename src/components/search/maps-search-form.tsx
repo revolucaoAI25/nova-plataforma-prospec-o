@@ -10,6 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
+import { FieldGroup, FieldRow } from "@/components/ui/field-group";
 import { ResultsTable } from "@/components/search/results-table";
 import { NICHOS, NOMES_NICHOS } from "@/lib/data/nichos";
 import type { Lead } from "@/lib/types";
@@ -174,24 +175,19 @@ export function MapsSearchForm() {
             <CardTitle className="text-base">Opções</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
-            <label className="flex items-center justify-between rounded-xl border border-border p-3 text-sm">
-              <span>
-                Buscar telefone e site
-                <span className="block text-xs font-normal text-muted-foreground">Consome cota mais restrita (Contact Data). Desligue para buscas rápidas só com nome/endereço/avaliação.</span>
-              </span>
-              <Switch checked={showPhone} onCheckedChange={setShowPhone} />
-            </label>
-            <label className="flex items-center justify-between rounded-xl border border-border p-3 text-sm">
-              Incluir avaliação
-              <Switch checked={showRating} onCheckedChange={setShowRating} />
-            </label>
-            <label className="flex items-center justify-between rounded-xl border border-border p-3 text-sm">
-              <span>
-                Apenas leads novos
-                <span className="block text-xs font-normal text-muted-foreground">Remove empresas com telefone já salvo em buscas anteriores.</span>
-              </span>
-              <Switch checked={apenasNovos} onCheckedChange={setApenasNovos} />
-            </label>
+            <FieldGroup>
+              <FieldRow
+                label="Buscar telefone e site"
+                description="Consome cota mais restrita (Contact Data). Desligue para buscas rápidas só com nome/endereço/avaliação."
+                control={<Switch checked={showPhone} onCheckedChange={setShowPhone} />}
+              />
+              <FieldRow label="Incluir avaliação" control={<Switch checked={showRating} onCheckedChange={setShowRating} />} />
+              <FieldRow
+                label="Apenas leads novos"
+                description="Remove empresas com telefone já salvo em buscas anteriores."
+                control={<Switch checked={apenasNovos} onCheckedChange={setApenasNovos} />}
+              />
+            </FieldGroup>
             <div className="flex max-w-xs flex-col gap-1.5">
               <Label htmlFor="limite">Limite de resultados</Label>
               <Input id="limite" type="number" min={1} max={500} value={limite} onChange={(e) => setLimite(Number(e.target.value))} />

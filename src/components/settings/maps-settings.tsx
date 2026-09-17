@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { FieldGroup, FieldRow } from "@/components/ui/field-group";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import type { Profile } from "@/lib/database.types";
 
@@ -59,15 +60,13 @@ export function MapsSettings({ profile }: { profile: Profile }) {
               disabled={gerenciadoPeloAdmin || contaTeste}
             />
           </div>
-          <label className="flex items-center justify-between rounded-xl border border-border p-3 text-sm">
-            <span>
-              Ao esgotar o limite das chaves: continuar buscando
-              <span className="block text-xs font-normal text-muted-foreground">
-                Quando desligado, a busca pausa ao esgotar a cota em vez de continuar (o que pode gerar custo extra).
-              </span>
-            </span>
-            <Switch checked={!pausarAoEsgotar} onCheckedChange={(v) => setPausarAoEsgotar(!v)} disabled={contaTeste} />
-          </label>
+          <FieldGroup>
+            <FieldRow
+              label="Ao esgotar o limite das chaves: continuar buscando"
+              description="Quando desligado, a busca pausa ao esgotar a cota em vez de continuar (o que pode gerar custo extra)."
+              control={<Switch checked={!pausarAoEsgotar} onCheckedChange={(v) => setPausarAoEsgotar(!v)} disabled={contaTeste} />}
+            />
+          </FieldGroup>
         </CardContent>
       </Card>
 
