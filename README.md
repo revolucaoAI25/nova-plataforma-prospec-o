@@ -34,6 +34,11 @@ No [painel do Supabase](https://supabase.com/dashboard), crie um projeto novo
 (não o mesmo do produto atual). Em **SQL Editor**, rode nesta ordem:
 1. `supabase/migrations/0001_init.sql`
 2. `supabase/migrations/0002_full_platform.sql`
+3. `supabase/migrations/0003_fix_admin_rls_recursion.sql` (corrige uma recursão
+   infinita nas políticas de RLS "admin vê tudo" — sem isso, qualquer leitura
+   de `profiles` retorna erro 500. Se você já rodou 0001/0002 antes desse
+   arquivo existir, rode só o 0003 agora — é seguro rodar de novo, ele só
+   recria as políticas.)
 
 Em **Authentication → Providers**, deixe E-mail/senha habilitado (é o único método
 usado no login). Contas são criadas pelo admin — não há cadastro público.
