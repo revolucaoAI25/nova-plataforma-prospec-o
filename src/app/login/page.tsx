@@ -72,9 +72,13 @@ function LoginForm() {
   }
 
   return (
-    <Card className="w-full max-w-sm">
-      <CardHeader>
-        <CardTitle className="text-xl">Entrar</CardTitle>
+    <Card className="w-full max-w-sm backdrop-blur-sm">
+      <CardHeader className="items-center text-center">
+        <div className="mb-2 flex h-11 w-11 items-center justify-center rounded-2xl bg-primary text-lg font-bold text-primary-foreground shadow-[0_0_0_1px_rgba(0,200,83,0.4),0_8px_24px_-8px_rgba(0,200,83,0.6)]">
+          R
+        </div>
+        <span className="eyebrow">Revolução AI</span>
+        <CardTitle className="text-2xl">Entrar</CardTitle>
         <CardDescription>Acesse sua conta de prospecção ativa.</CardDescription>
       </CardHeader>
       <CardContent>
@@ -106,7 +110,7 @@ function LoginForm() {
               onChange={(e) => setPassword(e.target.value)}
             />
           </div>
-          <Button type="submit" disabled={loading} className="mt-2">
+          <Button type="submit" disabled={loading} withArrow className="mt-2 w-full">
             {loading ? "Entrando…" : "Entrar"}
           </Button>
         </form>
@@ -117,10 +121,17 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background p-4">
-      <Suspense>
-        <LoginForm />
-      </Suspense>
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-background p-4">
+      <div className="bg-grid absolute inset-0" aria-hidden="true" />
+      <div
+        className="bg-glow animate-pulse-glow h-[420px] w-[420px] -translate-y-1/3"
+        aria-hidden="true"
+      />
+      <div className="relative">
+        <Suspense>
+          <LoginForm />
+        </Suspense>
+      </div>
     </div>
   );
 }

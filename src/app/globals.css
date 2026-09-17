@@ -1,92 +1,177 @@
 @import "tailwindcss";
 
+/* ============================================================
+   Revolução AI — identidade visual (dark mode premium, único tema)
+   ============================================================ */
 :root {
-  --background: #f8fafc;
-  --foreground: #0f172a;
-  --card: #ffffff;
-  --card-foreground: #0f172a;
-  --popover: #ffffff;
-  --popover-foreground: #0f172a;
-  --primary: #4338ca;
-  --primary-foreground: #ffffff;
-  --secondary: #f1f5f9;
-  --secondary-foreground: #0f172a;
-  --muted: #f1f5f9;
-  --muted-foreground: #64748b;
-  --accent: #eef2ff;
-  --accent-foreground: #3730a3;
-  --destructive: #dc2626;
-  --destructive-foreground: #ffffff;
-  --success: #16a34a;
-  --success-foreground: #ffffff;
-  --border: #e2e8f0;
-  --input: #e2e8f0;
-  --ring: #6366f1;
-  --radius: 0.625rem;
-}
+  --bg: #07090a;
+  --bg-tint: #081b14;
+  --surface: #0d1210;
+  --surface-2: #121815;
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.16);
 
-:root[data-theme="dark"],
-:root:not([data-theme="light"]) {
-  @media (prefers-color-scheme: dark) {
-    --background: #0b1120;
-    --foreground: #e2e8f0;
-    --card: #111827;
-    --card-foreground: #e2e8f0;
-    --popover: #111827;
-    --popover-foreground: #e2e8f0;
-    --primary: #818cf8;
-    --primary-foreground: #0b1120;
-    --secondary: #1e293b;
-    --secondary-foreground: #e2e8f0;
-    --muted: #1e293b;
-    --muted-foreground: #94a3b8;
-    --accent: #1e2544;
-    --accent-foreground: #c7d2fe;
-    --destructive: #f87171;
-    --destructive-foreground: #0b1120;
-    --success: #4ade80;
-    --success-foreground: #0b1120;
-    --border: #1e293b;
-    --input: #1e293b;
-    --ring: #818cf8;
-  }
+  --accent: #00c853;
+  --accent-dark: #00a844;
+  --accent-soft: rgba(0, 200, 83, 0.12);
+  --accent-foreground: #04140a;
+
+  --text: #f6f7f6;
+  --muted: #96a19c;
+  --muted-2: #62706b;
+
+  --destructive: #ff5c5c;
+  --destructive-soft: rgba(255, 92, 92, 0.12);
+
+  --radius: 1rem;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
+  --color-background: var(--bg);
+  --color-background-tint: var(--bg-tint);
+  --color-foreground: var(--text);
+  --color-card: var(--surface);
+  --color-card-foreground: var(--text);
+  --color-popover: var(--surface);
+  --color-popover-foreground: var(--text);
+  --color-primary: var(--accent);
+  --color-primary-dark: var(--accent-dark);
+  --color-primary-foreground: var(--accent-foreground);
+  --color-secondary: var(--surface-2);
+  --color-secondary-foreground: var(--text);
+  --color-muted: var(--surface-2);
+  --color-muted-foreground: var(--muted);
+  --color-muted-2: var(--muted-2);
+  --color-accent: var(--accent-soft);
+  --color-accent-foreground: var(--accent);
   --color-destructive: var(--destructive);
-  --color-destructive-foreground: var(--destructive-foreground);
-  --color-success: var(--success);
-  --color-success-foreground: var(--success-foreground);
-  --color-border: var(--border);
-  --color-input: var(--input);
-  --color-ring: var(--ring);
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
+  --color-destructive-foreground: #1a0505;
+  --color-destructive-soft: var(--destructive-soft);
+  --color-success: var(--accent);
+  --color-success-foreground: var(--accent-foreground);
+  --color-border: var(--border-subtle);
+  --color-border-strong: var(--border-strong);
+  --color-input: var(--surface-2);
+  --color-ring: var(--accent);
+
+  --radius-sm: calc(var(--radius) - 10px);
+  --radius-md: calc(var(--radius) - 4px);
   --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --radius-xl: calc(var(--radius) + 0.5rem);
+  --radius-full: 999px;
+
+  --font-sans: var(--font-inter);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--bg);
+  color: var(--text);
+  font-feature-settings: "cv11", "ss01";
 }
 
 * {
-  border-color: var(--border);
+  border-color: var(--border-subtle);
+}
+
+::selection {
+  background: var(--accent-soft);
+  color: var(--text);
+}
+
+/* ── Grão de filme sutil sobre toda a página ─────────────────── */
+.bg-noise {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  pointer-events: none;
+  opacity: 0.035;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ── Grade de fundo (usada atrás de heros/login) ─────────────── */
+.bg-grid {
+  background-image:
+    linear-gradient(to right, rgba(255, 255, 255, 0.06) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+  background-size: 44px 44px;
+  -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 0%, black 40%, transparent 100%);
+  mask-image: radial-gradient(ellipse 70% 60% at 50% 0%, black 40%, transparent 100%);
+}
+
+/* ── Glow radial verde, posicionado atrás de seções-chave ────── */
+.bg-glow {
+  position: absolute;
+  border-radius: 999px;
+  background: radial-gradient(closest-side, rgba(0, 200, 83, 0.35), transparent 70%);
+  filter: blur(60px);
+  pointer-events: none;
+}
+
+/* ── Divisor com gradiente (não uma linha reta) ──────────────── */
+.divider-fade {
+  height: 1px;
+  background: linear-gradient(to right, transparent, var(--border-strong), transparent);
+  border: none;
+}
+
+/* ── Rótulo "eyebrow" — uppercase, tracking largo, bolinha verde */
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.eyebrow::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--accent);
+  box-shadow: 0 0 8px 1px var(--accent);
+  flex-shrink: 0;
+}
+
+/* ── Glow pulsante (uso pontual, só em elementos-âncora) ──────── */
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.35; }
+  50% { opacity: 0.55; }
+}
+.animate-pulse-glow {
+  animation: pulse-glow 5s ease-in-out infinite;
+}
+
+/* ── Entrada fade-up ao rolar a página ────────────────────────── */
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.reveal {
+  opacity: 0;
+}
+.reveal.is-visible {
+  animation: fade-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* ── "Pop" com leve overshoot — confirmações/checks ───────────── */
+@keyframes pop-in {
+  0%   { opacity: 0; transform: scale(0.6); }
+  60%  { opacity: 1; transform: scale(1.08); }
+  100% { transform: scale(1); }
+}
+.animate-pop {
+  animation: pop-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal { opacity: 1; animation: none !important; }
+  .animate-pulse-glow, .animate-pop { animation: none !important; }
+  * {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
 }
