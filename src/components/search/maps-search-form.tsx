@@ -174,18 +174,18 @@ export function MapsSearchForm() {
             <CardTitle className="text-base">Opções</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
-            <label className="flex items-center justify-between rounded-md border border-border p-3 text-sm">
+            <label className="flex items-center justify-between rounded-xl border border-border p-3 text-sm">
               <span>
                 Buscar telefone e site
                 <span className="block text-xs font-normal text-muted-foreground">Consome cota mais restrita (Contact Data). Desligue para buscas rápidas só com nome/endereço/avaliação.</span>
               </span>
               <Switch checked={showPhone} onCheckedChange={setShowPhone} />
             </label>
-            <label className="flex items-center justify-between rounded-md border border-border p-3 text-sm">
+            <label className="flex items-center justify-between rounded-xl border border-border p-3 text-sm">
               Incluir avaliação
               <Switch checked={showRating} onCheckedChange={setShowRating} />
             </label>
-            <label className="flex items-center justify-between rounded-md border border-border p-3 text-sm">
+            <label className="flex items-center justify-between rounded-xl border border-border p-3 text-sm">
               <span>
                 Apenas leads novos
                 <span className="block text-xs font-normal text-muted-foreground">Remove empresas com telefone já salvo em buscas anteriores.</span>

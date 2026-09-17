@@ -109,7 +109,7 @@ export function SheetsSettings({ profile, initialFeedback }: { profile: Profile;
                 </Button>
               </div>
 
-              <label className="flex items-center justify-between rounded-md border border-border p-3 text-sm">
+              <label className="flex items-center justify-between rounded-xl border border-border p-3 text-sm">
                 <span>
                   Exportar automaticamente após cada busca
                   <span className="block text-xs font-normal text-muted-foreground">Usa a planilha marcada como principal, no modo configurado.</span>
@@ -121,7 +121,7 @@ export function SheetsSettings({ profile, initialFeedback }: { profile: Profile;
                 <span className="text-sm font-medium">Planilhas configuradas</span>
                 {planilhas.length === 0 && <p className="text-sm text-muted-foreground">Nenhuma planilha adicionada ainda.</p>}
                 {planilhas.map((p) => (
-                  <div key={p.id} className="flex flex-col gap-2 rounded-md border border-border p-3">
+                  <div key={p.id} className="flex flex-col gap-2 rounded-xl border border-border p-3">
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-medium">{p.nome}</span>
                       <div className="flex items-center gap-1">

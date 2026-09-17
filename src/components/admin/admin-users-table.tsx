@@ -110,29 +110,27 @@ function UserRow({ user, isSelf }: { user: UserStatsRow; isSelf: boolean }) {
 
 export function AdminUsersTable({ users, currentUserId }: { users: UserStatsRow[]; currentUserId: string }) {
   return (
-    <div className="overflow-x-auto rounded-lg border border-border">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>E-mail</TableHead>
-            <TableHead>Papel</TableHead>
-            <TableHead>Créditos CNPJ</TableHead>
-            <TableHead>Renovação mensal</TableHead>
-            <TableHead>Créditos Maps</TableHead>
-            <TableHead>Debita Maps?</TableHead>
-            <TableHead>Instagram</TableHead>
-            <TableHead>Disparo</TableHead>
-            <TableHead>Buscas</TableHead>
-            <TableHead>Leads</TableHead>
-            <TableHead className="text-right">Ações</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {users.map((u) => (
-            <UserRow key={u.id} user={u} isSelf={u.id === currentUserId} />
-          ))}
-        </TableBody>
-      </Table>
-    </div>
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>E-mail</TableHead>
+          <TableHead>Papel</TableHead>
+          <TableHead>Créditos CNPJ</TableHead>
+          <TableHead>Renovação mensal</TableHead>
+          <TableHead>Créditos Maps</TableHead>
+          <TableHead>Debita Maps?</TableHead>
+          <TableHead>Instagram</TableHead>
+          <TableHead>Disparo</TableHead>
+          <TableHead>Buscas</TableHead>
+          <TableHead>Leads</TableHead>
+          <TableHead className="text-right">Ações</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {users.map((u) => (
+          <UserRow key={u.id} user={u} isSelf={u.id === currentUserId} />
+        ))}
+      </TableBody>
+    </Table>
   );
 }

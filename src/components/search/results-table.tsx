@@ -6,7 +6,7 @@ export function ResultsTable({ leads }: { leads: Lead[] }) {
   if (!leads.length) return null;
 
   return (
-    <div className="rounded-lg border border-border">
+    <div className="flex flex-col gap-2">
       <Table>
         <TableHeader>
           <TableRow>
@@ -46,7 +46,7 @@ export function ResultsTable({ leads }: { leads: Lead[] }) {
         </TableBody>
       </Table>
       {leads.length > 200 && (
-        <p className="border-t border-border p-3 text-center text-xs text-muted-foreground">
+        <p className="text-center text-xs text-muted-foreground">
           Mostrando 200 de {leads.length} resultados — exporte para ver todos.
         </p>
       )}

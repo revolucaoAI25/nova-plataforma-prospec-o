@@ -30,55 +30,53 @@ export function HistoricoTable({ pesquisas }: { pesquisas: SearchRow[] }) {
   }
 
   return (
-    <div className="rounded-lg border border-border">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Nicho / CNAE</TableHead>
-            <TableHead>Localidade</TableHead>
-            <TableHead>Fonte</TableHead>
-            <TableHead>Leads</TableHead>
-            <TableHead>Data</TableHead>
-            <TableHead className="text-right">Ações</TableHead>
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Nicho / CNAE</TableHead>
+          <TableHead>Localidade</TableHead>
+          <TableHead>Fonte</TableHead>
+          <TableHead>Leads</TableHead>
+          <TableHead>Data</TableHead>
+          <TableHead className="text-right">Ações</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {lista.map((p) => (
+          <TableRow key={p.id}>
+            <TableCell className="max-w-[240px] truncate font-medium">{p.nicho || "—"}</TableCell>
+            <TableCell>{p.localidade || "—"}</TableCell>
+            <TableCell>
+              <Badge variant="outline">{p.fonte === "cnpj" ? "CNPJ" : "Google Maps"}</Badge>
+            </TableCell>
+            <TableCell>{p.total_results}</TableCell>
+            <TableCell>{new Date(p.created_at).toLocaleString("pt-BR")}</TableCell>
+            <TableCell>
+              <div className="flex justify-end gap-1">
+                <Button asChild variant="ghost" size="icon" title="Ver leads">
+                  <Link href={`/historico/${p.id}`}>
+                    <Eye className="h-4 w-4" />
+                  </Link>
+                </Button>
+                <Button asChild variant="ghost" size="icon" title="Exportar Excel">
+                  <a href={`/api/export/${p.id}?formato=xlsx`}>
+                    <Download className="h-4 w-4" />
+                  </a>
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  title="Remover"
+                  disabled={removendo === p.id}
+                  onClick={() => remover(p.id)}
+                >
+                  <Trash2 className="h-4 w-4 text-destructive" />
+                </Button>
+              </div>
+            </TableCell>
           </TableRow>
-        </TableHeader>
-        <TableBody>
-          {lista.map((p) => (
-            <TableRow key={p.id}>
-              <TableCell className="max-w-[240px] truncate font-medium">{p.nicho || "—"}</TableCell>
-              <TableCell>{p.localidade || "—"}</TableCell>
-              <TableCell>
-                <Badge variant="outline">{p.fonte === "cnpj" ? "CNPJ" : "Google Maps"}</Badge>
-              </TableCell>
-              <TableCell>{p.total_results}</TableCell>
-              <TableCell>{new Date(p.created_at).toLocaleString("pt-BR")}</TableCell>
-              <TableCell>
-                <div className="flex justify-end gap-1">
-                  <Button asChild variant="ghost" size="icon" title="Ver leads">
-                    <Link href={`/historico/${p.id}`}>
-                      <Eye className="h-4 w-4" />
-                    </Link>
-                  </Button>
-                  <Button asChild variant="ghost" size="icon" title="Exportar Excel">
-                    <a href={`/api/export/${p.id}?formato=xlsx`}>
-                      <Download className="h-4 w-4" />
-                    </a>
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    title="Remover"
-                    disabled={removendo === p.id}
-                    onClick={() => remover(p.id)}
-                  >
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button>
-                </div>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </div>
+        ))}
+      </TableBody>
+    </Table>
   );
 }

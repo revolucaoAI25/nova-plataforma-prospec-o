@@ -47,7 +47,7 @@ function InstanceQr({ instanceId, onConnected }: { instanceId: string; onConnect
   return (
     <div className="flex flex-col items-center gap-2">
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={qr.startsWith("data:") ? qr : `data:image/png;base64,${qr}`} alt="QR code do WhatsApp" className="h-48 w-48 rounded-md border border-border" />
+      <img src={qr.startsWith("data:") ? qr : `data:image/png;base64,${qr}`} alt="QR code do WhatsApp" className="h-48 w-48 rounded-xl border border-border" />
       <p className="text-xs text-muted-foreground">Escaneie no WhatsApp → Aparelhos conectados.</p>
     </div>
   );
@@ -106,7 +106,7 @@ export function InstancesPanel({ instanciasIniciais }: { instanciasIniciais: Wha
         {instancias.length === 0 && <p className="text-sm text-muted-foreground">Nenhuma instância conectada ainda.</p>}
 
         {instancias.map((inst) => (
-          <div key={inst.id} className="flex flex-col gap-3 rounded-md border border-border p-3">
+          <div key={inst.id} className="flex flex-col gap-3 rounded-xl border border-border p-3">
             <div className="flex items-center justify-between">
               <div>
                 <span className="font-medium">{inst.nome}</span>{" "}

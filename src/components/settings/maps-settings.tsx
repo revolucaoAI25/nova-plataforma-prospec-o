@@ -59,7 +59,7 @@ export function MapsSettings({ profile }: { profile: Profile }) {
               disabled={gerenciadoPeloAdmin || contaTeste}
             />
           </div>
-          <label className="flex items-center justify-between rounded-md border border-border p-3 text-sm">
+          <label className="flex items-center justify-between rounded-xl border border-border p-3 text-sm">
             <span>
               Ao esgotar o limite das chaves: continuar buscando
               <span className="block text-xs font-normal text-muted-foreground">

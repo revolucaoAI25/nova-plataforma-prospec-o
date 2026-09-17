@@ -86,7 +86,7 @@ export function InstagramSearchForm() {
               <Label htmlFor="alvo">Username ou URL do perfil</Label>
               <Input id="alvo" value={alvo} onChange={(e) => setAlvo(e.target.value)} placeholder="ex: nomeusuario ou https://instagram.com/nomeusuario" />
             </div>
-            <label className="flex items-center justify-between rounded-md border border-border p-3 text-sm">
+            <label className="flex items-center justify-between rounded-xl border border-border p-3 text-sm">
               <span>
                 Apenas leads novos
                 <span className="block text-xs font-normal text-muted-foreground">Remove perfis já salvos em buscas anteriores.</span>

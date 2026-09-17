@@ -62,7 +62,7 @@ export function MultiSelect({
         <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input value={termo} onChange={(e) => setTermo(e.target.value)} placeholder={placeholder} className="pl-8" />
       </div>
-      <div className="max-h-48 overflow-y-auto rounded-md border border-border">
+      <div className="max-h-48 overflow-y-auto rounded-xl border border-border">
         {filtradas.length === 0 ? (
           <p className="p-3 text-sm text-muted-foreground">{emptyLabel}</p>
         ) : (

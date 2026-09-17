@@ -77,7 +77,7 @@ export function CreateUserForm() {
             </div>
           </div>
 
-          <label className="flex max-w-md items-center justify-between rounded-md border border-border p-3 text-sm">
+          <label className="flex max-w-md items-center justify-between rounded-xl border border-border p-3 text-sm">
             <span>
               Conta de teste
               <span className="block text-xs font-normal text-muted-foreground">

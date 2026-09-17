@@ -6,7 +6,7 @@ export function LeadsTable({ leads }: { leads: LeadRow[] }) {
   if (!leads.length) return <p className="text-sm text-muted-foreground">Nenhum lead salvo nesta pesquisa.</p>;
 
   return (
-    <div className="rounded-lg border border-border">
+    <div className="flex flex-col gap-2">
       <Table>
         <TableHeader>
           <TableRow>
@@ -40,7 +40,7 @@ export function LeadsTable({ leads }: { leads: LeadRow[] }) {
         </TableBody>
       </Table>
       {leads.length > 500 && (
-        <p className="border-t border-border p-3 text-center text-xs text-muted-foreground">
+        <p className="text-center text-xs text-muted-foreground">
           Mostrando 500 de {leads.length} leads — exporte para ver todos.
         </p>
       )}

@@ -43,7 +43,7 @@ function ProvisionForm({ solicitacao, onDone }: { solicitacao: OficialConnection
   }
 
   return (
-    <div className="flex flex-col gap-2 rounded-md border border-dashed border-border p-3">
+    <div className="flex flex-col gap-2 rounded-xl border border-dashed border-border p-3">
       {error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
       <div className="grid gap-2 sm:grid-cols-2">
         <div className="flex flex-col gap-1">

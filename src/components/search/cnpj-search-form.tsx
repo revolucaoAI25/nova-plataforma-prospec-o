@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { MultiSelect, type MultiSelectOption } from "@/components/search/multi-select";
@@ -145,11 +146,17 @@ export function CnpjSearchForm() {
     <div className="flex flex-col gap-6">
       <form onSubmit={handleSubmit} className="flex flex-col gap-6">
         <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Setor e localização</CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-5">
-            <div className="flex items-center justify-between rounded-md border border-border p-3">
+          <CardContent className="pt-6">
+            <Tabs defaultValue="setor">
+              <TabsList className="w-full justify-start overflow-x-auto sm:w-auto">
+                <TabsTrigger value="setor">Setor e localização</TabsTrigger>
+                <TabsTrigger value="empresa">Filtros da empresa</TabsTrigger>
+                <TabsTrigger value="contato">Contato</TabsTrigger>
+                <TabsTrigger value="maps">Google Maps e limite</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="setor" className="flex flex-col gap-5">
+            <div className="flex items-center justify-between rounded-xl border border-border p-3">
               <div>
                 <Label htmlFor="rj">Modo Recuperação Judicial</Label>
                 <p className="text-xs text-muted-foreground">Busca textual por &quot;recuperação judicial&quot; na razão social — dispensa CNAE.</p>
@@ -196,14 +203,9 @@ export function CnpjSearchForm() {
               />
               <p className="text-xs text-muted-foreground">Separe múltiplos municípios por vírgula. Deixe vazio para buscar no estado inteiro.</p>
             </div>
-          </CardContent>
-        </Card>
+              </TabsContent>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Filtros da empresa</CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-5">
+              <TabsContent value="empresa" className="flex flex-col gap-5">
             <div className="grid gap-5 sm:grid-cols-2">
               <div className="flex flex-col gap-2">
                 <Label>Porte</Label>
@@ -274,20 +276,15 @@ export function CnpjSearchForm() {
                 <Input id="cap-max" type="number" min={0} value={capMax} onChange={(e) => setCapMax(e.target.value)} />
               </div>
             </div>
-          </CardContent>
-        </Card>
+              </TabsContent>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Contato</CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-4">
+              <TabsContent value="contato" className="flex flex-col gap-4">
             <div className="grid gap-4 sm:grid-cols-2">
-              <label className="flex items-center justify-between rounded-md border border-border p-3 text-sm">
+              <label className="flex items-center justify-between rounded-xl border border-border p-3 text-sm">
                 Apenas com telefone
                 <Switch checked={comTelefone} onCheckedChange={setComTelefone} />
               </label>
-              <label className="flex items-center justify-between rounded-md border border-border p-3 text-sm">
+              <label className="flex items-center justify-between rounded-xl border border-border p-3 text-sm">
                 Apenas com e-mail
                 <Switch checked={comEmail} onCheckedChange={setComEmail} />
               </label>
@@ -307,25 +304,20 @@ export function CnpjSearchForm() {
                 ))}
               </RadioGroup>
             </div>
-            <label className="flex items-center justify-between rounded-md border border-border p-3 text-sm">
+            <label className="flex items-center justify-between rounded-xl border border-border p-3 text-sm">
               Excluir e-mails de contabilidade
               <Switch checked={excluirEmailContab} onCheckedChange={setExcluirEmailContab} />
             </label>
-            <label className="flex items-center justify-between rounded-md border border-border p-3 text-sm">
+            <label className="flex items-center justify-between rounded-xl border border-border p-3 text-sm">
               <span>
                 Apenas leads novos
                 <span className="block text-xs font-normal text-muted-foreground">Remove empresas com CNPJ ou telefone já salvos em buscas anteriores.</span>
               </span>
               <Switch checked={apenasNovos} onCheckedChange={setApenasNovos} />
             </label>
-          </CardContent>
-        </Card>
+              </TabsContent>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Google Maps e limite</CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-4">
+              <TabsContent value="maps" className="flex flex-col gap-4">
             <div className="flex flex-col gap-2">
               <Label>Google Maps</Label>
               <RadioGroup value={mapsModo} onValueChange={(v) => setMapsModo(v as MapsModo)} className="flex flex-col gap-2">
@@ -352,6 +344,8 @@ export function CnpjSearchForm() {
               <Label htmlFor="limite">Limite de resultados (até 2000)</Label>
               <Input id="limite" type="number" min={1} max={2000} value={limite} onChange={(e) => setLimite(Number(e.target.value))} />
             </div>
+              </TabsContent>
+            </Tabs>
           </CardContent>
         </Card>
 
