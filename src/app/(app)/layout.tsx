@@ -33,9 +33,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   return (
     <div className="flex min-h-screen bg-background">
       <Sidebar role={profile.role} instagramVisible={profile.instagram_visible} disparoHabilitado={profile.disparo_habilitado} />
-      <div className="flex flex-1 flex-col transition-[padding-left] duration-200 md:pl-[var(--app-sidebar-w)]">
+      {/* min-w-0 é essencial aqui: sem isso, um item flex nunca encolhe
+          abaixo do conteúdo intrínseco — uma tabela larga (leads, usuários)
+          empurra a página inteira pro lado em vez de rolar só por dentro. */}
+      <div className="flex min-w-0 flex-1 flex-col transition-[padding-left] duration-200 md:pl-[var(--app-sidebar-w)]">
         <Topbar profile={profile} />
-        <main className="flex-1 p-4 md:p-8">{children}</main>
+        <main className="min-w-0 flex-1 p-4 md:p-8">{children}</main>
       </div>
     </div>
   );

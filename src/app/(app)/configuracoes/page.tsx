@@ -27,7 +27,7 @@ export default async function ConfiguracoesPage({
         <Tabs defaultValue="maps">
           <TabsList>
             <TabsTrigger value="maps">Google Maps</TabsTrigger>
-            <TabsTrigger value="instagram">Instagram</TabsTrigger>
+            <TabsTrigger value="instagram">Apify</TabsTrigger>
             <TabsTrigger value="sheets">Google Sheets</TabsTrigger>
           </TabsList>
           <TabsContent value="maps">

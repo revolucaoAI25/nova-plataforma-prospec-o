@@ -6,49 +6,33 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import type { Profile } from "@/lib/database.types";
+import { KeyPoolEditor } from "@/components/admin/key-pool-editor";
+import type { ApiKeyPoolEntry, Profile } from "@/lib/database.types";
 
 export function AdminKeysForm({ userId, profile }: { userId: string; profile: Profile }) {
   const [cddKey, setCddKey] = useState(profile.cdd_api_key_admin || "");
-  const [poolJson, setPoolJson] = useState(JSON.stringify(profile.maps_keys_pool ?? [], null, 2));
+  const [mapsPool, setMapsPool] = useState<ApiKeyPoolEntry[]>(profile.maps_keys_pool ?? []);
   const [apifyKey, setApifyKey] = useState(profile.apify_api_key_admin || "");
-  const [apifyPoolJson, setApifyPoolJson] = useState(JSON.stringify(profile.apify_keys_pool ?? [], null, 2));
+  const [apifyPool, setApifyPool] = useState<ApiKeyPoolEntry[]>(profile.apify_keys_pool ?? []);
   const [contaTeste, setContaTeste] = useState(profile.conta_teste);
   const [testeExpiraEm, setTesteExpiraEm] = useState(profile.teste_expira_em ? profile.teste_expira_em.slice(0, 10) : "");
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState<{ ok: boolean; msg: string } | null>(null);
-
-  function parsePool(json: string, label: string): unknown[] | null {
-    try {
-      const pool = JSON.parse(json);
-      if (!Array.isArray(pool)) throw new Error();
-      return pool;
-    } catch {
-      setFeedback({ ok: false, msg: `O pool de chaves ${label} precisa ser um JSON de lista válido.` });
-      return null;
-    }
-  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
     setFeedback(null);
 
-    const mapsPool = parsePool(poolJson, "Maps");
-    if (!mapsPool) return setSaving(false);
-    const apifyPool = parsePool(apifyPoolJson, "Apify");
-    if (!apifyPool) return setSaving(false);
-
     const resp = await fetch(`/api/admin/users/${userId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         cdd_api_key_admin: cddKey || null,
-        maps_keys_pool: mapsPool,
+        maps_keys_pool: mapsPool.filter((k) => k.key.trim()),
         apify_api_key_admin: apifyKey || null,
-        apify_keys_pool: apifyPool,
+        apify_keys_pool: apifyPool.filter((k) => k.key.trim()),
         conta_teste: contaTeste,
         teste_expira_em: contaTeste ? (testeExpiraEm || null) : null,
       }),
@@ -65,7 +49,7 @@ export function AdminKeysForm({ userId, profile }: { userId: string; profile: Pr
           <CardDescription>Créditos pré-carregados e prazo de validade — bloqueia o acesso automaticamente ao expirar.</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-3">
-          <label className="flex items-center justify-between rounded-md border border-border p-3 text-sm">
+          <label className="flex items-center justify-between rounded-xl border border-border p-3 text-sm">
             É conta de teste
             <Switch checked={contaTeste} onCheckedChange={setContaTeste} />
           </label>
@@ -95,13 +79,12 @@ export function AdminKeysForm({ userId, profile }: { userId: string; profile: Pr
         <CardHeader>
           <CardTitle className="text-base">Pool de chaves Google Maps</CardTitle>
           <CardDescription>
-            Rodízio automático mensal. Cada entrada: {"{"}&quot;key&quot;, &quot;limit&quot;, &quot;usage&quot;, &quot;month&quot;{"}"}.
-            Deixe como <code>[]</code> para usar a chave padrão da plataforma (sem rodízio). Contas de teste usam o pool
-            compartilhado da plataforma (Configurações não gerencia isso aqui).
+            Rodízio automático mensal entre as chaves abaixo. Sem nenhuma chave, o usuário usa a chave padrão da
+            plataforma. Contas de teste usam o pool compartilhado da plataforma — não é gerenciado aqui.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Textarea value={poolJson} onChange={(e) => setPoolJson(e.target.value)} rows={8} className="font-mono text-xs" />
+          <KeyPoolEditor value={mapsPool} onChange={setMapsPool} keyPlaceholder="AIza…" />
         </CardContent>
       </Card>
 
@@ -116,8 +99,8 @@ export function AdminKeysForm({ userId, profile }: { userId: string; profile: Pr
             <Input id="apify-key-admin" type="password" value={apifyKey} onChange={(e) => setApifyKey(e.target.value)} placeholder="Deixe vazio para usar a chave padrão da plataforma" />
           </div>
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="apify-pool">Pool de chaves</Label>
-            <Textarea id="apify-pool" value={apifyPoolJson} onChange={(e) => setApifyPoolJson(e.target.value)} rows={6} className="font-mono text-xs" />
+            <Label>Pool de chaves</Label>
+            <KeyPoolEditor value={apifyPool} onChange={setApifyPool} keyPlaceholder="apify_api_…" />
           </div>
         </CardContent>
       </Card>

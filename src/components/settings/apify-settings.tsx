@@ -33,11 +33,11 @@ export function ApifySettings({ profile }: { profile: Profile }) {
     <form onSubmit={handleSubmit} className="flex flex-col gap-6">
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Instagram / Apify</CardTitle>
+          <CardTitle className="text-base">Apify</CardTitle>
           <CardDescription>
             {gerenciadoPeloAdmin
               ? "Sua conta usa a chave/pool Apify administrado pela plataforma — não é necessário configurar nada aqui."
-              : "Configure sua própria chave da API do Apify (api.apify.com), usada para extrair Instagram e como alternativa quando a cota do Google Maps esgotar."}
+              : "Configure sua própria chave da API do Apify (api.apify.com). Usada para a busca por Instagram (quando disponível pra sua conta) e como alternativa automática quando a cota do Google Maps esgotar — vale configurar mesmo sem acesso ao Instagram."}
           </CardDescription>
         </CardHeader>
         <CardContent>

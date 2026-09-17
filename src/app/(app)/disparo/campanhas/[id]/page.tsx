@@ -1,6 +1,14 @@
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { obterCampanha, listarEtapas, statsCampanha, listarInstancias } from "@/lib/dispatch-db";
+import {
+  obterCampanha,
+  listarEtapas,
+  statsCampanha,
+  listarInstancias,
+  listarTargetsCampanha,
+  obterSheetWatcher,
+  listarTemplatesDb,
+} from "@/lib/dispatch-db";
 import { listarPesquisas } from "@/lib/db";
 import { CampaignDetail } from "@/components/dispatch/campaign-detail";
 import { PageHeader } from "@/components/layout/page-header";
@@ -14,11 +22,14 @@ export default async function CampanhaDetailPage({ params }: { params: Promise<{
   const campanha = await obterCampanha(supabase, id);
   if (!campanha) notFound();
 
-  const [etapas, stats, instancias, pesquisas] = await Promise.all([
+  const [etapas, stats, instancias, pesquisas, targets, watcher, templates] = await Promise.all([
     listarEtapas(supabase, id),
     statsCampanha(supabase, id),
     listarInstancias(supabase, user.id),
     listarPesquisas(supabase, 100),
+    listarTargetsCampanha(supabase, id),
+    obterSheetWatcher(supabase, id),
+    listarTemplatesDb(supabase, user.id),
   ]);
 
   return (
@@ -30,6 +41,9 @@ export default async function CampanhaDetailPage({ params }: { params: Promise<{
         statsIniciais={stats}
         instancias={instancias}
         pesquisas={pesquisas}
+        targetsIniciais={targets}
+        watcherInicial={watcher}
+        templates={templates}
       />
     </div>
   );
