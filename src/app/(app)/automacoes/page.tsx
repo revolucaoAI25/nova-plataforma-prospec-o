@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { listarAutomacoesUsuario } from "@/lib/automation-db";
 import { listarCampanhas } from "@/lib/dispatch-db";
 import { AutomationsPanel } from "@/components/automations/automations-panel";
+import { PageHeader } from "@/components/layout/page-header";
 
 export const metadata = { title: "Automações" };
 
@@ -18,13 +19,11 @@ export default async function AutomacoesPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-2xl font-semibold">Automações</h1>
-        <p className="text-muted-foreground">
-          Buscas programadas (CNPJ ou Google Maps) com exportação automática para Google Sheets e,
-          opcionalmente, inscrição automática numa campanha de disparo.
-        </p>
-      </div>
+      <PageHeader
+        eyebrow="Prospecção"
+        title="Automações"
+        description="Buscas programadas (CNPJ ou Google Maps) com exportação automática para Google Sheets e, opcionalmente, inscrição automática numa campanha de disparo."
+      />
       <AutomationsPanel automacoesIniciais={automacoes} campanhas={campanhas} />
     </div>
   );

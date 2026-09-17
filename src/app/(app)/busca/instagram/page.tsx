@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getProfile } from "@/lib/credits";
 import { InstagramSearchForm } from "@/components/search/instagram-search-form";
+import { PageHeader } from "@/components/layout/page-header";
 
 export const metadata = { title: "Busca por Instagram" };
 
@@ -16,12 +17,11 @@ export default async function BuscaInstagramPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-2xl font-semibold">Busca por Instagram</h1>
-        <p className="text-muted-foreground">
-          Extrai seguidores ou seguindo de um perfil público, via Apify.
-        </p>
-      </div>
+      <PageHeader
+        eyebrow="Prospecção · Busca"
+        title="Busca por Instagram"
+        description="Extrai seguidores ou seguindo de um perfil público, via Apify."
+      />
       <InstagramSearchForm />
     </div>
   );

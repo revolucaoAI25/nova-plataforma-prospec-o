@@ -1,12 +1,12 @@
 import { notFound } from "next/navigation";
-import Link from "next/link";
-import { ArrowLeft, Download } from "lucide-react";
+import { Download } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { buscarLeadsDaPesquisa } from "@/lib/db";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LeadsTable } from "@/components/historico/leads-table";
+import { PageHeader } from "@/components/layout/page-header";
 
 export default async function HistoricoDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -19,20 +19,13 @@ export default async function HistoricoDetailPage({ params }: { params: Promise<
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <Button asChild variant="ghost" size="sm" className="mb-2 -ml-2">
-          <Link href="/historico">
-            <ArrowLeft className="h-4 w-4" /> Voltar ao histórico
-          </Link>
-        </Button>
-        <div className="flex flex-wrap items-center gap-3">
-          <h1 className="text-2xl font-semibold">{search.nicho || "Pesquisa"}</h1>
-          <Badge variant="outline">{search.fonte === "cnpj" ? "CNPJ" : "Google Maps"}</Badge>
-        </div>
-        <p className="text-muted-foreground">
-          {search.localidade} · {new Date(search.created_at).toLocaleString("pt-BR")}
-        </p>
-      </div>
+      <PageHeader
+        backHref="/historico"
+        backLabel="Voltar ao histórico"
+        title={search.nicho || "Pesquisa"}
+        badge={<Badge variant="outline">{search.fonte === "cnpj" ? "CNPJ" : "Google Maps"}</Badge>}
+        description={`${search.localidade} · ${new Date(search.created_at).toLocaleString("pt-BR")}`}
+      />
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">

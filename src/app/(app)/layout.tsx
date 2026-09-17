@@ -33,7 +33,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   return (
     <div className="flex min-h-screen bg-background">
       <Sidebar role={profile.role} instagramVisible={profile.instagram_visible} disparoHabilitado={profile.disparo_habilitado} />
-      <div className="flex flex-1 flex-col md:pl-64">
+      <div className="flex flex-1 flex-col transition-[padding-left] duration-200 md:pl-[var(--app-sidebar-w)]">
         <Topbar profile={profile} />
         <main className="flex-1 p-4 md:p-8">{children}</main>
       </div>

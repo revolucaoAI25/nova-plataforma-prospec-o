@@ -1,10 +1,8 @@
 import { redirect, notFound } from "next/navigation";
-import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getProfile } from "@/lib/credits";
-import { Button } from "@/components/ui/button";
 import { AdminKeysForm } from "@/components/admin/admin-keys-form";
+import { PageHeader } from "@/components/layout/page-header";
 
 export const metadata = { title: "Chaves administradas" };
 
@@ -24,18 +22,12 @@ export default async function AdminUserKeysPage({ params }: { params: Promise<{ 
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <Button asChild variant="ghost" size="sm" className="mb-2 -ml-2">
-          <Link href="/admin">
-            <ArrowLeft className="h-4 w-4" /> Voltar
-          </Link>
-        </Button>
-        <h1 className="text-2xl font-semibold">Chaves administradas — {target.email}</h1>
-        <p className="text-muted-foreground">
-          Chave da Casa dos Dados e pool de chaves Google Maps usadas quando este usuário não tem
-          credenciais próprias configuradas.
-        </p>
-      </div>
+      <PageHeader
+        backHref="/admin"
+        eyebrow="Administração"
+        title="Chaves administradas"
+        description={`Chave da Casa dos Dados e pool de chaves Google Maps usadas quando ${target.email} não tem credenciais próprias configuradas.`}
+      />
       <AdminKeysForm userId={userId} profile={target} />
     </div>
   );

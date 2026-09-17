@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getProfile } from "@/lib/credits";
 import { listarSolicitacoesOficial } from "@/lib/dispatch-db";
 import { AdminOficialRequests } from "@/components/dispatch/admin-oficial-requests";
+import { PageHeader } from "@/components/layout/page-header";
 
 export const metadata = { title: "Disparo — canal oficial" };
 
@@ -17,10 +18,12 @@ export default async function AdminDisparoPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-2xl font-semibold">Disparo — canal oficial</h1>
-        <p className="text-muted-foreground">Solicitações de conexão e provisionamento manual de instâncias oficiais.</p>
-      </div>
+      <PageHeader
+        backHref="/admin"
+        eyebrow="Administração"
+        title="Canal oficial"
+        description="Solicitações de conexão e provisionamento manual de instâncias oficiais."
+      />
       <AdminOficialRequests solicitacoesIniciais={solicitacoes} />
     </div>
   );

@@ -4,6 +4,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { MapsSettings } from "@/components/settings/maps-settings";
 import { ApifySettings } from "@/components/settings/apify-settings";
 import { SheetsSettings } from "@/components/settings/sheets-settings";
+import { PageHeader } from "@/components/layout/page-header";
 
 export const metadata = { title: "Configurações" };
 
@@ -21,10 +22,7 @@ export default async function ConfiguracoesPage({
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-2xl font-semibold">Configurações</h1>
-        <p className="text-muted-foreground">Chaves próprias, preferências de cota e integrações.</p>
-      </div>
+      <PageHeader eyebrow="Conta" title="Configurações" description="Chaves próprias, preferências de cota e integrações." />
       {profile && (
         <Tabs defaultValue="maps">
           <TabsList>

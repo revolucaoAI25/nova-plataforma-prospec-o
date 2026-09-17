@@ -24,6 +24,10 @@
   --destructive-soft: rgba(255, 92, 92, 0.12);
 
   --radius: 1rem;
+
+  /* Largura da sidebar desktop — atualizada via JS (rail colapsado) e lida
+     pelo padding do conteúdo em (app)/layout.tsx, sempre em sincronia. */
+  --app-sidebar-w: 16rem;
 }
 
 @theme inline {
@@ -165,6 +169,22 @@ body {
 }
 .animate-pop {
   animation: pop-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+/* ── Drawer mobile: fundo esmaece, painel desliza da esquerda ────── */
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.animate-fade-in {
+  animation: fade-in 0.2s ease-out both;
+}
+@keyframes slide-in-left {
+  from { transform: translateX(-100%); }
+  to   { transform: translateX(0); }
+}
+.animate-slide-in-left {
+  animation: slide-in-left 0.25s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 @media (prefers-reduced-motion: reduce) {

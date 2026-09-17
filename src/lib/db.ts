@@ -188,6 +188,17 @@ export async function buscarInstagramIdsExistentes(
   return ids;
 }
 
+/** Contagens para os cartões de estatística do dashboard — COUNT indexado, sem baixar linhas. */
+export async function contarPesquisasELeads(
+  supabase: SupabaseClient,
+): Promise<{ totalPesquisas: number; totalLeads: number }> {
+  const [{ count: totalPesquisas }, { count: totalLeads }] = await Promise.all([
+    supabase.from("searches").select("id", { count: "exact", head: true }),
+    supabase.from("leads").select("id", { count: "exact", head: true }),
+  ]);
+  return { totalPesquisas: totalPesquisas ?? 0, totalLeads: totalLeads ?? 0 };
+}
+
 export async function deletarPesquisa(
   supabase: SupabaseClient,
   searchId: string,

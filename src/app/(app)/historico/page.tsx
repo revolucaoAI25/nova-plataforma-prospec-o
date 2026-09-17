@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { listarPesquisas } from "@/lib/db";
 import { HistoricoTable } from "@/components/historico/historico-table";
+import { PageHeader } from "@/components/layout/page-header";
 
 export const metadata = { title: "Histórico" };
 
@@ -10,10 +11,7 @@ export default async function HistoricoPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-2xl font-semibold">Histórico</h1>
-        <p className="text-muted-foreground">Todas as pesquisas realizadas, com exportação e exclusão.</p>
-      </div>
+      <PageHeader eyebrow="Conta" title="Histórico" description="Todas as pesquisas realizadas, com exportação e exclusão." />
       <HistoricoTable pesquisas={pesquisas} />
     </div>
   );

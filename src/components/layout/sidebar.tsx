@@ -1,30 +1,12 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import {
-  LayoutDashboard, Building2, MapPin, AtSign, History, Settings,
-  ShieldCheck, Send, CalendarClock,
-} from "lucide-react";
+import { useEffect, useState } from "react";
+import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { buildNavSections } from "./nav-items";
+import { SidebarNav } from "./sidebar-nav";
 
-interface NavItem {
-  href: string;
-  label: string;
-  icon: typeof LayoutDashboard;
-}
-
-const NAV_BASE: NavItem[] = [
-  { href: "/", label: "Visão geral", icon: LayoutDashboard },
-  { href: "/busca/cnpj", label: "Busca CNPJ", icon: Building2 },
-  { href: "/busca/maps", label: "Busca Google Maps", icon: MapPin },
-];
-
-const NAV_END: NavItem[] = [
-  { href: "/historico", label: "Histórico", icon: History },
-  { href: "/automacoes", label: "Automações", icon: CalendarClock },
-  { href: "/configuracoes", label: "Configurações", icon: Settings },
-];
+const STORAGE_KEY = "pa:sidebar-collapsed";
 
 export function Sidebar({
   role,
@@ -35,65 +17,68 @@ export function Sidebar({
   instagramVisible: boolean;
   disparoHabilitado: boolean;
 }) {
-  const pathname = usePathname();
-  const isAdmin = role === "admin";
+  const [collapsed, setCollapsed] = useState(false);
 
-  const nav: NavItem[] = [
-    ...NAV_BASE,
-    ...(instagramVisible ? [{ href: "/busca/instagram", label: "Busca Instagram", icon: AtSign }] : []),
-    ...(disparoHabilitado || isAdmin ? [{ href: "/disparo", label: "Disparo WhatsApp", icon: Send }] : []),
-    ...NAV_END,
-  ];
+  // Lê a preferência salva só após montar — mantém o SSR e o primeiro
+  // paint do cliente idênticos (expandido) e evita mismatch de hidratação.
+  // (Não dá pra mover isso pra fora do efeito: localStorage não existe no
+  // servidor, e ajustar o estado durante a renderização mudaria o HTML já
+  // hidratado, o que é o próprio mismatch que este padrão evita.)
+  useEffect(() => {
+    try {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setCollapsed(localStorage.getItem(STORAGE_KEY) === "1");
+    } catch {
+      // localStorage indisponível (modo privado etc.) — mantém expandido.
+    }
+  }, []);
+
+  useEffect(() => {
+    document.documentElement.style.setProperty("--app-sidebar-w", collapsed ? "4.75rem" : "16rem");
+    try {
+      localStorage.setItem(STORAGE_KEY, collapsed ? "1" : "0");
+    } catch {
+      // ignora
+    }
+  }, [collapsed]);
+
+  const sections = buildNavSections({ isAdmin: role === "admin", instagramVisible, disparoHabilitado });
 
   return (
-    <aside className="fixed inset-y-0 left-0 hidden w-64 flex-col border-r border-border bg-card md:flex">
-      <div className="flex h-16 items-center gap-2.5 border-b border-border px-6">
-        <div className="relative flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-sm font-bold text-primary-foreground shadow-[0_0_0_1px_rgba(0,200,83,0.4),0_4px_16px_-4px_rgba(0,200,83,0.6)]">
+    <aside
+      className={cn(
+        "fixed inset-y-0 left-0 z-20 hidden flex-col border-r border-border bg-card transition-[width] duration-200 md:flex",
+        collapsed ? "w-19" : "w-64",
+      )}
+    >
+      <div
+        className={cn(
+          "flex h-16 items-center gap-2.5 border-b border-border px-6",
+          collapsed && "justify-center px-0",
+        )}
+      >
+        <div className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary text-sm font-bold text-primary-foreground shadow-[0_0_0_1px_rgba(0,200,83,0.4),0_4px_16px_-4px_rgba(0,200,83,0.6)]">
           R
         </div>
-        <span className="font-bold tracking-tight">Revolução AI</span>
+        {!collapsed && <span className="truncate font-bold tracking-tight">Revolução AI</span>}
       </div>
-      <nav className="flex-1 space-y-0.5 overflow-y-auto p-3">
-        {nav.map((item) => {
-          const active = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href));
-          const Icon = item.icon;
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                "relative flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-colors",
-                active
-                  ? "bg-accent text-accent-foreground"
-                  : "text-muted-foreground hover:bg-secondary hover:text-foreground",
-              )}
-            >
-              {active && (
-                <span className="absolute left-0 top-1/2 h-4 w-0.5 -translate-y-1/2 rounded-full bg-primary" />
-              )}
-              <Icon className="h-4 w-4" />
-              {item.label}
-            </Link>
-          );
-        })}
-        {isAdmin && (
-          <Link
-            href="/admin"
-            className={cn(
-              "relative flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-colors",
-              pathname.startsWith("/admin")
-                ? "bg-accent text-accent-foreground"
-                : "text-muted-foreground hover:bg-secondary hover:text-foreground",
-            )}
-          >
-            {pathname.startsWith("/admin") && (
-              <span className="absolute left-0 top-1/2 h-4 w-0.5 -translate-y-1/2 rounded-full bg-primary" />
-            )}
-            <ShieldCheck className="h-4 w-4" />
-            Administração
-          </Link>
-        )}
-      </nav>
+
+      <SidebarNav sections={sections} collapsed={collapsed} />
+
+      <div className="border-t border-border p-3">
+        <button
+          type="button"
+          onClick={() => setCollapsed((c) => !c)}
+          title={collapsed ? "Expandir menu" : "Recolher menu"}
+          className={cn(
+            "flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground",
+            collapsed && "justify-center px-0",
+          )}
+        >
+          {collapsed ? <PanelLeftOpen className="h-4 w-4 shrink-0" /> : <PanelLeftClose className="h-4 w-4 shrink-0" />}
+          {!collapsed && "Recolher"}
+        </button>
+      </div>
     </aside>
   );
 }

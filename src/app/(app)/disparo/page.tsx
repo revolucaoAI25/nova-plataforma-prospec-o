@@ -6,6 +6,7 @@ import { listarInstancias, listarCampanhas } from "@/lib/dispatch-db";
 import { InstancesPanel } from "@/components/dispatch/instances-panel";
 import { CampaignsPanel } from "@/components/dispatch/campaigns-panel";
 import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/layout/page-header";
 import { Send } from "lucide-react";
 
 export const metadata = { title: "Disparo WhatsApp" };
@@ -25,17 +26,18 @@ export default async function DisparoPage() {
 
   return (
     <div className="flex flex-col gap-8">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold">Disparo WhatsApp</h1>
-          <p className="text-muted-foreground">Instâncias conectadas e campanhas de cadência.</p>
-        </div>
-        <Button asChild variant="outline" size="sm">
-          <Link href="/disparo/solicitar-oficial">
-            <Send className="h-4 w-4" /> Solicitar canal oficial
-          </Link>
-        </Button>
-      </div>
+      <PageHeader
+        eyebrow="Engajamento · Disparo WhatsApp"
+        title="Campanhas"
+        description="Instâncias conectadas e campanhas de cadência."
+        actions={
+          <Button asChild variant="outline" size="sm">
+            <Link href="/disparo/solicitar-oficial">
+              <Send className="h-4 w-4" /> Solicitar canal oficial
+            </Link>
+          </Button>
+        }
+      />
 
       <InstancesPanel instanciasIniciais={instancias} />
       <CampaignsPanel campanhasIniciais={campanhas} instancias={instancias} />

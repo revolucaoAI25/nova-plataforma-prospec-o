@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getProfile } from "@/lib/credits";
 import { OficialRequestForm } from "@/components/dispatch/oficial-request-form";
+import { PageHeader } from "@/components/layout/page-header";
 
 export const metadata = { title: "Solicitar canal oficial" };
 
@@ -14,13 +15,12 @@ export default async function SolicitarOficialPage() {
 
   return (
     <div className="flex max-w-lg flex-col gap-6">
-      <div>
-        <h1 className="text-2xl font-semibold">Solicitar canal oficial</h1>
-        <p className="text-muted-foreground">
-          O canal oficial (WhatsApp Business Cloud API) exige aprovação de templates de mensagem e é
-          provisionado manualmente pelo administrador. Preencha os dados abaixo para solicitar.
-        </p>
-      </div>
+      <PageHeader
+        backHref="/disparo"
+        eyebrow="Engajamento · Disparo WhatsApp"
+        title="Solicitar canal oficial"
+        description="O canal oficial (WhatsApp Business Cloud API) exige aprovação de templates de mensagem e é provisionado manualmente pelo administrador. Preencha os dados abaixo para solicitar."
+      />
       <OficialRequestForm />
     </div>
   );

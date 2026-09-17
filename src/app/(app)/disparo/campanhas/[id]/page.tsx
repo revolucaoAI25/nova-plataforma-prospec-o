@@ -1,11 +1,9 @@
 import { notFound, redirect } from "next/navigation";
-import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { obterCampanha, listarEtapas, statsCampanha, listarInstancias } from "@/lib/dispatch-db";
 import { listarPesquisas } from "@/lib/db";
-import { Button } from "@/components/ui/button";
 import { CampaignDetail } from "@/components/dispatch/campaign-detail";
+import { PageHeader } from "@/components/layout/page-header";
 
 export default async function CampanhaDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -25,14 +23,7 @@ export default async function CampanhaDetailPage({ params }: { params: Promise<{
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <Button asChild variant="ghost" size="sm" className="mb-2 -ml-2">
-          <Link href="/disparo">
-            <ArrowLeft className="h-4 w-4" /> Voltar
-          </Link>
-        </Button>
-        <h1 className="text-2xl font-semibold">{campanha.nome}</h1>
-      </div>
+      <PageHeader backHref="/disparo" backLabel="Voltar às campanhas" title={campanha.nome} />
       <CampaignDetail
         campanha={campanha}
         etapasIniciais={etapas}
