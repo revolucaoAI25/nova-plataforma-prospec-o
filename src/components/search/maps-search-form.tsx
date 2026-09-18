@@ -13,6 +13,7 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@
 import { FieldGroup, FieldRow } from "@/components/ui/field-group";
 import { MultiSelect, type MultiSelectOption } from "@/components/search/multi-select";
 import { ResultsTable } from "@/components/search/results-table";
+import { ResultsSummary, buildGeneralMetrics } from "@/components/search/results-summary";
 import { NICHOS, NOMES_NICHOS } from "@/lib/data/nichos";
 import { ESTADOS } from "@/lib/data/estados";
 import type { Lead } from "@/lib/types";
@@ -261,11 +262,14 @@ export function MapsSearchForm() {
               </div>
             )}
           </CardHeader>
-          <CardContent>
+          <CardContent className="flex flex-col gap-5">
             {leads.length === 0 ? (
               <p className="text-sm text-muted-foreground">Nenhum resultado encontrado.</p>
             ) : (
-              <ResultsTable leads={leads} />
+              <>
+                <ResultsSummary metrics={buildGeneralMetrics(leads)} />
+                <ResultsTable leads={leads} />
+              </>
             )}
           </CardContent>
         </Card>

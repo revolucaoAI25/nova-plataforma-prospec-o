@@ -14,6 +14,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { MultiSelect, type MultiSelectOption } from "@/components/search/multi-select";
 import { ResultsTable } from "@/components/search/results-table";
+import { ResultsSummary, buildGeneralMetrics } from "@/components/search/results-summary";
 import { CNAES } from "@/lib/data/cnaes";
 import { ESTADOS } from "@/lib/data/estados";
 import type { CnaeTipo, Lead } from "@/lib/types";
@@ -395,11 +396,14 @@ export function CnpjSearchForm() {
               </div>
             )}
           </CardHeader>
-          <CardContent>
+          <CardContent className="flex flex-col gap-5">
             {leads.length === 0 ? (
               <p className="text-sm text-muted-foreground">Nenhuma empresa encontrada com os filtros aplicados.</p>
             ) : (
-              <ResultsTable leads={leads} />
+              <>
+                <ResultsSummary metrics={buildGeneralMetrics(leads)} />
+                <ResultsTable leads={leads} />
+              </>
             )}
           </CardContent>
         </Card>

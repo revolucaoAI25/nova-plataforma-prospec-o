@@ -12,6 +12,7 @@ import { FieldGroup, FieldRow } from "@/components/ui/field-group";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { InstagramResultsTable } from "@/components/search/instagram-results-table";
+import { ResultsSummary, buildInstagramMetrics } from "@/components/search/results-summary";
 import type { InstagramTipo, Lead } from "@/lib/types";
 
 export function InstagramSearchForm() {
@@ -154,11 +155,14 @@ export function InstagramSearchForm() {
               </div>
             )}
           </CardHeader>
-          <CardContent>
+          <CardContent className="flex flex-col gap-5">
             {leads.length === 0 ? (
               <p className="text-sm text-muted-foreground">Nenhum resultado encontrado.</p>
             ) : (
-              <InstagramResultsTable leads={leads} />
+              <>
+                <ResultsSummary metrics={buildInstagramMetrics(leads)} />
+                <InstagramResultsTable leads={leads} />
+              </>
             )}
           </CardContent>
         </Card>

@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import type { SearchRow } from "@/lib/database.types";
 
+const FONTE_LABEL: Record<string, string> = { cnpj: "CNPJ", google_maps: "Google Maps", instagram: "Instagram" };
+
 export function HistoricoTable({ pesquisas }: { pesquisas: SearchRow[] }) {
   const router = useRouter();
   const [removendo, setRemovendo] = useState<string | null>(null);
@@ -47,7 +49,7 @@ export function HistoricoTable({ pesquisas }: { pesquisas: SearchRow[] }) {
             <TableCell className="max-w-[240px] truncate font-medium">{p.nicho || "—"}</TableCell>
             <TableCell>{p.localidade || "—"}</TableCell>
             <TableCell>
-              <Badge variant="outline">{p.fonte === "cnpj" ? "CNPJ" : "Google Maps"}</Badge>
+              <Badge variant="outline">{FONTE_LABEL[p.fonte] ?? p.fonte}</Badge>
             </TableCell>
             <TableCell>{p.total_results}</TableCell>
             <TableCell>{new Date(p.created_at).toLocaleString("pt-BR")}</TableCell>

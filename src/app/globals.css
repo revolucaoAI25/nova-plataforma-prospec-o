@@ -23,6 +23,15 @@
   --destructive: #ff5c5c;
   --destructive-soft: rgba(255, 92, 92, 0.12);
 
+  /* Acentos extras só para variedade em painéis de estatísticas (ex:
+     resumo de resultados de busca) — o resto da UI usa só --accent. */
+  --info: #3b82f6;
+  --info-soft: rgba(59, 130, 246, 0.12);
+  --violet: #a855f7;
+  --violet-soft: rgba(168, 85, 247, 0.12);
+  --amber: #f5a623;
+  --amber-soft: rgba(245, 166, 35, 0.12);
+
   --radius: 1rem;
 
   /* Largura da sidebar desktop — atualizada via JS (rail colapsado) e lida
@@ -53,6 +62,12 @@
   --color-destructive-soft: var(--destructive-soft);
   --color-success: var(--accent);
   --color-success-foreground: var(--accent-foreground);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+  --color-violet: var(--violet);
+  --color-violet-soft: var(--violet-soft);
+  --color-amber: var(--amber);
+  --color-amber-soft: var(--amber-soft);
   --color-border: var(--border-subtle);
   --color-border-strong: var(--border-strong);
   --color-input: var(--surface-2);
