@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Search, Download, Loader2 } from "lucide-react";
+import { Search, Download, Loader2, AtSign } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -67,7 +67,7 @@ export function InstagramSearchForm() {
       <form onSubmit={handleSubmit} className="flex flex-col gap-6">
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Perfil alvo</CardTitle>
+            <CardTitle className="flex items-center gap-2 text-base"><AtSign className="h-4 w-4 text-primary" /> Perfil alvo</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col gap-5">
             <div className="flex flex-col gap-2">

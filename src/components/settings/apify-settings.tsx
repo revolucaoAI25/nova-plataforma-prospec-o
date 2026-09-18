@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Sparkles } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,7 +34,7 @@ export function ApifySettings({ profile }: { profile: Profile }) {
     <form onSubmit={handleSubmit} className="flex flex-col gap-6">
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Apify</CardTitle>
+          <CardTitle className="flex items-center gap-2 text-base"><Sparkles className="h-4 w-4 text-primary" /> Apify</CardTitle>
           <CardDescription>
             {gerenciadoPeloAdmin
               ? "Sua conta usa a chave/pool Apify administrado pela plataforma — não é necessário configurar nada aqui."

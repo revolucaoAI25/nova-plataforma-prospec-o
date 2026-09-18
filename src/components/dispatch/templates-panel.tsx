@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Trash2, RefreshCw, Send } from "lucide-react";
+import { Plus, Trash2, RefreshCw, Send, FileText } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -101,7 +101,7 @@ export function TemplatesPanel({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">Templates de mensagem</CardTitle>
+        <CardTitle className="flex items-center gap-2 text-base"><FileText className="h-4 w-4 text-primary" /> Templates de mensagem</CardTitle>
         <CardDescription>
           O canal oficial (WhatsApp Business Cloud API) exige templates pré-aprovados pela Meta para iniciar
           conversas. Crie aqui, envie para aprovação e use nas etapas de cadência de uma campanha oficial.

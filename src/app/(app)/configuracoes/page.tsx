@@ -1,3 +1,4 @@
+import { MapPin, Sparkles, Sheet as SheetIcon } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getProfile } from "@/lib/credits";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -26,9 +27,9 @@ export default async function ConfiguracoesPage({
       {profile && (
         <Tabs defaultValue="maps">
           <TabsList>
-            <TabsTrigger value="maps">Google Maps</TabsTrigger>
-            <TabsTrigger value="instagram">Apify</TabsTrigger>
-            <TabsTrigger value="sheets">Google Sheets</TabsTrigger>
+            <TabsTrigger value="maps"><MapPin className="h-3.5 w-3.5" /> Google Maps</TabsTrigger>
+            <TabsTrigger value="instagram"><Sparkles className="h-3.5 w-3.5" /> Apify</TabsTrigger>
+            <TabsTrigger value="sheets"><SheetIcon className="h-3.5 w-3.5" /> Google Sheets</TabsTrigger>
           </TabsList>
           <TabsContent value="maps">
             <MapsSettings profile={profile} />

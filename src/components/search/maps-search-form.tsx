@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Search, Download, Loader2, X } from "lucide-react";
+import { Search, Download, Loader2, X, MapPin, SlidersHorizontal } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,18 +11,26 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { FieldGroup, FieldRow } from "@/components/ui/field-group";
+import { MultiSelect, type MultiSelectOption } from "@/components/search/multi-select";
 import { ResultsTable } from "@/components/search/results-table";
 import { NICHOS, NOMES_NICHOS } from "@/lib/data/nichos";
+import { ESTADOS } from "@/lib/data/estados";
 import type { Lead } from "@/lib/types";
 
 const OUTRO = "Outro / Personalizado";
+
+const UF_OPTIONS: MultiSelectOption[] = Object.entries(ESTADOS).map(([sigla, nome]) => ({
+  value: sigla,
+  label: `${sigla} — ${nome}`,
+}));
 
 export function MapsSearchForm() {
   const [nicho, setNicho] = useState(NOMES_NICHOS[0]);
   const [queryCustom, setQueryCustom] = useState("");
   const [subnicho, setSubnicho] = useState("");
-  const [localidadeInput, setLocalidadeInput] = useState("");
-  const [localidades, setLocalidades] = useState<string[]>([]);
+  const [cidadeInput, setCidadeInput] = useState("");
+  const [cidades, setCidades] = useState<string[]>([]);
+  const [estados, setEstados] = useState<string[]>([]);
   const [limite, setLimite] = useState(60);
   const [showPhone, setShowPhone] = useState(true);
   const [showRating, setShowRating] = useState(true);
@@ -37,10 +45,10 @@ export function MapsSearchForm() {
 
   const subnichosDisponiveis = NICHOS[nicho]?.subnichos ?? [];
 
-  function addLocalidade() {
-    const v = localidadeInput.trim();
-    if (v && !localidades.includes(v)) setLocalidades([...localidades, v]);
-    setLocalidadeInput("");
+  function addCidade() {
+    const v = cidadeInput.trim();
+    if (v && !cidades.includes(v)) setCidades([...cidades, v]);
+    setCidadeInput("");
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -48,11 +56,19 @@ export function MapsSearchForm() {
     setError(null);
     setAvisos([]);
 
-    const locs = localidades.length ? localidades : localidadeInput.trim() ? [localidadeInput.trim()] : [];
-    if (!locs.length) {
-      setError("Informe ao menos uma cidade ou estado.");
+    if (!cidades.length && !estados.length) {
+      setError("Informe ao menos uma cidade ou um estado.");
       return;
     }
+    if (cidades.length && estados.length !== 1) {
+      setError(
+        "Selecione vários estados só quando o campo Cidades estiver vazio (busca ampla). Com cidade(s) preenchida(s), escolha exatamente um estado.",
+      );
+      return;
+    }
+    const locs = cidades.length
+      ? cidades.map((c) => `${c}, ${ESTADOS[estados[0]] ?? estados[0]}`)
+      : estados.map((uf) => ESTADOS[uf] ?? uf);
     if (nicho === OUTRO && !queryCustom.trim()) {
       setError("Informe um termo de busca para o nicho personalizado.");
       return;
@@ -99,7 +115,7 @@ export function MapsSearchForm() {
       <form onSubmit={handleSubmit} className="flex flex-col gap-6">
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Nicho e localidade</CardTitle>
+            <CardTitle className="flex items-center gap-2 text-base"><MapPin className="h-4 w-4 text-primary" /> Nicho e localidade</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col gap-5">
             <div className="flex flex-col gap-2">
@@ -134,45 +150,53 @@ export function MapsSearchForm() {
               </div>
             ) : null}
 
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="localidade">Cidades ou estados</Label>
-              <div className="flex gap-2">
-                <Input
-                  id="localidade"
-                  value={localidadeInput}
-                  onChange={(e) => setLocalidadeInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      addLocalidade();
-                    }
-                  }}
-                  placeholder="Ex: São Paulo, SP  ou  SP"
-                />
-                <Button type="button" variant="outline" onClick={addLocalidade}>Adicionar</Button>
-              </div>
-              {localidades.length > 0 && (
-                <div className="flex flex-wrap gap-1.5">
-                  {localidades.map((l) => (
-                    <Badge key={l} variant="secondary" className="gap-1 pr-1">
-                      {l}
-                      <button type="button" onClick={() => setLocalidades(localidades.filter((x) => x !== l))} className="rounded-full hover:bg-border">
-                        <X className="h-3 w-3" />
-                      </button>
-                    </Badge>
-                  ))}
+            <div className="grid gap-5 sm:grid-cols-2">
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="cidade">Cidades (opcional)</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="cidade"
+                    value={cidadeInput}
+                    onChange={(e) => setCidadeInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        addCidade();
+                      }
+                    }}
+                    placeholder="Ex: São Paulo, Campinas, Santos"
+                  />
+                  <Button type="button" variant="outline" onClick={addCidade}>Adicionar</Button>
                 </div>
-              )}
-              <p className="text-xs text-muted-foreground">
-                Pode informar várias localidades — os resultados são divididos entre elas até o limite total.
-              </p>
+                {cidades.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {cidades.map((c) => (
+                      <Badge key={c} variant="secondary" className="gap-1 pr-1">
+                        {c}
+                        <button type="button" onClick={() => setCidades(cidades.filter((x) => x !== c))} className="rounded-full hover:bg-border">
+                          <X className="h-3 w-3" />
+                        </button>
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+                <p className="text-xs text-muted-foreground">Preenchendo cidade(s), escolha exatamente um estado ao lado.</p>
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <Label>Estado (UF)</Label>
+                <MultiSelect options={UF_OPTIONS} selected={estados} onChange={setEstados} placeholder="Buscar estado…" />
+                <p className="text-xs text-muted-foreground">
+                  Sem cidade preenchida, pode selecionar vários estados — busca ampla, sem cidade específica.
+                </p>
+              </div>
             </div>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Opções</CardTitle>
+            <CardTitle className="flex items-center gap-2 text-base"><SlidersHorizontal className="h-4 w-4 text-primary" /> Opções</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
             <FieldGroup>

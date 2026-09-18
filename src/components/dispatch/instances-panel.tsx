@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Plus, Trash2, QrCode, Loader2 } from "lucide-react";
+import { Plus, Trash2, QrCode, Loader2, Smartphone } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -97,7 +97,7 @@ export function InstancesPanel({ instanciasIniciais }: { instanciasIniciais: Wha
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">Instâncias WhatsApp</CardTitle>
+        <CardTitle className="flex items-center gap-2 text-base"><Smartphone className="h-4 w-4 text-primary" /> Instâncias WhatsApp</CardTitle>
         <CardDescription>Números conectados via Evolution API (não-oficial) ou canal oficial (provisionado pelo admin).</CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">

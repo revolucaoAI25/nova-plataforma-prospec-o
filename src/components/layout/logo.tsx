@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 
 /**
- * Marca da Revolução AI. Espera um arquivo em `/public/logo.svg` — até esse
+ * Marca da Revolução AI. Espera um arquivo em `/public/logo.png` — até esse
  * arquivo existir, mostra o monograma "R". A checagem roda via um objeto
  * Image() à parte antes de montar o <img> de verdade, então nunca aparece
  * o ícone de imagem quebrada (nem por um instante) enquanto o arquivo não
@@ -16,7 +16,7 @@ export function Logo({ size = "md", className }: { size?: "sm" | "md" | "lg"; cl
   useEffect(() => {
     const img = new window.Image();
     img.onload = () => setReady(true);
-    img.src = "/logo.svg";
+    img.src = "/logo.png";
   }, []);
 
   const boxSize = size === "lg" ? "h-11 w-11" : "h-8 w-8";
@@ -40,6 +40,6 @@ export function Logo({ size = "md", className }: { size?: "sm" | "md" | "lg"; cl
 
   return (
     // eslint-disable-next-line @next/next/no-img-element
-    <img src="/logo.svg" alt="Revolução AI" className={cn("shrink-0 object-contain", boxSize, className)} />
+    <img src="/logo.png" alt="Revolução AI" className={cn("shrink-0 object-contain", boxSize, className)} />
   );
 }

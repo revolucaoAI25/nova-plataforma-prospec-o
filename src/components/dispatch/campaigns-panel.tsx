@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Plus, ArrowRight } from "lucide-react";
+import { Plus, ArrowRight, Megaphone } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -56,7 +56,7 @@ export function CampaignsPanel({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">Campanhas</CardTitle>
+        <CardTitle className="flex items-center gap-2 text-base"><Megaphone className="h-4 w-4 text-primary" /> Campanhas</CardTitle>
         <CardDescription>Cadência de mensagens, alvos e ritmo de envio por campanha.</CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">

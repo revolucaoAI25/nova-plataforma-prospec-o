@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Search, Download, Loader2 } from "lucide-react";
+import { Search, Download, Loader2, Building2, ListFilter, Phone, MapPinned } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -150,10 +150,10 @@ export function CnpjSearchForm() {
           <CardContent className="pt-6">
             <Tabs defaultValue="setor">
               <TabsList className="w-full justify-start overflow-x-auto sm:w-auto">
-                <TabsTrigger value="setor">Setor e localização</TabsTrigger>
-                <TabsTrigger value="empresa">Filtros da empresa</TabsTrigger>
-                <TabsTrigger value="contato">Contato</TabsTrigger>
-                <TabsTrigger value="maps">Google Maps e limite</TabsTrigger>
+                <TabsTrigger value="setor"><Building2 className="h-3.5 w-3.5" /> Setor e localização</TabsTrigger>
+                <TabsTrigger value="empresa"><ListFilter className="h-3.5 w-3.5" /> Filtros da empresa</TabsTrigger>
+                <TabsTrigger value="contato"><Phone className="h-3.5 w-3.5" /> Contato</TabsTrigger>
+                <TabsTrigger value="maps"><MapPinned className="h-3.5 w-3.5" /> Google Maps e limite</TabsTrigger>
               </TabsList>
 
               <TabsContent value="setor" className="flex flex-col gap-5">

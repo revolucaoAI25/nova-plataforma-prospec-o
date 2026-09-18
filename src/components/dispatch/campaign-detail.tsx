@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Trash2, Play, Pause, UserPlus, Sheet as SheetIcon } from "lucide-react";
+import { Plus, Trash2, Play, Pause, UserPlus, Sheet as SheetIcon, Activity, ListOrdered, Users } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -271,7 +271,7 @@ export function CampaignDetail({
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
-            <CardTitle className="text-base">Status</CardTitle>
+            <CardTitle className="flex items-center gap-2 text-base"><Activity className="h-4 w-4 text-primary" /> Status</CardTitle>
             <CardDescription>Instância: {instancia?.nome ?? "—"} {canalOficial && "· Canal oficial"}</CardDescription>
           </div>
           <div className="flex items-center gap-2">
@@ -292,7 +292,7 @@ export function CampaignDetail({
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Cadência de mensagens</CardTitle>
+          <CardTitle className="flex items-center gap-2 text-base"><ListOrdered className="h-4 w-4 text-primary" /> Cadência de mensagens</CardTitle>
           <CardDescription>Cada etapa dispara após o atraso configurado desde a etapa anterior (ou desde a inscrição, na 1ª).</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
@@ -363,7 +363,7 @@ export function CampaignDetail({
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Inscrever alvos</CardTitle>
+          <CardTitle className="flex items-center gap-2 text-base"><UserPlus className="h-4 w-4 text-primary" /> Inscrever alvos</CardTitle>
           <CardDescription>De uma pesquisa do histórico, ou colando uma lista (uma linha por lead: nome,telefone).</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-3">
@@ -399,7 +399,7 @@ export function CampaignDetail({
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Alvos inscritos</CardTitle>
+          <CardTitle className="flex items-center gap-2 text-base"><Users className="h-4 w-4 text-primary" /> Alvos inscritos</CardTitle>
           <CardDescription>{targetsIniciais.length} no total.</CardDescription>
         </CardHeader>
         <CardContent>

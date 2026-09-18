@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { MapPin } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,7 +40,7 @@ export function MapsSettings({ profile }: { profile: Profile }) {
     <form onSubmit={handleSubmit} className="flex flex-col gap-6">
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Google Maps</CardTitle>
+          <CardTitle className="flex items-center gap-2 text-base"><MapPin className="h-4 w-4 text-primary" /> Google Maps</CardTitle>
           <CardDescription>
             {contaTeste
               ? "Contas de teste sempre usam a chave compartilhada da plataforma — não é possível configurar uma chave própria."

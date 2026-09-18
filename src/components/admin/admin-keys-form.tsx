@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Clock, Building2, MapPin, Sparkles } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -46,7 +47,7 @@ export function AdminKeysForm({ userId, profile }: { userId: string; profile: Pr
     <form onSubmit={handleSubmit} className="flex flex-col gap-6">
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Conta de teste</CardTitle>
+          <CardTitle className="flex items-center gap-2 text-base"><Clock className="h-4 w-4 text-primary" /> Conta de teste</CardTitle>
           <CardDescription>Créditos pré-carregados e prazo de validade — bloqueia o acesso automaticamente ao expirar.</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-3">
@@ -64,7 +65,7 @@ export function AdminKeysForm({ userId, profile }: { userId: string; profile: Pr
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Casa dos Dados (CNPJ)</CardTitle>
+          <CardTitle className="flex items-center gap-2 text-base"><Building2 className="h-4 w-4 text-primary" /> Casa dos Dados (CNPJ)</CardTitle>
           <CardDescription>Usada quando o usuário não tem uma chave própria configurada.</CardDescription>
         </CardHeader>
         <CardContent>
@@ -77,7 +78,7 @@ export function AdminKeysForm({ userId, profile }: { userId: string; profile: Pr
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Pool de chaves Google Maps</CardTitle>
+          <CardTitle className="flex items-center gap-2 text-base"><MapPin className="h-4 w-4 text-primary" /> Pool de chaves Google Maps</CardTitle>
           <CardDescription>
             Rodízio automático mensal entre as chaves abaixo. Sem nenhuma chave, o usuário usa a chave padrão da
             plataforma. Contas de teste usam o pool compartilhado da plataforma — não é gerenciado aqui.
@@ -90,7 +91,7 @@ export function AdminKeysForm({ userId, profile }: { userId: string; profile: Pr
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Apify (Instagram / fallback de Maps)</CardTitle>
+          <CardTitle className="flex items-center gap-2 text-base"><Sparkles className="h-4 w-4 text-primary" /> Apify (Instagram / fallback de Maps)</CardTitle>
           <CardDescription>Chave administrada e pool com rodízio, mesma lógica do Google Maps.</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">

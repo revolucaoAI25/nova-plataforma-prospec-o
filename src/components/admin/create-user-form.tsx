@@ -58,7 +58,7 @@ export function CreateUserForm() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">Criar novo usuário</CardTitle>
+        <CardTitle className="flex items-center gap-2 text-base"><UserPlus className="h-4 w-4 text-primary" /> Criar novo usuário</CardTitle>
         <CardDescription>Outros campos de crédito e permissões ficam editáveis na tabela abaixo.</CardDescription>
       </CardHeader>
       <CardContent>
