@@ -1,3 +1,4 @@
+import "@/lib/supabase/websocket-polyfill";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/database.types";
 
