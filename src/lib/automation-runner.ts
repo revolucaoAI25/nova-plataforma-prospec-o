@@ -106,10 +106,14 @@ export async function executarAutomacao(sb: SupabaseClient, auto: AutomationRow)
         const stats = { text_search_calls: 0, contact_data_calls: 0 };
         try {
           resultados = await buscarMaps({ ...params, apiKey: resolucaoMaps.key, stats });
-          const contactDataCalls = params.showPhone ? resultados.length : stats.contact_data_calls;
-          await registrarUsoChaveMaps(sb, auto.user_id, profile, resolucaoMaps, contactDataCalls, stats.text_search_calls);
+          // Contador visível sempre pelo total de resultados, igual ao
+          // produto atual (scheduler.py: `registrar_uso_maps(_pool_sched,
+          // _pool_idx, len(resultados))`, sem depender de showPhone).
+          await registrarUsoChaveMaps(sb, auto.user_id, profile, resolucaoMaps, resultados.length, stats.text_search_calls);
         } catch (e) {
-          await registrarUsoChaveMaps(sb, auto.user_id, profile, resolucaoMaps, stats.contact_data_calls, stats.text_search_calls);
+          // Uso parcial NÃO é registrado quando cai no fallback Apify — mesmo
+          // comportamento do scheduler original (só grava uso no caminho
+          // 100% bem-sucedido só-Maps).
           if (e instanceof QuotaExceededError && resolucaoApify.key) {
             usouApify = true;
             resultados = await buscarApifyMaps({ ...params, apiKey: resolucaoApify.key });

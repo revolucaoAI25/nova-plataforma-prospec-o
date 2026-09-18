@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { getProfile, debitarCreditos } from "@/lib/credits";
-import { resolverChaveMaps, registrarUsoChaveMaps } from "@/lib/maps-key";
+import { resolverChaveMaps, resolverChaveMapsOverflow, registrarUsoChaveMaps } from "@/lib/maps-key";
 import {
   buscarCnpj,
   removerDuplicadosLote,
@@ -148,7 +148,14 @@ export async function POST(request: Request) {
   const usarMaps = filtros.mapsModo !== "nao_usar" && resultados.length > 0;
 
   if (usarMaps) {
-    const resolucao = await resolverChaveMaps(profile);
+    let resolucao = await resolverChaveMaps(profile);
+    // Enriquecimento de CNPJ não tem fallback Apify (só a busca direta de
+    // Maps tem) — quando o pool esgota, tenta estourar o limite direto,
+    // igual ao produto atual (app.py, enriquecimento embutido na busca CNPJ).
+    if (resolucao.bloqueado || !resolucao.key) {
+      const overflow = await resolverChaveMapsOverflow(profile);
+      if (overflow.key) resolucao = overflow;
+    }
     if (resolucao.bloqueado) {
       avisoMaps =
         "Todas as chaves Google Maps atingiram o limite mensal. Você optou por pausar a busca nesse caso — mude isso em Configurações se quiser continuar além da cota. Os leads de CNPJ já buscados foram mantidos, só a etapa do Maps não rodou.";

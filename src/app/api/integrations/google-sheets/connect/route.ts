@@ -15,7 +15,9 @@ export async function GET() {
   if (!user) return NextResponse.redirect(new URL("/login", process.env.NEXT_PUBLIC_APP_URL));
 
   if (!oauthDisponivel()) {
-    return NextResponse.json({ error: "Integração com Google Sheets não configurada nesta plataforma." }, { status: 501 });
+    const settingsUrl = new URL("/configuracoes", process.env.NEXT_PUBLIC_APP_URL);
+    settingsUrl.searchParams.set("sheets", "nao_configurado");
+    return NextResponse.redirect(settingsUrl);
   }
 
   const state = randomBytes(24).toString("hex");

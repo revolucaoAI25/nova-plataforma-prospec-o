@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { getProfile, debitarCreditos } from "@/lib/credits";
-import { resolverChaveApify } from "@/lib/apify-key";
+import { resolverChaveApify, registrarUsoChaveApify } from "@/lib/apify-key";
 import { buscarInstagram } from "@/lib/integrations/instagram";
 import { salvarPesquisa, salvarLeads, buscarInstagramIdsExistentes } from "@/lib/db";
 import { autoExportarSheetsSeConfigurado } from "@/lib/auto-export";
@@ -87,6 +87,12 @@ export async function POST(request: Request) {
 
   if (profile.instagram_credits_enabled) {
     await debitarCreditos(supabase, user.id, "instagram_credits", resultados.length);
+  }
+  // Registra uso no pool Apify quando a chave usada veio do pool — sem
+  // isso o rodízio nunca detectava uma chave como esgotada (mesma lógica
+  // de app.py, aba Instagram: `if _apify_pool_idx >= 0: registrar_uso_apify(...)`).
+  if (resolucao.source === "pool") {
+    await registrarUsoChaveApify(supabase, user.id, profile, resolucao, resultados.length);
   }
 
   const avisoSheets = await autoExportarSheetsSeConfigurado(supabase, user.id, searchId);

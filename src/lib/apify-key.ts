@@ -13,6 +13,15 @@ export interface ChaveApifyResolvida {
  * Resolve qual chave Apify usar: chave própria > pool administrado (com
  * rodízio) > chave administrada individualmente > chave padrão da
  * plataforma. Usada por Instagram e pelo fallback de Google Maps → Apify.
+ *
+ * O overflow do pool (estourar o limite mensal da última chave) respeita a
+ * mesma preferência global "ao esgotar o limite" usada pelo Maps
+ * (maps_pausar_ao_esgotar — a própria tela de Configurações já avisa que
+ * vale "para Google Maps e Apify juntos"). Diferente do Maps, o Apify nunca
+ * fica "bloqueado" de vez: quando o pool esgota e a preferência é pausar,
+ * simplesmente cai pra chave administrada/padrão da plataforma abaixo, tal
+ * qual o produto atual faz na aba Instagram (`if not _apify_key: _apify_key
+ * = _s("APIFY_API_KEY")`, sem checar pausar_ao_esgotar nesse fallback final).
  */
 export function resolverChaveApify(profile: Profile): ChaveApifyResolvida {
   if (profile.apify_api_key) {
@@ -22,9 +31,12 @@ export function resolverChaveApify(profile: Profile): ChaveApifyResolvida {
   if (profile.apify_keys_pool?.length) {
     const r = selecionarChaveApify(profile.apify_keys_pool);
     if (r.key) return { key: r.key, source: "pool", poolIdx: r.index, bloqueado: false };
-    const overflow = selecionarChaveApify(profile.apify_keys_pool, true);
-    if (overflow.key) return { key: overflow.key, source: "pool", poolIdx: overflow.index, bloqueado: false };
-    return { key: "", source: "pool", poolIdx: -1, bloqueado: true };
+    if (!profile.maps_pausar_ao_esgotar) {
+      const overflow = selecionarChaveApify(profile.apify_keys_pool, true);
+      if (overflow.key) return { key: overflow.key, source: "pool", poolIdx: overflow.index, bloqueado: false };
+    }
+    // Pool esgotado (ou overflow bloqueado pela preferência) — cai para a
+    // chave administrada/padrão abaixo em vez de travar a busca.
   }
 
   if (profile.apify_api_key_admin) {

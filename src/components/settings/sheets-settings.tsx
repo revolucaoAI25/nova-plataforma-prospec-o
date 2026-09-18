@@ -11,7 +11,15 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@
 import { FieldGroup, FieldRow, FieldGroupLabel } from "@/components/ui/field-group";
 import type { Profile, SheetConfig } from "@/lib/database.types";
 
-export function SheetsSettings({ profile, initialFeedback }: { profile: Profile; initialFeedback?: string | null }) {
+export function SheetsSettings({
+  profile,
+  initialFeedback,
+  oauthConfigured,
+}: {
+  profile: Profile;
+  initialFeedback?: string | null;
+  oauthConfigured: boolean;
+}) {
   const conectado = Boolean(profile.google_sheets_creds?.oauth);
   const [planilhas, setPlanilhas] = useState<SheetConfig[]>(profile.google_sheets_creds?.planilhas || []);
   const [autoExport, setAutoExport] = useState(profile.google_sheets_creds?.auto_export || false);
@@ -21,7 +29,13 @@ export function SheetsSettings({ profile, initialFeedback }: { profile: Profile;
   const [loadingList, setLoadingList] = useState(conectado);
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState<{ ok: boolean; msg: string } | null>(
-    initialFeedback === "conectado" ? { ok: true, msg: "Conta Google conectada com sucesso." } : initialFeedback === "erro" ? { ok: false, msg: "Não foi possível conectar sua conta Google." } : null,
+    initialFeedback === "conectado"
+      ? { ok: true, msg: "Conta Google conectada com sucesso." }
+      : initialFeedback === "nao_configurado"
+        ? { ok: false, msg: "Integração com Google Sheets não configurada nesta plataforma (faltam GOOGLE_CLIENT_ID/GOOGLE_CLIENT_SECRET)." }
+        : initialFeedback === "erro"
+          ? { ok: false, msg: "Não foi possível conectar sua conta Google." }
+          : null,
   );
 
   useEffect(() => {
@@ -95,7 +109,17 @@ export function SheetsSettings({ profile, initialFeedback }: { profile: Profile;
             </Alert>
           )}
 
-          {!conectado ? (
+          {!oauthConfigured ? (
+            <Alert>
+              <AlertDescription>
+                Integração com Google Sheets ainda não configurada nesta plataforma. Peça ao administrador para
+                adicionar <code>GOOGLE_CLIENT_ID</code>, <code>GOOGLE_CLIENT_SECRET</code> e{" "}
+                <code>NEXT_PUBLIC_APP_URL</code> nas variáveis de ambiente (Google Cloud Console → APIs e serviços →
+                Credenciais → ID do cliente OAuth 2.0, com o URI de redirecionamento{" "}
+                <code>{"{NEXT_PUBLIC_APP_URL}"}/api/integrations/google-sheets/callback</code> autorizado).
+              </AlertDescription>
+            </Alert>
+          ) : !conectado ? (
             <Button asChild className="self-start">
               <a href="/api/integrations/google-sheets/connect">
                 <Link2 className="h-4 w-4" /> Conectar conta Google

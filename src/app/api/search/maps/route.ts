@@ -43,16 +43,17 @@ export async function POST(request: Request) {
   const profile = await getProfile(supabase, user.id);
   if (!profile) return NextResponse.json({ error: "Perfil não encontrado." }, { status: 404 });
 
-  let avisoSaldo: string | null = null;
-  let limite = filtros.limite;
+  // Diferente do CNPJ (que reduz o limite ao saldo disponível), a busca
+  // Maps bloqueia de vez quando o saldo é insuficiente — mesmo comportamento
+  // do produto atual (app.py, `_maps_err` antes do `buscar_btn`).
+  const limite = filtros.limite;
   if (profile.maps_credits_enabled) {
     const saldo = profile.maps_credits;
-    if (saldo <= 0) {
-      return NextResponse.json({ error: "Você não tem créditos Google Maps disponíveis. Solicite mais ao administrador." }, { status: 402 });
-    }
     if (saldo < limite) {
-      avisoSaldo = `Você tem ${saldo} créditos Maps — a busca considerou esse teto em vez dos ${limite} solicitados.`;
-      limite = saldo;
+      return NextResponse.json(
+        { error: `Créditos Maps insuficientes. Você tem ${saldo} créditos e a busca requer ${limite}. Solicite mais créditos ao administrador.` },
+        { status: 402 },
+      );
     }
   }
 
@@ -103,7 +104,11 @@ export async function POST(request: Request) {
           stats,
         });
       } catch (e) {
-        await registrarUsoChaveMaps(supabase, user.id, profile, resolucao, stats.contact_data_calls, stats.text_search_calls);
+        // Uso parcial de Maps NÃO é registrado no pool quando cai no fallback
+        // Apify — mesmo comportamento do produto atual (app.py só chama
+        // registrar_uso_maps no caminho 100% bem-sucedido só-Maps; o
+        // contador do pool não é penalizado por uma tentativa que acabou
+        // resolvida por outro recurso).
         if (e instanceof QuotaExceededError && apifyResolucao.key) {
           usouApify = true;
           resultados = await buscarApifyMaps({
@@ -146,8 +151,10 @@ export async function POST(request: Request) {
   }
 
   if (!usouApify) {
-    const contactDataCalls = filtros.showPhone ? resultados.length : stats.contact_data_calls;
-    await registrarUsoChaveMaps(supabase, user.id, profile, resolucao, contactDataCalls, stats.text_search_calls);
+    // Contador visível sempre pelo total de resultados (mesma fórmula do
+    // produto atual, app.py: `registrar_uso_maps(_pool_ativo, _pool_key_idx,
+    // len(res), ...)` — não é condicionado a showPhone).
+    await registrarUsoChaveMaps(supabase, user.id, profile, resolucao, resultados.length, stats.text_search_calls);
   } else if (apifyResolucao.source === "pool") {
     await registrarUsoChaveApify(supabase, user.id, profile, apifyResolucao, resultados.length);
   }
@@ -187,6 +194,6 @@ export async function POST(request: Request) {
     searchId,
     total: resultados.length,
     leads: resultados,
-    avisos: [avisoSaldo, avisoApify, avisoHistorico, avisoSheets].filter(Boolean),
+    avisos: [avisoApify, avisoHistorico, avisoSheets].filter(Boolean),
   });
 }

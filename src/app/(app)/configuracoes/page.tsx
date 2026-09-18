@@ -6,6 +6,7 @@ import { MapsSettings } from "@/components/settings/maps-settings";
 import { ApifySettings } from "@/components/settings/apify-settings";
 import { SheetsSettings } from "@/components/settings/sheets-settings";
 import { PageHeader } from "@/components/layout/page-header";
+import { oauthDisponivel } from "@/lib/integrations/google-sheets";
 
 export const metadata = { title: "Configurações" };
 
@@ -38,7 +39,7 @@ export default async function ConfiguracoesPage({
             <ApifySettings profile={profile} />
           </TabsContent>
           <TabsContent value="sheets">
-            <SheetsSettings profile={profile} initialFeedback={sheets} />
+            <SheetsSettings profile={profile} initialFeedback={sheets} oauthConfigured={oauthDisponivel()} />
           </TabsContent>
         </Tabs>
       )}
