@@ -2,10 +2,21 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 
+const poolEntrySchema = z.object({
+  key: z.string(),
+  nickname: z.string().optional(),
+  limit: z.number(),
+  usage: z.number(),
+  text_search_usage: z.number().optional(),
+  month: z.string(),
+});
+
 const bodySchema = z.object({
   google_maps_api_key: z.string().nullable().optional(),
   maps_pausar_ao_esgotar: z.boolean().optional(),
+  maps_keys_pool: z.array(poolEntrySchema).optional(),
   apify_api_key: z.string().nullable().optional(),
+  apify_keys_pool: z.array(poolEntrySchema).optional(),
 });
 
 export async function PATCH(request: Request) {
@@ -32,8 +43,20 @@ export async function PATCH(request: Request) {
   if (parsed.data.maps_pausar_ao_esgotar !== undefined) {
     patch.maps_pausar_ao_esgotar = parsed.data.maps_pausar_ao_esgotar;
   }
+  if (parsed.data.maps_keys_pool !== undefined) {
+    if (profile?.conta_teste) {
+      return NextResponse.json({ error: "Contas de teste usam o pool compartilhado da plataforma." }, { status: 403 });
+    }
+    patch.maps_keys_pool = parsed.data.maps_keys_pool;
+  }
   if (parsed.data.apify_api_key !== undefined) {
     patch.apify_api_key = parsed.data.apify_api_key || null;
+  }
+  if (parsed.data.apify_keys_pool !== undefined) {
+    if (profile?.conta_teste) {
+      return NextResponse.json({ error: "Contas de teste usam a chave Apify compartilhada da plataforma." }, { status: 403 });
+    }
+    patch.apify_keys_pool = parsed.data.apify_keys_pool;
   }
 
   const { error } = await supabase.from("profiles").update(patch).eq("id", user.id);

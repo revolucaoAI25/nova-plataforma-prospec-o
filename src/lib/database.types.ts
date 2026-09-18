@@ -14,6 +14,7 @@ export type Json =
 
 export interface ApiKeyPoolEntry {
   key: string;
+  nickname?: string;
   limit: number;
   usage: number;
   text_search_usage?: number;
@@ -55,6 +56,7 @@ export interface Profile {
   cdd_api_key: string | null;
   google_maps_api_key: string | null;
   cdd_api_key_admin: string | null;
+  maps_api_key_admin: string | null;
   maps_keys_pool: MapsKeyPoolEntry[];
   maps_pausar_ao_esgotar: boolean;
 

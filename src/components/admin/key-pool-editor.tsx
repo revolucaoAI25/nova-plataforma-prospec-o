@@ -25,7 +25,7 @@ export function KeyPoolEditor({
   keyPlaceholder?: string;
 }) {
   function addRow() {
-    onChange([...value, { key: "", limit: 900, usage: 0, text_search_usage: 0, month: mesAtual() }]);
+    onChange([...value, { key: "", nickname: "", limit: 900, usage: 0, text_search_usage: 0, month: mesAtual() }]);
   }
   function removeRow(idx: number) {
     onChange(value.filter((_, i) => i !== idx));
@@ -43,8 +43,17 @@ export function KeyPoolEditor({
       )}
       {value.map((row, idx) => (
         <div key={idx} className="flex flex-col gap-3 rounded-xl border border-border p-3 sm:flex-row sm:items-end">
+          <div className="flex w-full flex-col gap-1.5 sm:w-32">
+            <Label htmlFor={`pool-nick-${idx}`}>Apelido</Label>
+            <Input
+              id={`pool-nick-${idx}`}
+              value={row.nickname ?? ""}
+              onChange={(e) => updateRow(idx, { nickname: e.target.value })}
+              placeholder={`Chave ${idx + 1}`}
+            />
+          </div>
           <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-            <Label htmlFor={`pool-key-${idx}`}>Chave {idx + 1}</Label>
+            <Label htmlFor={`pool-key-${idx}`}>Chave API</Label>
             <Input
               id={`pool-key-${idx}`}
               type="password"

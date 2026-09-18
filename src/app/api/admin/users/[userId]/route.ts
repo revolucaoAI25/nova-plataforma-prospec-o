@@ -4,7 +4,14 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/require-admin";
 
-const poolEntrySchema = z.object({ key: z.string(), limit: z.number(), usage: z.number(), month: z.string() });
+const poolEntrySchema = z.object({
+  key: z.string(),
+  nickname: z.string().optional(),
+  limit: z.number(),
+  usage: z.number(),
+  text_search_usage: z.number().optional(),
+  month: z.string(),
+});
 
 const patchSchema = z.object({
   role: z.enum(["user", "admin"]).optional(),
@@ -14,6 +21,7 @@ const patchSchema = z.object({
   monthly_maps_credits: z.number().int().min(0).optional(),
   maps_credits_enabled: z.boolean().optional(),
   cdd_api_key_admin: z.string().nullable().optional(),
+  maps_api_key_admin: z.string().nullable().optional(),
   maps_keys_pool: z.array(poolEntrySchema).optional(),
   apify_api_key_admin: z.string().nullable().optional(),
   apify_keys_pool: z.array(poolEntrySchema).optional(),

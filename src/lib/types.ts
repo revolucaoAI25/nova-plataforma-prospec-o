@@ -39,6 +39,10 @@ export interface Lead {
 
   instagram_id: string;
   username: string;
+  nome_completo: string;
+  bio: string;
+  followers_count: number | string;
+  is_business: boolean;
 }
 
 export function emptyLead(): Lead {
@@ -51,7 +55,8 @@ export function emptyLead(): Lead {
     simples_optante: "", mei_optante: "", situacao_especial: "",
     socio_principal: "", porte: "", nicho_busca: "", subnicho_busca: "",
     cidade_busca: "", estado_busca: "", comentario: "", fonte: "",
-    instagram_id: "", username: "",
+    instagram_id: "", username: "", nome_completo: "", bio: "",
+    followers_count: "", is_business: false,
   };
 }
 

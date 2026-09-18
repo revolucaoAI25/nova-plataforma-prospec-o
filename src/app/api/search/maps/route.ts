@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { getProfile, debitarCreditos } from "@/lib/credits";
-import { resolverChaveMaps, registrarUsoChaveMaps } from "@/lib/maps-key";
+import { resolverChaveMaps, resolverChaveMapsOverflow, registrarUsoChaveMaps } from "@/lib/maps-key";
 import { resolverChaveApify, registrarUsoChaveApify } from "@/lib/apify-key";
 import { buscarMaps, QuotaExceededError, MapsAccessError, type Stats } from "@/lib/integrations/google-maps";
 import { buscarApifyMaps } from "@/lib/integrations/apify-maps";
@@ -56,18 +56,24 @@ export async function POST(request: Request) {
     }
   }
 
-  const resolucao = await resolverChaveMaps(profile);
+  let resolucao = await resolverChaveMaps(profile);
   const apifyResolucao = resolverChaveApify(profile);
   // Fallback Apify: só bloqueia de vez se o pool Maps esgotou E não há
   // nenhuma chave Apify disponível — mesma regra do scheduler de automações.
+  // Só depois de Apify também falhar é que se tenta estourar o limite do
+  // pool Maps (overflow), igual à ordem do produto atual.
   if ((resolucao.bloqueado || !resolucao.key) && !apifyResolucao.key) {
-    if (resolucao.bloqueado) {
+    const overflow = await resolverChaveMapsOverflow(profile);
+    if (overflow.key) {
+      resolucao = overflow;
+    } else {
       return NextResponse.json(
-        { error: "Todas as chaves Google Maps atingiram o limite mensal. Mude a preferência em Configurações se quiser continuar além da cota." },
-        { status: 402 },
+        resolucao.bloqueado
+          ? { error: "Todas as chaves Google Maps atingiram o limite mensal. Mude a preferência em Configurações se quiser continuar além da cota." }
+          : { error: "Nenhuma chave Google Maps ou Apify configurada." },
+        { status: resolucao.bloqueado ? 402 : 400 },
       );
     }
-    return NextResponse.json({ error: "Nenhuma chave Google Maps ou Apify configurada." }, { status: 400 });
   }
 
   let excludeTels = new Set<string>();
@@ -165,9 +171,12 @@ export async function POST(request: Request) {
     avisoHistorico = "Os resultados foram encontrados, mas não foi possível salvá-los no Histórico. Exporte agora antes de sair desta tela.";
   }
 
-  // Só cobra créditos Maps da plataforma se o Google Maps foi de fato usado —
-  // no fallback Apify (chave pessoal do usuário), o custo é dele, não da plataforma.
-  if (profile.maps_credits_enabled && !usouApify) {
+  // Cobra créditos Maps da plataforma sempre que o Google Maps foi usado OU
+  // quando o fallback Apify veio do pool administrado pela plataforma — só
+  // NÃO cobra quando o fallback Apify usou a chave pessoal do usuário (nesse
+  // caso o custo é dele, não da plataforma). Mesma regra de app.py
+  // (`_apify_platform_used`), que fica implícita aqui em `source === "pool"`.
+  if (profile.maps_credits_enabled && resultados.length > 0 && (!usouApify || apifyResolucao.source === "pool")) {
     await debitarCreditos(supabase, user.id, "maps_credits", resultados.length);
   }
 

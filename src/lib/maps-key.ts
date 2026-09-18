@@ -5,7 +5,7 @@ import type { MapsKeyPoolEntry, Profile } from "@/lib/database.types";
 
 export interface ChaveMapsResolvida {
   key: string;
-  source: "own" | "pool" | "trial" | "env" | "none";
+  source: "own" | "pool" | "trial" | "admin" | "env" | "none";
   poolIdx: number;
   bloqueado: boolean;
 }
@@ -23,11 +23,18 @@ async function salvarPoolTeste(pool: MapsKeyPoolEntry[]): Promise<void> {
 
 /**
  * Resolve qual chave Google Maps usar para este usuário, na mesma ordem de
- * prioridade do produto atual: contas de teste sempre usam o pool
- * compartilhado da plataforma (nunca configuram chave própria); contas
- * normais usam chave própria > pool administrado (com rodízio) > chave
- * padrão da plataforma. Quando o pool esgota, respeita a preferência
- * "pausar ao esgotar" (maps_pausar_ao_esgotar).
+ * prioridade do produto atual (app.py `pagina_busca`, linhas ~1116-1352):
+ * contas de teste sempre usam o pool compartilhado da plataforma (nunca
+ * configuram chave própria). Contas normais: o POOL (com rodízio) tem
+ * prioridade sempre que tiver ao menos uma chave disponível dentro do mês —
+ * a chave única só é usada como fallback quando o pool está vazio ou todas
+ * as chaves do pool já esgotaram o limite do mês. Essa chave única também
+ * depende do modo da conta: `maps_api_key_admin` quando `maps_credits_enabled`
+ * (chave/pool administrados pela plataforma), senão `google_maps_api_key`
+ * (chave própria do usuário). O overflow do pool (permitirOverflow) só entra
+ * como penúltimo recurso — ver `resolverChaveMapsOverflow` abaixo, chamado
+ * pelo caller somente depois de também esgotar o fallback Apify, igual ao
+ * produto atual faz antes de estourar a cota normal do pool.
  */
 export async function resolverChaveMaps(profile: Profile): Promise<ChaveMapsResolvida> {
   if (profile.conta_teste) {
@@ -37,23 +44,25 @@ export async function resolverChaveMaps(profile: Profile): Promise<ChaveMapsReso
     return { key: "", source: "trial", poolIdx: -1, bloqueado: true };
   }
 
-  if (profile.google_maps_api_key) {
-    return { key: profile.google_maps_api_key, source: "own", poolIdx: -1, bloqueado: false };
-  }
+  const chaveUnica = profile.maps_credits_enabled
+    ? profile.maps_api_key_admin || ""
+    : profile.google_maps_api_key || "";
+  const sourceUnica: ChaveMapsResolvida["source"] = profile.maps_credits_enabled ? "admin" : "own";
 
   if (profile.maps_keys_pool?.length) {
     const primeira = selecionarChaveMaps(profile.maps_keys_pool);
     if (primeira.key) {
       return { key: primeira.key, source: "pool", poolIdx: primeira.index, bloqueado: false };
     }
-    if (profile.maps_pausar_ao_esgotar) {
-      return { key: "", source: "pool", poolIdx: -1, bloqueado: true };
-    }
-    const overflow = selecionarChaveMaps(profile.maps_keys_pool, true);
-    if (overflow.key) {
-      return { key: overflow.key, source: "pool", poolIdx: overflow.index, bloqueado: false };
+    // Pool esgotado neste mês: cai na chave única, se houver uma configurada.
+    if (chaveUnica) {
+      return { key: chaveUnica, source: sourceUnica, poolIdx: -1, bloqueado: false };
     }
     return { key: "", source: "pool", poolIdx: -1, bloqueado: true };
+  }
+
+  if (chaveUnica) {
+    return { key: chaveUnica, source: sourceUnica, poolIdx: -1, bloqueado: false };
   }
 
   if (process.env.GOOGLE_MAPS_API_KEY) {
@@ -61,6 +70,23 @@ export async function resolverChaveMaps(profile: Profile): Promise<ChaveMapsReso
   }
 
   return { key: "", source: "none", poolIdx: -1, bloqueado: false };
+}
+
+/**
+ * Último recurso quando o pool esgotou E não há chave única configurada E o
+ * fallback Apify também não tem chave disponível: se o usuário não optou por
+ * "pausar ao esgotar" (maps_pausar_ao_esgotar), estoura o limite mensal
+ * usando a última chave do pool mesmo assim, em vez de falhar a busca. Só
+ * deve ser chamado pelo caller depois de checar `resolverChaveApify` — mesma
+ * ordem do produto atual (Apify tem prioridade sobre estourar o pool).
+ */
+export async function resolverChaveMapsOverflow(profile: Profile): Promise<ChaveMapsResolvida> {
+  if (profile.maps_pausar_ao_esgotar) return { key: "", source: "pool", poolIdx: -1, bloqueado: true };
+  const pool = profile.conta_teste ? await obterPoolTeste() : profile.maps_keys_pool;
+  if (!pool?.length) return { key: "", source: "pool", poolIdx: -1, bloqueado: true };
+  const overflow = selecionarChaveMaps(pool, true);
+  if (!overflow.key) return { key: "", source: "pool", poolIdx: -1, bloqueado: true };
+  return { key: overflow.key, source: profile.conta_teste ? "trial" : "pool", poolIdx: overflow.index, bloqueado: false };
 }
 
 /** Persiste o uso da chave no pool (do usuário ou compartilhado de teste), se a resolução veio de um pool. */

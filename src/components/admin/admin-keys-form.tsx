@@ -14,6 +14,7 @@ import type { ApiKeyPoolEntry, Profile } from "@/lib/database.types";
 
 export function AdminKeysForm({ userId, profile }: { userId: string; profile: Profile }) {
   const [cddKey, setCddKey] = useState(profile.cdd_api_key_admin || "");
+  const [mapsKey, setMapsKey] = useState(profile.maps_api_key_admin || "");
   const [mapsPool, setMapsPool] = useState<ApiKeyPoolEntry[]>(profile.maps_keys_pool ?? []);
   const [apifyKey, setApifyKey] = useState(profile.apify_api_key_admin || "");
   const [apifyPool, setApifyPool] = useState<ApiKeyPoolEntry[]>(profile.apify_keys_pool ?? []);
@@ -32,6 +33,7 @@ export function AdminKeysForm({ userId, profile }: { userId: string; profile: Pr
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         cdd_api_key_admin: cddKey || null,
+        maps_api_key_admin: mapsKey || null,
         maps_keys_pool: mapsPool.filter((k) => k.key.trim()),
         apify_api_key_admin: apifyKey || null,
         apify_keys_pool: apifyPool.filter((k) => k.key.trim()),
@@ -80,12 +82,20 @@ export function AdminKeysForm({ userId, profile }: { userId: string; profile: Pr
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base"><MapPin className="h-4 w-4 text-primary" /> Pool de chaves Google Maps</CardTitle>
           <CardDescription>
-            Rodízio automático mensal entre as chaves abaixo. Sem nenhuma chave, o usuário usa a chave padrão da
-            plataforma. Contas de teste usam o pool compartilhado da plataforma — não é gerenciado aqui.
+            Rodízio automático mensal entre as chaves abaixo — tem prioridade sobre a chave administrada única de
+            baixo quando há pelo menos uma chave disponível no pool. Contas de teste usam o pool compartilhado da
+            plataforma — não é gerenciado aqui.
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <KeyPoolEditor value={mapsPool} onChange={setMapsPool} keyPlaceholder="AIza…" />
+        <CardContent className="flex flex-col gap-4">
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="maps-key-admin">Chave administrada única (fallback)</Label>
+            <Input id="maps-key-admin" type="password" value={mapsKey} onChange={(e) => setMapsKey(e.target.value)} placeholder="Deixe vazio para usar a chave padrão da plataforma" />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label>Pool de chaves</Label>
+            <KeyPoolEditor value={mapsPool} onChange={setMapsPool} keyPlaceholder="AIza…" />
+          </div>
         </CardContent>
       </Card>
 

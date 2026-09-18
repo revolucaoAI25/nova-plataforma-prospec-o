@@ -10,7 +10,7 @@ import { autoExportarSheetsSeConfigurado } from "@/lib/auto-export";
 const bodySchema = z.object({
   tipo: z.enum(["seguidores", "seguindo"]),
   alvo: z.string().min(1),
-  limite: z.number().int().min(1).max(2000).default(200),
+  limite: z.number().int().min(100).max(1000).default(200),
   apenasNovos: z.boolean().default(true),
 });
 
@@ -33,16 +33,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "A busca por Instagram não está habilitada para sua conta." }, { status: 403 });
   }
 
-  let avisoSaldo: string | null = null;
-  let limite = filtros.limite;
+  const limite = filtros.limite;
   if (profile.instagram_credits_enabled) {
     const saldo = profile.instagram_credits;
-    if (saldo <= 0) {
-      return NextResponse.json({ error: "Você não tem créditos Instagram disponíveis. Solicite mais ao administrador." }, { status: 402 });
-    }
     if (saldo < limite) {
-      avisoSaldo = `Você tem ${saldo} créditos Instagram — a busca considerou esse teto em vez dos ${limite} solicitados.`;
-      limite = saldo;
+      return NextResponse.json(
+        { error: `Créditos insuficientes. Você tem ${saldo} créditos Instagram e a busca requer ${limite}. Reduza o limite ou solicite mais créditos ao administrador.` },
+        { status: 402 },
+      );
     }
   }
 
@@ -97,6 +95,6 @@ export async function POST(request: Request) {
     searchId,
     total: resultados.length,
     leads: resultados,
-    avisos: [avisoSaldo, avisoHistorico, avisoSheets].filter(Boolean),
+    avisos: [avisoHistorico, avisoSheets].filter(Boolean),
   });
 }

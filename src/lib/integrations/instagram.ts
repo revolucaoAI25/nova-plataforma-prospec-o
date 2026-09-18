@@ -69,6 +69,10 @@ function normalizarPerfil(item: Record<string, unknown>, tipo: string): Lead | n
   lead.instagram_id = instaId;
   lead.username = username ? `@${username}` : "";
   lead.nome = username ? `@${username}` : instaId;
+  lead.nome_completo = String(src.full_name ?? item.ownerFullName ?? "").trim();
+  lead.bio = String(src.biography ?? item.bio ?? "").trim().slice(0, 500);
+  lead.followers_count = Number(src.followers_count ?? src.followersCount ?? 0);
+  lead.is_business = Boolean(src.is_business_account ?? src.isBusinessAccount ?? false);
   lead.comentario = tipo === "comentaristas" ? String(item.text ?? "").slice(0, 300) : "";
   lead.site = String(src.external_url ?? src.website ?? "").trim();
   lead.email = String(src.public_email ?? src.email ?? "").trim();

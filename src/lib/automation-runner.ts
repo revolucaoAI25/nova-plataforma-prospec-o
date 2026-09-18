@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getProfile, debitarCreditos } from "@/lib/credits";
-import { resolverChaveMaps, registrarUsoChaveMaps } from "@/lib/maps-key";
+import { resolverChaveMaps, resolverChaveMapsOverflow, registrarUsoChaveMaps } from "@/lib/maps-key";
 import { resolverChaveApify, registrarUsoChaveApify } from "@/lib/apify-key";
 import { buscarCnpj, type BuscaTextual } from "@/lib/integrations/casa-dos-dados";
 import { buscarMaps, QuotaExceededError } from "@/lib/integrations/google-maps";
@@ -78,11 +78,17 @@ export async function executarAutomacao(sb: SupabaseClient, auto: AutomationRow)
 
   let resultados: Lead[] = [];
   let usouApify = false;
+  let apifyResolucaoUsada: ReturnType<typeof resolverChaveApify> | null = null;
 
   try {
     if (auto.tipo === "maps") {
-      const resolucaoMaps = await resolverChaveMaps(profile);
+      let resolucaoMaps = await resolverChaveMaps(profile);
       const resolucaoApify = resolverChaveApify(profile);
+      apifyResolucaoUsada = resolucaoApify;
+      if ((resolucaoMaps.bloqueado || !resolucaoMaps.key) && !resolucaoApify.key) {
+        const overflow = await resolverChaveMapsOverflow(profile);
+        if (overflow.key) resolucaoMaps = overflow;
+      }
       const params = {
         queryBase: String(filtros.queryBase || ""),
         localidade: (filtros.localidade as string | string[]) || "",
@@ -188,7 +194,7 @@ export async function executarAutomacao(sb: SupabaseClient, auto: AutomationRow)
 
   if (auto.tipo === "cnpj" && total > 0) {
     await debitarCreditos(sb, auto.user_id, "cdd_credits", total);
-  } else if (auto.tipo === "maps" && profile.maps_credits_enabled && total > 0 && !usouApify) {
+  } else if (auto.tipo === "maps" && profile.maps_credits_enabled && total > 0 && (!usouApify || apifyResolucaoUsada?.source === "pool")) {
     await debitarCreditos(sb, auto.user_id, "maps_credits", total);
   }
 

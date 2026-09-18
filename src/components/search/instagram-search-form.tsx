@@ -11,13 +11,15 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { FieldGroup, FieldRow } from "@/components/ui/field-group";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { ResultsTable } from "@/components/search/results-table";
+import { InstagramResultsTable } from "@/components/search/instagram-results-table";
 import type { InstagramTipo, Lead } from "@/lib/types";
 
 export function InstagramSearchForm() {
   const [tipo, setTipo] = useState<InstagramTipo>("seguidores");
   const [alvo, setAlvo] = useState("");
   const [limite, setLimite] = useState(200);
+  const LIMITE_MIN = 100;
+  const LIMITE_MAX = 1000;
   const [apenasNovos, setApenasNovos] = useState(true);
 
   const [loading, setLoading] = useState(false);
@@ -37,6 +39,8 @@ export function InstagramSearchForm() {
       return;
     }
 
+    const limiteEfetivo = Math.min(LIMITE_MAX, Math.max(LIMITE_MIN, limite));
+
     setLoading(true);
     setLeads(null);
 
@@ -44,7 +48,7 @@ export function InstagramSearchForm() {
       const resp = await fetch("/api/search/instagram", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tipo, alvo, limite, apenasNovos }),
+        body: JSON.stringify({ tipo, alvo, limite: limiteEfetivo, apenasNovos }),
       });
       const data = await resp.json();
       if (!resp.ok) {
@@ -96,7 +100,14 @@ export function InstagramSearchForm() {
             </FieldGroup>
             <div className="flex max-w-xs flex-col gap-1.5">
               <Label htmlFor="limite">Limite de resultados</Label>
-              <Input id="limite" type="number" min={1} max={2000} value={limite} onChange={(e) => setLimite(Number(e.target.value))} />
+              <Input
+                id="limite"
+                type="number"
+                min={LIMITE_MIN}
+                max={LIMITE_MAX}
+                value={limite}
+                onChange={(e) => setLimite(Number(e.target.value))}
+              />
             </div>
           </CardContent>
         </Card>
@@ -147,7 +158,7 @@ export function InstagramSearchForm() {
             {leads.length === 0 ? (
               <p className="text-sm text-muted-foreground">Nenhum resultado encontrado.</p>
             ) : (
-              <ResultsTable leads={leads} />
+              <InstagramResultsTable leads={leads} />
             )}
           </CardContent>
         </Card>
