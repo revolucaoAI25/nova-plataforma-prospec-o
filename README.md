@@ -39,6 +39,8 @@ No [painel do Supabase](https://supabase.com/dashboard), crie um projeto novo
    de `profiles` retorna erro 500. Se você já rodou 0001/0002 antes desse
    arquivo existir, rode só o 0003 agora — é seguro rodar de novo, ele só
    recria as políticas.)
+4. `supabase/migrations/0004_maps_api_key_admin.sql`
+5. `supabase/migrations/0005_lead_enrichment_ia.sql` (Enriquecimento de Leads via IA)
 
 Em **Authentication → Providers**, deixe E-mail/senha habilitado (é o único método
 usado no login). Contas são criadas pelo admin — não há cadastro público.
@@ -60,6 +62,13 @@ indisponível/com erro amigável se faltar, o resto da plataforma funciona norma
 - `EVOLUTION_API_URL` / `EVOLUTION_API_KEY` — disparo WhatsApp (canal não-oficial).
 - `DATAFY_API_BASE_URL` — canal oficial do WhatsApp (tem um padrão razoável, só
   precisa mudar se usar outro provedor).
+
+Enriquecimento de Leads via IA não tem variável de ambiente nenhuma: fica
+desativado por padrão, admin libera por usuário (`/admin`), e cada usuário
+cadastra a própria chave OpenAI em Configurações — o custo da IA é do
+usuário, não da plataforma. Roda em background pelo worker (não na mesma
+requisição HTTP da busca), então também depende do worker estar rodando
+(ver seção "Deploy" abaixo).
 
 Cada uma dessas chaves "padrão da plataforma" pode ser sobreposta por usuário
 (chave própria em Configurações, ou administrada individualmente em `/admin/[userId]`)

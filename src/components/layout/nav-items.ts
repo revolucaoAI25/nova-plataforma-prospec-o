@@ -13,6 +13,7 @@ import {
   Settings,
   Users,
   Radio,
+  BrainCircuit,
 } from "lucide-react";
 
 export interface NavLeaf {
@@ -45,10 +46,12 @@ export function buildNavSections({
   isAdmin,
   instagramVisible,
   disparoHabilitado,
+  enriquecimentoIaHabilitado,
 }: {
   isAdmin: boolean;
   instagramVisible: boolean;
   disparoHabilitado: boolean;
+  enriquecimentoIaHabilitado: boolean;
 }): NavSection[] {
   const buscaChildren: NavLeaf[] = [
     { type: "link", href: "/busca/cnpj", label: "CNPJ", icon: Building2 },
@@ -68,6 +71,9 @@ export function buildNavSections({
         { type: "group", label: "Busca", icon: Search, children: buscaChildren },
         { type: "link", href: "/historico", label: "Histórico", icon: History },
         { type: "link", href: "/automacoes", label: "Automações", icon: CalendarClock },
+        ...(enriquecimentoIaHabilitado || isAdmin
+          ? [{ type: "link" as const, href: "/enriquecimento", label: "Enriquecimento com IA", icon: BrainCircuit }]
+          : []),
       ],
     },
   ];

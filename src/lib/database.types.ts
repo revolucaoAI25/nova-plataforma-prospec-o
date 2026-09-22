@@ -71,6 +71,9 @@ export interface Profile {
   conta_teste: boolean;
   teste_expira_em: string | null;
 
+  enriquecimento_ia_habilitado: boolean;
+  openai_api_key: string | null;
+
   google_client_id: string | null;
   google_client_secret: string | null;
   google_sheets_creds: GoogleSheetsCreds | null;
@@ -157,6 +160,58 @@ export interface UserStatsRow {
   disparo_habilitado: boolean;
   conta_teste: boolean;
   teste_expira_em: string | null;
+  enriquecimento_ia_habilitado: boolean;
+}
+
+export type EnrichmentRunStatus = "pendente" | "processando" | "concluido" | "erro";
+export type EnrichmentLeadStatus = "pendente" | "concluido" | "nao_encontrado" | "erro";
+export type NivelRaciocinio = "rapido" | "equilibrado" | "profundo";
+
+export interface EnrichmentOpcoes {
+  nivelRaciocinio: NivelRaciocinio;
+  buscarSocios: boolean;
+  buscarFundacao: boolean;
+  buscarProcessos: boolean;
+  camposCustomizados: string[];
+}
+
+export interface EnrichmentRunRow {
+  id: string;
+  user_id: string;
+  status: EnrichmentRunStatus;
+  total: number;
+  processados: number;
+  encontrados: number;
+  nao_encontrados: number;
+  erros: number;
+  opcoes: EnrichmentOpcoes | Json;
+  erro: string | null;
+  created_at: string;
+  concluido_em: string | null;
+}
+
+export interface EnrichmentLeadRow {
+  id: string;
+  run_id: string;
+  user_id: string;
+  nome_lead: string | null;
+  email: string | null;
+  telefone: string | null;
+  status: EnrichmentLeadStatus;
+  empresa_nome: string | null;
+  cargo: string | null;
+  cnpj: string | null;
+  municipio: string | null;
+  uf: string | null;
+  website: string | null;
+  linkedin_url: string | null;
+  resumo: string | null;
+  socios: string | null;
+  fundacao: string | null;
+  processos_jusbrasil: string | null;
+  extras: Record<string, string> | null;
+  erro: string | null;
+  created_at: string;
 }
 
 export type InstanceCanal = "evolution" | "oficial";

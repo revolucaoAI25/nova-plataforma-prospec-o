@@ -2,13 +2,14 @@ import type { LucideIcon } from "lucide-react";
 import { Users, Phone, Globe, Mail, Star, AtSign, BadgeCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export type SummaryTone = "primary" | "info" | "violet" | "amber";
+export type SummaryTone = "primary" | "info" | "violet" | "amber" | "destructive";
 
 const TONE_CLASSES: Record<SummaryTone, string> = {
   primary: "bg-accent text-primary",
   info: "bg-info-soft text-info",
   violet: "bg-violet-soft text-violet",
   amber: "bg-amber-soft text-amber",
+  destructive: "bg-destructive-soft text-destructive",
 };
 
 export interface SummaryMetric {

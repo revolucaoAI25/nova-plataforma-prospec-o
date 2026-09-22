@@ -30,6 +30,7 @@ const patchSchema = z.object({
   instagram_credits_enabled: z.boolean().optional(),
   instagram_visible: z.boolean().optional(),
   disparo_habilitado: z.boolean().optional(),
+  enriquecimento_ia_habilitado: z.boolean().optional(),
   conta_teste: z.boolean().optional(),
   teste_expira_em: z.string().nullable().optional(),
 });

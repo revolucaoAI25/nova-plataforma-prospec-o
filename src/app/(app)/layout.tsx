@@ -32,7 +32,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="flex min-h-screen bg-background">
-      <Sidebar role={profile.role} instagramVisible={profile.instagram_visible} disparoHabilitado={profile.disparo_habilitado} />
+      <Sidebar
+        role={profile.role}
+        instagramVisible={profile.instagram_visible}
+        disparoHabilitado={profile.disparo_habilitado}
+        enriquecimentoIaHabilitado={profile.enriquecimento_ia_habilitado}
+      />
       {/* min-w-0 é essencial aqui: sem isso, um item flex nunca encolhe
           abaixo do conteúdo intrínseco — uma tabela larga (leads, usuários)
           empurra a página inteira pro lado em vez de rolar só por dentro. */}

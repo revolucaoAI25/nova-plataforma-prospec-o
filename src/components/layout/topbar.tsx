@@ -24,6 +24,7 @@ export function Topbar({ profile }: { profile: Profile }) {
           role={profile.role}
           instagramVisible={profile.instagram_visible}
           disparoHabilitado={profile.disparo_habilitado}
+          enriquecimentoIaHabilitado={profile.enriquecimento_ia_habilitado}
         />
         <div className="flex items-center gap-2 text-sm">
           <div className="flex items-center gap-1.5 rounded-full border border-primary/20 bg-accent px-3 py-1">

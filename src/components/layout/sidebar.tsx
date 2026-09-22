@@ -13,10 +13,12 @@ export function Sidebar({
   role,
   instagramVisible,
   disparoHabilitado,
+  enriquecimentoIaHabilitado,
 }: {
   role: "user" | "admin";
   instagramVisible: boolean;
   disparoHabilitado: boolean;
+  enriquecimentoIaHabilitado: boolean;
 }) {
   const [collapsed, setCollapsed] = useState(false);
 
@@ -43,7 +45,7 @@ export function Sidebar({
     }
   }, [collapsed]);
 
-  const sections = buildNavSections({ isAdmin: role === "admin", instagramVisible, disparoHabilitado });
+  const sections = buildNavSections({ isAdmin: role === "admin", instagramVisible, disparoHabilitado, enriquecimentoIaHabilitado });
 
   return (
     <aside

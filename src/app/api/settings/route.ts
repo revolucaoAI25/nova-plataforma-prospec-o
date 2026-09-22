@@ -17,6 +17,7 @@ const bodySchema = z.object({
   maps_keys_pool: z.array(poolEntrySchema).optional(),
   apify_api_key: z.string().nullable().optional(),
   apify_keys_pool: z.array(poolEntrySchema).optional(),
+  openai_api_key: z.string().nullable().optional(),
 });
 
 export async function PATCH(request: Request) {
@@ -57,6 +58,9 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: "Contas de teste usam a chave Apify compartilhada da plataforma." }, { status: 403 });
     }
     patch.apify_keys_pool = parsed.data.apify_keys_pool;
+  }
+  if (parsed.data.openai_api_key !== undefined) {
+    patch.openai_api_key = parsed.data.openai_api_key || null;
   }
 
   const { error } = await supabase.from("profiles").update(patch).eq("id", user.id);

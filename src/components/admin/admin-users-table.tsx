@@ -20,6 +20,7 @@ function UserRow({ user, isSelf }: { user: UserStatsRow; isSelf: boolean }) {
   const [mapsEnabled, setMapsEnabled] = useState(user.maps_credits_enabled);
   const [instagramVisible, setInstagramVisible] = useState(user.instagram_visible);
   const [disparoHabilitado, setDisparoHabilitado] = useState(user.disparo_habilitado);
+  const [enriquecimentoIa, setEnriquecimentoIa] = useState(user.enriquecimento_ia_habilitado);
   const [role, setRole] = useState(user.role);
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
@@ -43,6 +44,7 @@ function UserRow({ user, isSelf }: { user: UserStatsRow; isSelf: boolean }) {
         maps_credits_enabled: mapsEnabled,
         instagram_visible: instagramVisible,
         disparo_habilitado: disparoHabilitado,
+        enriquecimento_ia_habilitado: enriquecimentoIa,
         role,
       }),
     });
@@ -87,6 +89,9 @@ function UserRow({ user, isSelf }: { user: UserStatsRow; isSelf: boolean }) {
         <Switch checked={disparoHabilitado} onCheckedChange={markDirty(setDisparoHabilitado)} />
       </TableCell>
       <TableCell>
+        <Switch checked={enriquecimentoIa} onCheckedChange={markDirty(setEnriquecimentoIa)} />
+      </TableCell>
+      <TableCell>
         <Badge variant="secondary">{user.total_searches}</Badge>
       </TableCell>
       <TableCell>
@@ -121,6 +126,7 @@ export function AdminUsersTable({ users, currentUserId }: { users: UserStatsRow[
           <TableHead>Debita Maps?</TableHead>
           <TableHead>Instagram</TableHead>
           <TableHead>Disparo</TableHead>
+          <TableHead>Enriq. IA</TableHead>
           <TableHead>Buscas</TableHead>
           <TableHead>Leads</TableHead>
           <TableHead className="text-right">Ações</TableHead>
