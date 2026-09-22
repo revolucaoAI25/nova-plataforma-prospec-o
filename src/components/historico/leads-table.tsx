@@ -1,9 +1,10 @@
-import { ExternalLink } from "lucide-react";
+import { ExternalLink, Users } from "lucide-react";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
+import { EmptyState } from "@/components/ui/empty-state";
 import type { LeadRow } from "@/lib/database.types";
 
 export function LeadsTable({ leads }: { leads: LeadRow[] }) {
-  if (!leads.length) return <p className="text-sm text-muted-foreground">Nenhum lead salvo nesta pesquisa.</p>;
+  if (!leads.length) return <EmptyState icon={Users} title="Nenhum lead salvo nesta pesquisa" />;
 
   return (
     <div className="flex flex-col gap-2">

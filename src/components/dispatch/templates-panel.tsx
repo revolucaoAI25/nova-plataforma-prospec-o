@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Plus, Trash2, RefreshCw, Send, FileText } from "lucide-react";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -116,7 +117,7 @@ export function TemplatesPanel({
           </p>
         ) : (
           <>
-            {templates.length === 0 && <p className="text-sm text-muted-foreground">Nenhum template criado ainda.</p>}
+            {templates.length === 0 && <EmptyState icon={FileText} title="Nenhum template criado ainda" className="py-8" />}
 
             {templates.map((t) => {
               const status = STATUS_LABEL[t.status_aprovacao] ?? { label: t.status_aprovacao, variant: "outline" as const };

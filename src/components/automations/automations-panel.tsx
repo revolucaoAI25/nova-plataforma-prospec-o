@@ -1,11 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Trash2, Play, Pause, RotateCw } from "lucide-react";
+import { Plus, Trash2, Play, Pause, RotateCw, CalendarClock } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { EmptyState } from "@/components/ui/empty-state";
 import type { AutomationRow, DispatchCampaignRow } from "@/lib/database.types";
 import { formatarDias, formatarHorarios, formatarProximaExecucao } from "@/lib/automation-logic";
 import { AutomationForm } from "@/components/automations/automation-form";
@@ -61,7 +62,11 @@ export function AutomationsPanel({
       )}
 
       {automacoes.length === 0 && !showForm && (
-        <p className="text-sm text-muted-foreground">Nenhuma automação criada ainda.</p>
+        <EmptyState
+          icon={CalendarClock}
+          title="Nenhuma automação criada ainda"
+          description="Agende buscas recorrentes por CNPJ ou Google Maps em dias e horários fixos."
+        />
       )}
 
       <div className="grid gap-4 sm:grid-cols-2">

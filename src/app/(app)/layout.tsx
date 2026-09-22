@@ -34,6 +34,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     <div className="flex min-h-screen bg-background">
       <Sidebar
         role={profile.role}
+        email={profile.email}
         instagramVisible={profile.instagram_visible}
         disparoHabilitado={profile.disparo_habilitado}
         enriquecimentoIaHabilitado={profile.enriquecimento_ia_habilitado}

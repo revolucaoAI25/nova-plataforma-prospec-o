@@ -1,12 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import { Inbox } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { EmptyState } from "@/components/ui/empty-state";
 import type { OficialConnectionRequestRow } from "@/lib/database.types";
 
 function ProvisionForm({ solicitacao, onDone }: { solicitacao: OficialConnectionRequestRow; onDone: () => void }) {
@@ -84,7 +86,7 @@ export function AdminOficialRequests({ solicitacoesIniciais }: { solicitacoesIni
   }
 
   if (!solicitacoes.length) {
-    return <p className="text-sm text-muted-foreground">Nenhuma solicitação registrada.</p>;
+    return <EmptyState icon={Inbox} title="Nenhuma solicitação registrada" />;
   }
 
   return (

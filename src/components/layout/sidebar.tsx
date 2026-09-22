@@ -11,11 +11,13 @@ const STORAGE_KEY = "pa:sidebar-collapsed";
 
 export function Sidebar({
   role,
+  email,
   instagramVisible,
   disparoHabilitado,
   enriquecimentoIaHabilitado,
 }: {
   role: "user" | "admin";
+  email: string;
   instagramVisible: boolean;
   disparoHabilitado: boolean;
   enriquecimentoIaHabilitado: boolean;
@@ -67,6 +69,23 @@ export function Sidebar({
       <SidebarNav sections={sections} collapsed={collapsed} />
 
       <div className="border-t border-border p-3">
+        <div
+          className={cn(
+            "flex items-center gap-2.5 rounded-xl px-2 py-2",
+            collapsed && "justify-center px-0",
+          )}
+          title={collapsed ? email : undefined}
+        >
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent text-xs font-bold text-primary">
+            {email.slice(0, 2).toUpperCase()}
+          </div>
+          {!collapsed && (
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-medium text-foreground">{email}</p>
+              <p className="text-xs text-muted-foreground">{role === "admin" ? "Administrador" : "Usuário"}</p>
+            </div>
+          )}
+        </div>
         <button
           type="button"
           onClick={() => setCollapsed((c) => !c)}

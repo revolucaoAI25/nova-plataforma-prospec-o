@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Trash2, Play, Pause, UserPlus, Sheet as SheetIcon, Activity, ListOrdered, Users } from "lucide-react";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -296,7 +297,9 @@ export function CampaignDetail({
           <CardDescription>Cada etapa dispara após o atraso configurado desde a etapa anterior (ou desde a inscrição, na 1ª).</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
-          {etapas.length === 0 && <p className="text-sm text-muted-foreground">Nenhuma etapa criada ainda.</p>}
+          {etapas.length === 0 && (
+            <EmptyState icon={ListOrdered} title="Nenhuma etapa criada ainda" className="py-8" />
+          )}
           {etapas.map((e) => (
             <div key={e.id} className="flex items-start justify-between gap-3 rounded-xl border border-border p-3">
               <div className="min-w-0">
@@ -404,7 +407,7 @@ export function CampaignDetail({
         </CardHeader>
         <CardContent>
           {targetsIniciais.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Nenhum alvo inscrito ainda.</p>
+            <EmptyState icon={Users} title="Nenhum alvo inscrito ainda" description="Inscreva leads de uma pesquisa do histórico ou colando uma lista." />
           ) : (
             <Table>
               <TableHeader>

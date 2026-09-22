@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Plus, ArrowRight, Megaphone } from "lucide-react";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -62,7 +63,7 @@ export function CampaignsPanel({
       <CardContent className="flex flex-col gap-4">
         {error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
 
-        {campanhas.length === 0 && <p className="text-sm text-muted-foreground">Nenhuma campanha criada ainda.</p>}
+        {campanhas.length === 0 && <EmptyState icon={Megaphone} title="Nenhuma campanha criada ainda" className="py-8" />}
 
         <ul className="divide-y divide-border">
           {campanhas.map((c) => (

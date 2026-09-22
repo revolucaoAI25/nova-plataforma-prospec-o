@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Search, Download, Loader2, X, MapPin, SlidersHorizontal } from "lucide-react";
+import { Search, Download, Loader2, X, MapPin, SlidersHorizontal, SearchX } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,6 +13,7 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@
 import { FieldGroup, FieldRow } from "@/components/ui/field-group";
 import { MultiSelect, type MultiSelectOption } from "@/components/search/multi-select";
 import { ResultsTable } from "@/components/search/results-table";
+import { EmptyState } from "@/components/ui/empty-state";
 import { ResultsSummary, buildGeneralMetrics } from "@/components/search/results-summary";
 import { NICHOS, NOMES_NICHOS } from "@/lib/data/nichos";
 import { ESTADOS } from "@/lib/data/estados";
@@ -264,7 +265,7 @@ export function MapsSearchForm() {
           </CardHeader>
           <CardContent className="flex flex-col gap-5">
             {leads.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Nenhum resultado encontrado.</p>
+              <EmptyState icon={SearchX} title="Nenhum resultado encontrado" description="Tente ampliar a localidade ou trocar o nicho de busca." />
             ) : (
               <>
                 <ResultsSummary metrics={buildGeneralMetrics(leads)} />

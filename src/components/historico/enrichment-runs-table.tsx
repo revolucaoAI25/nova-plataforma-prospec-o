@@ -3,10 +3,11 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Download, Trash2, Eye } from "lucide-react";
+import { Download, Trash2, Eye, Sparkles } from "lucide-react";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { EmptyState } from "@/components/ui/empty-state";
 import type { EnrichmentRunRow } from "@/lib/database.types";
 
 const STATUS_LABEL: Record<string, { label: string; variant: "success" | "outline" | "destructive" }> = {
@@ -33,7 +34,13 @@ export function EnrichmentRunsTable({ runs }: { runs: EnrichmentRunRow[] }) {
   }
 
   if (!lista.length) {
-    return <p className="text-sm text-muted-foreground">Nenhum enriquecimento realizado ainda.</p>;
+    return (
+      <EmptyState
+        icon={Sparkles}
+        title="Nenhum enriquecimento realizado ainda"
+        description="Rode o Enriquecimento com IA em uma lista de leads para ver o histórico aqui."
+      />
+    );
   }
 
   return (

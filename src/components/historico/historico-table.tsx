@@ -3,10 +3,11 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Download, Trash2, Eye } from "lucide-react";
+import { Download, Trash2, Eye, Search } from "lucide-react";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { EmptyState } from "@/components/ui/empty-state";
 import type { SearchRow } from "@/lib/database.types";
 
 const FONTE_LABEL: Record<string, string> = { cnpj: "CNPJ", google_maps: "Google Maps", instagram: "Instagram" };
@@ -28,7 +29,13 @@ export function HistoricoTable({ pesquisas }: { pesquisas: SearchRow[] }) {
   }
 
   if (!lista.length) {
-    return <p className="text-sm text-muted-foreground">Nenhuma pesquisa realizada ainda.</p>;
+    return (
+      <EmptyState
+        icon={Search}
+        title="Nenhuma pesquisa realizada ainda"
+        description="Suas buscas por CNPJ, Google Maps e Instagram vão aparecer aqui."
+      />
+    );
   }
 
   return (

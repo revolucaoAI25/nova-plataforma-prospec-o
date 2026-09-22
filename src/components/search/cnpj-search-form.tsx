@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Search, Download, Loader2, Building2, ListFilter, Phone, MapPinned } from "lucide-react";
+import { Search, Download, Loader2, Building2, ListFilter, Phone, MapPinned, SearchX } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { MultiSelect, type MultiSelectOption } from "@/components/search/multi-select";
 import { ResultsTable } from "@/components/search/results-table";
 import { ResultsSummary, buildGeneralMetrics } from "@/components/search/results-summary";
+import { EmptyState } from "@/components/ui/empty-state";
 import { CNAES } from "@/lib/data/cnaes";
 import { ESTADOS } from "@/lib/data/estados";
 import type { CnaeTipo, Lead } from "@/lib/types";
@@ -398,7 +399,7 @@ export function CnpjSearchForm() {
           </CardHeader>
           <CardContent className="flex flex-col gap-5">
             {leads.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Nenhuma empresa encontrada com os filtros aplicados.</p>
+              <EmptyState icon={SearchX} title="Nenhuma empresa encontrada" description="Tente relaxar os filtros aplicados (CNAE, UF, porte ou data de abertura)." />
             ) : (
               <>
                 <ResultsSummary metrics={buildGeneralMetrics(leads)} />

@@ -42,7 +42,8 @@ export function Topbar({ profile }: { profile: Profile }) {
         </div>
       </div>
       <div className="flex items-center gap-3">
-        <span className="hidden text-sm text-muted-foreground sm:inline">{profile.email}</span>
+        {/* No desktop (md+) o e-mail já aparece no rodapé da sidebar — evita duplicar. */}
+        <span className="hidden text-sm text-muted-foreground sm:inline md:hidden">{profile.email}</span>
         <Button variant="ghost" size="icon" onClick={handleLogout} title="Sair">
           <LogOut className="h-4 w-4" />
         </Button>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Search, Download, Loader2, AtSign } from "lucide-react";
+import { Search, Download, Loader2, AtSign, SearchX } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +12,7 @@ import { FieldGroup, FieldRow } from "@/components/ui/field-group";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { InstagramResultsTable } from "@/components/search/instagram-results-table";
+import { EmptyState } from "@/components/ui/empty-state";
 import { ResultsSummary, buildInstagramMetrics } from "@/components/search/results-summary";
 import type { InstagramTipo, Lead } from "@/lib/types";
 
@@ -157,7 +158,7 @@ export function InstagramSearchForm() {
           </CardHeader>
           <CardContent className="flex flex-col gap-5">
             {leads.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Nenhum resultado encontrado.</p>
+              <EmptyState icon={SearchX} title="Nenhum resultado encontrado" description="Verifique o username informado ou tente outro perfil." />
             ) : (
               <>
                 <ResultsSummary metrics={buildInstagramMetrics(leads)} />

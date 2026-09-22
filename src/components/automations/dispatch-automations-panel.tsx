@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Plus, Pause, Play, ArrowRight, Target, Sheet as SheetIcon, Zap } from "lucide-react";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -245,7 +246,11 @@ export function DispatchAutomationsPanel({
         )}
 
         {campanhas.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Nenhuma automação de disparo criada ainda.</p>
+          <EmptyState
+            icon={Zap}
+            title="Nenhuma automação de disparo criada ainda"
+            description="Crie um gatilho por filtro ou monitore uma planilha para disparar mensagens automaticamente."
+          />
         ) : (
           <ul className="divide-y divide-border">
             {campanhas.map((c) => (

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { BarChart3, Users, Clock, CheckCircle2, XCircle } from "lucide-react";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
@@ -85,10 +86,10 @@ export function ReportsPanel({ campanhasIniciais }: { campanhasIniciais: Dispatc
 
         {stats && (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <StatCard label="Inscritos" value={stats.total ?? 0} icon={Users} />
-            <StatCard label="Pendentes" value={stats.pendente ?? 0} icon={Clock} />
-            <StatCard label="Concluídos" value={stats.concluido ?? 0} icon={CheckCircle2} />
-            <StatCard label="Falharam" value={stats.falhou ?? 0} icon={XCircle} />
+            <StatCard label="Inscritos" value={stats.total ?? 0} icon={Users} tone="info" />
+            <StatCard label="Pendentes" value={stats.pendente ?? 0} icon={Clock} tone="amber" />
+            <StatCard label="Concluídos" value={stats.concluido ?? 0} icon={CheckCircle2} tone="primary" />
+            <StatCard label="Falharam" value={stats.falhou ?? 0} icon={XCircle} tone="destructive" />
           </div>
         )}
 
@@ -96,7 +97,7 @@ export function ReportsPanel({ campanhasIniciais }: { campanhasIniciais: Dispatc
 
         {targets && (
           targets.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Nenhum alvo inscrito nesta campanha.</p>
+            <EmptyState icon={Users} title="Nenhum alvo inscrito nesta campanha" />
           ) : (
             <Table>
               <TableHeader>

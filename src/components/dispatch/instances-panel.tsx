@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Plus, Trash2, QrCode, Loader2, Smartphone } from "lucide-react";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -103,7 +104,7 @@ export function InstancesPanel({ instanciasIniciais }: { instanciasIniciais: Wha
       <CardContent className="flex flex-col gap-4">
         {error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
 
-        {instancias.length === 0 && <p className="text-sm text-muted-foreground">Nenhuma instância conectada ainda.</p>}
+        {instancias.length === 0 && <EmptyState icon={Smartphone} title="Nenhuma instância conectada ainda" className="py-8" />}
 
         {instancias.map((inst) => (
           <div key={inst.id} className="flex flex-col gap-3 rounded-xl border border-border p-3">

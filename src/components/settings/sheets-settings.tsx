@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Sheet, Link2, Unlink, Star, Trash2 } from "lucide-react";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -144,7 +145,9 @@ export function SheetsSettings({
 
               <div className="flex flex-col gap-3">
                 <FieldGroupLabel className="mb-0">Planilhas configuradas</FieldGroupLabel>
-                {planilhas.length === 0 && <p className="text-sm text-muted-foreground">Nenhuma planilha adicionada ainda.</p>}
+                {planilhas.length === 0 && (
+                  <EmptyState icon={Sheet} title="Nenhuma planilha adicionada ainda" className="py-8" />
+                )}
                 {planilhas.map((p) => (
                   <div key={p.id} className="flex flex-col gap-2 rounded-xl border border-border p-3">
                     <div className="flex items-center justify-between">
