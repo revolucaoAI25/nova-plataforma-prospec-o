@@ -269,7 +269,7 @@ export function CampaignDetail({
   return (
     <div className="flex flex-col gap-6">
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
+        <CardHeader className="flex flex-wrap items-center justify-between gap-2">
           <div>
             <CardTitle className="flex items-center gap-2 text-base"><Activity className="h-4 w-4 text-primary" /> Status</CardTitle>
             <CardDescription>Instância: {instancia?.nome ?? "—"} {canalOficial && "· Canal oficial"}</CardDescription>

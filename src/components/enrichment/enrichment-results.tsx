@@ -105,7 +105,7 @@ export function EnrichmentResults({ run, leads }: { run: EnrichmentRunRow; leads
       <ResultsSummary metrics={metrics} />
 
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
+        <CardHeader className="flex flex-wrap items-center justify-between gap-2">
           <CardTitle className="text-base">Visão geral</CardTitle>
           {run.status === "concluido" && (
             <div className="flex gap-2">

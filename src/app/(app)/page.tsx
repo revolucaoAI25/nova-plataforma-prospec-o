@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Building2, MapPin, History, ArrowRight, Search, Users } from "lucide-react";
+import { Building2, MapPin, AtSign, History, ArrowRight, Search, Users } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getProfile } from "@/lib/credits";
 import { listarPesquisas, contarPesquisasELeads } from "@/lib/db";
@@ -7,6 +7,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/layout/page-header";
 import { StatCard } from "@/components/dashboard/stat-card";
+
+const FONTE_LABEL: Record<string, string> = { cnpj: "CNPJ", google_maps: "Google Maps", instagram: "Instagram" };
+const FONTE_ICON: Record<string, typeof Building2> = { cnpj: Building2, google_maps: MapPin, instagram: AtSign };
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -97,7 +100,7 @@ export default async function DashboardPage() {
       </div>
 
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
+        <CardHeader className="flex flex-wrap items-center justify-between gap-2">
           <CardTitle className="flex items-center gap-2 text-base">
             <History className="h-4 w-4" /> Últimas pesquisas
           </CardTitle>
@@ -111,7 +114,7 @@ export default async function DashboardPage() {
           ) : (
             <ul className="divide-y divide-border">
               {pesquisas.map((p) => {
-                const Icon = p.fonte === "cnpj" ? Building2 : MapPin;
+                const Icon = FONTE_ICON[p.fonte] ?? Building2;
                 return (
                   <li key={p.id} className="flex items-center justify-between gap-4 py-3 text-sm">
                     <div className="flex items-center gap-3 overflow-hidden">
@@ -129,7 +132,7 @@ export default async function DashboardPage() {
                     </div>
                     <div className="flex shrink-0 items-center gap-2">
                       <Badge variant="secondary">{p.total_results} leads</Badge>
-                      <Badge variant="outline">{p.fonte === "cnpj" ? "CNPJ" : "Google Maps"}</Badge>
+                      <Badge variant="outline">{FONTE_LABEL[p.fonte] ?? p.fonte}</Badge>
                     </div>
                   </li>
                 );

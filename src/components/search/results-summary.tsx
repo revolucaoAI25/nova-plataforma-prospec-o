@@ -27,7 +27,7 @@ export function ResultsSummary({ metrics }: { metrics: SummaryMetric[] }) {
   if (!metrics.length) return null;
 
   return (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
       {metrics.map((m) => (
         <div key={m.label} className="flex items-center gap-3 rounded-xl border border-border bg-card p-3.5">
           <div className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-lg", TONE_CLASSES[m.tone ?? "primary"])}>
@@ -35,7 +35,7 @@ export function ResultsSummary({ metrics }: { metrics: SummaryMetric[] }) {
           </div>
           <div className="flex min-w-0 flex-col">
             <span className="text-xl font-bold tabular-nums leading-tight text-foreground">{m.value}</span>
-            <span className="truncate text-xs text-muted-foreground">
+            <span className="text-xs leading-snug text-muted-foreground">
               {m.label}
               {m.hint ? ` · ${m.hint}` : ""}
             </span>

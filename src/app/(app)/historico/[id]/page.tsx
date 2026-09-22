@@ -32,7 +32,7 @@ export default async function HistoricoDetailPage({ params }: { params: Promise<
       />
 
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
+        <CardHeader className="flex flex-wrap items-center justify-between gap-2">
           <CardTitle className="text-base">{leads.length} leads</CardTitle>
           <div className="flex gap-2">
             <Button asChild variant="outline" size="sm">
