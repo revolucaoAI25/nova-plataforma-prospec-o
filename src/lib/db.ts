@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { apenasDigitos } from "@/lib/phone";
 import type { Lead } from "@/lib/types";
-import type { SearchFonte, SearchRow, LeadRow, Json } from "@/lib/database.types";
+import type { SearchFonte, SearchRow, LeadRow, Json, EnrichmentRunRow } from "@/lib/database.types";
 
 // Persistência de pesquisas/leads — portado de modules/database.py.
 // Diferente do produto atual, `filtros` guarda o filtro COMPLETO da busca
@@ -108,6 +108,15 @@ export async function listarPesquisas(supabase: SupabaseClient, limite = 300): P
     .order("created_at", { ascending: false })
     .limit(limite);
   return (data as SearchRow[]) ?? [];
+}
+
+export async function listarExecucoesEnriquecimento(supabase: SupabaseClient, limite = 100): Promise<EnrichmentRunRow[]> {
+  const { data } = await supabase
+    .from("enrichment_runs")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(limite);
+  return (data as EnrichmentRunRow[]) ?? [];
 }
 
 export async function buscarLeadsDaPesquisa(

@@ -1,13 +1,14 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { Plus, Trash2, Upload, ClipboardPaste } from "lucide-react";
+import { Plus, Trash2, Upload, ClipboardPaste, Users } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { parseLeadsColados } from "@/lib/lead-enrichment-shared";
@@ -92,104 +93,102 @@ export function LeadStagingEditor({ leads, onChange }: { leads: LeadStaged[]; on
   }
 
   return (
-    <div className="flex flex-col gap-5">
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">1. Monte a lista de leads</CardTitle>
-          <CardDescription>Cole um lead por bloco (rótulo + valor) ou uma linha por lead, ou envie uma planilha.</CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-5">
-          <div className="grid gap-5 sm:grid-cols-2">
-            <div className="flex flex-col gap-2">
-              <Label className="flex items-center gap-1.5"><ClipboardPaste className="h-3.5 w-3.5" /> Colar texto</Label>
-              <Textarea
-                value={texto}
-                onChange={(e) => setTexto(e.target.value)}
-                rows={6}
-                placeholder={
-                  '* Email\nfulano@empresa.com.br\n* Full name\nFulano de Tal\n* Phone number\n+5511999999999\n\nou\n\n' +
-                  "Fulano de Tal, fulano@empresa.com.br, 11999999999"
-                }
-              />
-              {textoAviso && <p className="text-xs text-destructive">{textoAviso}</p>}
-              <Button type="button" variant="outline" size="sm" onClick={adicionarDeTexto} disabled={!texto.trim()} className="self-start">
-                <Plus className="h-3.5 w-3.5" /> Adicionar à lista
-              </Button>
-            </div>
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-base">
+          <Users className="h-4 w-4 text-primary" /> Lista de leads
+          {leads.length > 0 && <Badge variant="secondary">{leads.length}</Badge>}
+        </CardTitle>
+        <CardDescription>Cole um texto, envie uma planilha, ou edite direto na tabela abaixo.</CardDescription>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-5">
+        <Tabs defaultValue="texto">
+          <TabsList>
+            <TabsTrigger value="texto"><ClipboardPaste className="h-3.5 w-3.5" /> Colar texto</TabsTrigger>
+            <TabsTrigger value="upload"><Upload className="h-3.5 w-3.5" /> Upload de planilha</TabsTrigger>
+          </TabsList>
 
-            <div className="flex flex-col gap-2">
-              <Label className="flex items-center gap-1.5"><Upload className="h-3.5 w-3.5" /> Upload de planilha (CSV ou XLSX)</Label>
-              <Input ref={fileRef} type="file" accept=".csv,.xlsx" onChange={handleUpload} disabled={uploading} />
-              {uploadAviso && <p className="text-xs text-destructive">{uploadAviso}</p>}
-              {uploading && <p className="text-xs text-muted-foreground">Lendo arquivo…</p>}
-              {uploadRows && uploadCols.length > 0 && (
-                <div className="flex flex-col gap-2 rounded-xl border border-dashed border-border p-3">
-                  <p className="text-xs text-muted-foreground">{uploadRows.length} linha(s) — confira as colunas detectadas:</p>
-                  <div className="grid grid-cols-3 gap-2">
-                    <Select value={colNome} onValueChange={setColNome}>
-                      <SelectTrigger className="h-8"><SelectValue placeholder="Nome" /></SelectTrigger>
-                      <SelectContent>{uploadCols.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
-                    </Select>
-                    <Select value={colEmail} onValueChange={setColEmail}>
-                      <SelectTrigger className="h-8"><SelectValue placeholder="E-mail" /></SelectTrigger>
-                      <SelectContent>{uploadCols.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
-                    </Select>
-                    <Select value={colTel} onValueChange={setColTel}>
-                      <SelectTrigger className="h-8"><SelectValue placeholder="Telefone" /></SelectTrigger>
-                      <SelectContent>{uploadCols.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
-                    </Select>
-                  </div>
-                  <Button type="button" variant="outline" size="sm" onClick={adicionarDeUpload} className="self-start">
-                    <Plus className="h-3.5 w-3.5" /> Adicionar à lista
-                  </Button>
+          <TabsContent value="texto" className="flex flex-col gap-2">
+            <Textarea
+              value={texto}
+              onChange={(e) => setTexto(e.target.value)}
+              rows={5}
+              placeholder={
+                '* Email\nfulano@empresa.com.br\n* Full name\nFulano de Tal\n* Phone number\n+5511999999999\n\nou\n\n' +
+                "Fulano de Tal, fulano@empresa.com.br, 11999999999"
+              }
+            />
+            {textoAviso && <p className="text-xs text-destructive">{textoAviso}</p>}
+            <Button type="button" variant="outline" size="sm" onClick={adicionarDeTexto} disabled={!texto.trim()} className="self-start">
+              <Plus className="h-3.5 w-3.5" /> Adicionar à lista
+            </Button>
+          </TabsContent>
+
+          <TabsContent value="upload" className="flex flex-col gap-3">
+            <Input ref={fileRef} type="file" accept=".csv,.xlsx" onChange={handleUpload} disabled={uploading} />
+            {uploadAviso && <p className="text-xs text-destructive">{uploadAviso}</p>}
+            {uploading && <p className="text-xs text-muted-foreground">Lendo arquivo…</p>}
+            {uploadRows && uploadCols.length > 0 && (
+              <div className="flex flex-col gap-3 rounded-xl border border-dashed border-border p-3">
+                <p className="text-xs text-muted-foreground">{uploadRows.length} linha(s) — confira as colunas detectadas:</p>
+                <div className="grid grid-cols-3 gap-2">
+                  <Select value={colNome} onValueChange={setColNome}>
+                    <SelectTrigger className="h-8"><SelectValue placeholder="Nome" /></SelectTrigger>
+                    <SelectContent>{uploadCols.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+                  </Select>
+                  <Select value={colEmail} onValueChange={setColEmail}>
+                    <SelectTrigger className="h-8"><SelectValue placeholder="E-mail" /></SelectTrigger>
+                    <SelectContent>{uploadCols.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+                  </Select>
+                  <Select value={colTel} onValueChange={setColTel}>
+                    <SelectTrigger className="h-8"><SelectValue placeholder="Telefone" /></SelectTrigger>
+                    <SelectContent>{uploadCols.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+                  </Select>
                 </div>
-              )}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+                <Button type="button" variant="outline" size="sm" onClick={adicionarDeUpload} className="self-start">
+                  <Plus className="h-3.5 w-3.5" /> Adicionar à lista
+                </Button>
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">2. Revise a lista</CardTitle>
-          <CardDescription>Dá pra editar ou apagar linhas direto na tabela.</CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-3">
-          {leads.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Nenhum lead na lista ainda — cole texto ou envie uma planilha acima.</p>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Nome</TableHead>
-                  <TableHead>E-mail</TableHead>
-                  <TableHead>Telefone</TableHead>
-                  <TableHead className="w-10" />
+        {leads.length === 0 ? (
+          <p className="rounded-xl border border-dashed border-border py-8 text-center text-sm text-muted-foreground">
+            Nenhum lead na lista ainda.
+          </p>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Nome</TableHead>
+                <TableHead>E-mail</TableHead>
+                <TableHead>Telefone</TableHead>
+                <TableHead className="w-10" />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {leads.map((l, i) => (
+                <TableRow key={i}>
+                  <TableCell><Input className="h-8" value={l.nome} onChange={(e) => atualizarLinha(i, "nome", e.target.value)} /></TableCell>
+                  <TableCell><Input className="h-8" value={l.email} onChange={(e) => atualizarLinha(i, "email", e.target.value)} /></TableCell>
+                  <TableCell><Input className="h-8" value={l.telefone} onChange={(e) => atualizarLinha(i, "telefone", e.target.value)} /></TableCell>
+                  <TableCell>
+                    <Button type="button" variant="ghost" size="icon" onClick={() => removerLinha(i)}>
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {leads.map((l, i) => (
-                  <TableRow key={i}>
-                    <TableCell><Input className="h-8" value={l.nome} onChange={(e) => atualizarLinha(i, "nome", e.target.value)} /></TableCell>
-                    <TableCell><Input className="h-8" value={l.email} onChange={(e) => atualizarLinha(i, "email", e.target.value)} /></TableCell>
-                    <TableCell><Input className="h-8" value={l.telefone} onChange={(e) => atualizarLinha(i, "telefone", e.target.value)} /></TableCell>
-                    <TableCell>
-                      <Button type="button" variant="ghost" size="icon" onClick={() => removerLinha(i)}>
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-          {leads.length > 50 && (
-            <Alert variant="info">
-              <AlertDescription>Lista tem {leads.length} leads — só os primeiros 50 serão processados por vez (rode de novo pro restante depois).</AlertDescription>
-            </Alert>
-          )}
-        </CardContent>
-      </Card>
-    </div>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+        {leads.length > 50 && (
+          <Alert variant="info">
+            <AlertDescription>Lista tem {leads.length} leads — só os primeiros 50 serão processados por vez (rode de novo pro restante depois).</AlertDescription>
+          </Alert>
+        )}
+      </CardContent>
+    </Card>
   );
 }
