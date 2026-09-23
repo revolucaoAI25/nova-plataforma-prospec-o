@@ -144,7 +144,7 @@ function FlowCanvasInner({
       </div>
 
       {noSelecionado && (
-        <div className="w-72 shrink-0 border-l border-border bg-card/40">
+        <div className="w-72 shrink-0 overflow-y-auto border-l border-border bg-card/40 sm:w-80 lg:w-96">
           <FlowNodeConfigPanel
             node={noSelecionado}
             onChange={(config) => atualizarConfig(noSelecionado.id, config)}

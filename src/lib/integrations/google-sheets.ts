@@ -130,14 +130,15 @@ async function garantirLinhas(
   }
 }
 
-export async function exportar(
-  resultados: LeadRow[],
+async function escreverPlanilha(
   creds: OAuthCreds,
   sheetId: string,
-  abaNome = "Planilha1",
-  modo: "substituir" | "acrescentar" = "substituir",
+  abaNome: string,
+  modo: "substituir" | "acrescentar",
+  cabecalho: string[],
+  linhas: string[][],
 ): Promise<{ ok: boolean; msg: string }> {
-  if (!resultados.length) return { ok: false, msg: "Nenhum resultado para exportar." };
+  if (!linhas.length) return { ok: false, msg: "Nenhum resultado para exportar." };
 
   const auth = await credsClient(creds);
   const sheets = google.sheets({ version: "v4", auth });
@@ -154,8 +155,6 @@ export async function exportar(
     };
   }
 
-  const cabecalho = COLUNAS_EXPORT.map(([, label]) => label);
-  const linhas = resultados.map((r) => COLUNAS_EXPORT.map(([col]) => String(r[col] ?? "")));
   const escapedAba = abaNome.replace(/'/g, "''");
 
   try {
@@ -211,6 +210,38 @@ export async function exportar(
   } catch (e) {
     return { ok: false, msg: `Erro ao escrever: ${(e as Error).message} | Planilha: ${sheetTitle} | Aba: ${abaNome}` };
   }
+}
+
+export async function exportar(
+  resultados: LeadRow[],
+  creds: OAuthCreds,
+  sheetId: string,
+  abaNome = "Planilha1",
+  modo: "substituir" | "acrescentar" = "substituir",
+): Promise<{ ok: boolean; msg: string }> {
+  const cabecalho = COLUNAS_EXPORT.map(([, label]) => label);
+  const linhas = resultados.map((r) => COLUNAS_EXPORT.map(([col]) => String(r[col] ?? "")));
+  return escreverPlanilha(creds, sheetId, abaNome, modo, cabecalho, linhas);
+}
+
+/**
+ * Export de colunas dinâmicas — usado pelo nó `destino_sheets` do
+ * construtor de fluxos, cujo lote pode carregar campos além do `LeadRow`
+ * fixo (ex.: colunas de enriquecimento, ou colunas originais de uma
+ * planilha-gatilho). `colunas` define ordem e rótulo; valores ausentes
+ * viram string vazia, igual ao `exportar()` acima.
+ */
+export async function exportarGenerico(
+  linhasObjeto: Array<Record<string, unknown>>,
+  colunas: Array<{ chave: string; label: string }>,
+  creds: OAuthCreds,
+  sheetId: string,
+  abaNome = "Planilha1",
+  modo: "substituir" | "acrescentar" = "substituir",
+): Promise<{ ok: boolean; msg: string }> {
+  const cabecalho = colunas.map((c) => c.label);
+  const linhas = linhasObjeto.map((r) => colunas.map((c) => String(r[c.chave] ?? "")));
+  return escreverPlanilha(creds, sheetId, abaNome, modo, cabecalho, linhas);
 }
 
 export function extrairSheetId(urlOuId: string): string | null {

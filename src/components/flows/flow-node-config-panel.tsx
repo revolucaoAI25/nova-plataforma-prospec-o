@@ -6,8 +6,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Textarea } from "@/components/ui/textarea";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
-import { FLOW_NODE_TYPES } from "@/lib/flow/node-types";
+import { MultiSelect, type MultiSelectOption } from "@/components/search/multi-select";
+import { FLOW_NODE_TYPES, FILTRO_OPERADORES } from "@/lib/flow/node-types";
+import { CNAES } from "@/lib/data/cnaes";
+import { ESTADOS } from "@/lib/data/estados";
+import { NOMES_NICHOS } from "@/lib/data/nichos";
+import { LINKEDIN_INDUSTRIES } from "@/lib/data/linkedin-industries";
 import type { FlowNode } from "@/lib/database.types";
 
 const DIAS = [
@@ -15,12 +22,37 @@ const DIAS = [
   { value: 4, label: "Qui" }, { value: 5, label: "Sex" }, { value: 6, label: "Sáb" }, { value: 0, label: "Dom" },
 ];
 
+const CNAE_OPTIONS: MultiSelectOption[] = CNAES.map((c) => ({ value: c.codigo, label: `${c.codigo} — ${c.descricao}`, group: c.setor }));
+const UF_OPTIONS: MultiSelectOption[] = Object.entries(ESTADOS).map(([sigla, nome]) => ({ value: sigla, label: `${sigla} — ${nome}` }));
+const PORTE_OPTIONS: MultiSelectOption[] = [
+  { value: "01", label: "Microempresa (ME)" },
+  { value: "03", label: "Empresa de Pequeno Porte (EPP)" },
+  { value: "05", label: "Demais" },
+];
+const OPERADOR_LABEL: Record<(typeof FILTRO_OPERADORES)[number], string> = {
+  preenchido: "está preenchido",
+  vazio: "está vazio",
+  contem: "contém",
+  nao_contem: "não contém",
+  igual: "é igual a",
+  diferente: "é diferente de",
+};
+
 function Campo({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-1.5">
       <Label className="text-xs text-muted-foreground">{label}</Label>
       {children}
     </div>
+  );
+}
+
+function CampoCheckbox({ checked, onCheckedChange, children }: { checked: boolean; onCheckedChange: (c: boolean) => void; children: React.ReactNode }) {
+  return (
+    <label className="flex items-center gap-2 text-sm text-foreground">
+      <Checkbox checked={checked} onCheckedChange={(c) => onCheckedChange(Boolean(c))} />
+      {children}
+    </label>
   );
 }
 
@@ -32,6 +64,23 @@ function ListaField({ label, valor, onChange, placeholder }: { label: string; va
         placeholder={placeholder}
         onChange={(e) => onChange(e.target.value.split(",").map((v) => v.trim()).filter(Boolean))}
       />
+    </Campo>
+  );
+}
+
+function CampoRadio<T extends string>({
+  label, value, onChange, opcoes,
+}: { label: string; value: T; onChange: (v: T) => void; opcoes: ReadonlyArray<readonly [T, string]> }) {
+  return (
+    <Campo label={label}>
+      <RadioGroup value={value} onValueChange={(v) => onChange(v as T)} className="flex flex-col gap-2">
+        {opcoes.map(([v, lbl]) => (
+          <label key={v || "_vazio"} className="flex items-center gap-2 text-sm">
+            <RadioGroupItem value={v} />
+            {lbl}
+          </label>
+        ))}
+      </RadioGroup>
     </Campo>
   );
 }
@@ -50,6 +99,8 @@ function useListaFetch<T>(url: string | null): T[] {
   }, [url]);
   return dados;
 }
+
+// ── Gatilhos ─────────────────────────────────────────────────────
 
 function CamposGatilhoAgendado({ config, set }: CamposProps) {
   const diasSemana: number[] = Array.isArray(config.diasSemana) ? (config.diasSemana as number[]) : [];
@@ -96,27 +147,147 @@ function CamposGatilhoPlanilha({ config, set }: CamposProps) {
   );
 }
 
+// ── Extração ─────────────────────────────────────────────────────
+
 function CamposExtracaoCnpj({ config, set }: CamposProps) {
+  const recuperacaoJudicial = Boolean(config.recuperacaoJudicial);
+  const cnaes = Array.isArray(config.cnaes) ? (config.cnaes as string[]) : [];
+  const uf = Array.isArray(config.uf) ? (config.uf as string[]) : [];
+  const municipio = Array.isArray(config.municipio) ? (config.municipio as string[]) : [];
+  const porte = Array.isArray(config.porte) ? (config.porte as string[]) : [];
+  const mapsModo = String(config.mapsModo || "nao_usar");
+
   return (
     <>
-      <Campo label="Nicho (termo de busca)"><Input value={String(config.nicho || "")} onChange={(e) => set({ nicho: e.target.value })} /></Campo>
-      <Campo label="CNAE"><Input value={String(config.cnae || "")} onChange={(e) => set({ cnae: e.target.value })} /></Campo>
-      <Campo label="UF"><Input value={String(config.uf || "")} maxLength={2} onChange={(e) => set({ uf: e.target.value.toUpperCase() })} /></Campo>
-      <Campo label="Cidade/Município"><Input value={String(config.cidade || "")} onChange={(e) => set({ cidade: e.target.value })} /></Campo>
-      <Campo label="Porte"><Input value={String(config.porte || "")} placeholder="MICRO, PEQUENO..." onChange={(e) => set({ porte: e.target.value })} /></Campo>
-      <Campo label="Limite de resultados">
-        <Input type="number" min={1} max={1000} value={Number(config.limite ?? 100)} onChange={(e) => set({ limite: Number(e.target.value) })} />
+      <CampoCheckbox checked={recuperacaoJudicial} onCheckedChange={(c) => set({ recuperacaoJudicial: c })}>
+        Modo Recuperação Judicial (dispensa CNAE)
+      </CampoCheckbox>
+
+      {!recuperacaoJudicial && (
+        <>
+          <Campo label="CNAEs">
+            <MultiSelect options={CNAE_OPTIONS} selected={cnaes} onChange={(v) => set({ cnaes: v })} placeholder="Buscar código, descrição ou setor…" />
+          </Campo>
+          <Campo label="Ou CNAEs manuais (separados por vírgula)">
+            <Input value={String(config.cnaeManual || "")} onChange={(e) => set({ cnaeManual: e.target.value })} placeholder="6911701, 6912500" />
+          </Campo>
+          <CampoRadio
+            label="Tipo de CNAE"
+            value={(config.cnaeTipo as string) || "principal"}
+            onChange={(v) => set({ cnaeTipo: v })}
+            opcoes={[["principal", "Primário"], ["secundario", "Secundário"], ["ambos", "Primário ou Secundário"]]}
+          />
+        </>
+      )}
+
+      <Campo label="Estados (UF)">
+        <MultiSelect options={UF_OPTIONS} selected={uf} onChange={(v) => set({ uf: v })} placeholder="Buscar estado…" />
+      </Campo>
+      <ListaField label="Municípios (opcional, separados por vírgula)" valor={municipio} onChange={(v) => set({ municipio: v })} placeholder="São Paulo, Campinas" />
+
+      <Campo label="Porte">
+        <MultiSelect options={PORTE_OPTIONS} selected={porte} onChange={(v) => set({ porte: v })} placeholder="Todos os portes" />
+      </Campo>
+      <CampoRadio
+        label="Matriz/Filial"
+        value={(config.matrizFilial as string) || ""}
+        onChange={(v) => set({ matrizFilial: v })}
+        opcoes={[["", "Todos"], ["MATRIZ", "Somente Matriz"], ["FILIAL", "Somente Filial"]]}
+      />
+      <CampoRadio
+        label="Simples Nacional"
+        value={(config.simplesOptante as string) || "indiferente"}
+        onChange={(v) => set({ simplesOptante: v })}
+        opcoes={[["indiferente", "Indiferente"], ["apenas", "Apenas optantes"], ["excluir", "Excluir optantes"]]}
+      />
+      <CampoRadio
+        label="MEI"
+        value={(config.meiOptante as string) || "indiferente"}
+        onChange={(v) => set({ meiOptante: v })}
+        opcoes={[["indiferente", "Indiferente"], ["apenas", "Apenas MEI"], ["excluir", "Excluir MEI"]]}
+      />
+
+      <div className="grid grid-cols-2 gap-2">
+        <Campo label="Abertura — de">
+          <Input type="date" value={String(config.dataAberturaInicio || "")} onChange={(e) => set({ dataAberturaInicio: e.target.value })} />
+        </Campo>
+        <Campo label="Abertura — até">
+          <Input type="date" value={String(config.dataAberturaFim || "")} onChange={(e) => set({ dataAberturaFim: e.target.value })} />
+        </Campo>
+        <Campo label="Capital mín. (R$)">
+          <Input type="number" min={0} value={(config.capitalMin as number) ?? ""} onChange={(e) => set({ capitalMin: e.target.value ? Number(e.target.value) : null })} />
+        </Campo>
+        <Campo label="Capital máx. (R$)">
+          <Input type="number" min={0} value={(config.capitalMax as number) ?? ""} onChange={(e) => set({ capitalMax: e.target.value ? Number(e.target.value) : null })} />
+        </Campo>
+      </div>
+
+      <CampoRadio
+        label="Tipo de telefone"
+        value={(config.tipoTelefone as string) || "todos"}
+        onChange={(v) => set({ tipoTelefone: v })}
+        opcoes={[["todos", "Todos"], ["celular", "Somente celular"], ["fixo", "Somente fixo"]]}
+      />
+      <CampoCheckbox checked={config.comTelefone !== false} onCheckedChange={(c) => set({ comTelefone: c })}>Apenas com telefone</CampoCheckbox>
+      <CampoCheckbox checked={Boolean(config.comEmail)} onCheckedChange={(c) => set({ comEmail: c })}>Apenas com e-mail</CampoCheckbox>
+      <CampoCheckbox checked={config.excluirEmailContab !== false} onCheckedChange={(c) => set({ excluirEmailContab: c })}>Excluir e-mails de contabilidade</CampoCheckbox>
+      <CampoCheckbox checked={config.apenasNovos !== false} onCheckedChange={(c) => set({ apenasNovos: c })}>Apenas leads novos</CampoCheckbox>
+
+      <CampoRadio
+        label="Google Maps"
+        value={mapsModo}
+        onChange={(v) => set({ mapsModo: v })}
+        opcoes={[
+          ["nao_usar", "Não usar"],
+          ["enriquecer", "Enriquecer (avaliação, telefone extra, site)"],
+          ["filtrar", "Filtrar (manter só quem tem perfil no Maps)"],
+          ["filtrar_enriquecer", "Filtrar e enriquecer"],
+        ]}
+      />
+      {(mapsModo === "filtrar" || mapsModo === "filtrar_enriquecer") && (
+        <Campo label="Mínimo de avaliações no Maps">
+          <Input type="number" min={0} value={Number(config.minAvaliacoes ?? 0)} onChange={(e) => set({ minAvaliacoes: Number(e.target.value) })} />
+        </Campo>
+      )}
+
+      <Campo label="Limite de resultados (até 2000)">
+        <Input type="number" min={1} max={2000} value={Number(config.limite ?? 300)} onChange={(e) => set({ limite: Number(e.target.value) })} />
       </Campo>
     </>
   );
 }
 
 function CamposExtracaoMaps({ config, set }: CamposProps) {
+  const cidades = Array.isArray(config.cidades) ? (config.cidades as string[]) : [];
+  const estados = Array.isArray(config.estados) ? (config.estados as string[]) : [];
   return (
     <>
-      <Campo label="Nicho (termo de busca)"><Input value={String(config.nicho || "")} onChange={(e) => set({ nicho: e.target.value })} /></Campo>
-      <Campo label="Cidade"><Input value={String(config.cidade || "")} onChange={(e) => set({ cidade: e.target.value })} /></Campo>
-      <Campo label="Estado (UF)"><Input value={String(config.estado || "")} maxLength={2} onChange={(e) => set({ estado: e.target.value.toUpperCase() })} /></Campo>
+      <Campo label="Nicho (catálogo)">
+        <Select value={String(config.nicho || "__custom")} onValueChange={(v) => set({ nicho: v === "__custom" ? "" : v })}>
+          <SelectTrigger><SelectValue placeholder="Escolha um nicho" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="__custom">Personalizado (usar termo abaixo)</SelectItem>
+            {NOMES_NICHOS.map((n) => <SelectItem key={n} value={n}>{n}</SelectItem>)}
+          </SelectContent>
+        </Select>
+      </Campo>
+      {!config.nicho && (
+        <Campo label="Termo de busca personalizado">
+          <Input value={String(config.queryCustom || "")} onChange={(e) => set({ queryCustom: e.target.value })} placeholder="Ex: pet shop, barbearia…" />
+        </Campo>
+      )}
+      <Campo label="Subnicho (opcional)"><Input value={String(config.subnicho || "")} onChange={(e) => set({ subnicho: e.target.value })} /></Campo>
+
+      <ListaField label="Cidades (opcional, separadas por vírgula)" valor={cidades} onChange={(v) => set({ cidades: v })} placeholder="São Paulo, Campinas" />
+      <Campo label="Estado(s) (UF)">
+        <MultiSelect options={UF_OPTIONS} selected={estados} onChange={(v) => set({ estados: v })} placeholder="Buscar estado…" />
+      </Campo>
+      <p className="text-xs text-muted-foreground">Com cidade(s) preenchida(s), selecione exatamente 1 estado. Sem cidade, pode escolher vários estados (busca ampla).</p>
+
+      <CampoCheckbox checked={config.showPhone !== false} onCheckedChange={(c) => set({ showPhone: c })}>Buscar telefone e site</CampoCheckbox>
+      <CampoCheckbox checked={config.showRating !== false} onCheckedChange={(c) => set({ showRating: c })}>Incluir avaliação</CampoCheckbox>
+      <CampoCheckbox checked={config.apenasNovos !== false} onCheckedChange={(c) => set({ apenasNovos: c })}>Apenas leads novos</CampoCheckbox>
+
       <Campo label="Limite de resultados">
         <Input type="number" min={1} max={500} value={Number(config.limite ?? 60)} onChange={(e) => set({ limite: Number(e.target.value) })} />
       </Campo>
@@ -127,9 +298,16 @@ function CamposExtracaoMaps({ config, set }: CamposProps) {
 function CamposExtracaoInstagram({ config, set }: CamposProps) {
   return (
     <>
-      <Campo label="Perfil alvo (@usuario)"><Input value={String(config.termoBusca || "")} onChange={(e) => set({ termoBusca: e.target.value })} /></Campo>
+      <CampoRadio
+        label="Tipo"
+        value={(config.tipo as string) || "seguidores"}
+        onChange={(v) => set({ tipo: v })}
+        opcoes={[["seguidores", "Seguidores"], ["seguindo", "Seguindo"]]}
+      />
+      <Campo label="Username ou URL do perfil"><Input value={String(config.termoBusca || "")} onChange={(e) => set({ termoBusca: e.target.value })} /></Campo>
+      <CampoCheckbox checked={config.apenasNovos !== false} onCheckedChange={(c) => set({ apenasNovos: c })}>Apenas leads novos</CampoCheckbox>
       <Campo label="Limite de resultados">
-        <Input type="number" min={1} max={500} value={Number(config.limite ?? 60)} onChange={(e) => set({ limite: Number(e.target.value) })} />
+        <Input type="number" min={100} max={1000} value={Number(config.limite ?? 200)} onChange={(e) => set({ limite: Number(e.target.value) })} />
       </Campo>
     </>
   );
@@ -138,15 +316,17 @@ function CamposExtracaoInstagram({ config, set }: CamposProps) {
 function CamposExtracaoLinkedin({ config, set }: CamposProps) {
   const cargos = Array.isArray(config.cargos) ? (config.cargos as string[]) : [];
   const localizacoes = Array.isArray(config.localizacoes) ? (config.localizacoes as string[]) : [];
+  const industrias = Array.isArray(config.industrias) ? (config.industrias as string[]) : [];
   return (
     <>
       <ListaField label="Cargos (separados por vírgula)" valor={cargos} onChange={(v) => set({ cargos: v })} placeholder="CEO, Diretor comercial" />
       <ListaField label="Localizações (separadas por vírgula)" valor={localizacoes} onChange={(v) => set({ localizacoes: v })} placeholder="São Paulo, Brasil" />
+      <Campo label="Tipo de empresa (setor/indústria)">
+        <MultiSelect options={LINKEDIN_INDUSTRIES} selected={industrias} onChange={(v) => set({ industrias: v })} placeholder="Buscar setor…" />
+      </Campo>
       <Campo label="Palavra-chave"><Input value={String(config.palavraChave || "")} onChange={(e) => set({ palavraChave: e.target.value })} /></Campo>
-      <label className="flex items-center gap-2 text-sm">
-        <Checkbox checked={Boolean(config.buscarEmail)} onCheckedChange={(c) => set({ buscarEmail: Boolean(c) })} />
-        Buscar e-mail
-      </label>
+      <CampoCheckbox checked={Boolean(config.buscarEmail)} onCheckedChange={(c) => set({ buscarEmail: c })}>Buscar e-mail</CampoCheckbox>
+      <CampoCheckbox checked={config.apenasNovos !== false} onCheckedChange={(c) => set({ apenasNovos: c })}>Apenas leads novos</CampoCheckbox>
       <Campo label="Limite de resultados">
         <Input type="number" min={1} max={500} value={Number(config.limite ?? 100)} onChange={(e) => set({ limite: Number(e.target.value) })} />
       </Campo>
@@ -172,7 +352,10 @@ function CamposFonteHistorico({ config, set }: CamposProps) {
   );
 }
 
+// ── Enriquecimento ───────────────────────────────────────────────
+
 function CamposEnriquecimentoIa({ config, set }: CamposProps) {
+  const camposCustomizados = Array.isArray(config.camposCustomizados) ? (config.camposCustomizados as string[]) : [];
   return (
     <>
       <Campo label="Nível de raciocínio">
@@ -186,14 +369,73 @@ function CamposEnriquecimentoIa({ config, set }: CamposProps) {
         </Select>
       </Campo>
       {([["buscarSocios", "Buscar sócios"], ["buscarFundacao", "Buscar data de fundação"], ["buscarProcessos", "Buscar processos (Jusbrasil)"]] as const).map(([chave, label]) => (
-        <label key={chave} className="flex items-center gap-2 text-sm">
-          <Checkbox checked={config[chave] !== false} onCheckedChange={(c) => set({ [chave]: Boolean(c) })} />
-          {label}
-        </label>
+        <CampoCheckbox key={chave} checked={config[chave] !== false} onCheckedChange={(c) => set({ [chave]: c })}>{label}</CampoCheckbox>
       ))}
+      <Campo label="Outros dados pra IA tentar descobrir (um por linha)">
+        <Textarea
+          rows={3}
+          value={camposCustomizados.join("\n")}
+          onChange={(e) => set({ camposCustomizados: e.target.value.split("\n").map((v) => v.trim()).filter(Boolean) })}
+          placeholder={"Número de funcionários\nFaturamento estimado"}
+        />
+      </Campo>
+      <p className="text-xs text-muted-foreground">
+        O resultado (empresa, cargo, site, resumo…) é mesclado nos próprios leads do fluxo — qualquer nó de exportação ou disparo depois deste já tem acesso a esses campos.
+      </p>
     </>
   );
 }
+
+function CamposEnriquecimentoMaps({ config, set }: CamposProps) {
+  const filtrar = Boolean(config.filtrar);
+  return (
+    <>
+      <CampoCheckbox checked={config.showPhone !== false} onCheckedChange={(c) => set({ showPhone: c })}>Preencher telefone/site do Maps quando faltar</CampoCheckbox>
+      <CampoCheckbox checked={filtrar} onCheckedChange={(c) => set({ filtrar: c })}>Filtrar — manter só quem tem perfil no Maps</CampoCheckbox>
+      {filtrar && (
+        <Campo label="Mínimo de avaliações">
+          <Input type="number" min={0} value={Number(config.minAvaliacoes ?? 0)} onChange={(e) => set({ minAvaliacoes: Number(e.target.value) })} />
+        </Campo>
+      )}
+    </>
+  );
+}
+
+// ── Controle de fluxo ─────────────────────────────────────────────
+
+function CamposFiltroLeads({ config, set }: CamposProps) {
+  return (
+    <>
+      <Campo label="Campo">
+        <Input value={String(config.campo || "")} onChange={(e) => set({ campo: e.target.value })} placeholder="email, uf, enriquecimento_status…" />
+      </Campo>
+      <Campo label="Condição">
+        <Select value={String(config.operador || "preenchido")} onValueChange={(v) => set({ operador: v })}>
+          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectContent>
+            {FILTRO_OPERADORES.map((op) => <SelectItem key={op} value={op}>{OPERADOR_LABEL[op]}</SelectItem>)}
+          </SelectContent>
+        </Select>
+      </Campo>
+      {!["preenchido", "vazio"].includes(String(config.operador || "preenchido")) && (
+        <Campo label="Valor">
+          <Input value={String(config.valor || "")} onChange={(e) => set({ valor: e.target.value })} />
+        </Campo>
+      )}
+      <p className="text-xs text-muted-foreground">Leads que não baterem a condição saem do fluxo a partir daqui (não é ramificação — só reduz o lote).</p>
+    </>
+  );
+}
+
+function CamposEspera({ config, set }: CamposProps) {
+  return (
+    <Campo label="Esperar (minutos)">
+      <Input type="number" min={1} max={43200} value={Number(config.minutos ?? 60)} onChange={(e) => set({ minutos: Number(e.target.value) })} />
+    </Campo>
+  );
+}
+
+// ── Disparo / destino ─────────────────────────────────────────────
 
 function CamposDisparoWhatsapp({ config, set }: CamposProps) {
   const campanhas = useListaFetch<{ id: string; nome: string; status: string }>("/api/dispatch/campaigns");
@@ -223,6 +465,9 @@ function CamposDestinoSheets({ config, set }: CamposProps) {
           </SelectContent>
         </Select>
       </Campo>
+      <Campo label="Ou cole o ID/URL da planilha">
+        <Input value={sheetId} onChange={(e) => set({ sheetId: e.target.value })} placeholder="https://docs.google.com/spreadsheets/d/…" />
+      </Campo>
       <Campo label="Aba">
         <Select value={String(config.aba || "")} onValueChange={(v) => set({ aba: v })}>
           <SelectTrigger><SelectValue placeholder="Selecione a aba" /></SelectTrigger>
@@ -230,6 +475,9 @@ function CamposDestinoSheets({ config, set }: CamposProps) {
             {abas.map((a) => <SelectItem key={a} value={a}>{a}</SelectItem>)}
           </SelectContent>
         </Select>
+      </Campo>
+      <Campo label="Ou digite o nome da aba">
+        <Input value={String(config.aba || "")} onChange={(e) => set({ aba: e.target.value })} />
       </Campo>
       <Campo label="Modo">
         <Select value={String(config.modo || "acrescentar")} onValueChange={(v) => set({ modo: v })}>
@@ -240,6 +488,9 @@ function CamposDestinoSheets({ config, set }: CamposProps) {
           </SelectContent>
         </Select>
       </Campo>
+      <p className="text-xs text-muted-foreground">
+        Exporta todos os campos presentes nos leads — inclusive os de enriquecimento, quando esse nó vier depois de um nó de enriquecimento.
+      </p>
     </>
   );
 }
@@ -261,6 +512,9 @@ function CamposDoNo({ node, config, set }: { node: FlowNode } & CamposProps) {
     case "extracao_linkedin": return <CamposExtracaoLinkedin config={config} set={set} />;
     case "fonte_historico": return <CamposFonteHistorico config={config} set={set} />;
     case "enriquecimento_ia": return <CamposEnriquecimentoIa config={config} set={set} />;
+    case "enriquecimento_maps": return <CamposEnriquecimentoMaps config={config} set={set} />;
+    case "filtro_leads": return <CamposFiltroLeads config={config} set={set} />;
+    case "espera": return <CamposEspera config={config} set={set} />;
     case "disparo_whatsapp": return <CamposDisparoWhatsapp config={config} set={set} />;
     case "disparo_email": return <p className="text-sm text-muted-foreground">Disparo por e-mail ainda não está disponível.</p>;
     case "destino_sheets": return <CamposDestinoSheets config={config} set={set} />;

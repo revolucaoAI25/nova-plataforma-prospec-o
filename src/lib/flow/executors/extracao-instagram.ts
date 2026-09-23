@@ -3,6 +3,7 @@ import { resolverChaveApify, registrarUsoChaveApify } from "@/lib/apify-key";
 import { buscarInstagram } from "@/lib/integrations/instagram";
 import { salvarPesquisa, salvarLeads, buscarInstagramIdsExistentes } from "@/lib/db";
 import type { Json } from "@/lib/database.types";
+import type { InstagramTipo } from "@/lib/types";
 import type { FlowExecutorContext, FlowExecutorOutcome } from "../executor-types";
 
 export async function executarExtracaoInstagram(ctx: FlowExecutorContext): Promise<FlowExecutorOutcome> {
@@ -10,7 +11,9 @@ export async function executarExtracaoInstagram(ctx: FlowExecutorContext): Promi
   const config = (node.config || {}) as Record<string, unknown>;
   const termoBusca = String(config.termoBusca || "").trim();
   if (!termoBusca) return { status: "erro", erro: "Informe o termo de busca (perfil) do Instagram." };
-  const limite = Number(config.limite ?? 60);
+  const tipo: InstagramTipo = config.tipo === "seguindo" ? "seguindo" : "seguidores";
+  const apenasNovos = config.apenasNovos !== false;
+  const limite = Number(config.limite ?? 200);
 
   const profile = await getProfile(sb, userId);
   if (!profile) return { status: "erro", erro: "Perfil não encontrado." };
@@ -22,13 +25,13 @@ export async function executarExtracaoInstagram(ctx: FlowExecutorContext): Promi
   const resolucao = resolverChaveApify(profile);
   if (!resolucao.key) return { status: "erro", erro: "Nenhuma chave Apify configurada." };
 
-  const excludeIds = await buscarInstagramIdsExistentes(sb, userId);
+  const excludeIds = apenasNovos ? await buscarInstagramIdsExistentes(sb, userId) : undefined;
 
   let resultados;
   try {
     resultados = await buscarInstagram({
       apifyApiKey: resolucao.key,
-      tipo: "seguidores",
+      tipo,
       alvo: termoBusca,
       limite,
       excludeIds,
@@ -41,7 +44,7 @@ export async function executarExtracaoInstagram(ctx: FlowExecutorContext): Promi
   const searchId = await salvarPesquisa(sb, userId, {
     fonte: "instagram",
     nicho: "Instagram",
-    subnicho: "Seguidor",
+    subnicho: tipo === "seguindo" ? "Following" : "Seguidor",
     cidade: "",
     estado: "",
     localidade: termoBusca,

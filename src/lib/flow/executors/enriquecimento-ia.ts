@@ -1,4 +1,5 @@
-import type { EnrichmentOpcoes } from "@/lib/database.types";
+import type { EnrichmentLeadRow, EnrichmentOpcoes } from "@/lib/database.types";
+import { mesclarEnriquecimentoNoLote } from "../enrichment-merge";
 import type { FlowExecutorContext, FlowExecutorOutcome } from "../executor-types";
 
 const LIMITE_LOTE = 50;
@@ -20,11 +21,14 @@ export async function executarEnriquecimentoIa(ctx: FlowExecutorContext): Promis
     const { data: run } = await sb.from("enrichment_runs").select("*").eq("id", runIdExistente).single();
     if (!run) return { status: "erro", erro: "Execução de enriquecimento não encontrada." };
     if (run.status === "concluido") {
+      const { data: enrichmentLeads } = await sb.from("enrichment_leads").select("*").eq("run_id", runIdExistente);
+      const loteEnriquecido = mesclarEnriquecimentoNoLote(lote, (enrichmentLeads as EnrichmentLeadRow[]) || []);
       return {
         status: "concluido",
         leadsEntrada: lote.length,
         leadsSaida: lote.length,
         detalhe: { enrichmentRunId: runIdExistente, encontrados: run.encontrados, naoEncontrados: run.nao_encontrados, erros: run.erros },
+        contextoPatch: { lote: loteEnriquecido },
       };
     }
     if (run.status === "erro") {

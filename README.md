@@ -163,6 +163,30 @@ mas nada é processado — é só fila).
   aparece na paleta como módulo "em breve" (sem infra de envio ainda) —
   decisão explícita de representar o que está no roadmap em vez de omitir.
   v1 é um grafo linear (1 conexão de saída por nó, sem condicionais).
+- **Fluxos — paridade de filtros e onde os dados enriquecidos vão parar**:
+  rodada de expansão depois do feedback de que os nós de extração tinham
+  bem menos opções que as buscas avulsas correspondentes, e de que não
+  ficava claro onde o resultado do enriquecimento era usado. CNPJ/Maps/
+  Instagram/LinkedIn agora têm os mesmos filtros dos formulários avulsos
+  (CNAEs múltiplos, porte, Simples/MEI, datas, capital, tipo de telefone,
+  múltiplas cidades/UFs, catálogo de nicho, tipo seguidores/seguindo,
+  indústrias do LinkedIn por ID — bug real corrigido: o campo aceitava
+  texto livre, mas `buscarLinkedIn()` espera IDs numéricos do catálogo).
+  Onde os dados enriquecidos vão: o resultado do nó `enriquecimento_ia` é
+  mesclado DE VOLTA nos próprios leads do lote (campos `enriquecimento_*`,
+  ver `src/lib/flow/enrichment-merge.ts`) — não fica isolado numa tabela à
+  parte como no uso avulso de `/enriquecimento`. Isso resolve as duas
+  perguntas de uma vez: os dados ficam nos mesmos leads, e vão pra
+  qualquer planilha que o `destino_sheets` seguinte apontar (a mesma de
+  origem, se for o caso, ou uma nova) — esse nó agora exporta colunas
+  dinâmicas (`exportarGenerico()` em `google-sheets.ts`), não só o
+  conjunto fixo do export avulso. Três módulos novos, pra dar mais
+  customização real (não templates): `enriquecimento_maps` (generaliza o
+  `mapsModo` que só existia embutido na busca CNPJ — cruza QUALQUER lote
+  com o Google Maps), `filtro_leads` (reduz o lote por uma condição
+  simples — sem violar a regra de grafo linear, já que só filtra, não
+  ramifica) e `espera` (pausa assíncrona entre nós, mesmo padrão multi-tick
+  do enriquecimento).
 
 ## Estrutura
 

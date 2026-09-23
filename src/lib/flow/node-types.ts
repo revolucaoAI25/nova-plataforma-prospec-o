@@ -7,7 +7,7 @@ import type { FlowNodeTipo } from "@/lib/database.types";
  * validação da API (schema de config via zod).
  */
 
-export type FlowNodeCategoria = "gatilho" | "extracao" | "enriquecimento" | "disparo" | "destino";
+export type FlowNodeCategoria = "gatilho" | "extracao" | "enriquecimento" | "controle" | "disparo" | "destino";
 
 export type LucideIconName =
   | "CalendarClock"
@@ -17,10 +17,13 @@ export type LucideIconName =
   | "Play"
   | "Building2"
   | "MapPin"
+  | "MapPinned"
   | "AtSign"
   | "UserSearch"
   | "History"
   | "BrainCircuit"
+  | "SlidersHorizontal"
+  | "Hourglass"
   | "Send"
   | "Mail";
 
@@ -46,34 +49,79 @@ const gatilhoPlanilhaConfigSchema = z.object({
 
 const gatilhoManualConfigSchema = z.object({}).default({});
 
-const extracaoCnpjConfigSchema = z.object({
-  nicho: z.string().min(1),
-  subnicho: z.string().nullable().default(null),
-  uf: z.string().nullable().default(null),
-  cidade: z.string().nullable().default(null),
-  cnae: z.string().nullable().default(null),
-  porte: z.string().nullable().default(null),
-  limite: z.number().int().min(1).max(1000).default(100),
-});
+// Paridade com o formulário avulso de busca CNPJ (src/components/search/cnpj-search-form.tsx).
+const extracaoCnpjConfigSchema = z
+  .object({
+    cnaes: z.array(z.string()).default([]),
+    cnaeManual: z.string().default(""),
+    cnaeTipo: z.enum(["principal", "secundario", "ambos"]).default("principal"),
+    uf: z.array(z.string()).default([]),
+    municipio: z.array(z.string()).default([]),
+    porte: z.array(z.string()).default([]),
+    matrizFilial: z.enum(["", "MATRIZ", "FILIAL"]).default(""),
+    simplesOptante: z.enum(["indiferente", "apenas", "excluir"]).default("indiferente"),
+    meiOptante: z.enum(["indiferente", "apenas", "excluir"]).default("indiferente"),
+    dataAberturaInicio: z.string().default(""),
+    dataAberturaFim: z.string().default(""),
+    capitalMin: z.number().nullable().default(null),
+    capitalMax: z.number().nullable().default(null),
+    comTelefone: z.boolean().default(true),
+    comEmail: z.boolean().default(false),
+    tipoTelefone: z.enum(["todos", "celular", "fixo"]).default("todos"),
+    excluirEmailContab: z.boolean().default(true),
+    apenasNovos: z.boolean().default(true),
+    recuperacaoJudicial: z.boolean().default(false),
+    // Reaproveita o mesmo enriquecimento embutido na busca CNPJ avulsa
+    // (enriquecerComMaps) — telefone/site/avaliação extra do Google Maps,
+    // opcionalmente filtrando quem não tem perfil lá.
+    mapsModo: z.enum(["nao_usar", "enriquecer", "filtrar", "filtrar_enriquecer"]).default("nao_usar"),
+    minAvaliacoes: z.number().int().min(0).default(0),
+    limite: z.number().int().min(1).max(2000).default(300),
+  })
+  .refine((v) => v.cnaes.length > 0 || v.cnaeManual.trim().length > 0 || v.recuperacaoJudicial, {
+    message: "Selecione ao menos um CNAE (ou ative Recuperação Judicial).",
+    path: ["cnaes"],
+  })
+  .refine((v) => v.uf.length > 0, { message: "Selecione ao menos um estado.", path: ["uf"] });
 
-const extracaoMapsConfigSchema = z.object({
-  nicho: z.string().min(1),
-  cidade: z.string().min(1),
-  estado: z.string().nullable().default(null),
-  limite: z.number().int().min(1).max(500).default(60),
-});
+// Paridade com o formulário avulso de busca Google Maps (src/components/search/maps-search-form.tsx).
+const extracaoMapsConfigSchema = z
+  .object({
+    nicho: z.string().default(""),
+    queryCustom: z.string().default(""),
+    subnicho: z.string().default(""),
+    cidades: z.array(z.string()).default([]),
+    estados: z.array(z.string()).default([]),
+    showPhone: z.boolean().default(true),
+    showRating: z.boolean().default(true),
+    apenasNovos: z.boolean().default(true),
+    limite: z.number().int().min(1).max(500).default(60),
+  })
+  .refine((v) => v.cidades.length > 0 || v.estados.length > 0, {
+    message: "Informe ao menos uma cidade ou um estado.",
+    path: ["estados"],
+  })
+  .refine((v) => (v.nicho.trim() || v.queryCustom.trim()), {
+    message: "Escolha um nicho do catálogo ou informe um termo de busca personalizado.",
+    path: ["nicho"],
+  });
 
 const extracaoInstagramConfigSchema = z.object({
+  tipo: z.enum(["seguidores", "seguindo"]).default("seguidores"),
   termoBusca: z.string().min(1),
-  limite: z.number().int().min(1).max(500).default(60),
+  apenasNovos: z.boolean().default(true),
+  limite: z.number().int().min(100).max(1000).default(200),
 });
 
 const extracaoLinkedinConfigSchema = z.object({
   cargos: z.array(z.string().min(1)).default([]),
   localizacoes: z.array(z.string().min(1)).default([]),
+  // IDs numéricos do catálogo LINKEDIN_INDUSTRIES (não texto livre — ver bug
+  // corrigido: buscarLinkedIn() faz Number(id) pra montar industryIds).
   industrias: z.array(z.string().min(1)).default([]),
   palavraChave: z.string().default(""),
   buscarEmail: z.boolean().default(false),
+  apenasNovos: z.boolean().default(true),
   limite: z.number().int().min(1).max(500).default(100),
 });
 
@@ -87,6 +135,25 @@ const enriquecimentoIaConfigSchema = z.object({
   buscarFundacao: z.boolean().default(false),
   buscarProcessos: z.boolean().default(false),
   camposCustomizados: z.array(z.string()).default([]),
+});
+
+const enriquecimentoMapsConfigSchema = z.object({
+  showPhone: z.boolean().default(true),
+  filtrar: z.boolean().default(false),
+  minAvaliacoes: z.number().int().min(0).default(0),
+});
+
+const FILTRO_OPERADORES = ["preenchido", "vazio", "contem", "nao_contem", "igual", "diferente"] as const;
+const filtroLeadsConfigSchema = z.object({
+  campo: z.string().min(1).default("email"),
+  operador: z.enum(FILTRO_OPERADORES).default("preenchido"),
+  valor: z.string().default(""),
+});
+export type FiltroOperador = (typeof FILTRO_OPERADORES)[number];
+export { FILTRO_OPERADORES };
+
+const esperaConfigSchema = z.object({
+  minutos: z.number().int().min(1).max(43_200).default(60),
 });
 
 const disparoWhatsappConfigSchema = z.object({
@@ -156,7 +223,7 @@ export const FLOW_NODE_TYPES: Record<FlowNodeTipo, FlowNodeTypeMeta> = {
     tipo: "extracao_cnpj",
     categoria: "extracao",
     label: "Extração CNPJ",
-    descricao: "Busca empresas por nicho, CNAE, porte e localização.",
+    descricao: "Busca empresas por CNAE, porte, situação e localização — mesmos filtros da busca avulsa.",
     icon: "Building2",
     configSchema: extracaoCnpjConfigSchema,
     disponivel: true,
@@ -165,7 +232,7 @@ export const FLOW_NODE_TYPES: Record<FlowNodeTipo, FlowNodeTypeMeta> = {
     tipo: "extracao_maps",
     categoria: "extracao",
     label: "Extração Google Maps",
-    descricao: "Busca estabelecimentos por nicho e cidade no Google Maps.",
+    descricao: "Busca estabelecimentos por nicho e localidade(s) no Google Maps.",
     icon: "MapPin",
     configSchema: extracaoMapsConfigSchema,
     disponivel: true,
@@ -174,7 +241,7 @@ export const FLOW_NODE_TYPES: Record<FlowNodeTipo, FlowNodeTypeMeta> = {
     tipo: "extracao_instagram",
     categoria: "extracao",
     label: "Extração Instagram",
-    descricao: "Busca perfis por termo de busca no Instagram.",
+    descricao: "Busca seguidores ou seguindo de um perfil no Instagram.",
     icon: "AtSign",
     configSchema: extracaoInstagramConfigSchema,
     disponivel: true,
@@ -201,9 +268,36 @@ export const FLOW_NODE_TYPES: Record<FlowNodeTipo, FlowNodeTypeMeta> = {
     tipo: "enriquecimento_ia",
     categoria: "enriquecimento",
     label: "Enriquecimento via IA",
-    descricao: "Enriquece os leads recebidos com dados adicionais via IA.",
+    descricao: "Enriquece os leads recebidos (empresa, cargo, site...) via IA — resultado fica disponível nos nós seguintes.",
     icon: "BrainCircuit",
     configSchema: enriquecimentoIaConfigSchema,
+    disponivel: true,
+  },
+  enriquecimento_maps: {
+    tipo: "enriquecimento_maps",
+    categoria: "enriquecimento",
+    label: "Enriquecimento via Maps",
+    descricao: "Cruza os leads recebidos (de qualquer origem) com o Google Maps: telefone, site, avaliação — e opcionalmente filtra quem não tem perfil.",
+    icon: "MapPinned",
+    configSchema: enriquecimentoMapsConfigSchema,
+    disponivel: true,
+  },
+  filtro_leads: {
+    tipo: "filtro_leads",
+    categoria: "controle",
+    label: "Filtrar leads",
+    descricao: "Mantém no fluxo só os leads que batem uma condição (útil depois de um enriquecimento, por exemplo).",
+    icon: "SlidersHorizontal",
+    configSchema: filtroLeadsConfigSchema,
+    disponivel: true,
+  },
+  espera: {
+    tipo: "espera",
+    categoria: "controle",
+    label: "Esperar",
+    descricao: "Pausa o fluxo por um tempo antes de seguir pro próximo nó — útil pra dar espaço entre etapas.",
+    icon: "Hourglass",
+    configSchema: esperaConfigSchema,
     disponivel: true,
   },
   disparo_whatsapp: {
@@ -228,7 +322,7 @@ export const FLOW_NODE_TYPES: Record<FlowNodeTipo, FlowNodeTypeMeta> = {
     tipo: "destino_sheets",
     categoria: "destino",
     label: "Exportar para Sheets",
-    descricao: "Exporta os leads recebidos para uma planilha Google Sheets.",
+    descricao: "Exporta os leads recebidos (com todos os campos, inclusive de enriquecimento) para uma planilha Google Sheets.",
     icon: "FileSpreadsheet",
     configSchema: destinoSheetsConfigSchema,
     disponivel: true,
@@ -241,6 +335,7 @@ export const FLOW_NODE_CATEGORIAS: { categoria: FlowNodeCategoria; label: string
   { categoria: "gatilho", label: "Gatilhos" },
   { categoria: "extracao", label: "Extração" },
   { categoria: "enriquecimento", label: "Enriquecimento" },
+  { categoria: "controle", label: "Controle de fluxo" },
   { categoria: "disparo", label: "Disparo" },
   { categoria: "destino", label: "Destino" },
 ];

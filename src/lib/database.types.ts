@@ -377,6 +377,9 @@ export type FlowNodeTipo =
   | "extracao_linkedin"
   | "fonte_historico"
   | "enriquecimento_ia"
+  | "enriquecimento_maps"
+  | "filtro_leads"
+  | "espera"
   | "disparo_whatsapp"
   | "disparo_email"
   | "destino_sheets";

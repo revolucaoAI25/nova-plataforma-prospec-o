@@ -4,22 +4,43 @@ import { resolverChaveApify, registrarUsoChaveApify } from "@/lib/apify-key";
 import { buscarMaps, QuotaExceededError } from "@/lib/integrations/google-maps";
 import { buscarApifyMaps } from "@/lib/integrations/apify-maps";
 import { salvarPesquisa, salvarLeads, buscarIdentificadoresExistentes } from "@/lib/db";
+import { NICHOS } from "@/lib/data/nichos";
+import { ESTADOS } from "@/lib/data/estados";
 import type { Json } from "@/lib/database.types";
 import type { Lead } from "@/lib/types";
 import type { FlowExecutorContext, FlowExecutorOutcome } from "../executor-types";
 
+/** Espelha /api/search/maps/route.ts (catálogo de nichos + múltiplas cidades/estados). */
 export async function executarExtracaoMaps(ctx: FlowExecutorContext): Promise<FlowExecutorOutcome> {
   const { sb, userId, node } = ctx;
   const config = (node.config || {}) as Record<string, unknown>;
+
   const nicho = String(config.nicho || "");
-  const cidade = String(config.cidade || "");
-  const estado = String(config.estado || "");
+  const queryCustom = String(config.queryCustom || "");
+  const subnicho = String(config.subnicho || "");
+  const cidades = Array.isArray(config.cidades) ? (config.cidades as string[]) : [];
+  const estados = Array.isArray(config.estados) ? (config.estados as string[]) : [];
+  const showPhone = config.showPhone !== false;
+  const showRating = config.showRating !== false;
+  const apenasNovos = config.apenasNovos !== false;
   const limite = Number(config.limite ?? 60);
+
+  const nichoInfo = NICHOS[nicho];
+  const queryBase = (nichoInfo?.query || queryCustom).trim();
+  if (!queryBase) return { status: "erro", erro: "Escolha um nicho do catálogo ou informe um termo de busca personalizado." };
+
+  if (cidades.length && estados.length !== 1) {
+    return { status: "erro", erro: "Selecione vários estados só quando 'cidades' estiver vazio. Com cidade(s), informe exatamente um estado." };
+  }
+  const localidades = cidades.length
+    ? cidades.map((c) => `${c}, ${ESTADOS[estados[0]] ?? estados[0]}`)
+    : estados.map((uf) => ESTADOS[uf] ?? uf);
+  if (!localidades.length) return { status: "erro", erro: "Informe ao menos uma cidade ou um estado." };
 
   const profile = await getProfile(sb, userId);
   if (!profile) return { status: "erro", erro: "Perfil não encontrado." };
 
-  const { telefones } = await buscarIdentificadoresExistentes(sb, userId);
+  const { telefones } = apenasNovos ? await buscarIdentificadoresExistentes(sb, userId) : { telefones: new Set<string>() };
 
   let resolucaoMaps = await resolverChaveMaps(profile);
   const resolucaoApify = resolverChaveApify(profile);
@@ -29,16 +50,9 @@ export async function executarExtracaoMaps(ctx: FlowExecutorContext): Promise<Fl
   }
 
   const params = {
-    queryBase: nicho,
-    localidade: cidade || estado,
-    limite,
-    nicho,
-    subnicho: "",
-    cidade,
-    estado,
-    excludePhones: telefones,
-    showPhone: true,
-    showRating: true,
+    queryBase, localidade: localidades, limite,
+    nicho: nicho || queryBase, subnicho,
+    excludePhones: telefones, showPhone, showRating,
   };
 
   let resultados: Lead[] = [];
@@ -71,13 +85,14 @@ export async function executarExtracaoMaps(ctx: FlowExecutorContext): Promise<Fl
   }
 
   const total = resultados.length;
+  const localidadeLabel = localidades.join(", ");
   const searchId = await salvarPesquisa(sb, userId, {
     fonte: "google_maps",
-    nicho,
-    subnicho: "",
-    cidade,
-    estado,
-    localidade: cidade || estado,
+    nicho: nicho || queryBase,
+    subnicho,
+    cidade: "",
+    estado: "",
+    localidade: localidadeLabel,
     totalResults: total,
     filtros: config as Json,
   });

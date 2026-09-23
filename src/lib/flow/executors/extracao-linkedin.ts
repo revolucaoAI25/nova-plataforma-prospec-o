@@ -13,6 +13,7 @@ export async function executarExtracaoLinkedin(ctx: FlowExecutorContext): Promis
   const industrias = Array.isArray(config.industrias) ? (config.industrias as string[]) : [];
   const palavraChave = String(config.palavraChave || "");
   const buscarEmail = Boolean(config.buscarEmail);
+  const apenasNovos = config.apenasNovos !== false;
   const limite = Number(config.limite ?? 100);
 
   const profile = await getProfile(sb, userId);
@@ -25,7 +26,7 @@ export async function executarExtracaoLinkedin(ctx: FlowExecutorContext): Promis
   const resolucao = resolverChaveApify(profile);
   if (!resolucao.key) return { status: "erro", erro: "Nenhuma chave Apify configurada." };
 
-  const excludeUrls = await buscarLinkedInUrlsExistentes(sb, userId);
+  const excludeUrls = apenasNovos ? await buscarLinkedInUrlsExistentes(sb, userId) : undefined;
 
   let resultados;
   try {
