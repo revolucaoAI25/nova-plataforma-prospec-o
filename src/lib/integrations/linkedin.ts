@@ -3,17 +3,29 @@ import { emptyLead, type Lead } from "@/lib/types";
 // Extração de leads via LinkedIn (busca por pessoas/decisores, estilo Sales
 // Navigator) — integração com Apify, mesmo padrão de instagram.ts.
 //
-// INCERTEZA DOCUMENTADA (mesmo espírito da seção 5.4 do plano original sobre
-// o CNAE secundário — sinalizar em vez de esconder): o acesso de rede desta
-// sessão está bloqueado para apify.com e docs.harvestapi.io, então o schema
-// de input/output abaixo NÃO foi verificado direto na documentação — foi
-// reconstruído a partir de exemplos corroborados via busca (dois exemplos
-// independentes concordando nos nomes searchQuery/currentJobTitles/
-// locations/maxResults). O normalizador de perfil abaixo é defensivo
-// (tenta várias variações de nome de campo por propriedade) exatamente por
-// causa dessa incerteza — se o ator devolver nomes diferentes dos previstos
-// aqui, ajustar só os `??` do normalizarPerfil, sem mexer no resto do fluxo.
-// Validar com uma chave Apify real antes de liberar pra usuários.
+// Schema verificado direto no Apify Console (aba Input/API do ator
+// harvestapi/linkedin-profile-search) — a primeira versão deste arquivo tinha
+// sido escrita com o input adivinhado via busca (`maxResults`, que não
+// existe; o campo real é `maxItems`) e um normalizador defensivo de saída.
+// Corrigido com o schema real:
+// - Input: maxItems (não maxResults), currentJobTitles, locations,
+//   searchQuery, takePages (nº de páginas de busca, 25 perfis cada),
+//   profileScraperMode ("Short" | "Full" | "Full + email search" — default
+//   "Full", que já traz experience/currentPosition/about; "Short" só traz
+//   dado básico da página de busca). Custo: ~$100/1000 páginas de busca +
+//   $4/1000 perfis completos (ou $10/1000 com busca de e-mail) — por isso
+//   NÃO ativamos "Full + email search" por padrão (2.5x mais caro e a busca
+//   de e-mail não é garantida); usar "Full" simples.
+// - Output: perfil tem `linkedinUrl`, `firstName`/`lastName` (não um único
+//   campo "name"), `headline` (tagline livre do perfil, não é o cargo),
+//   `about` (bio), `location.parsed.text`/`location.linkedinText`,
+//   `currentPosition[0].companyName` (empresa atual) e `experience[]` (cada
+//   item com `position` = cargo, `companyName`, `endDate.text === "Present"`
+//   pro emprego atual — usamos isso pra achar o cargo atual, já que
+//   currentPosition não tem campo de cargo). Não há campo de "senioridade"
+//   na saída (só existe como filtro de busca, seniorityLevelIds) — o campo
+//   fica vazio por enquanto. O nome exato do campo de e-mail (modo "Full +
+//   email search") não foi confirmado — mantido defensivo.
 
 const APIFY_BASE = "https://api.apify.com/v2";
 const ACTOR_PEOPLE_SEARCH = "harvestapi~linkedin-profile-search";
@@ -82,30 +94,43 @@ function normalizarUrlPerfil(url: string): string {
   }
 }
 
+interface LinkedInExperience {
+  position?: string;
+  companyName?: string;
+  endDate?: { text?: string };
+}
+
 function normalizarPerfil(item: Record<string, unknown>): Lead | null {
-  const experiencia = Array.isArray(item.experience) ? (item.experience[0] as Record<string, unknown> | undefined) : undefined;
-  const posicaoAtual = (item.currentPosition as Record<string, unknown> | undefined) ?? experiencia;
+  const linkedinUrl = normalizarUrlPerfil(String(item.linkedinUrl ?? "").trim());
 
-  const urlBruta = String(
-    item.linkedinUrl ?? item.profileUrl ?? item.publicProfileUrl ?? item.url ?? "",
-  ).trim();
-  const linkedinUrl = normalizarUrlPerfil(urlBruta);
-
-  const nome = String(item.name ?? item.fullName ?? item.publicIdentifier ?? "").trim();
+  const firstName = String(item.firstName ?? "").trim();
+  const lastName = String(item.lastName ?? "").trim();
+  const nome = [firstName, lastName].filter(Boolean).join(" ").trim();
   if (!nome && !linkedinUrl) return null;
+
+  const experiencias = Array.isArray(item.experience) ? (item.experience as LinkedInExperience[]) : [];
+  // currentPosition não traz o cargo (só empresa/período) — o cargo atual
+  // vem de experience[], preferindo a entrada com endDate.text "Present".
+  const experienciaAtual = experiencias.find((e) => e?.endDate?.text === "Present") ?? experiencias[0];
+
+  const currentPosition = Array.isArray(item.currentPosition)
+    ? (item.currentPosition[0] as Record<string, unknown> | undefined)
+    : undefined;
+
+  const location = item.location as { linkedinText?: string; parsed?: { text?: string } } | undefined;
 
   const lead = emptyLead();
   lead.linkedin_url = linkedinUrl;
   lead.nome = nome || linkedinUrl;
   lead.nome_completo = nome;
-  lead.cargo = String(item.headline ?? item.currentJobTitle ?? item.title ?? posicaoAtual?.title ?? "").trim();
+  lead.cargo = String(experienciaAtual?.position ?? item.headline ?? "").trim();
   lead.empresa_atual = String(
-    item.currentCompany ?? item.company ?? posicaoAtual?.company ?? posicaoAtual?.companyName ?? "",
+    currentPosition?.companyName ?? experienciaAtual?.companyName ?? "",
   ).trim();
-  lead.senioridade = String(item.seniority ?? item.seniorityLevel ?? "").trim();
-  lead.municipio = String(item.location ?? item.locationName ?? "").trim();
-  lead.email = String(item.email ?? "").trim();
-  lead.bio = String(item.about ?? item.summary ?? "").trim().slice(0, 500);
+  lead.municipio = String(location?.parsed?.text ?? location?.linkedinText ?? "").trim();
+  // Nome do campo de e-mail (modo "Full + email search") não confirmado — defensivo.
+  lead.email = String(item.email ?? item.emailAddress ?? "").trim();
+  lead.bio = String(item.about ?? "").trim().slice(0, 500);
   lead.nicho_busca = "LinkedIn";
   lead.fonte = "linkedin";
   return lead;
@@ -134,7 +159,14 @@ export async function buscarLinkedIn(p: BuscarLinkedInParams): Promise<Lead[]> {
 
   cb(0, 1, "Preparando extração…");
 
-  const inputData: Record<string, unknown> = { maxResults: limite };
+  // takePages garante páginas suficientes pra alcançar maxItems (25 perfis
+  // por página) — sem isso, o ator pode parar cedo demais. Teto de 100
+  // páginas é o próprio limite do ator (imposto pelo LinkedIn).
+  const inputData: Record<string, unknown> = {
+    maxItems: limite,
+    takePages: Math.min(100, Math.max(1, Math.ceil(limite / 25))),
+    profileScraperMode: "Full",
+  };
   if (p.cargos.length) inputData.currentJobTitles = p.cargos;
   if (p.localizacoes.length) inputData.locations = p.localizacoes;
   if (p.palavraChave?.trim()) inputData.searchQuery = p.palavraChave.trim();

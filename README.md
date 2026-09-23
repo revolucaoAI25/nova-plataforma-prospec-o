@@ -74,11 +74,10 @@ requisição HTTP da busca), então também depende do worker estar rodando
 Busca por LinkedIn também fica desativada por padrão (mesmo padrão do
 Enriquecimento via IA — admin libera por usuário em `/admin`) e reaproveita a
 mesma chave/pool Apify já usada pelo Instagram; não precisa de credencial
-própria. **Nota de implementação**: o schema de input/output do ator Apify
-usado (`harvestapi/linkedin-profile-search`) foi reconstruído a partir de
-exemplos encontrados via busca, não verificado direto na documentação — ver
-comentário no topo de `src/lib/integrations/linkedin.ts`. Validar com uma
-chave Apify real antes de liberar pra usuários.
+própria. Usa o ator `harvestapi/linkedin-profile-search` em modo `Full`
+(sem busca de e-mail, que custa 2.5x mais e não é garantida) — schema de
+input/output conferido direto no Apify Console, ver comentário no topo de
+`src/lib/integrations/linkedin.ts`.
 
 Cada uma dessas chaves "padrão da plataforma" pode ser sobreposta por usuário
 (chave própria em Configurações, ou administrada individualmente em `/admin/[userId]`)
