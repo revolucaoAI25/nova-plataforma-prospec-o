@@ -43,6 +43,11 @@ export interface Lead {
   bio: string;
   followers_count: number | string;
   is_business: boolean;
+
+  linkedin_url: string;
+  cargo: string;
+  empresa_atual: string;
+  senioridade: string;
 }
 
 export function emptyLead(): Lead {
@@ -57,6 +62,7 @@ export function emptyLead(): Lead {
     cidade_busca: "", estado_busca: "", comentario: "", fonte: "",
     instagram_id: "", username: "", nome_completo: "", bio: "",
     followers_count: "", is_business: false,
+    linkedin_url: "", cargo: "", empresa_atual: "", senioridade: "",
   };
 }
 
@@ -104,6 +110,14 @@ export type InstagramTipo = "seguidores" | "seguindo";
 export interface InstagramSearchFilters {
   tipo: InstagramTipo;
   alvo: string; // username ou URL
+  limite: number;
+  apenasNovos: boolean;
+}
+
+export interface LinkedInSearchFilters {
+  cargos: string[]; // currentJobTitles no ator Apify
+  localizacoes: string[]; // locations
+  palavraChave: string; // searchQuery (busca livre, opcional)
   limite: number;
   apenasNovos: boolean;
 }

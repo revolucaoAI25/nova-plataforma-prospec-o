@@ -19,6 +19,10 @@ function UserRow({ user, isSelf }: { user: UserStatsRow; isSelf: boolean }) {
   const [mapsCredits, setMapsCredits] = useState(user.maps_credits);
   const [mapsEnabled, setMapsEnabled] = useState(user.maps_credits_enabled);
   const [instagramVisible, setInstagramVisible] = useState(user.instagram_visible);
+  const [linkedinCredits, setLinkedinCredits] = useState(user.linkedin_credits);
+  const [monthlyLinkedin, setMonthlyLinkedin] = useState(user.monthly_linkedin_credits);
+  const [linkedinCreditsEnabled, setLinkedinCreditsEnabled] = useState(user.linkedin_credits_enabled);
+  const [linkedinVisible, setLinkedinVisible] = useState(user.linkedin_visible);
   const [disparoHabilitado, setDisparoHabilitado] = useState(user.disparo_habilitado);
   const [enriquecimentoIa, setEnriquecimentoIa] = useState(user.enriquecimento_ia_habilitado);
   const [role, setRole] = useState(user.role);
@@ -43,6 +47,10 @@ function UserRow({ user, isSelf }: { user: UserStatsRow; isSelf: boolean }) {
         maps_credits: mapsCredits,
         maps_credits_enabled: mapsEnabled,
         instagram_visible: instagramVisible,
+        linkedin_credits: linkedinCredits,
+        monthly_linkedin_credits: monthlyLinkedin,
+        linkedin_credits_enabled: linkedinCreditsEnabled,
+        linkedin_visible: linkedinVisible,
         disparo_habilitado: disparoHabilitado,
         enriquecimento_ia_habilitado: enriquecimentoIa,
         role,
@@ -86,6 +94,18 @@ function UserRow({ user, isSelf }: { user: UserStatsRow; isSelf: boolean }) {
         <Switch checked={instagramVisible} onCheckedChange={markDirty(setInstagramVisible)} />
       </TableCell>
       <TableCell>
+        <Input type="number" className="h-8 w-24" value={linkedinCredits} onChange={(e) => markDirty(setLinkedinCredits)(Number(e.target.value))} />
+      </TableCell>
+      <TableCell>
+        <Input type="number" className="h-8 w-24" value={monthlyLinkedin} onChange={(e) => markDirty(setMonthlyLinkedin)(Number(e.target.value))} />
+      </TableCell>
+      <TableCell>
+        <Switch checked={linkedinCreditsEnabled} onCheckedChange={markDirty(setLinkedinCreditsEnabled)} />
+      </TableCell>
+      <TableCell>
+        <Switch checked={linkedinVisible} onCheckedChange={markDirty(setLinkedinVisible)} />
+      </TableCell>
+      <TableCell>
         <Switch checked={disparoHabilitado} onCheckedChange={markDirty(setDisparoHabilitado)} />
       </TableCell>
       <TableCell>
@@ -125,6 +145,10 @@ export function AdminUsersTable({ users, currentUserId }: { users: UserStatsRow[
           <TableHead>Créditos Maps</TableHead>
           <TableHead>Debita Maps?</TableHead>
           <TableHead>Instagram</TableHead>
+          <TableHead>Créditos LinkedIn</TableHead>
+          <TableHead>Renovação mensal</TableHead>
+          <TableHead>Debita LinkedIn?</TableHead>
+          <TableHead>LinkedIn</TableHead>
           <TableHead>Disparo</TableHead>
           <TableHead>Enriq. IA</TableHead>
           <TableHead>Buscas</TableHead>

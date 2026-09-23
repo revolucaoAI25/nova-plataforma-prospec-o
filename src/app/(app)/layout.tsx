@@ -36,6 +36,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         role={profile.role}
         email={profile.email}
         instagramVisible={profile.instagram_visible}
+        linkedinVisible={profile.linkedin_visible}
         disparoHabilitado={profile.disparo_habilitado}
         enriquecimentoIaHabilitado={profile.enriquecimento_ia_habilitado}
       />

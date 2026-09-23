@@ -74,6 +74,11 @@ export interface Profile {
   enriquecimento_ia_habilitado: boolean;
   openai_api_key: string | null;
 
+  linkedin_credits: number;
+  monthly_linkedin_credits: number;
+  linkedin_credits_enabled: boolean;
+  linkedin_visible: boolean;
+
   google_client_id: string | null;
   google_client_secret: string | null;
   google_sheets_creds: GoogleSheetsCreds | null;
@@ -82,7 +87,7 @@ export interface Profile {
   updated_at: string;
 }
 
-export type SearchFonte = "cnpj" | "google_maps" | "instagram";
+export type SearchFonte = "cnpj" | "google_maps" | "instagram" | "linkedin";
 
 export interface SearchRow {
   id: string;
@@ -136,6 +141,10 @@ export interface LeadRow {
   fonte: string | null;
   instagram_id: string | null;
   username: string | null;
+  linkedin_url: string | null;
+  cargo: string | null;
+  empresa_atual: string | null;
+  senioridade: string | null;
   created_at: string;
 }
 
@@ -161,6 +170,10 @@ export interface UserStatsRow {
   conta_teste: boolean;
   teste_expira_em: string | null;
   enriquecimento_ia_habilitado: boolean;
+  linkedin_credits: number;
+  monthly_linkedin_credits: number;
+  linkedin_credits_enabled: boolean;
+  linkedin_visible: boolean;
 }
 
 export type EnrichmentRunStatus = "pendente" | "processando" | "concluido" | "erro";

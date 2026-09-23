@@ -42,7 +42,7 @@ export function ApifySettings({ profile }: { profile: Profile }) {
           <CardDescription>
             {contaTeste
               ? "Contas de teste sempre usam a chave Apify compartilhada da plataforma — não é possível configurar uma chave própria."
-              : "Usada como fallback automático na busca Google Maps (quando a cota é esgotada) e na busca Instagram. Configure uma ou mais chaves — o sistema usa rodízio automático quando uma chave atinge o limite mensal."}
+              : "Usada como fallback automático na busca Google Maps (quando a cota é esgotada) e nas buscas Instagram e LinkedIn. Configure uma ou mais chaves — o sistema usa rodízio automático quando uma chave atinge o limite mensal."}
           </CardDescription>
         </CardHeader>
         {!contaTeste && (

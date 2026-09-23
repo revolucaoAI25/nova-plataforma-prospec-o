@@ -1,5 +1,5 @@
 import type { LucideIcon } from "lucide-react";
-import { Users, Phone, Globe, Mail, Star, AtSign, BadgeCheck } from "lucide-react";
+import { Users, Phone, Globe, Mail, Star, AtSign, BadgeCheck, Briefcase, Building2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export type SummaryTone = "primary" | "info" | "violet" | "amber" | "destructive";
@@ -124,4 +124,27 @@ export function buildInstagramMetrics(leads: InstagramLeadLike[]): SummaryMetric
   }
 
   return metrics;
+}
+
+interface LinkedInLeadLike {
+  cargo?: string | null;
+  empresa_atual?: string | null;
+  email?: string | null;
+  linkedin_url?: string | null;
+}
+
+/** Métricas para leads de LinkedIn — cargo/empresa preenchidos e contato
+ * disponível, que são os sinais de qualidade mais relevantes pra prospecção. */
+export function buildLinkedInMetrics(leads: LinkedInLeadLike[]): SummaryMetric[] {
+  const total = leads.length;
+  const comCargo = leads.filter((r) => r.cargo).length;
+  const comEmpresa = leads.filter((r) => r.empresa_atual).length;
+  const comEmail = leads.filter((r) => r.email).length;
+
+  return [
+    { icon: Users, label: "Total de perfis", value: total, tone: "primary" },
+    { icon: Briefcase, label: "Com cargo", value: comCargo, hint: pct(comCargo, total), tone: "info" },
+    { icon: Building2, label: "Com empresa atual", value: comEmpresa, hint: pct(comEmpresa, total), tone: "violet" },
+    { icon: Mail, label: "Com e-mail", value: comEmail, hint: pct(comEmail, total), tone: "amber" },
+  ];
 }

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Building2, MapPin, AtSign, History, ArrowRight, Search, Users } from "lucide-react";
+import { Building2, MapPin, AtSign, UserSearch, History, ArrowRight, Search, Users } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getProfile } from "@/lib/credits";
 import { listarPesquisas, contarPesquisasELeads } from "@/lib/db";
@@ -10,8 +10,8 @@ import { StatCard } from "@/components/dashboard/stat-card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Reveal } from "@/components/ui/reveal";
 
-const FONTE_LABEL: Record<string, string> = { cnpj: "CNPJ", google_maps: "Google Maps", instagram: "Instagram" };
-const FONTE_ICON: Record<string, typeof Building2> = { cnpj: Building2, google_maps: MapPin, instagram: AtSign };
+const FONTE_LABEL: Record<string, string> = { cnpj: "CNPJ", google_maps: "Google Maps", instagram: "Instagram", linkedin: "LinkedIn" };
+const FONTE_ICON: Record<string, typeof Building2> = { cnpj: Building2, google_maps: MapPin, instagram: AtSign, linkedin: UserSearch };
 
 export default async function DashboardPage() {
   const supabase = await createClient();

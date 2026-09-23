@@ -7,9 +7,9 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LeadsTable } from "@/components/historico/leads-table";
 import { PageHeader } from "@/components/layout/page-header";
-import { ResultsSummary, buildGeneralMetrics, buildInstagramMetrics } from "@/components/search/results-summary";
+import { ResultsSummary, buildGeneralMetrics, buildInstagramMetrics, buildLinkedInMetrics } from "@/components/search/results-summary";
 
-const FONTE_LABEL: Record<string, string> = { cnpj: "CNPJ", google_maps: "Google Maps", instagram: "Instagram" };
+const FONTE_LABEL: Record<string, string> = { cnpj: "CNPJ", google_maps: "Google Maps", instagram: "Instagram", linkedin: "LinkedIn" };
 
 export default async function HistoricoDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -19,7 +19,10 @@ export default async function HistoricoDetailPage({ params }: { params: Promise<
   if (!search) notFound();
 
   const leads = await buscarLeadsDaPesquisa(supabase, id);
-  const isInstagram = search.fonte === "instagram";
+  const metrics =
+    search.fonte === "instagram" ? buildInstagramMetrics(leads)
+    : search.fonte === "linkedin" ? buildLinkedInMetrics(leads)
+    : buildGeneralMetrics(leads);
 
   return (
     <div className="flex flex-col gap-6">
@@ -48,9 +51,7 @@ export default async function HistoricoDetailPage({ params }: { params: Promise<
           </div>
         </CardHeader>
         <CardContent className="flex flex-col gap-5">
-          {leads.length > 0 && (
-            <ResultsSummary metrics={isInstagram ? buildInstagramMetrics(leads) : buildGeneralMetrics(leads)} />
-          )}
+          {leads.length > 0 && <ResultsSummary metrics={metrics} />}
           <LeadsTable leads={leads} />
         </CardContent>
       </Card>

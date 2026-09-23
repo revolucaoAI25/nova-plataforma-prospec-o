@@ -5,9 +5,9 @@ Supabase, substituindo o produto atual em Streamlit (`prospec-o-ativa`). Este
 repositório é **novo e independente** — nada aqui afeta o produto em produção.
 
 Cobre a plataforma inteira: autenticação e créditos, extração (CNPJ via Casa dos
-Dados, Google Maps, Instagram via Apify), disparo WhatsApp (Evolution API e canal
-oficial), automações agendadas, exportação (Excel/CSV/Google Sheets), contas de
-teste e administração.
+Dados, Google Maps, Instagram e LinkedIn via Apify), disparo WhatsApp (Evolution
+API e canal oficial), automações agendadas, exportação (Excel/CSV/Google Sheets),
+contas de teste e administração.
 
 ## Stack
 
@@ -41,6 +41,7 @@ No [painel do Supabase](https://supabase.com/dashboard), crie um projeto novo
    recria as políticas.)
 4. `supabase/migrations/0004_maps_api_key_admin.sql`
 5. `supabase/migrations/0005_lead_enrichment_ia.sql` (Enriquecimento de Leads via IA)
+6. `supabase/migrations/0006_linkedin_extraction.sql` (busca por pessoas/decisores no LinkedIn)
 
 Em **Authentication → Providers**, deixe E-mail/senha habilitado (é o único método
 usado no login). Contas são criadas pelo admin — não há cadastro público.
@@ -57,7 +58,7 @@ no arquivo com onde consegui-la). Resumo do que é obrigatório vs. opcional:
 
 **Opcionais, por funcionalidade** (a funcionalidade correspondente fica
 indisponível/com erro amigável se faltar, o resto da plataforma funciona normalmente):
-- `APIFY_API_KEY` — busca Instagram e fallback de Google Maps.
+- `APIFY_API_KEY` — busca Instagram, busca LinkedIn e fallback de Google Maps.
 - `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` — conectar Google Sheets.
 - `EVOLUTION_API_URL` / `EVOLUTION_API_KEY` — disparo WhatsApp (canal não-oficial).
 - `DATAFY_API_BASE_URL` — canal oficial do WhatsApp (tem um padrão razoável, só
@@ -69,6 +70,15 @@ cadastra a própria chave OpenAI em Configurações — o custo da IA é do
 usuário, não da plataforma. Roda em background pelo worker (não na mesma
 requisição HTTP da busca), então também depende do worker estar rodando
 (ver seção "Deploy" abaixo).
+
+Busca por LinkedIn também fica desativada por padrão (mesmo padrão do
+Enriquecimento via IA — admin libera por usuário em `/admin`) e reaproveita a
+mesma chave/pool Apify já usada pelo Instagram; não precisa de credencial
+própria. **Nota de implementação**: o schema de input/output do ator Apify
+usado (`harvestapi/linkedin-profile-search`) foi reconstruído a partir de
+exemplos encontrados via busca, não verificado direto na documentação — ver
+comentário no topo de `src/lib/integrations/linkedin.ts`. Validar com uma
+chave Apify real antes de liberar pra usuários.
 
 Cada uma dessas chaves "padrão da plataforma" pode ser sobreposta por usuário
 (chave própria em Configurações, ou administrada individualmente em `/admin/[userId]`)
@@ -145,7 +155,7 @@ src/
   app/
     login/                    página de login
     (app)/                    área autenticada (proxy.ts redireciona sem sessão)
-      busca/cnpj|maps|instagram/  as três buscas
+      busca/cnpj|maps|instagram|linkedin/  as quatro buscas
       historico/                lista + detalhe de pesquisas
       automacoes/                buscas agendadas
       disparo/                   instâncias, campanhas, cadência, solicitação de canal oficial

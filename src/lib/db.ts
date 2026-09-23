@@ -79,6 +79,10 @@ function leadToRow(userId: string, searchId: string, r: Lead) {
     fonte: r.fonte || "",
     instagram_id: r.instagram_id || "",
     username: r.username || "",
+    linkedin_url: r.linkedin_url || "",
+    cargo: r.cargo || "",
+    empresa_atual: r.empresa_atual || "",
+    senioridade: r.senioridade || "",
   };
 }
 
@@ -195,6 +199,30 @@ export async function buscarInstagramIdsExistentes(
     offset += pageSize;
   }
   return ids;
+}
+
+export async function buscarLinkedInUrlsExistentes(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<Set<string>> {
+  const urls = new Set<string>();
+  const pageSize = 1000;
+  let offset = 0;
+  for (;;) {
+    const { data } = await supabase
+      .from("leads")
+      .select("linkedin_url")
+      .eq("user_id", userId)
+      .not("linkedin_url", "is", null)
+      .range(offset, offset + pageSize - 1);
+    const linhas = (data as Array<{ linkedin_url: string }>) ?? [];
+    for (const r of linhas) {
+      if (r.linkedin_url) urls.add(r.linkedin_url);
+    }
+    if (linhas.length < pageSize) break;
+    offset += pageSize;
+  }
+  return urls;
 }
 
 /** Contagens para os cartões de estatística do dashboard — COUNT indexado, sem baixar linhas. */

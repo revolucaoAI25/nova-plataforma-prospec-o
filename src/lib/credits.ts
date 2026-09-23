@@ -19,7 +19,7 @@ export async function getProfile(
 export async function debitarCreditos(
   supabase: SupabaseClient,
   userId: string,
-  campo: "cdd_credits" | "maps_credits" | "instagram_credits",
+  campo: "cdd_credits" | "maps_credits" | "instagram_credits" | "linkedin_credits",
   quantidade: number,
 ): Promise<void> {
   if (quantidade <= 0) return;

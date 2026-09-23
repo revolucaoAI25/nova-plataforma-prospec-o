@@ -23,6 +23,7 @@ export function Topbar({ profile }: { profile: Profile }) {
         <MobileNav
           role={profile.role}
           instagramVisible={profile.instagram_visible}
+          linkedinVisible={profile.linkedin_visible}
           disparoHabilitado={profile.disparo_habilitado}
           enriquecimentoIaHabilitado={profile.enriquecimento_ia_habilitado}
         />

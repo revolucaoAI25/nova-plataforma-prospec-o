@@ -5,6 +5,7 @@ import {
   Building2,
   MapPin,
   AtSign,
+  UserSearch,
   Send,
   MessageSquareText,
   BadgeCheck,
@@ -45,11 +46,13 @@ export interface NavSection {
 export function buildNavSections({
   isAdmin,
   instagramVisible,
+  linkedinVisible,
   disparoHabilitado,
   enriquecimentoIaHabilitado,
 }: {
   isAdmin: boolean;
   instagramVisible: boolean;
+  linkedinVisible: boolean;
   disparoHabilitado: boolean;
   enriquecimentoIaHabilitado: boolean;
 }): NavSection[] {
@@ -58,6 +61,9 @@ export function buildNavSections({
     { type: "link", href: "/busca/maps", label: "Google Maps", icon: MapPin },
     ...(instagramVisible
       ? [{ type: "link" as const, href: "/busca/instagram", label: "Instagram", icon: AtSign }]
+      : []),
+    ...(linkedinVisible
+      ? [{ type: "link" as const, href: "/busca/linkedin", label: "LinkedIn", icon: UserSearch }]
       : []),
   ];
 
