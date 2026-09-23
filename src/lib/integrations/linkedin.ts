@@ -144,6 +144,35 @@ function normalizarUrlPerfil(url: string): string {
   }
 }
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+/**
+ * Acha uma string em formato de e-mail dentro de um valor de formato
+ * desconhecido (string direta, objeto tipo {email: "..."} ou {address:
+ * "..."}, ou array de qualquer um dos dois) — em vez de apostar num nome de
+ * subchave específico (que não temos como confirmar sem rodar o ator), varre
+ * recursivamente por qualquer string com cara de e-mail. Evita o bug
+ * "[object Object]" de um `String(objeto)` ingênuo.
+ */
+function extrairTextoEmail(valor: unknown, profundidade = 0): string {
+  if (profundidade > 3 || valor == null) return "";
+  if (typeof valor === "string") return EMAIL_REGEX.test(valor.trim()) ? valor.trim() : "";
+  if (Array.isArray(valor)) {
+    for (const item of valor) {
+      const achado = extrairTextoEmail(item, profundidade + 1);
+      if (achado) return achado;
+    }
+    return "";
+  }
+  if (typeof valor === "object") {
+    for (const v of Object.values(valor as Record<string, unknown>)) {
+      const achado = extrairTextoEmail(v, profundidade + 1);
+      if (achado) return achado;
+    }
+  }
+  return "";
+}
+
 interface LinkedInExperience {
   position?: string;
   companyName?: string;
@@ -178,24 +207,16 @@ function normalizarPerfil(item: Record<string, unknown>): Lead | null {
     currentPosition?.companyName ?? experienciaAtual?.companyName ?? "",
   ).trim();
   lead.municipio = String(location?.parsed?.text ?? location?.linkedinText ?? "").trim();
-  // Nome do campo de e-mail (modo "Full + email search") não confirmado —
-  // usuário testou e nenhum perfil voltou com e-mail, sem conseguir saber se
-  // foi "não encontrado" (a busca de e-mail não é garantida, segundo o
-  // Readme do ator) ou "campo com nome diferente do esperado". Ampliado o
-  // leque de nomes candidatos; se ainda vier vazio com buscarEmail=true,
-  // precisamos de um item bruto do dataset (Apify Console → Runs → aquele
-  // run → Dataset) pra confirmar o nome real do campo.
-  const emailContato = item.contactInfo as Record<string, unknown> | undefined;
-  const emailsArray = Array.isArray(item.emails) ? (item.emails as unknown[]) : undefined;
-  lead.email = String(
-    item.email ??
-      item.emailAddress ??
-      item.workEmail ??
-      item.personalEmail ??
-      emailContato?.email ??
-      emailsArray?.[0] ??
-      "",
-  ).trim();
+  // O campo de e-mail (modo "Full + email search") EXISTE e é encontrado —
+  // confirmado num teste real — mas seu valor é um objeto aninhado, não uma
+  // string direta (um `String(objeto)` ingênuo produz o bug "[object
+  // Object]" visto no teste). extrairTextoEmail() abre esse objeto/array
+  // procurando a string do endereço em vez de estringificar o container
+  // inteiro. Nome exato da subchave ainda não confirmado — se o e-mail
+  // continuar vindo vazio ou errado, precisamos de um item bruto do dataset
+  // (Apify Console → Runs → aquele run → Dataset) com buscarEmail=true.
+  const candidatosEmail = [item.email, item.emailAddress, item.workEmail, item.personalEmail, item.contactInfo, item.emails];
+  lead.email = candidatosEmail.map((c) => extrairTextoEmail(c)).find(Boolean) ?? "";
   lead.bio = String(item.about ?? "").trim().slice(0, 500);
   lead.nicho_busca = "LinkedIn";
   lead.fonte = "linkedin";
