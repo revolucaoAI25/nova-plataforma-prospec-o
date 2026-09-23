@@ -23,6 +23,7 @@ import { createAdminClient } from "../src/lib/supabase/admin";
 import { tickAutomations } from "./automation-tick";
 import { tickDispatch, tickSheetWatchAndAutoTrigger } from "./dispatch-tick";
 import { tickEnrichment } from "./enrichment-tick";
+import { tickFlows } from "./flow-tick";
 
 const AUTOMATION_TICK_MS = 60_000;
 const DISPATCH_TICK_MS = 15_000;
@@ -31,6 +32,10 @@ const SHEET_WATCH_TICK_MS = 120_000;
 // ninguém olhando), quem dispara um enriquecimento costuma estar com a
 // tela aberta esperando o progresso.
 const ENRICHMENT_TICK_MS = 10_000;
+// Fluxos (construtor visual) — avança 1 nó por run por tick; frequência
+// parecida com a de disparo, já que uma run pode ter vários nós em
+// sequência e o usuário pode estar acompanhando o histórico de execução.
+const FLOW_TICK_MS = 20_000;
 
 function log(origem: string, msg: string) {
   console.log(`[${new Date().toISOString()}] [${origem}] ${msg}`);
@@ -45,7 +50,11 @@ async function main() {
   }
 
   const sb = createAdminClient();
-  log("worker", "Iniciado — automações a cada 60s, disparo a cada 15s, sheet-watch/auto-trigger a cada 120s, enriquecimento IA a cada 10s.");
+  log(
+    "worker",
+    "Iniciado — automações a cada 60s, disparo a cada 15s, sheet-watch/auto-trigger a cada 120s, " +
+      "enriquecimento IA a cada 10s, fluxos a cada 20s.",
+  );
 
   // Aguarda um pouco no início, mesma cautela do produto atual (deixa o
   // resto da infra terminar de subir antes do primeiro tick).
@@ -66,6 +75,10 @@ async function main() {
   setInterval(() => {
     tickEnrichment(sb, (m) => log("enrichment", m)).catch((e) => log("enrichment", `tick error: ${e.message}`));
   }, ENRICHMENT_TICK_MS);
+
+  setInterval(() => {
+    tickFlows(sb, (m) => log("flows", m)).catch((e) => log("flows", `tick error: ${e.message}`));
+  }, FLOW_TICK_MS);
 }
 
 main().catch((e) => {

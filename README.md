@@ -146,6 +146,23 @@ mas nada é processado — é só fila).
   a UI de disparo agora cobre os dois (painel de templates em `/disparo`, card
   "Monitorar planilha" no detalhe da campanha) — rota de API, worker e tela
   todos ligados. Etapa de cadência pode ser texto livre ou template aprovado.
+- **Construtor de fluxos (`/automacoes` → "Fluxos")**: canvas visual estilo
+  N8N/Make (`@xyflow/react`) pra combinar livremente módulos de gatilho,
+  extração, enriquecimento, disparo e destino — sem combinações pré-definidas,
+  o usuário monta o grafo que quiser. Não substitui as "Automações antigas"
+  (mantidas intocadas, seção separada na mesma página): é um sistema novo,
+  em paralelo, pra tudo que for criado daqui pra frente. Arquitetura: grafo
+  (`nodes`/`edges`) guardado como JSONB em `automation_flows`, executado nó a
+  nó por `worker/flow-tick.ts` (novo 5º tick do worker, 20s) via
+  `src/lib/flow/flow-engine.ts` — que só orquestra, reaproveitando sem
+  alteração as mesmas funções de extração/enriquecimento/disparo/export das
+  buscas avulsas (ver adaptadores finos em `src/lib/flow/executors/`). Nó de
+  IA e de disparo WhatsApp são assíncronos (`aguardando_subprocesso`): o motor
+  cria o `enrichment_run`/inscreve na campanha e só verifica o andamento nos
+  ticks seguintes, sem reimplementar esse processamento. Disparo por e-mail
+  aparece na paleta como módulo "em breve" (sem infra de envio ainda) —
+  decisão explícita de representar o que está no roadmap em vez de omitir.
+  v1 é um grafo linear (1 conexão de saída por nó, sem condicionais).
 
 ## Estrutura
 
@@ -156,20 +173,21 @@ src/
     (app)/                    área autenticada (proxy.ts redireciona sem sessão)
       busca/cnpj|maps|instagram|linkedin/  as quatro buscas
       historico/                lista + detalhe de pesquisas
-      automacoes/                buscas agendadas
+      automacoes/                buscas agendadas + construtor de fluxos (fluxos/novo, fluxos/[id])
       disparo/                   instâncias, campanhas, cadência, solicitação de canal oficial
       configuracoes/              chaves próprias (Maps, Apify) e Google Sheets
       admin/                      usuários, créditos, chaves administradas, canal oficial
-    api/                       rotas de servidor (nunca expõem chaves ao cliente)
+    api/                       rotas de servidor (nunca expõem chaves ao cliente), incl. flows/
   components/
     ui/                        componentes de base (botão, input, tabela...)
-    search/ historico/ settings/ admin/ layout/ dispatch/ automations/
+    search/ historico/ settings/ admin/ layout/ dispatch/ automations/ flows/
   lib/
-    integrations/              Casa dos Dados, Google Maps, Apify, Instagram, Sheets, Evolution API, WhatsApp oficial
-    data/                      catálogos de CNAE, nichos e estados
+    integrations/              Casa dos Dados, Google Maps, Apify, Instagram, LinkedIn, Sheets, Evolution API, WhatsApp oficial
+    data/                      catálogos de CNAE, nichos, estados e indústrias LinkedIn
     supabase/                  clientes (browser, server, admin) e sessão do proxy
     credits.ts db.ts export.ts maps-key.ts apify-key.ts    lógica de negócio de extração
     dispatch-db.ts automation-db.ts automation-logic.ts automation-runner.ts   disparo e automações
-worker/                        processo de background (automações + fila de disparo)
-supabase/migrations/           schema SQL (0001 = Fase 0, 0002 = plataforma completa)
+    flow/                      construtor de fluxos: node-types, flow-engine, executors/
+worker/                        processo de background (automações, disparo, enriquecimento IA, fluxos)
+supabase/migrations/           schema SQL (0001 Fase 0 · 0002 plataforma completa · 0003–0007 incrementais)
 ```

@@ -365,5 +365,76 @@ export interface AutomationRunRow {
   erro: string | null;
 }
 
+// ── Fluxos (construtor de automações estilo N8N/Make) ────────────
+export type FlowNodeTipo =
+  | "gatilho_agendado"
+  | "gatilho_filtro_leads"
+  | "gatilho_planilha"
+  | "gatilho_manual"
+  | "extracao_cnpj"
+  | "extracao_maps"
+  | "extracao_instagram"
+  | "extracao_linkedin"
+  | "fonte_historico"
+  | "enriquecimento_ia"
+  | "disparo_whatsapp"
+  | "disparo_email"
+  | "destino_sheets";
+
+export interface FlowNode {
+  id: string;
+  tipo: FlowNodeTipo;
+  config: Json;
+  posicao: { x: number; y: number };
+}
+
+export interface FlowEdge {
+  id: string;
+  from: string;
+  to: string;
+}
+
+export interface AutomationFlowRow {
+  id: string;
+  user_id: string;
+  nome: string;
+  ativo: boolean;
+  nodes: FlowNode[];
+  edges: FlowEdge[];
+  gatilho_estado: Json;
+  created_at: string;
+  updated_at: string;
+}
+
+export type FlowRunStatus = "executando" | "aguardando_subprocesso" | "concluido" | "erro";
+
+export interface FlowRunRow {
+  id: string;
+  flow_id: string;
+  user_id: string;
+  status: FlowRunStatus;
+  no_atual_id: string | null;
+  contexto: Json;
+  iniciado_em: string;
+  concluido_em: string | null;
+  erro: string | null;
+}
+
+export type FlowRunStepStatus = "pendente" | "executando" | "concluido" | "erro" | "pulado";
+
+export interface FlowRunStepRow {
+  id: string;
+  run_id: string;
+  node_id: string;
+  tipo: FlowNodeTipo;
+  status: FlowRunStepStatus;
+  leads_entrada: number | null;
+  leads_saida: number | null;
+  detalhe: Json;
+  erro: string | null;
+  iniciado_em: string | null;
+  concluido_em: string | null;
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type Database = any;
