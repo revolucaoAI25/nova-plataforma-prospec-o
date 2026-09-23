@@ -47,7 +47,19 @@ const gatilhoPlanilhaConfigSchema = z.object({
   colunaNome: z.string().nullable().default(null),
 });
 
-const gatilhoManualConfigSchema = z.object({}).default({});
+const variavelEntradaSchema = z.object({
+  chave: z.string().min(1).regex(/^[a-zA-Z0-9_]+$/, "Use só letras, números e _ (sem espaços/acentos)."),
+  label: z.string().default(""),
+  padrao: z.string().default(""),
+});
+const gatilhoManualConfigSchema = z.object({
+  // Parâmetros de entrada do fluxo — preenchidos a cada "Executar agora" e
+  // disponíveis nos nós seguintes via {{variaveis.chave}} (ver
+  // src/lib/flow/interpolation.ts). Só o gatilho manual tem esse formulário
+  // de entrada; os demais gatilhos disparam sem intervenção humana.
+  variaveis: z.array(variavelEntradaSchema).default([]),
+});
+export type VariavelEntrada = z.infer<typeof variavelEntradaSchema>;
 
 // Paridade com o formulário avulso de busca CNPJ (src/components/search/cnpj-search-form.tsx).
 const extracaoCnpjConfigSchema = z

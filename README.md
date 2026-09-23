@@ -187,6 +187,21 @@ mas nada é processado — é só fila).
   simples — sem violar a regra de grafo linear, já que só filtra, não
   ramifica) e `espera` (pausa assíncrona entre nós, mesmo padrão multi-tick
   do enriquecimento).
+- **Fluxos — variáveis (estilo Make/N8N)**: escopo enxuto, compatível com o
+  motor rodar cada nó uma vez por execução (não uma vez por lead). O
+  gatilho manual ganha um formulário de parâmetros de entrada (chave +
+  rótulo + valor padrão, editado no próprio nó); a cada "Executar agora" o
+  usuário pode sobrescrever esses valores. Em qualquer campo de texto dos
+  nós seguintes: `{{variaveis.chave}}` interpola o valor de entrada, e
+  `{{lead.campo}}` interpola um campo do PRIMEIRO lead do lote atual (útil,
+  por ex., pra nomear a aba de destino com a UF do lote extraído). A
+  interpolação acontece uma vez só, em `flow-engine.ts` logo antes de
+  chamar o executor (`src/lib/flow/interpolation.ts`) — nenhum executor
+  precisa saber que isso existe, sempre recebem config já resolvida. Token
+  que não resolve (variável não declarada, lote ainda vazio) fica intacto
+  no texto em vez de virar string vazia silenciosamente. Gatilhos
+  automáticos (agendado, filtro de leads, planilha) não têm formulário de
+  entrada — `{{variaveis.x}}` fica sem resolver nesses casos.
 
 ## Estrutura
 

@@ -2,12 +2,14 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Save, Play, Pause, Trash2, Loader2 } from "lucide-react";
+import { Save, Play, Pause, Trash2, Loader2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { FlowCanvas } from "./flow-canvas";
 import { FlowRunHistory } from "./flow-run-history";
+import type { VariavelEntrada } from "@/lib/flow/node-types";
 import type { AutomationFlowRow, FlowNode, FlowEdge } from "@/lib/database.types";
 
 function novoGatilho(): FlowNode {
@@ -27,6 +29,12 @@ export function FlowBuilder({ flowInicial }: { flowInicial: AutomationFlowRow | 
   const [executando, setExecutando] = useState(false);
   const [feedback, setFeedback] = useState<{ ok: boolean; msg: string } | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [formVariaveis, setFormVariaveis] = useState<Record<string, string> | null>(null);
+
+  const gatilhoManual = grafo.nodes.find((n) => n.tipo === "gatilho_manual");
+  const variaveisDeclaradas = Array.isArray((gatilhoManual?.config as { variaveis?: unknown })?.variaveis)
+    ? ((gatilhoManual!.config as { variaveis: VariavelEntrada[] }).variaveis)
+    : [];
 
   async function salvar() {
     setSalvando(true);
@@ -60,11 +68,25 @@ export function FlowBuilder({ flowInicial }: { flowInicial: AutomationFlowRow | 
     if (id) await fetch(`/api/flows/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ativo: novo }) });
   }
 
-  async function executarAgora() {
+  function abrirExecucao() {
     if (!id) { setFeedback({ ok: false, msg: "Salve o fluxo antes de executar." }); return; }
+    if (variaveisDeclaradas.length) {
+      const iniciais: Record<string, string> = {};
+      for (const v of variaveisDeclaradas) iniciais[v.chave] = v.padrao;
+      setFormVariaveis(iniciais);
+      return;
+    }
+    executarAgora({});
+  }
+
+  async function executarAgora(variaveis: Record<string, string>) {
+    if (!id) return;
     setExecutando(true);
     setFeedback(null);
-    const resp = await fetch(`/api/flows/${id}/run-now`, { method: "POST" });
+    setFormVariaveis(null);
+    const resp = await fetch(`/api/flows/${id}/run-now`, {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ variaveis }),
+    });
     const data = await resp.json().catch(() => ({}));
     setExecutando(false);
     setFeedback(resp.ok ? { ok: true, msg: "Execução disparada — acompanhe no histórico abaixo." } : { ok: false, msg: data.error || "Falha ao executar." });
@@ -90,7 +112,7 @@ export function FlowBuilder({ flowInicial }: { flowInicial: AutomationFlowRow | 
           {salvando ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
           Salvar
         </Button>
-        <Button variant="outline" size="sm" onClick={executarAgora} disabled={executando || !id}>
+        <Button variant="outline" size="sm" onClick={abrirExecucao} disabled={executando || !id}>
           {executando ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Play className="h-3.5 w-3.5" />}
           Executar agora
         </Button>
@@ -100,6 +122,30 @@ export function FlowBuilder({ flowInicial }: { flowInicial: AutomationFlowRow | 
           </Button>
         )}
       </div>
+
+      {formVariaveis && (
+        <div className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-semibold text-foreground">Valores desta execução</p>
+            <Button variant="ghost" size="icon" onClick={() => setFormVariaveis(null)}><X className="h-4 w-4" /></Button>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {variaveisDeclaradas.map((v) => (
+              <div key={v.chave} className="flex flex-col gap-1.5">
+                <Label className="text-xs text-muted-foreground">{v.label || v.chave}</Label>
+                <Input
+                  value={formVariaveis[v.chave] ?? ""}
+                  onChange={(e) => setFormVariaveis({ ...formVariaveis, [v.chave]: e.target.value })}
+                />
+              </div>
+            ))}
+          </div>
+          <Button size="sm" className="self-start" onClick={() => executarAgora(formVariaveis)} disabled={executando}>
+            {executando ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Play className="h-3.5 w-3.5" />}
+            Executar com esses valores
+          </Button>
+        </div>
+      )}
 
       {feedback && (
         <Alert variant={feedback.ok ? "success" : "destructive"}>

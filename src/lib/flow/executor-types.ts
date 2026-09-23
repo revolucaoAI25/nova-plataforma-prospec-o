@@ -19,6 +19,8 @@ export interface FlowContexto {
   searchId?: string;
   enrichmentRunId?: string;
   campaignId?: string;
+  /** Parâmetros de entrada do gatilho manual — ver src/lib/flow/interpolation.ts. */
+  variaveis?: Record<string, string>;
   [chave: string]: unknown;
 }
 

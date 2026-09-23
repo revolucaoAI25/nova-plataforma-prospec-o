@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { X, Trash2 } from "lucide-react";
+import { X, Trash2, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { MultiSelect, type MultiSelectOption } from "@/components/search/multi-select";
-import { FLOW_NODE_TYPES, FILTRO_OPERADORES } from "@/lib/flow/node-types";
+import { FLOW_NODE_TYPES, FILTRO_OPERADORES, type VariavelEntrada } from "@/lib/flow/node-types";
 import { CNAES } from "@/lib/data/cnaes";
 import { ESTADOS } from "@/lib/data/estados";
 import { NOMES_NICHOS } from "@/lib/data/nichos";
@@ -143,6 +143,47 @@ function CamposGatilhoPlanilha({ config, set }: CamposProps) {
       <Campo label="Nome da aba"><Input value={String(config.abaNome || "")} onChange={(e) => set({ abaNome: e.target.value })} /></Campo>
       <Campo label="Coluna do telefone"><Input value={String(config.colunaTelefone || "telefone")} onChange={(e) => set({ colunaTelefone: e.target.value })} /></Campo>
       <Campo label="Coluna do nome (opcional)"><Input value={String(config.colunaNome || "")} onChange={(e) => set({ colunaNome: e.target.value })} /></Campo>
+    </>
+  );
+}
+
+function CamposGatilhoManual({ config, set }: CamposProps) {
+  const variaveis = Array.isArray(config.variaveis) ? (config.variaveis as VariavelEntrada[]) : [];
+
+  function atualizar(i: number, patch: Partial<VariavelEntrada>) {
+    set({ variaveis: variaveis.map((v, idx) => (idx === i ? { ...v, ...patch } : v)) });
+  }
+  function remover(i: number) {
+    set({ variaveis: variaveis.filter((_, idx) => idx !== i) });
+  }
+
+  return (
+    <>
+      <p className="text-xs text-muted-foreground">
+        Parâmetros de entrada — pedidos a cada &quot;Executar agora&quot; e disponíveis nos nós seguintes via <code className="rounded bg-secondary px-1">{"{{variaveis.chave}}"}</code>.
+      </p>
+      {variaveis.map((v, i) => (
+        <div key={i} className="flex flex-col gap-2 rounded-lg border border-border bg-secondary/30 p-2.5">
+          <div className="flex items-center gap-2">
+            <Input
+              value={v.chave}
+              onChange={(e) => atualizar(i, { chave: e.target.value.replace(/[^a-zA-Z0-9_]/g, "") })}
+              placeholder="chave (ex: cidade)"
+            />
+            <Button type="button" variant="ghost" size="icon" onClick={() => remover(i)}><X className="h-3.5 w-3.5" /></Button>
+          </div>
+          <Input value={v.label} onChange={(e) => atualizar(i, { label: e.target.value })} placeholder="Rótulo (opcional)" />
+          <Input value={v.padrao} onChange={(e) => atualizar(i, { padrao: e.target.value })} placeholder="Valor padrão" />
+        </div>
+      ))}
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        onClick={() => set({ variaveis: [...variaveis, { chave: "", label: "", padrao: "" }] })}
+      >
+        <Plus className="h-3.5 w-3.5" /> Nova variável
+      </Button>
     </>
   );
 }
@@ -505,7 +546,7 @@ function CamposDoNo({ node, config, set }: { node: FlowNode } & CamposProps) {
     case "gatilho_agendado": return <CamposGatilhoAgendado config={config} set={set} />;
     case "gatilho_filtro_leads": return <CamposGatilhoFiltroLeads config={config} set={set} />;
     case "gatilho_planilha": return <CamposGatilhoPlanilha config={config} set={set} />;
-    case "gatilho_manual": return <p className="text-sm text-muted-foreground">Sem configuração — dispare pelo botão &quot;Executar agora&quot;.</p>;
+    case "gatilho_manual": return <CamposGatilhoManual config={config} set={set} />;
     case "extracao_cnpj": return <CamposExtracaoCnpj config={config} set={set} />;
     case "extracao_maps": return <CamposExtracaoMaps config={config} set={set} />;
     case "extracao_instagram": return <CamposExtracaoInstagram config={config} set={set} />;
@@ -543,6 +584,13 @@ export function FlowNodeConfigPanel({
         </div>
         <Button variant="ghost" size="icon" onClick={onClose}><X className="h-4 w-4" /></Button>
       </div>
+
+      {meta.categoria !== "gatilho" && (
+        <p className="rounded-lg border border-dashed border-border bg-secondary/20 px-2.5 py-2 text-xs text-muted-foreground">
+          Campos de texto aceitam <code className="rounded bg-secondary px-1">{"{{variaveis.chave}}"}</code> (definidas no
+          gatilho manual) e <code className="rounded bg-secondary px-1">{"{{lead.campo}}"}</code> (primeiro lead do lote atual).
+        </p>
+      )}
 
       <div className="flex flex-col gap-4">
         <CamposDoNo node={node} config={config} set={set} />

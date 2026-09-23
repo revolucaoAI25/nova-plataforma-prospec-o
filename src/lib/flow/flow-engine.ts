@@ -4,6 +4,8 @@ import { buscarLeadsFiltro } from "@/lib/dispatch-db";
 import { getProfile } from "@/lib/credits";
 import { lerValores } from "@/lib/integrations/google-sheets";
 import { FLOW_NODE_EXECUTORS } from "./executors";
+import { interpolarConfig } from "./interpolation";
+import type { VariavelEntrada } from "./node-types";
 import type { FlowContexto } from "./executor-types";
 import type {
   AutomationFlowRow, FlowNode, FlowRunRow, FlowRunStepStatus, FlowNodeTipo, GoogleSheetsCreds, Json,
@@ -85,15 +87,29 @@ export async function criarRunDoFluxo(
   return run.id as string;
 }
 
-/** Disparo manual (botão "Executar agora") — ignora agendamento/estado do gatilho. */
+/**
+ * Disparo manual (botão "Executar agora") — ignora agendamento/estado do
+ * gatilho. `variaveisEntrada` sobrescreve os valores padrão declarados no
+ * nó `gatilho_manual` (variável não informada cai no padrão); o resultado
+ * fica em `contexto.variaveis`, disponível nos nós seguintes via
+ * `{{variaveis.chave}}` (ver src/lib/flow/interpolation.ts).
+ */
 export async function dispararManualmente(
   sb: SupabaseClient,
   flow: AutomationFlowRow,
+  variaveisEntrada: Record<string, string> = {},
 ): Promise<{ ok: boolean; erro?: string; runId?: string }> {
   const gatilho = noGatilho(flow);
   if (!gatilho) return { ok: false, erro: "O fluxo não tem um nó de gatilho." };
   if (await temRunAtiva(sb, flow.id)) return { ok: false, erro: "Já existe uma execução em andamento para este fluxo." };
-  const runId = await criarRunDoFluxo(sb, flow, {});
+
+  const declaradas = Array.isArray((gatilho.config as { variaveis?: unknown })?.variaveis)
+    ? ((gatilho.config as { variaveis: VariavelEntrada[] }).variaveis)
+    : [];
+  const variaveis: Record<string, string> = {};
+  for (const v of declaradas) variaveis[v.chave] = variaveisEntrada[v.chave] ?? v.padrao;
+
+  const runId = await criarRunDoFluxo(sb, flow, { variaveis });
   if (!runId) return { ok: false, erro: "Não foi possível criar a execução." };
   return { ok: true, runId };
 }
@@ -269,8 +285,18 @@ async function avancarRun(sb: SupabaseClient, run: FlowRunRow, log: (m: string) 
   await upsertStep(sb, run.id, node, "executando");
 
   const contexto = (run.contexto || {}) as FlowContexto;
+  // Interpola {{variaveis.x}}/{{lead.campo}} na config ANTES de passar pro
+  // executor — nenhum executor precisa saber que isso existe, eles sempre
+  // recebem valores já resolvidos.
+  const noResolvido: FlowNode = {
+    ...node,
+    config: interpolarConfig((node.config || {}) as Record<string, unknown>, {
+      variaveis: (contexto.variaveis as Record<string, string>) || {},
+      lote: contexto.lote || [],
+    }) as Json,
+  };
   const outcome = await executor({
-    sb, userId: run.user_id, node, contexto, log: (m) => log(`run ${run.id} nó ${node.id}: ${m}`),
+    sb, userId: run.user_id, node: noResolvido, contexto, log: (m) => log(`run ${run.id} nó ${node.id}: ${m}`),
   });
 
   if (outcome.status === "erro") {
