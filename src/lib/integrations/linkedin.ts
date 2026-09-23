@@ -1,4 +1,5 @@
 import { emptyLead, type Lead } from "@/lib/types";
+import { LINKEDIN_INDUSTRY_LABEL_EN } from "@/lib/data/linkedin-industries-en";
 
 // Extração de leads via LinkedIn (busca por pessoas/decisores, estilo Sales
 // Navigator) — integração com Apify, mesmo padrão de instagram.ts.
@@ -45,6 +46,22 @@ import { emptyLead, type Lead } from "@/lib/types";
 // - Fallback de e-mail ampliado (mais nomes de campo candidatos) — ainda
 //   sem confirmação do nome real; se continuar vindo vazio com
 //   buscarEmail=true, precisa de um item bruto do dataset pra confirmar.
+//
+// Depois desse ajuste, um teste real confirmou cargo/localização
+// funcionando (Belo Horizonte respeitado), mas indústria ainda imprecisa
+// (maioria dos resultados fora do setor selecionado) — conferida a
+// tradução das 433 categorias contra o CSV original, sem erro de mapeamento
+// de ID, então não parece bug de código; mais provável ser o próprio campo
+// de setor do LinkedIn (autodeclarado por empresa, historicamente
+// impreciso mesmo na busca nativa da plataforma). Mitigação pedida pelo
+// usuário: soma o nome do setor em inglês ao searchQuery (busca livre
+// fuzzy) como reforço — ver bloco de "Reforço de precisão" abaixo. Efeito
+// real não confirmado, sem forma de testar nesta sessão.
+//
+// Também corrigido: e-mail vindo como "[object Object]" — o campo existe e
+// é encontrado, só que é um objeto aninhado, não string direta;
+// extrairTextoEmail() varre recursivamente por uma string em formato de
+// e-mail em vez de estringificar o objeto inteiro.
 
 const APIFY_BASE = "https://api.apify.com/v2";
 const ACTOR_PEOPLE_SEARCH = "harvestapi~linkedin-profile-search";
@@ -266,7 +283,18 @@ export async function buscarLinkedIn(p: BuscarLinkedInParams): Promise<Lead[]> {
   // bateria com o relatado: localização ignorada + resultados de fora do
   // Brasil quando indústria estava selecionada junto).
   if (p.industrias?.length) inputData.industryIds = p.industrias.map(Number);
-  if (p.palavraChave?.trim()) inputData.searchQuery = p.palavraChave.trim();
+
+  // Reforço de precisão (mitigação pedida pelo usuário após industryIds vir
+  // impreciso mesmo corrigido): soma o nome do setor em INGLÊS — como o
+  // LinkedIn indexa — ao texto livre de busca (searchQuery é fuzzy-match
+  // contra headline/dados do perfil, então ajuda a "puxar" pro setor certo
+  // além do filtro estruturado). Efetividade não confirmada — é um reforço,
+  // não substitui industryIds; mantido sem custo extra (mesmo searchQuery).
+  const termosSetor = (p.industrias ?? [])
+    .map((id) => LINKEDIN_INDUSTRY_LABEL_EN[id])
+    .filter((label): label is string => Boolean(label));
+  const searchQuery = [p.palavraChave?.trim(), ...termosSetor].filter(Boolean).join(" ");
+  if (searchQuery) inputData.searchQuery = searchQuery;
 
   cb(0, 1, "Iniciando job no Apify…");
   const { runId, datasetId } = await iniciarRun(p.apifyApiKey, ACTOR_PEOPLE_SEARCH, inputData);
