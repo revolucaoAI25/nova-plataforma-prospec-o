@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { X, Trash2, Plus } from "lucide-react";
+import { X, Trash2, Plus, Copy, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,12 +9,14 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
+import { Collapsible } from "@/components/ui/collapsible";
 import { MultiSelect, type MultiSelectOption } from "@/components/search/multi-select";
 import { FLOW_NODE_TYPES, FILTRO_OPERADORES, type VariavelEntrada } from "@/lib/flow/node-types";
 import { CNAES } from "@/lib/data/cnaes";
 import { ESTADOS } from "@/lib/data/estados";
 import { NOMES_NICHOS } from "@/lib/data/nichos";
 import { LINKEDIN_INDUSTRIES } from "@/lib/data/linkedin-industries";
+import { LEAD_FIELD_GROUPS } from "./lead-field-reference";
 import type { FlowNode } from "@/lib/database.types";
 
 const DIAS = [
@@ -98,6 +100,71 @@ function useListaFetch<T>(url: string | null): T[] {
     return () => { ativo = false; };
   }, [url]);
   return dados;
+}
+
+function TokenChip({ token }: { token: string }) {
+  const [copiado, setCopiado] = useState(false);
+  return (
+    <button
+      type="button"
+      title="Clique para copiar"
+      onClick={() => {
+        navigator.clipboard?.writeText(token).catch(() => {});
+        setCopiado(true);
+        setTimeout(() => setCopiado(false), 1200);
+      }}
+      className="inline-flex items-center gap-1 rounded-md border border-border bg-secondary/50 px-1.5 py-0.5 font-mono text-[11px] text-foreground transition-colors hover:border-primary/50 hover:bg-secondary"
+    >
+      {copiado ? <Check className="h-3 w-3 text-primary" /> : <Copy className="h-3 w-3 text-muted-foreground" />}
+      {token}
+    </button>
+  );
+}
+
+/**
+ * Torna as variáveis de fato DESCOBRÍVEIS — em vez de só uma dica de
+ * sintaxe, lista os tokens reais que existem nesse fluxo (variáveis do
+ * gatilho manual) e um cheat-sheet dos campos de lead mais comuns, cada um
+ * clicável pra copiar. `{{lead.campo}}` é sempre o PRIMEIRO lead do lote
+ * atual (o motor roda cada nó uma vez por execução, não uma vez por lead).
+ */
+function VariaveisDisponiveis({ variaveisFlow }: { variaveisFlow: VariavelEntrada[] }) {
+  return (
+    <Collapsible
+      defaultOpen
+      className="rounded-lg border border-dashed border-border bg-secondary/20 p-2.5"
+      trigger={<span className="text-xs font-semibold text-foreground">Variáveis disponíveis</span>}
+    >
+      <div className="flex flex-col gap-2.5 pt-2.5">
+        <div className="flex flex-col gap-1.5">
+          <p className="text-[11px] font-medium text-muted-foreground">Entrada do gatilho manual</p>
+          {variaveisFlow.length > 0 ? (
+            <div className="flex flex-wrap gap-1.5">
+              {variaveisFlow.filter((v) => v.chave).map((v) => <TokenChip key={v.chave} token={`{{variaveis.${v.chave}}}`} />)}
+            </div>
+          ) : (
+            <p className="text-[11px] text-muted-foreground">
+              Nenhuma declarada ainda — adicione no nó de gatilho manual pra poder usar aqui.
+            </p>
+          )}
+        </div>
+        {LEAD_FIELD_GROUPS.map((g) => (
+          <div key={g.grupo} className="flex flex-col gap-1.5">
+            <p className="text-[11px] font-medium text-muted-foreground">{g.grupo}</p>
+            <div className="flex flex-wrap gap-1.5">
+              {g.campos.map((c) => <TokenChip key={c.chave} token={`{{lead.${c.chave}}}`} />)}
+            </div>
+          </div>
+        ))}
+        <p className="text-[11px] text-muted-foreground">
+          <code className="rounded bg-secondary px-1">{"{{lead.campo}}"}</code> usa o PRIMEIRO lead do lote atual — só
+          resolve a partir do nó seguinte a uma extração/histórico que já rodou (não funciona no primeiro nó de
+          extração, antes de haver lote nenhum). A lista de campos acima é um guia — só existe de verdade se a
+          origem do lote (CNPJ, Maps, LinkedIn, enriquecimento…) realmente o preencheu.
+        </p>
+      </div>
+    </Collapsible>
+  );
 }
 
 // ── Gatilhos ─────────────────────────────────────────────────────
@@ -481,14 +548,24 @@ function CamposEspera({ config, set }: CamposProps) {
 function CamposDisparoWhatsapp({ config, set }: CamposProps) {
   const campanhas = useListaFetch<{ id: string; nome: string; status: string }>("/api/dispatch/campaigns");
   return (
-    <Campo label="Campanha de disparo">
-      <Select value={String(config.campaignId || "")} onValueChange={(v) => set({ campaignId: v })}>
-        <SelectTrigger><SelectValue placeholder="Selecione uma campanha" /></SelectTrigger>
-        <SelectContent>
-          {campanhas.map((c) => <SelectItem key={c.id} value={c.id}>{c.nome} ({c.status})</SelectItem>)}
-        </SelectContent>
-      </Select>
-    </Campo>
+    <>
+      <Campo label="Campanha de disparo">
+        <Select value={String(config.campaignId || "")} onValueChange={(v) => set({ campaignId: v })}>
+          <SelectTrigger><SelectValue placeholder="Selecione uma campanha" /></SelectTrigger>
+          <SelectContent>
+            {campanhas.map((c) => <SelectItem key={c.id} value={c.id}>{c.nome} ({c.status})</SelectItem>)}
+          </SelectContent>
+        </Select>
+      </Campo>
+      <p className="text-xs text-muted-foreground">
+        Este nó só inscreve os leads na campanha — a mensagem em si (texto livre ou parâmetros de template) é editada
+        lá, em <strong className="text-foreground">/disparo</strong>. A sintaxe de lá é sem o prefixo &quot;lead.&quot;:{" "}
+        <code className="rounded bg-secondary px-1">{"{{campo}}"}</code> direto (ex.: <code className="rounded bg-secondary px-1">{"{{nome}}"}</code>).
+        Todos os campos que o lead tem NESTE ponto do fluxo ficam disponíveis lá — inclusive os de enriquecimento
+        (<code className="rounded bg-secondary px-1">{"{{enriquecimento_empresa}}"}</code>…), se esse nó vier depois
+        de um nó de enriquecimento.
+      </p>
+    </>
   );
 }
 
@@ -564,9 +641,10 @@ function CamposDoNo({ node, config, set }: { node: FlowNode } & CamposProps) {
 }
 
 export function FlowNodeConfigPanel({
-  node, onChange, onClose, onDelete,
+  node, variaveisFlow, onChange, onClose, onDelete,
 }: {
   node: FlowNode;
+  variaveisFlow: VariavelEntrada[];
   onChange: (config: Record<string, unknown>) => void;
   onClose: () => void;
   onDelete: () => void;
@@ -585,12 +663,7 @@ export function FlowNodeConfigPanel({
         <Button variant="ghost" size="icon" onClick={onClose}><X className="h-4 w-4" /></Button>
       </div>
 
-      {meta.categoria !== "gatilho" && (
-        <p className="rounded-lg border border-dashed border-border bg-secondary/20 px-2.5 py-2 text-xs text-muted-foreground">
-          Campos de texto aceitam <code className="rounded bg-secondary px-1">{"{{variaveis.chave}}"}</code> (definidas no
-          gatilho manual) e <code className="rounded bg-secondary px-1">{"{{lead.campo}}"}</code> (primeiro lead do lote atual).
-        </p>
-      )}
+      {meta.categoria !== "gatilho" && <VariaveisDisponiveis variaveisFlow={variaveisFlow} />}
 
       <div className="flex flex-col gap-4">
         <CamposDoNo node={node} config={config} set={set} />

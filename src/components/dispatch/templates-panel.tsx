@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import type { BadgeProps } from "@/components/ui/badge";
+import { extrairParametrosTemplate } from "@/lib/dispatch-template-shared";
 import type { MessageTemplateRow, WhatsappInstanceRow } from "@/lib/database.types";
 
 const STATUS_LABEL: Record<string, { label: string; variant: BadgeProps["variant"] }> = {
@@ -51,10 +52,14 @@ export function TemplatesPanel({
     if (!instanceId || !nome.trim() || !corpo.trim()) return;
     setCreating(true);
     setError(null);
+    const variaveis = extrairParametrosTemplate(corpo).map(String);
     const resp = await fetch("/api/dispatch/templates", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ instanceId, nome, categoria, corpo, nomeMeta: nomeMeta || undefined, cabecalho: cabecalho || undefined, rodape: rodape || undefined }),
+      body: JSON.stringify({
+        instanceId, nome, categoria, corpo, variaveis,
+        nomeMeta: nomeMeta || undefined, cabecalho: cabecalho || undefined, rodape: rodape || undefined,
+      }),
     });
     const data = await resp.json();
     setCreating(false);
@@ -202,6 +207,11 @@ export function TemplatesPanel({
                   placeholder="Olá {{1}}, tudo bem? …"
                   rows={3}
                 />
+                <p className="text-xs text-muted-foreground">
+                  {extrairParametrosTemplate(corpo).length
+                    ? `${extrairParametrosTemplate(corpo).length} parâmetro(s) detectado(s) — o valor de cada um é preenchido ao montar a etapa da campanha.`
+                    : "Use {{1}}, {{2}}… pra marcar onde entram valores variáveis (nome, empresa…)."}
+                </p>
               </div>
               <div className="flex flex-col gap-1.5">
                 <Label htmlFor="tpl-rodape">Rodapé (opcional)</Label>

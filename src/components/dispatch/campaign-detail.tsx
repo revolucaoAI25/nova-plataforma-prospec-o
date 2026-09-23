@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
+import { extrairParametrosTemplate } from "@/lib/dispatch-template-shared";
 import type { BadgeProps } from "@/components/ui/badge";
 import type {
   CadenceStepRow,
@@ -164,6 +165,7 @@ export function CampaignDetail({
 
   const [modoMensagem, setModoMensagem] = useState<"texto" | "template">("texto");
   const [templateId, setTemplateId] = useState("");
+  const [parametrosValores, setParametrosValores] = useState<string[]>([]);
   const [atrasoHoras, setAtrasoHoras] = useState(0);
   const [corpoMensagem, setCorpoMensagem] = useState("");
   const [addingStep, setAddingStep] = useState(false);
@@ -186,9 +188,18 @@ export function CampaignDetail({
     if (resp.ok) setStatus(novo);
   }
 
+  const templateSelecionado = templatesAprovados.find((t) => t.id === templateId);
+  const numerosParametros = templateSelecionado ? extrairParametrosTemplate(templateSelecionado.corpo) : [];
+
+  function selecionarTemplate(novoId: string) {
+    setTemplateId(novoId);
+    const tpl = templatesAprovados.find((t) => t.id === novoId);
+    setParametrosValores(tpl ? extrairParametrosTemplate(tpl.corpo).map(() => "") : []);
+  }
+
   async function adicionarEtapa(e: React.FormEvent) {
     e.preventDefault();
-    const corpo = modoMensagem === "template" ? templatesAprovados.find((t) => t.id === templateId)?.corpo || "" : corpoMensagem;
+    const corpo = modoMensagem === "template" ? templateSelecionado?.corpo || "" : corpoMensagem;
     if (!corpo.trim() || (modoMensagem === "template" && !templateId)) return;
     setAddingStep(true);
     const resp = await fetch(`/api/dispatch/campaigns/${campanha.id}/steps`, {
@@ -199,12 +210,14 @@ export function CampaignDetail({
         atrasoHoras,
         corpoMensagem: corpo,
         templateId: modoMensagem === "template" ? templateId : undefined,
+        parametrosTemplate: modoMensagem === "template" ? parametrosValores : undefined,
       }),
     });
     setAddingStep(false);
     if (resp.ok) {
       setCorpoMensagem("");
       setTemplateId("");
+      setParametrosValores([]);
       setAtrasoHoras(0);
       router.refresh();
       const listResp = await fetch(`/api/dispatch/campaigns/${campanha.id}`);
@@ -339,22 +352,56 @@ export function CampaignDetail({
                   Nenhum template aprovado para essa instância ainda — crie e envie um para aprovação na página de Disparo.
                 </p>
               ) : (
-                <Select value={templateId} onValueChange={setTemplateId}>
-                  <SelectTrigger><SelectValue placeholder="Escolher template aprovado" /></SelectTrigger>
-                  <SelectContent>
-                    {templatesAprovados.map((t) => (
-                      <SelectItem key={t.id} value={t.id}>{t.nome}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <div className="flex flex-col gap-3">
+                  <Select value={templateId} onValueChange={selecionarTemplate}>
+                    <SelectTrigger><SelectValue placeholder="Escolher template aprovado" /></SelectTrigger>
+                    <SelectContent>
+                      {templatesAprovados.map((t) => (
+                        <SelectItem key={t.id} value={t.id}>{t.nome}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {templateSelecionado && (
+                    <>
+                      <p className="whitespace-pre-wrap rounded-lg border border-border bg-secondary/30 p-2.5 text-xs text-muted-foreground">
+                        {templateSelecionado.corpo}
+                      </p>
+                      {numerosParametros.length > 0 && (
+                        <div className="flex flex-col gap-2">
+                          <Label className="text-xs text-muted-foreground">
+                            Valor de cada parâmetro (pode usar {"{{campo}}"} pra puxar do lead — ex.: {"{{nome}}"}, {"{{municipio}}"}, ou {"{{enriquecimento_empresa}}"} se os leads vierem de um fluxo com enriquecimento)
+                          </Label>
+                          {numerosParametros.map((n, i) => (
+                            <Input
+                              key={n}
+                              value={parametrosValores[i] ?? ""}
+                              onChange={(e) => setParametrosValores((prev) => {
+                                const novo = [...prev];
+                                novo[i] = e.target.value;
+                                return novo;
+                              })}
+                              placeholder={`Parâmetro {{${n}}}`}
+                            />
+                          ))}
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
               )
             ) : (
-              <Textarea
-                value={corpoMensagem}
-                onChange={(e) => setCorpoMensagem(e.target.value)}
-                placeholder="Corpo da mensagem — use {{nome}} para inserir o nome do lead"
-                rows={3}
-              />
+              <div className="flex flex-col gap-1.5">
+                <Textarea
+                  value={corpoMensagem}
+                  onChange={(e) => setCorpoMensagem(e.target.value)}
+                  placeholder="Corpo da mensagem — use {{nome}} para inserir o nome do lead"
+                  rows={3}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Campos comuns: {"{{nome}}"}, {"{{telefone}}"}, {"{{email}}"}, {"{{municipio}}"}, {"{{uf}}"}, {"{{cnpj}}"} — e, se os leads
+                  vierem de um fluxo com um nó de enriquecimento antes do disparo, também {"{{enriquecimento_empresa}}"}, {"{{enriquecimento_cargo}}"} etc.
+                </p>
+              </div>
             )}
 
             <Button type="submit" disabled={addingStep} className="self-start">

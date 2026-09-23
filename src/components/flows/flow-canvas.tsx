@@ -6,7 +6,7 @@ import {
   addEdge, useReactFlow, type Node, type Edge, type Connection, type NodeTypes, type OnConnect,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { FLOW_NODE_TYPES } from "@/lib/flow/node-types";
+import { FLOW_NODE_TYPES, type VariavelEntrada } from "@/lib/flow/node-types";
 import type { FlowNode, FlowEdge, FlowNodeTipo, Json } from "@/lib/database.types";
 import { FlowNodeCard, type FlowNodeCardData } from "./flow-node-card";
 import { FlowNodePalette, FLOW_DRAG_DATA_FORMAT } from "./flow-node-palette";
@@ -114,6 +114,16 @@ function FlowCanvasInner({
     };
   }, [selecionadoId, nodes, configsPorId]);
 
+  // Variáveis declaradas no gatilho manual (se houver) — repassadas pro
+  // painel de config de QUALQUER nó selecionado, pra dar visibilidade de
+  // quais {{variaveis.x}} existem nesse fluxo sem precisar abrir o gatilho.
+  const variaveisFlow: VariavelEntrada[] = useMemo(() => {
+    const gatilho = nodes.find((n) => (n.data as unknown as FlowNodeCardData).tipo === "gatilho_manual");
+    if (!gatilho) return [];
+    const config = configsPorId[gatilho.id] as { variaveis?: VariavelEntrada[] } | undefined;
+    return Array.isArray(config?.variaveis) ? config.variaveis : [];
+  }, [nodes, configsPorId]);
+
   return (
     <div className="flex h-full min-h-0 w-full overflow-hidden rounded-2xl border border-border bg-background">
       <div className="w-56 shrink-0 border-r border-border bg-card/40">
@@ -147,6 +157,7 @@ function FlowCanvasInner({
         <div className="w-72 shrink-0 overflow-y-auto border-l border-border bg-card/40 sm:w-80 lg:w-96">
           <FlowNodeConfigPanel
             node={noSelecionado}
+            variaveisFlow={variaveisFlow}
             onChange={(config) => atualizarConfig(noSelecionado.id, config)}
             onClose={() => setSelecionadoId(null)}
             onDelete={() => removerNode(noSelecionado.id)}

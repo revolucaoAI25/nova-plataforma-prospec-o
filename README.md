@@ -202,6 +202,34 @@ mas nada é processado — é só fila).
   no texto em vez de virar string vazia silenciosamente. Gatilhos
   automáticos (agendado, filtro de leads, planilha) não têm formulário de
   entrada — `{{variaveis.x}}` fica sem resolver nesses casos.
+- **Fluxos — descoberta de variáveis e personalização de mensagem no
+  disparo**: resposta ao feedback de que não dava pra saber quais nomes de
+  variável existiam sem adivinhar. O painel de configuração de qualquer nó
+  pós-gatilho agora mostra um card "Variáveis disponíveis" de verdade
+  (`VariaveisDisponiveis` em `flow-node-config-panel.tsx`): as variáveis
+  declaradas no gatilho manual (via `flow-canvas.tsx`, que acha o nó
+  `gatilho_manual` e repassa seu `config.variaveis`) e um cheat-sheet de
+  campos comuns de lead agrupado por origem (`lead-field-reference.ts`) —
+  cada token é um botão que copia `{{variaveis.x}}`/`{{lead.campo}}` pra
+  área de transferência. O nó `disparo_whatsapp` ganhou uma nota explicando
+  a conexão com `/disparo`: a mensagem em si (texto livre ou parâmetros de
+  template) é editada na campanha, não no nó do fluxo, com sintaxe própria
+  — `{{campo}}` direto, sem o prefixo `lead.` (convenção antiga do
+  `dispatch-tick.ts`, mantida como está) — e todos os campos do lead nesse
+  ponto do fluxo, inclusive os de enriquecimento, já chegam lá via
+  `lead_snapshot` (nenhum código novo — o merge-back do enriquecimento já
+  cobria isso).
+- **Disparo — corrige gap real: parâmetros de template nunca eram
+  coletados**: achado ao revisar o item acima. A API já aceitava
+  `parametros_template`/`variaveis` de ponta a ponta, mas a UI de
+  `/disparo` nunca preenchia esses campos — todo envio de template no canal
+  oficial saía com `{{1}}`, `{{2}}`... sem valor nenhum. Corrigido:
+  `dispatch-template-shared.ts` extrai os números `{{N}}` do corpo do
+  template; `templates-panel.tsx` deriva e salva `variaveis` ao criar; e o
+  formulário de etapa em `campaign-detail.tsx` agora mostra um campo por
+  parâmetro detectado (cada um aceitando `{{campo}}` do lead, resolvido em
+  `renderizarMensagem()` como já acontecia pro modo texto livre) e envia
+  `parametrosTemplate` de verdade ao criar a etapa.
 
 ## Estrutura
 
