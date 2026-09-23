@@ -141,10 +141,10 @@ export function LinkedInSearchForm() {
               />
               <TagInput
                 label="Localizações"
-                placeholder="Ex: São Paulo, Brasil"
+                placeholder="Ex: Belo Horizonte"
                 values={localizacoes}
                 onChange={setLocalizacoes}
-                hint="Cidades, estados ou países."
+                hint="Cidade, estado ou país — prefira só o nome da cidade (sem vírgula), o LinkedIn às vezes erra o local com texto mais longo."
               />
             </div>
             <div className="flex flex-col gap-2">

@@ -30,6 +30,21 @@ import { emptyLead, type Lead } from "@/lib/types";
 //   na saída (só existe como filtro de busca, seniorityLevelIds) — o campo
 //   fica vazio por enquanto. O nome exato do campo de e-mail (modo "Full +
 //   email search") não foi confirmado — mantido defensivo.
+//
+// Ajustes de uma rodada de teste real (busca combinando cargo + localização
+// + indústria trouxe resultados de fora do Brasil, ignorando a cidade):
+// - industryIds agora vai como número (Number(id)), não string — o schema
+//   distingue esse campo dos outros filtros de ID, que são explicitamente
+//   "string[]"; suspeita de que o tipo errado invalidava a busca inteira
+//   (explicaria os três sintomas de uma vez: localização ignorada,
+//   resultados de outros países, indústrias "não somando").
+// - locations passa por normalizarLocalizacao() — o ator resolve o texto
+//   contra o autocomplete do LinkedIn (base em inglês) e usa a primeira
+//   sugestão, com risco documentado no Readme do ator (ex: "UK" virar
+//   "Ukraine"); nomes de país em português são traduzidos antes de mandar.
+// - Fallback de e-mail ampliado (mais nomes de campo candidatos) — ainda
+//   sem confirmação do nome real; se continuar vindo vazio com
+//   buscarEmail=true, precisa de um item bruto do dataset pra confirmar.
 
 const APIFY_BASE = "https://api.apify.com/v2";
 const ACTOR_PEOPLE_SEARCH = "harvestapi~linkedin-profile-search";
@@ -84,6 +99,37 @@ async function obterItems(apiKey: string, datasetId: string, limite: number): Pr
   return (await resp.json()) || [];
 }
 
+// O ator resolve o texto de localização contra o autocomplete do próprio
+// LinkedIn (base em inglês) e usa a PRIMEIRA sugestão — o Readme do ator dá
+// como exemplo "UK" virando "Ukraine" por engano. "Brasil" (português) tem o
+// mesmo risco de não bater com a entrada em inglês da base ("Brazil"), então
+// normalizamos os nomes de país mais comuns antes de mandar.
+const LOCALIZACAO_PT_EN: Record<string, string> = {
+  brasil: "Brazil",
+  "estados unidos": "United States",
+  eua: "United States",
+  portugal: "Portugal",
+  "reino unido": "United Kingdom",
+  alemanha: "Germany",
+  espanha: "Spain",
+  frança: "France",
+  italia: "Italy",
+  itália: "Italy",
+  méxico: "Mexico",
+  mexico: "Mexico",
+  argentina: "Argentina",
+  chile: "Chile",
+  colombia: "Colombia",
+  colômbia: "Colombia",
+};
+
+function normalizarLocalizacao(loc: string): string {
+  const partes = loc.split(",").map((p) => p.trim());
+  return partes
+    .map((p) => LOCALIZACAO_PT_EN[p.toLowerCase()] ?? p)
+    .join(", ");
+}
+
 /** Remove query string/trailing slash e força https — chave de dedup estável entre buscas. */
 function normalizarUrlPerfil(url: string): string {
   if (!url) return "";
@@ -132,8 +178,24 @@ function normalizarPerfil(item: Record<string, unknown>): Lead | null {
     currentPosition?.companyName ?? experienciaAtual?.companyName ?? "",
   ).trim();
   lead.municipio = String(location?.parsed?.text ?? location?.linkedinText ?? "").trim();
-  // Nome do campo de e-mail (modo "Full + email search") não confirmado — defensivo.
-  lead.email = String(item.email ?? item.emailAddress ?? "").trim();
+  // Nome do campo de e-mail (modo "Full + email search") não confirmado —
+  // usuário testou e nenhum perfil voltou com e-mail, sem conseguir saber se
+  // foi "não encontrado" (a busca de e-mail não é garantida, segundo o
+  // Readme do ator) ou "campo com nome diferente do esperado". Ampliado o
+  // leque de nomes candidatos; se ainda vier vazio com buscarEmail=true,
+  // precisamos de um item bruto do dataset (Apify Console → Runs → aquele
+  // run → Dataset) pra confirmar o nome real do campo.
+  const emailContato = item.contactInfo as Record<string, unknown> | undefined;
+  const emailsArray = Array.isArray(item.emails) ? (item.emails as unknown[]) : undefined;
+  lead.email = String(
+    item.email ??
+      item.emailAddress ??
+      item.workEmail ??
+      item.personalEmail ??
+      emailContato?.email ??
+      emailsArray?.[0] ??
+      "",
+  ).trim();
   lead.bio = String(item.about ?? "").trim().slice(0, 500);
   lead.nicho_busca = "LinkedIn";
   lead.fonte = "linkedin";
@@ -174,8 +236,15 @@ export async function buscarLinkedIn(p: BuscarLinkedInParams): Promise<Lead[]> {
     profileScraperMode: p.buscarEmail ? "Full + email search" : "Full",
   };
   if (p.cargos.length) inputData.currentJobTitles = p.cargos;
-  if (p.localizacoes.length) inputData.locations = p.localizacoes;
-  if (p.industrias?.length) inputData.industryIds = p.industrias;
+  if (p.localizacoes.length) inputData.locations = p.localizacoes.map(normalizarLocalizacao);
+  // industryIds: diferente dos outros filtros de ID (seniorityLevelIds,
+  // yearsOfExperienceIds, functionIds — explicitamente "string[]" no schema
+  // do ator), industryIds está documentado só como "array", sem o tipo
+  // string[] — mandamos como número. Suspeita: mandar string aqui pode
+  // invalidar a busca inteira e fazer o ator cair num fallback amplo (o que
+  // bateria com o relatado: localização ignorada + resultados de fora do
+  // Brasil quando indústria estava selecionada junto).
+  if (p.industrias?.length) inputData.industryIds = p.industrias.map(Number);
   if (p.palavraChave?.trim()) inputData.searchQuery = p.palavraChave.trim();
 
   cb(0, 1, "Iniciando job no Apify…");
