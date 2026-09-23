@@ -14,8 +14,12 @@ import { emptyLead, type Lead } from "@/lib/types";
 //   "Full", que já traz experience/currentPosition/about; "Short" só traz
 //   dado básico da página de busca). Custo: ~$100/1000 páginas de busca +
 //   $4/1000 perfis completos (ou $10/1000 com busca de e-mail) — por isso
-//   NÃO ativamos "Full + email search" por padrão (2.5x mais caro e a busca
-//   de e-mail não é garantida); usar "Full" simples.
+//   "Full + email search" fica atrás de um toggle explícito no formulário
+//   (buscarEmail), não é o padrão (2.5x mais caro e a busca de e-mail não
+//   é garantida). industryIds (filtro "Tipo de empresa" no formulário) usa
+//   os IDs reais de indústria do LinkedIn — lista completa (433 setores)
+//   baixada de github.com/HarvestAPI/linkedin-industry-codes-v2 e gerada em
+//   src/lib/data/linkedin-industries.ts.
 // - Output: perfil tem `linkedinUrl`, `firstName`/`lastName` (não um único
 //   campo "name"), `headline` (tagline livre do perfil, não é o cargo),
 //   `about` (bio), `location.parsed.text`/`location.linkedinText`,
@@ -140,7 +144,9 @@ export interface BuscarLinkedInParams {
   apifyApiKey: string;
   cargos: string[];
   localizacoes: string[];
+  industrias?: string[];
   palavraChave?: string;
+  buscarEmail?: boolean;
   limite?: number;
   onProgress?: (a: number, t: number, msg: string) => void;
   excludeUrls?: Set<string>;
@@ -150,8 +156,8 @@ export async function buscarLinkedIn(p: BuscarLinkedInParams): Promise<Lead[]> {
   if (!p.apifyApiKey) {
     throw new Error("Chave Apify não configurada. Acesse Configurações → Instagram (a mesma chave vale para LinkedIn).");
   }
-  if (!p.cargos.length && !p.localizacoes.length && !p.palavraChave?.trim()) {
-    throw new Error("Informe ao menos um cargo, localização ou palavra-chave.");
+  if (!p.cargos.length && !p.localizacoes.length && !p.industrias?.length && !p.palavraChave?.trim()) {
+    throw new Error("Informe ao menos um cargo, localização, tipo de empresa ou palavra-chave.");
   }
 
   const limite = p.limite ?? 100;
@@ -165,10 +171,11 @@ export async function buscarLinkedIn(p: BuscarLinkedInParams): Promise<Lead[]> {
   const inputData: Record<string, unknown> = {
     maxItems: limite,
     takePages: Math.min(100, Math.max(1, Math.ceil(limite / 25))),
-    profileScraperMode: "Full",
+    profileScraperMode: p.buscarEmail ? "Full + email search" : "Full",
   };
   if (p.cargos.length) inputData.currentJobTitles = p.cargos;
   if (p.localizacoes.length) inputData.locations = p.localizacoes;
+  if (p.industrias?.length) inputData.industryIds = p.industrias;
   if (p.palavraChave?.trim()) inputData.searchQuery = p.palavraChave.trim();
 
   cb(0, 1, "Iniciando job no Apify…");

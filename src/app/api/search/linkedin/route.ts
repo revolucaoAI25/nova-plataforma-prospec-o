@@ -10,7 +10,9 @@ import { autoExportarSheetsSeConfigurado } from "@/lib/auto-export";
 const bodySchema = z.object({
   cargos: z.array(z.string().min(1)).default([]),
   localizacoes: z.array(z.string().min(1)).default([]),
+  industrias: z.array(z.string().min(1)).default([]),
   palavraChave: z.string().default(""),
+  buscarEmail: z.boolean().default(false),
   limite: z.number().int().min(1).max(500).default(100),
   apenasNovos: z.boolean().default(true),
 });
@@ -61,7 +63,9 @@ export async function POST(request: Request) {
       apifyApiKey: resolucao.key,
       cargos: filtros.cargos,
       localizacoes: filtros.localizacoes,
+      industrias: filtros.industrias,
       palavraChave: filtros.palavraChave,
+      buscarEmail: filtros.buscarEmail,
       limite,
       excludeUrls: filtros.apenasNovos ? excludeUrls : undefined,
     });

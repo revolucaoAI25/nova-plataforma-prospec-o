@@ -117,7 +117,9 @@ export interface InstagramSearchFilters {
 export interface LinkedInSearchFilters {
   cargos: string[]; // currentJobTitles no ator Apify
   localizacoes: string[]; // locations
+  industrias: string[]; // industryIds — "tipo de empresa" (setor/indústria)
   palavraChave: string; // searchQuery (busca livre, opcional)
+  buscarEmail: boolean; // profileScraperMode "Full + email search" (custa mais e não é garantido)
   limite: number;
   apenasNovos: boolean;
 }

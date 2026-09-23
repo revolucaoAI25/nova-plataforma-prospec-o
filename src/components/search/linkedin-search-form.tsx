@@ -12,6 +12,8 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { LinkedInResultsTable } from "@/components/search/linkedin-results-table";
 import { ResultsSummary, buildLinkedInMetrics } from "@/components/search/results-summary";
+import { MultiSelect } from "@/components/search/multi-select";
+import { LINKEDIN_INDUSTRIES } from "@/lib/data/linkedin-industries";
 import type { Lead } from "@/lib/types";
 
 function TagInput({
@@ -72,7 +74,9 @@ function TagInput({
 export function LinkedInSearchForm() {
   const [cargos, setCargos] = useState<string[]>([]);
   const [localizacoes, setLocalizacoes] = useState<string[]>([]);
+  const [industrias, setIndustrias] = useState<string[]>([]);
   const [palavraChave, setPalavraChave] = useState("");
+  const [buscarEmail, setBuscarEmail] = useState(false);
   const [limite, setLimite] = useState(100);
   const [apenasNovos, setApenasNovos] = useState(true);
 
@@ -88,8 +92,8 @@ export function LinkedInSearchForm() {
     setError(null);
     setAvisos([]);
 
-    if (!cargos.length && !localizacoes.length && !palavraChave.trim()) {
-      setError("Informe ao menos um cargo, localização ou palavra-chave.");
+    if (!cargos.length && !localizacoes.length && !industrias.length && !palavraChave.trim()) {
+      setError("Informe ao menos um cargo, localização, tipo de empresa ou palavra-chave.");
       return;
     }
 
@@ -100,7 +104,7 @@ export function LinkedInSearchForm() {
       const resp = await fetch("/api/search/linkedin", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ cargos, localizacoes, palavraChave, limite, apenasNovos }),
+        body: JSON.stringify({ cargos, localizacoes, industrias, palavraChave, buscarEmail, limite, apenasNovos }),
       });
       const data = await resp.json();
       if (!resp.ok) {
@@ -144,6 +148,18 @@ export function LinkedInSearchForm() {
               />
             </div>
             <div className="flex flex-col gap-2">
+              <Label>Tipo de empresa (setor/indústria)</Label>
+              <MultiSelect
+                options={LINKEDIN_INDUSTRIES}
+                selected={industrias}
+                onChange={setIndustrias}
+                placeholder="Buscar setor… ex: Software Development, Fintech, Varejo"
+              />
+              <p className="text-xs text-muted-foreground">
+                Filtra pelo setor da empresa atual do perfil — útil quando você busca um nicho, não só um cargo específico.
+              </p>
+            </div>
+            <div className="flex flex-col gap-2">
               <Label htmlFor="palavra-chave">Palavra-chave (opcional)</Label>
               <Input
                 id="palavra-chave"
@@ -165,6 +181,11 @@ export function LinkedInSearchForm() {
                 label="Apenas leads novos"
                 description="Remove perfis já salvos em buscas anteriores."
                 control={<Switch checked={apenasNovos} onCheckedChange={setApenasNovos} />}
+              />
+              <FieldRow
+                label="Buscar e-mail"
+                description="Tenta encontrar o e-mail de cada perfil (custa mais no Apify — cerca de 2,5x o preço por perfil — e não é garantido para todos)."
+                control={<Switch checked={buscarEmail} onCheckedChange={setBuscarEmail} />}
               />
             </FieldGroup>
             <div className="flex max-w-xs flex-col gap-1.5">
