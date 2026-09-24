@@ -6,6 +6,7 @@ import { listarCampanhas, listarInstancias } from "@/lib/dispatch-db";
 import { AutomationsPanel } from "@/components/automations/automations-panel";
 import { DispatchAutomationsPanel } from "@/components/automations/dispatch-automations-panel";
 import { FlowsListPanel } from "@/components/flows/flows-list-panel";
+import { FlowTemplatesGallery } from "@/components/flows/flow-templates-gallery";
 import { PageHeader } from "@/components/layout/page-header";
 import type { AutomationFlowRow } from "@/lib/database.types";
 
@@ -36,6 +37,10 @@ export default async function AutomacoesPage() {
       />
 
       <FlowsListPanel fluxosIniciais={fluxos} />
+
+      <div className="border-t border-border pt-8">
+        <FlowTemplatesGallery />
+      </div>
 
       <div className="flex flex-col gap-4 border-t border-border pt-8">
         <div>

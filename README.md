@@ -230,6 +230,19 @@ mas nada é processado — é só fila).
   parâmetro detectado (cada um aceitando `{{campo}}` do lead, resolvido em
   `renderizarMensagem()` como já acontecia pro modo texto livre) e envia
   `parametrosTemplate` de verdade ao criar a etapa.
+- **Fluxos — galeria de templates**: catálogo estático (`src/lib/flow/
+  templates.ts`, sem tabela nova — mesmo padrão de `NICHOS`/`CNAES`) com 8
+  fluxos prontos cobrindo toda extração (CNPJ, Maps, Instagram, LinkedIn,
+  histórico), todo tipo de gatilho, os dois enriquecimentos e os nós de
+  controle (filtro, espera) — da busca agendada mais simples ao funil
+  completo (Maps → IA → filtro → WhatsApp, com cidade/UF como variável de
+  entrada, pra rodar o mesmo fluxo em qualquer praça sem editar nada).
+  Exibidos em `/automacoes` (`flow-templates-gallery.tsx`); escolher um leva
+  pra `/automacoes/fluxos/novo?template=<id>`, que só pré-popula o canvas —
+  nada é gravado até o usuário clicar Salvar. Campos que dependem do
+  usuário (qual planilha, campanha, CNAEs, pesquisa do histórico) ficam
+  vazios de propósito, sinalizados pelo mesmo alerta de "nó incompleto" que
+  qualquer fluxo criado do zero já tem.
 
 ## Estrutura
 

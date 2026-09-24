@@ -10,20 +10,27 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { FlowCanvas } from "./flow-canvas";
 import { FlowRunHistory } from "./flow-run-history";
 import type { VariavelEntrada } from "@/lib/flow/node-types";
+import type { FlowTemplate } from "@/lib/flow/templates";
 import type { AutomationFlowRow, FlowNode, FlowEdge } from "@/lib/database.types";
 
 function novoGatilho(): FlowNode {
   return { id: crypto.randomUUID(), tipo: "gatilho_manual", config: {}, posicao: { x: 60, y: 160 } };
 }
 
-export function FlowBuilder({ flowInicial }: { flowInicial: AutomationFlowRow | null }) {
+export function FlowBuilder({
+  flowInicial, templateInicial,
+}: {
+  flowInicial: AutomationFlowRow | null;
+  /** Só usado quando flowInicial é null — pré-popula o canvas de um fluxo novo a partir de um template. */
+  templateInicial?: FlowTemplate;
+}) {
   const router = useRouter();
   const [id, setId] = useState<string | null>(flowInicial?.id ?? null);
-  const [nome, setNome] = useState(flowInicial?.nome ?? "Novo fluxo");
+  const [nome, setNome] = useState(flowInicial?.nome ?? templateInicial?.nome ?? "Novo fluxo");
   const [ativo, setAtivo] = useState(flowInicial?.ativo ?? true);
   const [grafo, setGrafo] = useState<{ nodes: FlowNode[]; edges: FlowEdge[] }>({
-    nodes: flowInicial?.nodes?.length ? flowInicial.nodes : [novoGatilho()],
-    edges: flowInicial?.edges ?? [],
+    nodes: flowInicial?.nodes?.length ? flowInicial.nodes : templateInicial?.nodes ?? [novoGatilho()],
+    edges: flowInicial?.edges ?? templateInicial?.edges ?? [],
   });
   const [salvando, setSalvando] = useState(false);
   const [executando, setExecutando] = useState(false);
