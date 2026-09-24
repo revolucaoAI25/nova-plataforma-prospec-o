@@ -4,8 +4,9 @@ import {
   listarEtapas, proximaEtapa, marcarEnviado, marcarFalha, liberarProximoEnvio,
   listarCampanhasSheetWatchAtivas, listarCampanhasAutoTriggerAtivas, obterSheetWatcher,
   atualizarSheetWatcher, enrollTargets, buscarLeadsFiltro, atualizarCampanha, obterTemplateDb,
+  contarEnviosHojeInstancia,
 } from "../src/lib/dispatch-db";
-import { enviarTexto as evolutionEnviarTexto } from "../src/lib/integrations/evolution-api";
+import { enviarTexto as evolutionEnviarTexto, enviarMidia as evolutionEnviarMidia } from "../src/lib/integrations/evolution-api";
 import { enviarTemplate as oficialEnviarTemplate } from "../src/lib/integrations/whatsapp-oficial";
 import { lerValores } from "../src/lib/integrations/google-sheets";
 import { getProfile } from "../src/lib/credits";
@@ -31,7 +32,11 @@ function etapaAtualOrdem(target: DispatchTargetRow, etapas: CadenceStepRow[]): n
 
 async function enviarEtapaEvolution(instance: WhatsappInstanceRow, target: DispatchTargetRow, step: CadenceStepRow) {
   const texto = renderizarMensagem(step.corpo_mensagem, target.lead_snapshot as Record<string, unknown>);
-  const resp = await evolutionEnviarTexto(instance.evolution_instance_name!, target.telefone, texto);
+  // midia_url existe no banco desde a migration inicial mas nunca era lida
+  // aqui — toda etapa saía como texto puro mesmo com uma mídia configurada.
+  const resp = step.midia_url
+    ? await evolutionEnviarMidia(instance.evolution_instance_name!, target.telefone, step.midia_url, texto)
+    : await evolutionEnviarTexto(instance.evolution_instance_name!, target.telefone, texto);
   return { msgId: resp?.key?.id || "", corpoLog: texto };
 }
 
@@ -55,6 +60,11 @@ async function enviarEtapaOficial(sb: SupabaseClient, instance: WhatsappInstance
 
 async function processarInstancia(sb: SupabaseClient, instance: WhatsappInstanceRow, log: (msg: string) => void) {
   if (instance.status !== "conectado" || !instanciaLiberada(instance)) return;
+
+  if (instance.limite_diario_envios) {
+    const enviosHoje = await contarEnviosHojeInstancia(sb, instance.id);
+    if (enviosHoje >= instance.limite_diario_envios) return;
+  }
 
   const target = await claimTargetParaInstancia(sb, instance.id);
   if (!target) return;

@@ -57,6 +57,7 @@ function InstanceQr({ instanceId, onConnected }: { instanceId: string; onConnect
 export function InstancesPanel({ instanciasIniciais }: { instanciasIniciais: WhatsappInstanceRow[] }) {
   const [instancias, setInstancias] = useState(instanciasIniciais);
   const [nome, setNome] = useState("");
+  const [limiteDiarioEnvios, setLimiteDiarioEnvios] = useState("");
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [qrAbertoPara, setQrAbertoPara] = useState<string | null>(null);
@@ -69,7 +70,10 @@ export function InstancesPanel({ instanciasIniciais }: { instanciasIniciais: Wha
     const resp = await fetch("/api/dispatch/instances", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ nome }),
+      body: JSON.stringify({
+        nome,
+        limiteDiarioEnvios: limiteDiarioEnvios.trim() ? Number(limiteDiarioEnvios) : undefined,
+      }),
     });
     const data = await resp.json();
     setCreating(false);
@@ -78,6 +82,7 @@ export function InstancesPanel({ instanciasIniciais }: { instanciasIniciais: Wha
       return;
     }
     setNome("");
+    setLimiteDiarioEnvios("");
     const listResp = await fetch("/api/dispatch/instances");
     const listData = await listResp.json();
     setInstancias(listData.instancias || []);
@@ -113,6 +118,9 @@ export function InstancesPanel({ instanciasIniciais }: { instanciasIniciais: Wha
                 <span className="font-medium">{inst.nome}</span>{" "}
                 <Badge variant="outline" className="ml-1">{inst.canal === "oficial" ? "Oficial" : "Evolution"}</Badge>
                 {inst.numero_conectado && <span className="ml-2 text-sm text-muted-foreground">{inst.numero_conectado}</span>}
+                {inst.limite_diario_envios && (
+                  <span className="ml-2 text-xs text-muted-foreground">Limite: {inst.limite_diario_envios}/dia</span>
+                )}
               </div>
               <div className="flex items-center gap-2">
                 <Badge variant={STATUS_LABEL[inst.status]?.variant ?? "secondary"}>{STATUS_LABEL[inst.status]?.label ?? inst.status}</Badge>
@@ -132,6 +140,14 @@ export function InstancesPanel({ instanciasIniciais }: { instanciasIniciais: Wha
 
         <form onSubmit={criar} className="flex gap-2">
           <Input value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Nome da instância (ex: WhatsApp Vendas)" />
+          <Input
+            type="number"
+            min={1}
+            value={limiteDiarioEnvios}
+            onChange={(e) => setLimiteDiarioEnvios(e.target.value)}
+            placeholder="Limite/dia (opcional)"
+            className="w-40"
+          />
           <Button type="submit" disabled={creating}>
             <Plus className="h-4 w-4" /> {creating ? "Criando…" : "Nova instância"}
           </Button>

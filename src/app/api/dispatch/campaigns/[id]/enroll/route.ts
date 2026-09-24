@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
-import { enrollTargets, atualizarCampanha } from "@/lib/dispatch-db";
+import { enrollTargets, atualizarCampanha, perfilComDisparoHabilitado } from "@/lib/dispatch-db";
 import { buscarLeadsDaPesquisa } from "@/lib/db";
 
 const bodySchema = z.object({
@@ -17,6 +17,9 @@ export async function POST(
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Não autenticado." }, { status: 401 });
+  if (!(await perfilComDisparoHabilitado(supabase, user.id))) {
+    return NextResponse.json({ error: "Disparo não habilitado para sua conta." }, { status: 403 });
+  }
 
   const parsed = bodySchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "Dados inválidos." }, { status: 400 });

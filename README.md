@@ -243,6 +243,46 @@ mas nada é processado — é só fila).
   usuário (qual planilha, campanha, CNAEs, pesquisa do histórico) ficam
   vazios de propósito, sinalizados pelo mesmo alerta de "nó incompleto" que
   qualquer fluxo criado do zero já tem.
+- **Disparo — auditoria completa e correção de 5 gaps reais**: revisão de
+  ponta a ponta (schema, worker, integrações, rotas de API, UI) pedida
+  explicitamente depois da rodada de fluxos, antes de começar a automação
+  de e-mail. Achados e correções:
+  - **IDOR em `instanceId`**: criar campanha/template aceitava qualquer
+    `instanceId` no corpo sem checar se pertencia ao usuário — RLS só
+    protege a linha nova (`user_id = auth.uid()`), não valida se um FK
+    referenciado nela é de outro dono. Corrigido com
+    `instanciaPertenceAoUsuario()` (`dispatch-db.ts`), chamada nas duas
+    rotas de criação; erro genérico "não encontrada" pra não vazar a
+    existência de instâncias de terceiros.
+  - **Opt-out nunca gravava nada**: `dispatch_opt_outs` existia no schema
+    desde o início mas nada escrevia nela — não havia jeito de um lead sair
+    de uma campanha ativa antes do fim da cadência. Nova rota `DELETE
+    /api/dispatch/campaigns/[id]/targets/[targetId]` marca o alvo como
+    `removido`, registra o opt-out e cancela pendências do mesmo telefone
+    em qualquer outra campanha ativa do mesmo dono (senão o opt-out valeria
+    só pra inscrições futuras). Botão "Remover" na lista de alvos.
+  - **`midia_url` nunca era lido**: coluna existe desde a migration inicial,
+    mas toda etapa saía como texto puro mesmo com mídia configurada.
+    Adicionado `enviarMidia()`/`tipoMidiaPorUrl()` em `evolution-api.ts`
+    (`/message/sendMedia`, mesma ressalva de payload não confirmado contra
+    servidor real que as outras integrações do projeto já têm) e
+    `enviarEtapaEvolution()` agora escolhe mídia vs. texto conforme o
+    campo. Campo de URL na UI, só pro canal Evolution — mídia do canal
+    oficial é outro mecanismo (HEADER do template, aprovado pela Meta),
+    fora de escopo aqui.
+  - **`limite_diario_envios` nunca era aplicado**: coluna configurável na
+    criação da instância, mas sem nenhum efeito na fila. `worker/
+    dispatch-tick.ts` agora conta envios com sucesso desde a meia-noite
+    (`contarEnviosHojeInstancia()`) antes de reivindicar um alvo, e pula a
+    instância se o limite foi atingido. Campo de limite adicionado ao
+    formulário de nova instância.
+  - **Canal oficial permitia escolher "texto livre"**: a UI de etapa
+    sempre mostrava as duas opções, mas `enviarEtapaOficial()` sempre
+    lança erro sem `template_id` — qualquer etapa oficial criada sem trocar
+    manualmente pra "Template aprovado" falhava em 100% dos envios.
+    Removida a opção do seletor pro canal oficial (só "Template aprovado"
+    é oferecido); `modoMensagem` passou a ser derivado direto de
+    `canalOficial`, não mais um estado independente.
 
 ## Estrutura
 

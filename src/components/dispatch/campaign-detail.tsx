@@ -161,13 +161,25 @@ export function CampaignDetail({
   const [status, setStatus] = useState(campanha.status);
   const [etapas, setEtapas] = useState(etapasIniciais);
   const [stats, setStats] = useState(statsIniciais);
+  const [targets, setTargets] = useState(targetsIniciais);
+  const [removendoId, setRemovendoId] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<{ ok: boolean; msg: string } | null>(null);
 
-  const [modoMensagem, setModoMensagem] = useState<"texto" | "template">("texto");
+  async function removerAlvo(targetId: string) {
+    if (!confirm("Remover este alvo? Ele para de receber mensagens desta e de qualquer outra campanha sua (opt-out).")) return;
+    setRemovendoId(targetId);
+    const resp = await fetch(`/api/dispatch/campaigns/${campanha.id}/targets/${targetId}`, { method: "DELETE" });
+    setRemovendoId(null);
+    if (resp.ok) {
+      setTargets((prev) => prev.map((t) => (t.id === targetId ? { ...t, status: "removido" } : t)));
+    }
+  }
+
   const [templateId, setTemplateId] = useState("");
   const [parametrosValores, setParametrosValores] = useState<string[]>([]);
   const [atrasoHoras, setAtrasoHoras] = useState(0);
   const [corpoMensagem, setCorpoMensagem] = useState("");
+  const [midiaUrl, setMidiaUrl] = useState("");
   const [addingStep, setAddingStep] = useState(false);
 
   const [searchId, setSearchId] = useState("");
@@ -177,6 +189,12 @@ export function CampaignDetail({
   const instancia = instancias.find((i) => i.id === campanha.instance_id);
   const canalOficial = instancia?.canal === "oficial";
   const templatesAprovados = templates.filter((t) => t.instance_id === instancia?.id && t.status_aprovacao === "approved");
+
+  // Canal oficial não aceita texto livre — enviarEtapaOficial sempre exige
+  // template. Derivado direto de canalOficial (sem estado próprio nem
+  // toggle) pra não reabrir o gap: sem isso, o padrão "texto" da UI levava
+  // etapas de instâncias oficiais a falhar em todo envio.
+  const modoMensagem: "texto" | "template" = canalOficial ? "template" : "texto";
 
   async function alternarStatus() {
     const novo = status === "ativa" ? "pausada" : "ativa";
@@ -209,6 +227,7 @@ export function CampaignDetail({
         ordem: etapas.length + 1,
         atrasoHoras,
         corpoMensagem: corpo,
+        midiaUrl: modoMensagem === "texto" && midiaUrl.trim() ? midiaUrl.trim() : undefined,
         templateId: modoMensagem === "template" ? templateId : undefined,
         parametrosTemplate: modoMensagem === "template" ? parametrosValores : undefined,
       }),
@@ -216,6 +235,7 @@ export function CampaignDetail({
     setAddingStep(false);
     if (resp.ok) {
       setCorpoMensagem("");
+      setMidiaUrl("");
       setTemplateId("");
       setParametrosValores([]);
       setAtrasoHoras(0);
@@ -334,14 +354,9 @@ export function CampaignDetail({
 
               {canalOficial && (
                 <div className="ml-auto flex items-center gap-2">
-                  <Label className="shrink-0 text-xs text-muted-foreground">Tipo</Label>
-                  <Select value={modoMensagem} onValueChange={(v) => setModoMensagem(v as "texto" | "template")}>
-                    <SelectTrigger className="h-9 w-40"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="texto">Texto livre</SelectItem>
-                      <SelectItem value="template">Template aprovado</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  {/* Canal oficial só aceita template aprovado — "texto livre" não é uma opção
+                      válida aqui (enviarEtapaOficial sempre exige template_id), então não é oferecida. */}
+                  <Badge variant="secondary" className="shrink-0">Tipo: Template aprovado</Badge>
                 </div>
               )}
             </div>
@@ -401,6 +416,15 @@ export function CampaignDetail({
                   Campos comuns: {"{{nome}}"}, {"{{telefone}}"}, {"{{email}}"}, {"{{municipio}}"}, {"{{uf}}"}, {"{{cnpj}}"} — e, se os leads
                   vierem de um fluxo com um nó de enriquecimento antes do disparo, também {"{{enriquecimento_empresa}}"}, {"{{enriquecimento_cargo}}"} etc.
                 </p>
+                <Label htmlFor="midia-url" className="mt-1 text-xs text-muted-foreground">
+                  Mídia (opcional) — URL pública de imagem, vídeo ou documento
+                </Label>
+                <Input
+                  id="midia-url"
+                  value={midiaUrl}
+                  onChange={(e) => setMidiaUrl(e.target.value)}
+                  placeholder="https://exemplo.com/imagem.jpg"
+                />
               </div>
             )}
 
@@ -450,10 +474,10 @@ export function CampaignDetail({
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base"><Users className="h-4 w-4 text-primary" /> Alvos inscritos</CardTitle>
-          <CardDescription>{targetsIniciais.length} no total.</CardDescription>
+          <CardDescription>{targets.length} no total.</CardDescription>
         </CardHeader>
         <CardContent>
-          {targetsIniciais.length === 0 ? (
+          {targets.length === 0 ? (
             <EmptyState icon={Users} title="Nenhum alvo inscrito ainda" description="Inscreva leads de uma pesquisa do histórico ou colando uma lista." />
           ) : (
             <Table>
@@ -463,26 +487,38 @@ export function CampaignDetail({
                   <TableHead>Telefone</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Próxima etapa</TableHead>
+                  <TableHead className="w-10" />
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {targetsIniciais.slice(0, 200).map((t) => {
+                {targets.slice(0, 200).map((t) => {
                   const s = TARGET_STATUS_LABEL[t.status] ?? { label: t.status, variant: "outline" as const };
+                  const removivel = t.status !== "removido" && t.status !== "concluido";
                   return (
                     <TableRow key={t.id}>
                       <TableCell className="max-w-[220px] truncate font-medium">{t.nome || "—"}</TableCell>
                       <TableCell>{t.telefone}</TableCell>
                       <TableCell><Badge variant={s.variant}>{s.label}</Badge></TableCell>
                       <TableCell>{t.proxima_etapa_em ? new Date(t.proxima_etapa_em).toLocaleString("pt-BR") : "—"}</TableCell>
+                      <TableCell>
+                        {removivel && (
+                          <Button
+                            type="button" variant="ghost" size="icon" title="Remover e não contatar de novo"
+                            onClick={() => removerAlvo(t.id)} disabled={removendoId === t.id}
+                          >
+                            <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                          </Button>
+                        )}
+                      </TableCell>
                     </TableRow>
                   );
                 })}
               </TableBody>
             </Table>
           )}
-          {targetsIniciais.length > 200 && (
+          {targets.length > 200 && (
             <p className="border-t border-border p-3 text-center text-xs text-muted-foreground">
-              Mostrando 200 de {targetsIniciais.length} alvos.
+              Mostrando 200 de {targets.length} alvos.
             </p>
           )}
         </CardContent>

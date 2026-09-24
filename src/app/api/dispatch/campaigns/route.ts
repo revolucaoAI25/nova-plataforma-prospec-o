@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
-import { listarCampanhas, criarCampanha } from "@/lib/dispatch-db";
+import { listarCampanhas, criarCampanha, perfilComDisparoHabilitado, instanciaPertenceAoUsuario } from "@/lib/dispatch-db";
 
 export async function GET() {
   const supabase = await createClient();
@@ -29,8 +29,15 @@ export async function POST(request: Request) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Não autenticado." }, { status: 401 });
 
+  const profile = await perfilComDisparoHabilitado(supabase, user.id);
+  if (!profile) return NextResponse.json({ error: "Disparo não habilitado para sua conta." }, { status: 403 });
+
   const parsed = bodySchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "Dados inválidos.", detalhes: parsed.error.flatten() }, { status: 400 });
+
+  if (!(await instanciaPertenceAoUsuario(supabase, parsed.data.instanceId, profile))) {
+    return NextResponse.json({ error: "Instância não encontrada." }, { status: 404 });
+  }
 
   const id = await criarCampanha(supabase, user.id, parsed.data);
   if (!id) return NextResponse.json({ error: "Não foi possível criar a campanha." }, { status: 500 });

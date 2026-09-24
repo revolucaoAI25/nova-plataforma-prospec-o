@@ -86,3 +86,27 @@ export async function enviarTexto(nomeInstancia: string, numeroE164: string, tex
     body: JSON.stringify({ number: numeroE164, text: texto }),
   });
 }
+
+const EXT_PARA_TIPO: Record<string, "image" | "video" | "document"> = {
+  jpg: "image", jpeg: "image", png: "image", webp: "image", gif: "image",
+  mp4: "video", mov: "video", webm: "video",
+};
+
+/** Deriva o `mediatype` esperado pela Evolution API a partir da extensão da URL — documento por padrão. */
+export function tipoMidiaPorUrl(url: string): "image" | "video" | "document" {
+  const ext = url.split("?")[0].split(".").pop()?.toLowerCase() || "";
+  return EXT_PARA_TIPO[ext] || "document";
+}
+
+/**
+ * Envia mídia (imagem/vídeo/documento) por URL pública, com legenda. Formato
+ * documentado do endpoint `/message/sendMedia` — não confirmado contra um
+ * servidor real nesta integração (mesma ressalva de outras integrações
+ * externas do projeto), mas é o payload padrão da Evolution API v2.
+ */
+export async function enviarMidia(nomeInstancia: string, numeroE164: string, mediaUrl: string, legenda: string) {
+  return req(`/message/sendMedia/${encodeURIComponent(nomeInstancia)}`, {
+    method: "POST",
+    body: JSON.stringify({ number: numeroE164, mediatype: tipoMidiaPorUrl(mediaUrl), media: mediaUrl, caption: legenda }),
+  });
+}

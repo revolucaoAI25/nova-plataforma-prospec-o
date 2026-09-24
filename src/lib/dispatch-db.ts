@@ -1,8 +1,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { normalizarE164 } from "@/lib/phone";
+import { getProfile } from "@/lib/credits";
 import type {
   WhatsappInstanceRow, DispatchCampaignRow, CadenceStepRow, DispatchTargetRow,
-  MessageTemplateRow, OficialConnectionRequestRow, SheetWatcherRow, InstanceCanal, CampaignOrigem,
+  MessageTemplateRow, OficialConnectionRequestRow, SheetWatcherRow, InstanceCanal, CampaignOrigem, Profile,
 } from "@/lib/database.types";
 
 // CRUD do disparo WhatsApp — portado de modules/dispatch_db.py. Diferente
@@ -12,12 +13,40 @@ import type {
 // usuário (RLS garante que só vê o que é seu ou é admin), e o worker de
 // background passa o cliente admin (precisa operar entre usuários).
 
+/** Perfil só se `disparo_habilitado` (ou admin) — gate usado por toda rota de API do disparo que cria/altera dados. */
+export async function perfilComDisparoHabilitado(sb: SupabaseClient, userId: string): Promise<Profile | null> {
+  const profile = await getProfile(sb, userId);
+  if (!profile) return null;
+  if (!profile.disparo_habilitado && profile.role !== "admin") return null;
+  return profile;
+}
+
+/**
+ * Confirma que uma instância pertence de fato ao usuário (ou que ele é
+ * admin) antes de deixar uma campanha/template referenciá-la — sem isso,
+ * um `instanceId` de outra pessoa (ex.: adivinhado ou vazado de algum
+ * jeito) deixaria a campanha disparar usando o WhatsApp conectado de
+ * outro usuário (RLS não cobre isso: só garante que a NOVA linha tem
+ * `user_id = auth.uid()`, não que os IDs referenciados nela também sejam
+ * do mesmo dono).
+ */
+export async function instanciaPertenceAoUsuario(sb: SupabaseClient, instanceId: string, profile: Profile): Promise<boolean> {
+  const instancia = await obterInstancia(sb, instanceId);
+  if (!instancia) return false;
+  return profile.role === "admin" || instancia.user_id === profile.id;
+}
+
 // ── Instâncias ─────────────────────────────────────────────────────────────
 
-export async function criarInstancia(sb: SupabaseClient, userId: string, nome: string, evolutionInstanceName: string) {
+export async function criarInstancia(
+  sb: SupabaseClient, userId: string, nome: string, evolutionInstanceName: string, limiteDiarioEnvios: number | null = null,
+) {
   const { data } = await sb
     .from("whatsapp_instances")
-    .insert({ user_id: userId, nome, canal: "evolution", evolution_instance_name: evolutionInstanceName, status: "conectando" })
+    .insert({
+      user_id: userId, nome, canal: "evolution", evolution_instance_name: evolutionInstanceName, status: "conectando",
+      limite_diario_envios: limiteDiarioEnvios,
+    })
     .select("id")
     .single();
   return data?.id as string | undefined;
@@ -56,6 +85,29 @@ export async function obterInstancia(sb: SupabaseClient, instanceId: string): Pr
 export async function listarInstanciasConectadas(sb: SupabaseClient): Promise<WhatsappInstanceRow[]> {
   const { data } = await sb.from("whatsapp_instances").select("*").eq("status", "conectado");
   return (data as WhatsappInstanceRow[]) || [];
+}
+
+/**
+ * Conta envios com sucesso feitos por essa instância desde a meia-noite —
+ * `limite_diario_envios` existe no banco desde a migration inicial mas
+ * nunca era lido em lugar nenhum, então o limite configurado não tinha
+ * nenhum efeito real sobre a fila de disparo.
+ */
+export async function contarEnviosHojeInstancia(sb: SupabaseClient, instanceId: string): Promise<number> {
+  const { data: campanhas } = await sb.from("dispatch_campaigns").select("id").eq("instance_id", instanceId);
+  const idsCampanhas = (campanhas || []).map((c) => c.id as string);
+  if (!idsCampanhas.length) return 0;
+
+  const inicioDoDia = new Date();
+  inicioDoDia.setHours(0, 0, 0, 0);
+
+  const { count } = await sb
+    .from("dispatch_messages_log")
+    .select("id", { count: "exact", head: true })
+    .in("campaign_id", idsCampanhas)
+    .eq("status", "sucesso")
+    .gte("enviado_em", inicioDoDia.toISOString());
+  return count || 0;
 }
 
 export async function deletarInstancia(sb: SupabaseClient, instanceId: string) {
