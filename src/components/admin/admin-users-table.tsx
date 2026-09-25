@@ -24,6 +24,7 @@ function UserRow({ user, isSelf }: { user: UserStatsRow; isSelf: boolean }) {
   const [linkedinCreditsEnabled, setLinkedinCreditsEnabled] = useState(user.linkedin_credits_enabled);
   const [linkedinVisible, setLinkedinVisible] = useState(user.linkedin_visible);
   const [disparoHabilitado, setDisparoHabilitado] = useState(user.disparo_habilitado);
+  const [emailDisparoHabilitado, setEmailDisparoHabilitado] = useState(user.email_disparo_habilitado);
   const [enriquecimentoIa, setEnriquecimentoIa] = useState(user.enriquecimento_ia_habilitado);
   const [role, setRole] = useState(user.role);
   const [saving, setSaving] = useState(false);
@@ -52,6 +53,7 @@ function UserRow({ user, isSelf }: { user: UserStatsRow; isSelf: boolean }) {
         linkedin_credits_enabled: linkedinCreditsEnabled,
         linkedin_visible: linkedinVisible,
         disparo_habilitado: disparoHabilitado,
+        email_disparo_habilitado: emailDisparoHabilitado,
         enriquecimento_ia_habilitado: enriquecimentoIa,
         role,
       }),
@@ -109,6 +111,9 @@ function UserRow({ user, isSelf }: { user: UserStatsRow; isSelf: boolean }) {
         <Switch checked={disparoHabilitado} onCheckedChange={markDirty(setDisparoHabilitado)} />
       </TableCell>
       <TableCell>
+        <Switch checked={emailDisparoHabilitado} onCheckedChange={markDirty(setEmailDisparoHabilitado)} />
+      </TableCell>
+      <TableCell>
         <Switch checked={enriquecimentoIa} onCheckedChange={markDirty(setEnriquecimentoIa)} />
       </TableCell>
       <TableCell>
@@ -150,6 +155,7 @@ export function AdminUsersTable({ users, currentUserId }: { users: UserStatsRow[
           <TableHead>Debita LinkedIn?</TableHead>
           <TableHead>LinkedIn</TableHead>
           <TableHead>Disparo</TableHead>
+          <TableHead>Disparo E-mail</TableHead>
           <TableHead>Enriq. IA</TableHead>
           <TableHead>Buscas</TableHead>
           <TableHead>Leads</TableHead>

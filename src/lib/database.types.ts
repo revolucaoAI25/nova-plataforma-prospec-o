@@ -79,6 +79,8 @@ export interface Profile {
   linkedin_credits_enabled: boolean;
   linkedin_visible: boolean;
 
+  email_disparo_habilitado: boolean;
+
   google_client_id: string | null;
   google_client_secret: string | null;
   google_sheets_creds: GoogleSheetsCreds | null;
@@ -174,6 +176,7 @@ export interface UserStatsRow {
   monthly_linkedin_credits: number;
   linkedin_credits_enabled: boolean;
   linkedin_visible: boolean;
+  email_disparo_habilitado: boolean;
 }
 
 export type EnrichmentRunStatus = "pendente" | "processando" | "concluido" | "erro";
@@ -333,6 +336,99 @@ export interface OficialConnectionRequestRow {
   instance_id: string | null;
   criado_em: string;
   atualizado_em: string;
+}
+
+// ── Disparo por e-mail (Resend) — espelha as interfaces acima do
+// disparo WhatsApp; ver comentário de topo de 0008_email_dispatch.sql
+// pras diferenças deliberadas entre os dois canais. ──────────────────
+
+export interface EmailSenderRow {
+  id: string;
+  user_id: string;
+  nome: string;
+  from_name: string;
+  from_email: string;
+  reply_to: string | null;
+  ativo: boolean;
+  limite_diario_envios: number | null;
+  ultimo_envio_em: string | null;
+  proximo_envio_liberado_em: string | null;
+  criado_em: string;
+}
+
+export interface EmailCampaignRow {
+  id: string;
+  user_id: string;
+  nome: string;
+  sender_id: string | null;
+  status: CampaignStatus;
+  tipo_origem: CampaignOrigem;
+  origem_search_id: string | null;
+  filtro_nicho: string | null;
+  filtro_subnicho: string | null;
+  filtro_uf: string | null;
+  ultimo_trigger_em: string | null;
+  intervalo_min_seg: number;
+  intervalo_max_seg: number;
+  criado_em: string;
+}
+
+export interface EmailTemplateRow {
+  id: string;
+  user_id: string;
+  nome: string;
+  assunto: string;
+  corpo: string;
+  criado_em: string;
+}
+
+export interface EmailCadenceStepRow {
+  id: string;
+  campaign_id: string;
+  ordem: number;
+  atraso_horas: number;
+  assunto: string;
+  corpo: string;
+  template_id: string | null;
+  criado_em: string;
+}
+
+export interface EmailTargetRow {
+  id: string;
+  campaign_id: string;
+  nome: string | null;
+  email: string;
+  lead_snapshot: Json;
+  status: TargetStatus;
+  current_step_id: string | null;
+  proxima_etapa_em: string;
+  reservado_em: string | null;
+  criado_em: string;
+  atualizado_em: string;
+}
+
+export interface EmailMessageLogRow {
+  id: string;
+  target_id: string;
+  campaign_id: string;
+  step_id: string | null;
+  enviado_em: string;
+  status: "sucesso" | "erro";
+  provider_message_id: string | null;
+  erro_msg: string | null;
+  assunto_enviado: string | null;
+  corpo_enviado: string | null;
+}
+
+export interface EmailSheetWatcherRow {
+  id: string;
+  campaign_id: string;
+  sheet_id: string;
+  aba_nome: string;
+  coluna_email: string;
+  coluna_nome: string | null;
+  ultima_linha_processada: number;
+  criado_em: string;
 }
 
 export type AutomationTipo = "maps" | "cnpj";

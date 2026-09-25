@@ -39,6 +39,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         linkedinVisible={profile.linkedin_visible}
         disparoHabilitado={profile.disparo_habilitado}
         enriquecimentoIaHabilitado={profile.enriquecimento_ia_habilitado}
+        emailDisparoHabilitado={profile.email_disparo_habilitado}
       />
       {/* min-w-0 é essencial aqui: sem isso, um item flex nunca encolhe
           abaixo do conteúdo intrínseco — uma tabela larga (leads, usuários)

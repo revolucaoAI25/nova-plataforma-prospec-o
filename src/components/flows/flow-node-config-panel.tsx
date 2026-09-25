@@ -569,6 +569,39 @@ function CamposDisparoWhatsapp({ config, set }: CamposProps) {
   );
 }
 
+function CamposDisparoEmail({ config, set }: CamposProps) {
+  const campanhas = useListaFetch<{ id: string; nome: string; status: string }>("/api/email-dispatch/campaigns");
+  const senders = useListaFetch<{ id: string; nome: string }>("/api/email-dispatch/senders");
+  return (
+    <>
+      <Campo label="Campanha de disparo por e-mail">
+        <Select value={String(config.campaignId || "")} onValueChange={(v) => set({ campaignId: v })}>
+          <SelectTrigger><SelectValue placeholder="Selecione uma campanha" /></SelectTrigger>
+          <SelectContent>
+            {campanhas.map((c) => <SelectItem key={c.id} value={c.id}>{c.nome} ({c.status})</SelectItem>)}
+          </SelectContent>
+        </Select>
+      </Campo>
+      <Campo label="Remetente">
+        <Select value={String(config.senderId || "")} onValueChange={(v) => set({ senderId: v })}>
+          <SelectTrigger><SelectValue placeholder="Selecione um remetente" /></SelectTrigger>
+          <SelectContent>
+            {senders.map((s) => <SelectItem key={s.id} value={s.id}>{s.nome}</SelectItem>)}
+          </SelectContent>
+        </Select>
+      </Campo>
+      <p className="text-xs text-muted-foreground">
+        Este nó só inscreve os leads na campanha — o assunto e o corpo do e-mail são editados lá, em{" "}
+        <strong className="text-foreground">/disparo-email</strong>. A sintaxe de lá é a mesma dos outros campos do
+        fluxo: <code className="rounded bg-secondary px-1">{"{{campo}}"}</code> direto (ex.: <code className="rounded bg-secondary px-1">{"{{nome}}"}</code>).
+        Todos os campos que o lead tem NESTE ponto do fluxo ficam disponíveis lá — inclusive os de enriquecimento
+        (<code className="rounded bg-secondary px-1">{"{{enriquecimento_empresa}}"}</code>…), se esse nó vier depois
+        de um nó de enriquecimento.
+      </p>
+    </>
+  );
+}
+
 function CamposDestinoSheets({ config, set }: CamposProps) {
   const sheetId = String(config.sheetId || "");
   const planilhas = useListaFetch<{ id: string; name: string }>("/api/integrations/google-sheets/spreadsheets");
@@ -634,7 +667,7 @@ function CamposDoNo({ node, config, set }: { node: FlowNode } & CamposProps) {
     case "filtro_leads": return <CamposFiltroLeads config={config} set={set} />;
     case "espera": return <CamposEspera config={config} set={set} />;
     case "disparo_whatsapp": return <CamposDisparoWhatsapp config={config} set={set} />;
-    case "disparo_email": return <p className="text-sm text-muted-foreground">Disparo por e-mail ainda não está disponível.</p>;
+    case "disparo_email": return <CamposDisparoEmail config={config} set={set} />;
     case "destino_sheets": return <CamposDestinoSheets config={config} set={set} />;
     default: return null;
   }

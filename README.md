@@ -42,6 +42,8 @@ No [painel do Supabase](https://supabase.com/dashboard), crie um projeto novo
 4. `supabase/migrations/0004_maps_api_key_admin.sql`
 5. `supabase/migrations/0005_lead_enrichment_ia.sql` (Enriquecimento de Leads via IA)
 6. `supabase/migrations/0006_linkedin_extraction.sql` (busca por pessoas/decisores no LinkedIn)
+7. `supabase/migrations/0007_flow_automations.sql` (construtor de fluxos)
+8. `supabase/migrations/0008_email_dispatch.sql` (disparo por e-mail via Resend)
 
 Em **Authentication → Providers**, deixe E-mail/senha habilitado (é o único método
 usado no login). Contas são criadas pelo admin — não há cadastro público.
@@ -63,6 +65,9 @@ indisponível/com erro amigável se faltar, o resto da plataforma funciona norma
 - `EVOLUTION_API_URL` / `EVOLUTION_API_KEY` — disparo WhatsApp (canal não-oficial).
 - `DATAFY_API_BASE_URL` — canal oficial do WhatsApp (tem um padrão razoável, só
   precisa mudar se usar outro provedor).
+- `RESEND_API_KEY` — disparo por e-mail. O domínio usado em cada remetente
+  cadastrado em `/disparo-email` precisa estar verificado no dashboard da
+  Resend (Domains → Add Domain) antes do primeiro envio.
 
 Enriquecimento de Leads via IA não tem variável de ambiente nenhuma: fica
 desativado por padrão, admin libera por usuário (`/admin`), e cada usuário
@@ -283,6 +288,41 @@ mas nada é processado — é só fila).
     Removida a opção do seletor pro canal oficial (só "Template aprovado"
     é oferecido); `modoMensagem` passou a ser derivado direto de
     `canalOficial`, não mais um estado independente.
+- **Disparo por e-mail (Resend)**: espelha a arquitetura do disparo
+  WhatsApp o mais fielmente possível — mesmas tabelas-espelho
+  (`email_senders`/`email_campaigns`/`email_templates`/
+  `email_cadence_steps`/`email_targets`/`email_messages_log`/
+  `email_sheet_watchers`/`email_opt_outs`, migration
+  `0008_email_dispatch.sql`), mesmo padrão de gate (`profiles.
+  email_disparo_habilitado`, flag própria — não reaproveita
+  `disparo_habilitado`) e checagem de IDOR (`senderPertenceAoUsuario()`,
+  mirror de `instanciaPertenceAoUsuario()`) em `src/lib/
+  email-dispatch-db.ts`, e o nó `disparo_email` do construtor de fluxos
+  (antes um placeholder "em breve") agora ativado de verdade, com o mesmo
+  padrão "só inscreve, quem envia é o worker" de `disparo_whatsapp`.
+  Diferenças deliberadas do canal: sem conceito de "instância conectada"
+  — a Resend é uma única API key da plataforma (`RESEND_API_KEY`), então
+  `email_senders` só guarda nome/from/reply-to + limite diário, sem
+  QR/status de conexão; sem aprovação de template (não existe processo
+  tipo Meta pra e-mail) — `email_templates` cai pros campos essenciais e
+  ganha `assunto`; envio em LOTE via `/emails/batch` da Resend (até 20
+  alvos por campanha por tick, `claim_email_targets` reivindica em lote
+  por campanha em vez de 1 por instância) — por isso `intervalo_min_seg`/
+  `intervalo_max_seg` de `email_campaigns` pausam entre LOTES, não entre
+  mensagens individuais, e o tick roda a cada 20s (`worker/
+  email-dispatch-tick.ts`, novo 6º+7º tick do worker, junto com o
+  sheet-watch/auto-trigger de e-mail a cada 120s). Opt-out é tabela
+  própria (`email_opt_outs`, mesmo padrão de `dispatch_opt_outs`) com
+  rota pública de descadastro (`GET`/`POST` em `/api/email-dispatch/
+  unsubscribe?target=<id do alvo>` — o próprio UUID do alvo é o token,
+  sem tabela de token separada; GET só mostra a confirmação, POST efetiva
+  o opt-out, pra não descadastrar sozinho por causa de scanner de link
+  corporativo que pré-busca todo link de um e-mail via GET). Fora de
+  escopo nesta v1, deliberadamente: anexos (equivalente a `midia_url`) e
+  ingestão de webhook de bounce/complaint da Resend pra opt-out
+  automático — ambos ficam como follow-up natural. UI nova em
+  `/disparo-email` (mesma estrutura de abas de `/disparo`: Remetentes,
+  Campanhas, Templates, Relatórios) e `src/components/email-dispatch/`.
 
 ## Estrutura
 

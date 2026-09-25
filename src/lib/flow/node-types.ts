@@ -173,7 +173,10 @@ const disparoWhatsappConfigSchema = z.object({
   instanceId: z.string().uuid().nullable().default(null),
 });
 
-const disparoEmailConfigSchema = z.object({}).default({});
+const disparoEmailConfigSchema = z.object({
+  campaignId: z.string().uuid().nullable().default(null),
+  senderId: z.string().uuid().nullable().default(null),
+});
 
 const destinoSheetsConfigSchema = z.object({
   sheetId: z.string().min(1),
@@ -325,10 +328,10 @@ export const FLOW_NODE_TYPES: Record<FlowNodeTipo, FlowNodeTypeMeta> = {
     tipo: "disparo_email",
     categoria: "disparo",
     label: "Disparo e-mail",
-    descricao: "Em breve — envio de e-mail para os leads recebidos.",
+    descricao: "Inscreve os leads recebidos numa campanha de disparo por e-mail.",
     icon: "Mail",
     configSchema: disparoEmailConfigSchema,
-    disponivel: false,
+    disponivel: true,
   },
   destino_sheets: {
     tipo: "destino_sheets",

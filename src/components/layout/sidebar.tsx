@@ -16,6 +16,7 @@ export function Sidebar({
   linkedinVisible,
   disparoHabilitado,
   enriquecimentoIaHabilitado,
+  emailDisparoHabilitado,
 }: {
   role: "user" | "admin";
   email: string;
@@ -23,6 +24,7 @@ export function Sidebar({
   linkedinVisible: boolean;
   disparoHabilitado: boolean;
   enriquecimentoIaHabilitado: boolean;
+  emailDisparoHabilitado: boolean;
 }) {
   const [collapsed, setCollapsed] = useState(false);
 
@@ -49,7 +51,9 @@ export function Sidebar({
     }
   }, [collapsed]);
 
-  const sections = buildNavSections({ isAdmin: role === "admin", instagramVisible, linkedinVisible, disparoHabilitado, enriquecimentoIaHabilitado });
+  const sections = buildNavSections({
+    isAdmin: role === "admin", instagramVisible, linkedinVisible, disparoHabilitado, enriquecimentoIaHabilitado, emailDisparoHabilitado,
+  });
 
   return (
     <aside

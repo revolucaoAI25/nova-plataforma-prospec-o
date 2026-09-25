@@ -14,12 +14,14 @@ export function MobileNav({
   linkedinVisible,
   disparoHabilitado,
   enriquecimentoIaHabilitado,
+  emailDisparoHabilitado,
 }: {
   role: "user" | "admin";
   instagramVisible: boolean;
   linkedinVisible: boolean;
   disparoHabilitado: boolean;
   enriquecimentoIaHabilitado: boolean;
+  emailDisparoHabilitado: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
@@ -41,7 +43,9 @@ export function MobileNav({
     };
   }, [open]);
 
-  const sections = buildNavSections({ isAdmin: role === "admin", instagramVisible, linkedinVisible, disparoHabilitado, enriquecimentoIaHabilitado });
+  const sections = buildNavSections({
+    isAdmin: role === "admin", instagramVisible, linkedinVisible, disparoHabilitado, enriquecimentoIaHabilitado, emailDisparoHabilitado,
+  });
 
   return (
     <>

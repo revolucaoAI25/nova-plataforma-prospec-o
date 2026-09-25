@@ -15,6 +15,7 @@ import {
   Users,
   Radio,
   BrainCircuit,
+  Mail,
 } from "lucide-react";
 
 export interface NavLeaf {
@@ -49,12 +50,14 @@ export function buildNavSections({
   linkedinVisible,
   disparoHabilitado,
   enriquecimentoIaHabilitado,
+  emailDisparoHabilitado,
 }: {
   isAdmin: boolean;
   instagramVisible: boolean;
   linkedinVisible: boolean;
   disparoHabilitado: boolean;
   enriquecimentoIaHabilitado: boolean;
+  emailDisparoHabilitado: boolean;
 }): NavSection[] {
   const buscaChildren: NavLeaf[] = [
     { type: "link", href: "/busca/cnpj", label: "CNPJ", icon: Building2 },
@@ -84,21 +87,25 @@ export function buildNavSections({
     },
   ];
 
+  const engajamentoItems: NavNode[] = [];
   if (disparoHabilitado || isAdmin) {
-    sections.push({
-      label: "Engajamento",
-      items: [
-        {
-          type: "group",
-          label: "Disparo WhatsApp",
-          icon: Send,
-          children: [
-            { type: "link", href: "/disparo", label: "Campanhas", icon: MessageSquareText },
-            { type: "link", href: "/disparo/solicitar-oficial", label: "Solicitar canal oficial", icon: BadgeCheck },
-          ],
-        },
+    engajamentoItems.push({
+      type: "group",
+      label: "Disparo WhatsApp",
+      icon: Send,
+      children: [
+        { type: "link", href: "/disparo", label: "Campanhas", icon: MessageSquareText },
+        { type: "link", href: "/disparo/solicitar-oficial", label: "Solicitar canal oficial", icon: BadgeCheck },
       ],
     });
+  }
+  if (emailDisparoHabilitado || isAdmin) {
+    // Só uma página (sem canal oficial/QR pra "solicitar") — link direto,
+    // não um grupo como o disparo WhatsApp acima.
+    engajamentoItems.push({ type: "link", href: "/disparo-email", label: "Disparo E-mail", icon: Mail });
+  }
+  if (engajamentoItems.length) {
+    sections.push({ label: "Engajamento", items: engajamentoItems });
   }
 
   sections.push({
