@@ -493,6 +493,20 @@ mas nada é processado — é só fila).
   deixadas com nome de fornecedor — só a equipe da própria plataforma
   acessa essas telas, então o nome ali ajuda a debugar/dar suporte em vez
   de revelar algo pro cliente.
+- **Entrada de leads unificada — colar/upload/histórico**: o Enriquecimento
+  por CNPJ ganhou paridade com o Enriquecimento via IA na forma de
+  alimentar a lista (antes só tinha um textarea cru pra colar CNPJ) —
+  `BigDataCorpLeadStagingEditor` (mirror de `LeadStagingEditor`, que já
+  existia só pra IA) com três abas: colar texto, upload de planilha
+  (reaproveita `POST /api/enrichment/parse-upload`, cujo gate foi
+  ampliado pra aceitar `bigdatacorp_enrichment_habilitado` além de
+  `enriquecimento_ia_habilitado` — o parser em si é genérico, nunca foi
+  específico da IA) e **puxar de uma pesquisa do histórico** — opção nova
+  nos dois enriquecimentos, via `GET /api/historico/[id]/leads` (novo,
+  RLS cuida do isolamento por usuário). No enriquecimento por CNPJ o
+  seletor de pesquisas só lista as de fonte `cnpj` (é a única fonte que
+  preenche `leads.cnpj`); no enriquecimento via IA lista qualquer fonte,
+  filtrando client-side quem tem e-mail ou telefone.
 
 ## Estrutura
 

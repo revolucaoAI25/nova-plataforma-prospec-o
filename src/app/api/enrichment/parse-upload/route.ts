@@ -53,7 +53,7 @@ export async function POST(request: Request) {
   if (!user) return NextResponse.json({ error: "Não autenticado." }, { status: 401 });
 
   const profile = await getProfile(supabase, user.id);
-  if (!profile || !(profile.enriquecimento_ia_habilitado || profile.role === "admin")) {
+  if (!profile || !(profile.enriquecimento_ia_habilitado || profile.bigdatacorp_enrichment_habilitado || profile.role === "admin")) {
     return NextResponse.json({ error: "Acesso não autorizado." }, { status: 403 });
   }
 
