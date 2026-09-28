@@ -31,7 +31,7 @@ export default async function ConfiguracoesPage({
         <Tabs defaultValue="maps">
           <TabsList>
             <TabsTrigger value="maps"><MapPin className="h-3.5 w-3.5" /> Google Maps</TabsTrigger>
-            <TabsTrigger value="instagram"><Sparkles className="h-3.5 w-3.5" /> Apify</TabsTrigger>
+            <TabsTrigger value="instagram"><Sparkles className="h-3.5 w-3.5" /> Instagram e LinkedIn</TabsTrigger>
             <TabsTrigger value="sheets"><SheetIcon className="h-3.5 w-3.5" /> Google Sheets</TabsTrigger>
             {podeUsarIa && <TabsTrigger value="openai"><BrainCircuit className="h-3.5 w-3.5" /> OpenAI</TabsTrigger>}
           </TabsList>

@@ -71,7 +71,7 @@ export async function POST(request: Request) {
       return NextResponse.json(
         resolucao.bloqueado
           ? { error: "Todas as chaves Google Maps atingiram o limite mensal. Mude a preferência em Configurações se quiser continuar além da cota." }
-          : { error: "Nenhuma chave Google Maps ou Apify configurada." },
+          : { error: "Nenhuma chave Google Maps configurada (nem alternativa disponível)." },
         { status: resolucao.bloqueado ? 402 : 400 },
       );
     }
@@ -187,7 +187,7 @@ export async function POST(request: Request) {
     await debitarCreditos(supabase, user.id, "maps_credits", resultados.length);
   }
 
-  const avisoApify = usouApify ? "Cota do Google Maps esgotada — esta busca usou o Apify como alternativa." : null;
+  const avisoApify = usouApify ? "Cota do Google Maps esgotada — esta busca usou uma fonte alternativa." : null;
   const avisoSheets = await autoExportarSheetsSeConfigurado(supabase, user.id, searchId);
 
   return NextResponse.json({

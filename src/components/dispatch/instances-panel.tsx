@@ -104,7 +104,7 @@ export function InstancesPanel({ instanciasIniciais }: { instanciasIniciais: Wha
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-base"><Smartphone className="h-4 w-4 text-primary" /> Instâncias WhatsApp</CardTitle>
-        <CardDescription>Números conectados via Evolution API (não-oficial) ou canal oficial (provisionado pelo admin).</CardDescription>
+        <CardDescription>Números conectados via QR Code (não-oficial) ou canal oficial (provisionado pelo admin).</CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
         {error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
@@ -116,7 +116,7 @@ export function InstancesPanel({ instanciasIniciais }: { instanciasIniciais: Wha
             <div className="flex items-center justify-between">
               <div>
                 <span className="font-medium">{inst.nome}</span>{" "}
-                <Badge variant="outline" className="ml-1">{inst.canal === "oficial" ? "Oficial" : "Evolution"}</Badge>
+                <Badge variant="outline" className="ml-1">{inst.canal === "oficial" ? "Oficial" : "Não-oficial"}</Badge>
                 {inst.numero_conectado && <span className="ml-2 text-sm text-muted-foreground">{inst.numero_conectado}</span>}
                 {inst.limite_diario_envios && (
                   <span className="ml-2 text-xs text-muted-foreground">Limite: {inst.limite_diario_envios}/dia</span>

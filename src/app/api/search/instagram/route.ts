@@ -46,7 +46,7 @@ export async function POST(request: Request) {
 
   const resolucao = resolverChaveApify(profile);
   if (!resolucao.key) {
-    return NextResponse.json({ error: "Nenhuma chave Apify configurada. Acesse Configurações → Instagram." }, { status: 400 });
+    return NextResponse.json({ error: "Nenhuma chave configurada. Acesse Configurações → Instagram e LinkedIn." }, { status: 400 });
   }
 
   let excludeIds = new Set<string>();

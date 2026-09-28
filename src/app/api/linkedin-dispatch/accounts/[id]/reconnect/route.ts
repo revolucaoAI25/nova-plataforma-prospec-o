@@ -15,7 +15,7 @@ export async function POST(
 
   const profile = await perfilComLinkedinDisparoHabilitado(supabase, user.id);
   if (!profile) return NextResponse.json({ error: "Disparo por LinkedIn não habilitado para sua conta." }, { status: 403 });
-  if (!unipileConfigurado()) return NextResponse.json({ error: "Unipile não configurada nesta plataforma." }, { status: 501 });
+  if (!unipileConfigurado()) return NextResponse.json({ error: "Disparo por LinkedIn não configurado nesta plataforma." }, { status: 501 });
 
   const conta = await obterConta(supabase, id);
   if (!conta || !(await contaPertenceAoUsuario(supabase, id, profile))) {

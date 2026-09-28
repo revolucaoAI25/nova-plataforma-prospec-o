@@ -32,7 +32,7 @@ export default async function HistoricoPage() {
           <TabsList>
             <TabsTrigger value="buscas"><Search className="h-3.5 w-3.5" /> Buscas</TabsTrigger>
             {podeUsarIa && <TabsTrigger value="ia"><BrainCircuit className="h-3.5 w-3.5" /> Enriquecimento com IA</TabsTrigger>}
-            {podeBigDataCorp && <TabsTrigger value="bigdatacorp"><Database className="h-3.5 w-3.5" /> BigDataCorp</TabsTrigger>}
+            {podeBigDataCorp && <TabsTrigger value="bigdatacorp"><Database className="h-3.5 w-3.5" /> Sócios e Contato</TabsTrigger>}
           </TabsList>
           <TabsContent value="buscas">
             <HistoricoTable pesquisas={pesquisas} />

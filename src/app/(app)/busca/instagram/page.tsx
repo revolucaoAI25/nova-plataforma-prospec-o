@@ -20,7 +20,7 @@ export default async function BuscaInstagramPage() {
       <PageHeader
         eyebrow="Prospecção · Busca"
         title="Busca por Instagram"
-        description="Extrai seguidores ou seguindo de um perfil público, via Apify."
+        description="Extrai seguidores ou seguindo de um perfil público."
       />
       <InstagramSearchForm />
     </div>

@@ -310,8 +310,8 @@ export const FLOW_NODE_TYPES: Record<FlowNodeTipo, FlowNodeTypeMeta> = {
   enriquecimento_bigdatacorp: {
     tipo: "enriquecimento_bigdatacorp",
     categoria: "enriquecimento",
-    label: "Sócios e Contato (BigDataCorp)",
-    descricao: "Consulta cada lead com CNPJ na BigDataCorp: sócios/quadro societário e telefone/e-mail registrados da empresa.",
+    label: "Sócios e Contato",
+    descricao: "Consulta cada lead com CNPJ: sócios/quadro societário e telefone/e-mail registrados da empresa.",
     icon: "Database",
     configSchema: enriquecimentoBigDataCorpConfigSchema,
     disponivel: true,

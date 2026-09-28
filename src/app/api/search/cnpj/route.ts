@@ -84,7 +84,7 @@ export async function POST(request: Request) {
 
   const cddApiKey = profile.cdd_api_key || profile.cdd_api_key_admin || process.env.CDD_API_KEY || "";
   if (!cddApiKey) {
-    return NextResponse.json({ error: "Nenhuma chave da Casa dos Dados configurada." }, { status: 400 });
+    return NextResponse.json({ error: "Busca por CNPJ não configurada nesta plataforma." }, { status: 400 });
   }
 
   let buscaTextual: BuscaTextual[] | null = null;
@@ -237,15 +237,15 @@ export async function POST(request: Request) {
   let avisoBigDataCorp: string | null = null;
   if (filtros.enriquecerBigDataCorp && resultados.length) {
     if (!bigDataCorpConfigurado()) {
-      avisoBigDataCorp = "Enriquecimento por CNPJ (BigDataCorp) não configurado nesta plataforma — etapa não rodou.";
+      avisoBigDataCorp = "Enriquecimento por CNPJ (sócios/contato) não configurado nesta plataforma — etapa não rodou.";
     } else if (!(await perfilComBigDataCorpEnrichmentHabilitado(supabase, user.id))) {
-      avisoBigDataCorp = "Enriquecimento por CNPJ (BigDataCorp) não habilitado para sua conta — etapa não rodou.";
+      avisoBigDataCorp = "Enriquecimento por CNPJ (sócios/contato) não habilitado para sua conta — etapa não rodou.";
     } else {
       const itens = resultados.filter((r) => r.cnpj).map((r) => ({ cnpj: r.cnpj, nomeLead: r.nome }));
       const run = await criarRunBigDataCorp(supabase, user.id, itens, "busca_cnpj");
       if (run) {
         bigdatacorpRunId = run.id;
-        avisoBigDataCorp = `Enriquecimento por CNPJ (sócios/contato) iniciado em background pra ${run.total} empresa(s) — acompanhe em Enriquecimento → Sócios e Contato (BigDataCorp).`;
+        avisoBigDataCorp = `Enriquecimento por CNPJ (sócios/contato) iniciado em background pra ${run.total} empresa(s) — acompanhe em Enriquecimento → Sócios e Contato.`;
       }
     }
   }

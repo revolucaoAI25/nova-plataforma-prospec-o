@@ -31,7 +31,7 @@ export default async function DisparoLinkedinPage() {
       <PageHeader
         eyebrow="Engajamento · Disparo LinkedIn"
         title="Disparo LinkedIn"
-        description="Contas conectadas, campanhas de pedido de conexão e mensagem, templates e relatórios — via Unipile."
+        description="Contas conectadas, campanhas de pedido de conexão e mensagem, templates e relatórios."
       />
 
       <Tabs defaultValue="contas">

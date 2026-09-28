@@ -19,7 +19,7 @@ export default async function BuscaCnpjPage() {
       <PageHeader
         eyebrow="Prospecção · Busca"
         title="Busca por CNPJ"
-        description="Empresas ativas na Receita Federal, via Casa dos Dados. Créditos são debitados pelo que for encontrado, não pelo que for pedido."
+        description="Empresas ativas na Receita Federal. Créditos são debitados pelo que for encontrado, não pelo que for pedido."
       />
       <CnpjSearchForm bigdatacorpDisponivel={bigdatacorpDisponivel} />
     </div>

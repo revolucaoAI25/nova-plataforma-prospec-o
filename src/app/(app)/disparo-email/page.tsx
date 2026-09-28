@@ -34,7 +34,7 @@ export default async function DisparoEmailPage() {
       <PageHeader
         eyebrow="Engajamento · Disparo E-mail"
         title="Disparo E-mail"
-        description="Remetentes, campanhas de cadência, templates e relatórios — envio via Resend."
+        description="Remetentes, campanhas de cadência, templates e relatórios."
       />
 
       <Tabs defaultValue="dominios">

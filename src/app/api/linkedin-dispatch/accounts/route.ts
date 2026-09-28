@@ -26,7 +26,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Disparo por LinkedIn não habilitado para sua conta." }, { status: 403 });
   }
   if (!unipileConfigurado()) {
-    return NextResponse.json({ error: "Unipile não configurada nesta plataforma." }, { status: 501 });
+    return NextResponse.json({ error: "Disparo por LinkedIn não configurado nesta plataforma." }, { status: 501 });
   }
 
   const parsed = bodySchema.safeParse(await request.json().catch(() => null));

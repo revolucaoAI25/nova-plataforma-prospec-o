@@ -21,7 +21,7 @@ export async function POST(request: Request) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Não autenticado." }, { status: 401 });
   if (!(await perfilComBigDataCorpEnrichmentHabilitado(supabase, user.id))) {
-    return NextResponse.json({ error: "Enriquecimento por CNPJ (BigDataCorp) não habilitado para sua conta." }, { status: 403 });
+    return NextResponse.json({ error: "Enriquecimento por CNPJ (sócios/contato) não habilitado para sua conta." }, { status: 403 });
   }
 
   const parsed = bodySchema.safeParse(await request.json().catch(() => null));

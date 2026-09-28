@@ -20,7 +20,7 @@ export default async function BuscaLinkedInPage() {
       <PageHeader
         eyebrow="Prospecção · Busca"
         title="Busca por LinkedIn"
-        description="Encontra pessoas e decisores por cargo e localização, via Apify."
+        description="Encontra pessoas e decisores por cargo e localização."
       />
       <LinkedInSearchForm />
     </div>

@@ -474,6 +474,25 @@ mas nada é processado — é só fila).
   estavam vazios — isso é o que deixa o contato do sócio pronto pro
   disparo (WhatsApp/e-mail) sem exigir que quem monta o fluxo saiba que
   existe um campo separado.
+- **Nomes de fornecedor nunca aparecem pro usuário final**: decisão
+  explícita do usuário — a plataforma nunca deve revelar, em texto
+  visível na UI (labels, descrições, mensagens de erro/aviso, títulos de
+  aba), qual ferramenta de terceiro resolve cada funcionalidade. O usuário
+  vê "Google Maps"/"Google Sheets" (produtos que ele mesmo conecta/usa
+  diretamente, não infraestrutura escolhida por trás) e conceitos
+  genéricos como "CNPJ" ou "Sócios e Contato" — nunca "Casa dos Dados",
+  "Apify", "BigDataCorp", "Resend", "Unipile" ou "Evolution API". Esse
+  texto só existe em código (nomes de variável/função/tabela/tipo,
+  comentários, rotas de API) e no README — não é onde o cliente olha.
+  **Exceção deliberada**: a chave da OpenAI (Enriquecimento via IA)
+  continua nomeada como tal em Configurações, porque o próprio usuário
+  precisa criar a conta e gerar a chave direto em platform.openai.com —
+  esconder o nome ali quebraria a instrução, não protegeria infraestrutura
+  nenhuma. **Escopo deliberado**: páginas de admin (`/admin/*`,
+  `admin-keys-form.tsx`, coluna de flag em `admin-users-table.tsx`) foram
+  deixadas com nome de fornecedor — só a equipe da própria plataforma
+  acessa essas telas, então o nome ali ajuda a debugar/dar suporte em vez
+  de revelar algo pro cliente.
 
 ## Estrutura
 

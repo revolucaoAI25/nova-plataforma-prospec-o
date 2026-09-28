@@ -38,7 +38,7 @@ export function BigDataCorpRunsTable({ runs }: { runs: BigDataCorpEnrichmentRunR
       <EmptyState
         icon={Database}
         title="Nenhum enriquecimento por CNPJ realizado ainda"
-        description="Cole uma lista de CNPJs em Enriquecimento → Sócios e Contato (BigDataCorp) para ver o histórico aqui."
+        description="Cole uma lista de CNPJs em Enriquecimento → Sócios e Contato para ver o histórico aqui."
       />
     );
   }

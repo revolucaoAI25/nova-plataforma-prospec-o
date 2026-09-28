@@ -26,7 +26,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Disparo não habilitado para sua conta." }, { status: 403 });
   }
   if (!evolutionConfigurado()) {
-    return NextResponse.json({ error: "Evolution API não configurada nesta plataforma." }, { status: 501 });
+    return NextResponse.json({ error: "Disparo por WhatsApp não configurado nesta plataforma." }, { status: 501 });
   }
 
   const parsed = bodySchema.safeParse(await request.json().catch(() => null));
@@ -36,7 +36,7 @@ export async function POST(request: Request) {
   try {
     await evolutionCriarInstancia(evolutionInstanceName);
   } catch (e) {
-    return NextResponse.json({ error: `Erro ao criar instância na Evolution API: ${(e as Error).message}` }, { status: 502 });
+    return NextResponse.json({ error: `Erro ao criar instância: ${(e as Error).message}` }, { status: 502 });
   }
 
   const id = await criarInstancia(supabase, user.id, parsed.data.nome, evolutionInstanceName, parsed.data.limiteDiarioEnvios ?? null);

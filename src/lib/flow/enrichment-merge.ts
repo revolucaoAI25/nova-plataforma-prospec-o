@@ -84,12 +84,12 @@ export function mesclarEnriquecimentoNoLote(
 }
 
 export const BIGDATACORP_LABELS: Record<string, string> = {
-  bigdatacorp_status: "BigDataCorp — Status",
-  bigdatacorp_razao_social: "BigDataCorp — Razão social",
-  bigdatacorp_socios: "BigDataCorp — Sócios",
-  bigdatacorp_telefone: "BigDataCorp — Telefone",
-  bigdatacorp_email: "BigDataCorp — E-mail",
-  bigdatacorp_endereco: "BigDataCorp — Endereço",
+  bigdatacorp_status: "Sócios e Contato — Status",
+  bigdatacorp_razao_social: "Sócios e Contato — Razão social",
+  bigdatacorp_socios: "Sócios e Contato — Sócios",
+  bigdatacorp_telefone: "Sócios e Contato — Telefone",
+  bigdatacorp_email: "Sócios e Contato — E-mail",
+  bigdatacorp_endereco: "Sócios e Contato — Endereço",
 };
 
 /**

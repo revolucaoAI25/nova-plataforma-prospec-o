@@ -352,8 +352,8 @@ export function CnpjSearchForm({ bigdatacorpDisponivel }: { bigdatacorpDisponive
                 <hr className="divider-fade" />
                 <FieldGroup>
                   <FieldRow
-                    label={<span className="flex items-center gap-1.5"><Database className="h-3.5 w-3.5" /> Enriquecer com sócios e contato (BigDataCorp)</span>}
-                    description="Depois da busca, consulta cada CNPJ encontrado na BigDataCorp em background — sócios/quadro societário e telefone/e-mail registrados. Acompanhe em Enriquecimento → Sócios e Contato."
+                    label={<span className="flex items-center gap-1.5"><Database className="h-3.5 w-3.5" /> Enriquecer com sócios e contato</span>}
+                    description="Depois da busca, consulta cada CNPJ encontrado em background — sócios/quadro societário e telefone/e-mail registrados. Acompanhe em Enriquecimento → Sócios e Contato."
                     control={<Switch checked={enriquecerBigDataCorp} onCheckedChange={setEnriquecerBigDataCorp} />}
                   />
                 </FieldGroup>

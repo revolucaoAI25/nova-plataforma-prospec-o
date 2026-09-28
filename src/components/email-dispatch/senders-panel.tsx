@@ -65,7 +65,7 @@ export function SendersPanel({ sendersIniciais, dominiosVerificados }: { senders
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-base"><Mail className="h-4 w-4 text-primary" /> Remetentes</CardTitle>
         <CardDescription>
-          Endereços usados para enviar campanhas via Resend — o domínio de cada e-mail precisa estar verificado na
+          Endereços usados para enviar campanhas — o domínio de cada e-mail precisa estar verificado na
           aba &quot;Domínios&quot; antes de criar um remetente.
         </CardDescription>
       </CardHeader>

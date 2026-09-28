@@ -100,15 +100,15 @@ export function BigDataCorpEnrichmentPanel({ configurado }: { configurado: boole
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base"><Database className="h-4 w-4 text-primary" /> Sócios e contato por CNPJ</CardTitle>
           <CardDescription>
-            Cole uma lista de CNPJs (um por linha, opcionalmente com um nome antes, separado por vírgula) — a
-            BigDataCorp consulta cadastro, quadro societário e telefone/e-mail registrados de cada empresa.
+            Cole uma lista de CNPJs (um por linha, opcionalmente com um nome antes, separado por vírgula) —
+            consultamos cadastro, quadro societário e telefone/e-mail registrados de cada empresa.
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-3">
           {!configurado && (
             <Alert>
               <Info className="h-4 w-4" />
-              <AlertDescription>Integração com a BigDataCorp ainda não configurada nesta plataforma — fale com o administrador.</AlertDescription>
+              <AlertDescription>Esse enriquecimento ainda não está configurado nesta plataforma — fale com o administrador.</AlertDescription>
             </Alert>
           )}
           {erro && <Alert variant="destructive"><AlertDescription>{erro}</AlertDescription></Alert>}

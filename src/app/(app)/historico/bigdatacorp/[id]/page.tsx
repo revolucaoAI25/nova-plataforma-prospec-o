@@ -5,7 +5,7 @@ import { BigDataCorpResults } from "@/components/bigdatacorp/bigdatacorp-enrichm
 import { Badge } from "@/components/ui/badge";
 import type { BigDataCorpEnrichmentRunRow, BigDataCorpEnrichmentLeadRow } from "@/lib/database.types";
 
-export const metadata = { title: "Sócios e Contato (BigDataCorp)" };
+export const metadata = { title: "Sócios e Contato" };
 
 const STATUS_LABEL: Record<string, string> = {
   pendente: "Na fila", processando: "Processando", concluido: "Concluído", erro: "Erro",
@@ -29,7 +29,7 @@ export default async function BigDataCorpRunDetailPage({ params }: { params: Pro
       <PageHeader
         backHref="/historico"
         backLabel="Voltar ao histórico"
-        title="Sócios e Contato (BigDataCorp)"
+        title="Sócios e Contato"
         badge={<Badge variant="outline">{STATUS_LABEL[run.status] ?? run.status}</Badge>}
         description={new Date(run.created_at).toLocaleString("pt-BR")}
       />

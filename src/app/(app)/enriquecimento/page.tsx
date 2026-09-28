@@ -33,7 +33,7 @@ export default async function EnriquecimentoPage() {
         <Tabs defaultValue="ia">
           <TabsList>
             <TabsTrigger value="ia"><BrainCircuit className="h-3.5 w-3.5" /> Via IA</TabsTrigger>
-            <TabsTrigger value="bigdatacorp"><Database className="h-3.5 w-3.5" /> Sócios e Contato (BigDataCorp)</TabsTrigger>
+            <TabsTrigger value="bigdatacorp"><Database className="h-3.5 w-3.5" /> Sócios e Contato</TabsTrigger>
           </TabsList>
           <TabsContent value="ia">
             <EnrichmentPanel openaiKeyConfigurada={Boolean(profile.openai_api_key)} />

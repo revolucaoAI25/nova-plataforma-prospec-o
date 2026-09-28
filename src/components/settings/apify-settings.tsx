@@ -38,16 +38,16 @@ export function ApifySettings({ profile }: { profile: Profile }) {
     <form onSubmit={handleSubmit} className="flex flex-col gap-6">
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base"><Sparkles className="h-4 w-4 text-primary" /> Apify</CardTitle>
+          <CardTitle className="flex items-center gap-2 text-base"><Sparkles className="h-4 w-4 text-primary" /> Instagram e LinkedIn</CardTitle>
           <CardDescription>
             {contaTeste
-              ? "Contas de teste sempre usam a chave Apify compartilhada da plataforma — não é possível configurar uma chave própria."
+              ? "Contas de teste sempre usam a chave compartilhada da plataforma — não é possível configurar uma chave própria."
               : "Usada como fallback automático na busca Google Maps (quando a cota é esgotada) e nas buscas Instagram e LinkedIn. Configure uma ou mais chaves — o sistema usa rodízio automático quando uma chave atinge o limite mensal."}
           </CardDescription>
         </CardHeader>
         {!contaTeste && (
           <CardContent className="flex flex-col gap-4">
-            <KeyPoolEditor value={pool} onChange={setPool} keyPlaceholder="apify_api_…" />
+            <KeyPoolEditor value={pool} onChange={setPool} keyPlaceholder="Cole sua chave" />
             <details className="rounded-xl border border-dashed border-border p-3">
               <summary className="cursor-pointer text-sm font-medium">Ou use chave única (modo legado)</summary>
               <div className="mt-3 flex flex-col gap-1.5">
@@ -57,7 +57,7 @@ export function ApifySettings({ profile }: { profile: Profile }) {
                   type="password"
                   value={apifyKey}
                   onChange={(e) => setApifyKey(e.target.value)}
-                  placeholder="apify_api_…"
+                  placeholder="Cole sua chave"
                 />
               </div>
             </details>

@@ -116,7 +116,7 @@ export function AccountsPanel({ contasIniciais }: { contasIniciais: LinkedinAcco
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-base"><UserSearch className="h-4 w-4 text-primary" /> Contas LinkedIn</CardTitle>
         <CardDescription>
-          Cada conta é uma sessão real logada, conectada via Unipile — o próprio LinkedIn da pessoa, não um número/API
+          Cada conta é uma sessão real logada — o próprio LinkedIn da pessoa, não um número/API
           separado. Limites diários conservadores de propósito, pra reduzir risco de banimento.
         </CardDescription>
       </CardHeader>

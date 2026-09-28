@@ -65,7 +65,7 @@ export default async function DashboardPage() {
               </div>
               <CardDescription>
                 Empresas ativas na Receita Federal, filtradas por CNAE, UF, porte, data de
-                abertura e mais — via Casa dos Dados.
+                abertura e mais.
               </CardDescription>
             </CardHeader>
             <CardContent>

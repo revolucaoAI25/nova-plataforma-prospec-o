@@ -55,7 +55,7 @@ export async function PATCH(request: Request) {
   }
   if (parsed.data.apify_keys_pool !== undefined) {
     if (profile?.conta_teste) {
-      return NextResponse.json({ error: "Contas de teste usam a chave Apify compartilhada da plataforma." }, { status: 403 });
+      return NextResponse.json({ error: "Contas de teste usam a chave compartilhada da plataforma." }, { status: 403 });
     }
     patch.apify_keys_pool = parsed.data.apify_keys_pool;
   }

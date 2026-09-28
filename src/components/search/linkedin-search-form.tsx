@@ -184,7 +184,7 @@ export function LinkedInSearchForm() {
               />
               <FieldRow
                 label="Buscar e-mail"
-                description="Tenta encontrar o e-mail de cada perfil (custa mais no Apify — cerca de 2,5x o preço por perfil — e não é garantido para todos)."
+                description="Tenta encontrar o e-mail de cada perfil (custa mais — cerca de 2,5x o preço por perfil — e não é garantido para todos)."
                 control={<Switch checked={buscarEmail} onCheckedChange={setBuscarEmail} />}
               />
             </FieldGroup>
