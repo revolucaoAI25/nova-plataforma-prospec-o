@@ -5,13 +5,13 @@ import { buscarLeadsDaPesquisa } from "@/lib/db";
 /** Leads de uma pesquisa do histórico — usado pelo botão "Puxar do histórico" dos enriquecimentos (via IA e por CNPJ), pra reaproveitar leads já extraídos sem copiar/colar. RLS em `leads` já restringe ao dono. */
 export async function GET(
   _request: Request,
-  { params }: { params: Promise<{ id: string }> },
+  { params }: { params: Promise<{ searchId: string }> },
 ) {
-  const { id } = await params;
+  const { searchId } = await params;
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Não autenticado." }, { status: 401 });
 
-  const leads = await buscarLeadsDaPesquisa(supabase, id);
+  const leads = await buscarLeadsDaPesquisa(supabase, searchId);
   return NextResponse.json({ leads });
 }
