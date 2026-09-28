@@ -1,12 +1,12 @@
 import {
   CalendarClock, Filter, Sheet, FileSpreadsheet, Play, Building2, MapPin, MapPinned, AtSign,
-  UserSearch, History, BrainCircuit, SlidersHorizontal, Hourglass, Send, Mail, type LucideIcon,
+  UserSearch, History, BrainCircuit, SlidersHorizontal, Hourglass, Send, Mail, Database, type LucideIcon,
 } from "lucide-react";
 import type { LucideIconName, FlowNodeCategoria } from "@/lib/flow/node-types";
 
 export const FLOW_NODE_ICONS: Record<LucideIconName, LucideIcon> = {
   CalendarClock, Filter, Sheet, FileSpreadsheet, Play, Building2, MapPin, MapPinned, AtSign,
-  UserSearch, History, BrainCircuit, SlidersHorizontal, Hourglass, Send, Mail,
+  UserSearch, History, BrainCircuit, SlidersHorizontal, Hourglass, Send, Mail, Database,
 };
 
 export const FLOW_CATEGORIA_CORES: Record<FlowNodeCategoria, { border: string; bg: string; text: string; dot: string }> = {

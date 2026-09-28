@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Search, Download, Loader2, Building2, ListFilter, Phone, MapPinned, SearchX } from "lucide-react";
+import { Search, Download, Loader2, Building2, ListFilter, Phone, MapPinned, SearchX, Database } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,7 +39,7 @@ const PORTE_OPTIONS: MultiSelectOption[] = [
 
 type MapsModo = "nao_usar" | "enriquecer" | "filtrar" | "filtrar_enriquecer";
 
-export function CnpjSearchForm() {
+export function CnpjSearchForm({ bigdatacorpDisponivel }: { bigdatacorpDisponivel: boolean }) {
   const [cnaes, setCnaes] = useState<string[]>([]);
   const [cnaeManual, setCnaeManual] = useState("");
   const [cnaeTipo, setCnaeTipo] = useState<CnaeTipo>("principal");
@@ -62,6 +62,7 @@ export function CnpjSearchForm() {
   const [limite, setLimite] = useState(300);
   const [mapsModo, setMapsModo] = useState<MapsModo>("nao_usar");
   const [minAvaliacoes, setMinAvaliacoes] = useState(0);
+  const [enriquecerBigDataCorp, setEnriquecerBigDataCorp] = useState(false);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -125,6 +126,7 @@ export function CnpjSearchForm() {
           recuperacaoJudicial,
           mapsModo,
           minAvaliacoes,
+          enriquecerBigDataCorp: bigdatacorpDisponivel && enriquecerBigDataCorp,
         }),
       });
 
@@ -345,6 +347,18 @@ export function CnpjSearchForm() {
                 </div>
               )}
             </div>
+            {bigdatacorpDisponivel && (
+              <>
+                <hr className="divider-fade" />
+                <FieldGroup>
+                  <FieldRow
+                    label={<span className="flex items-center gap-1.5"><Database className="h-3.5 w-3.5" /> Enriquecer com sócios e contato (BigDataCorp)</span>}
+                    description="Depois da busca, consulta cada CNPJ encontrado na BigDataCorp em background — sócios/quadro societário e telefone/e-mail registrados. Acompanhe em Enriquecimento → Sócios e Contato."
+                    control={<Switch checked={enriquecerBigDataCorp} onCheckedChange={setEnriquecerBigDataCorp} />}
+                  />
+                </FieldGroup>
+              </>
+            )}
             <hr className="divider-fade" />
             <div className="flex max-w-xs flex-col gap-1.5">
               <Label htmlFor="limite">Limite de resultados (até 2000)</Label>

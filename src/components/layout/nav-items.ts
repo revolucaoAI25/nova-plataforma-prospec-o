@@ -51,6 +51,7 @@ export function buildNavSections({
   linkedinVisible,
   disparoHabilitado,
   enriquecimentoIaHabilitado,
+  bigdatacorpEnrichmentHabilitado,
   emailDisparoHabilitado,
   linkedinDisparoHabilitado,
 }: {
@@ -59,6 +60,7 @@ export function buildNavSections({
   linkedinVisible: boolean;
   disparoHabilitado: boolean;
   enriquecimentoIaHabilitado: boolean;
+  bigdatacorpEnrichmentHabilitado: boolean;
   emailDisparoHabilitado: boolean;
   linkedinDisparoHabilitado: boolean;
 }): NavSection[] {
@@ -83,8 +85,8 @@ export function buildNavSections({
         { type: "group", label: "Busca", icon: Search, children: buscaChildren },
         { type: "link", href: "/historico", label: "Histórico", icon: History },
         { type: "link", href: "/automacoes", label: "Automações", icon: CalendarClock },
-        ...(enriquecimentoIaHabilitado || isAdmin
-          ? [{ type: "link" as const, href: "/enriquecimento", label: "Enriquecimento com IA", icon: BrainCircuit }]
+        ...(enriquecimentoIaHabilitado || bigdatacorpEnrichmentHabilitado || isAdmin
+          ? [{ type: "link" as const, href: "/enriquecimento", label: "Enriquecimento", icon: BrainCircuit }]
           : []),
       ],
     },

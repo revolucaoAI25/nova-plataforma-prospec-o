@@ -25,7 +25,8 @@ export type LucideIconName =
   | "SlidersHorizontal"
   | "Hourglass"
   | "Send"
-  | "Mail";
+  | "Mail"
+  | "Database";
 
 // ── Schemas de config por tipo de nó ──────────────────────────────
 
@@ -154,6 +155,10 @@ const enriquecimentoMapsConfigSchema = z.object({
   filtrar: z.boolean().default(false),
   minAvaliacoes: z.number().int().min(0).default(0),
 });
+
+// Sem campos — o nó opera automaticamente em qualquer lead do lote que já
+// tenha `cnpj` preenchido, sem opções de configuração.
+const enriquecimentoBigDataCorpConfigSchema = z.object({});
 
 const FILTRO_OPERADORES = ["preenchido", "vazio", "contem", "nao_contem", "igual", "diferente"] as const;
 const filtroLeadsConfigSchema = z.object({
@@ -300,6 +305,15 @@ export const FLOW_NODE_TYPES: Record<FlowNodeTipo, FlowNodeTypeMeta> = {
     descricao: "Cruza os leads recebidos (de qualquer origem) com o Google Maps: telefone, site, avaliação — e opcionalmente filtra quem não tem perfil.",
     icon: "MapPinned",
     configSchema: enriquecimentoMapsConfigSchema,
+    disponivel: true,
+  },
+  enriquecimento_bigdatacorp: {
+    tipo: "enriquecimento_bigdatacorp",
+    categoria: "enriquecimento",
+    label: "Sócios e Contato (BigDataCorp)",
+    descricao: "Consulta cada lead com CNPJ na BigDataCorp: sócios/quadro societário e telefone/e-mail registrados da empresa.",
+    icon: "Database",
+    configSchema: enriquecimentoBigDataCorpConfigSchema,
     disponivel: true,
   },
   filtro_leads: {

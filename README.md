@@ -47,6 +47,7 @@ No [painel do Supabase](https://supabase.com/dashboard), crie um projeto novo
 9. `supabase/migrations/0009_linkedin_dispatch.sql` (disparo por LinkedIn via Unipile)
 10. `supabase/migrations/0010_email_domains.sql` (verificação de domínio por usuário, disparo por e-mail)
 11. `supabase/migrations/0011_email_domains_global_unique.sql` (corrige falha de segurança multi-tenant — ver "Decisões de arquitetura")
+12. `supabase/migrations/0012_bigdatacorp_enrichment.sql` (enriquecimento de leads por CNPJ via BigDataCorp)
 
 Em **Authentication → Providers**, deixe E-mail/senha habilitado (é o único método
 usado no login). Contas são criadas pelo admin — não há cadastro público.
@@ -79,6 +80,12 @@ indisponível/com erro amigável se faltar, o resto da plataforma funciona norma
   Unipile ou via `criarWebhook()`) — ver comentário no `.env.example`.
   `UNIPILE_WEBHOOK_SECRET` (também opcional, mas recomendado) protege
   esses dois endpoints públicos com um segredo na própria URL — ver
+  "Decisões de arquitetura".
+- `BIGDATACORP_TOKEN_ID` / `BIGDATACORP_ACCESS_TOKEN` — enriquecimento de
+  leads por CNPJ (sócios/quadro societário + telefone/e-mail registrados),
+  disponível em `/enriquecimento` → aba "Sócios e Contato", como extra
+  opcional na busca CNPJ e como nó no construtor de fluxos. Chave única da
+  plataforma (custo absorvido pela plataforma, não por usuário) — ver
   "Decisões de arquitetura".
 
 Enriquecimento de Leads via IA não tem variável de ambiente nenhuma: fica
@@ -430,6 +437,43 @@ mas nada é processado — é só fila).
   mais `tipo_acao: "convite"` fixo quando a campanha estava inativa e a
   etapa real do alvo era "mensagem" (`worker/linkedin-dispatch-tick.ts`,
   corrigido computando a etapa antes de checar se a campanha está ativa).
+- **Enriquecimento de leads por CNPJ (BigDataCorp)**: terceira via de
+  enriquecimento, ao lado da IA — em vez de partir de nome/e-mail/telefone
+  e buscar na web de forma especulativa (IA), consulta o CNPJ direto em
+  bases de registro (Receita Federal e outras fontes via BigDataCorp):
+  sócios/quadro societário e telefone/e-mail cadastrados da empresa —
+  contato de decisor de verdade, não um perfil scrapeado. Só funciona
+  quando o CNPJ já é conhecido — não se aplica a leads de Google Maps (que
+  nunca vêm com CNPJ), diferente da busca CNPJ e de qualquer lote que já
+  tenha cruzado com CNPJ antes; construído de forma genérica ("qualquer
+  lote com `cnpj` preenchido") em vez de travado numa fonte, então compõe
+  naturalmente se isso mudar no futuro. Chave ÚNICA da plataforma por
+  enquanto (`BIGDATACORP_TOKEN_ID`/`BIGDATACORP_ACCESS_TOKEN`, custo
+  absorvido pela plataforma — decisão explícita do usuário até pensarem
+  num modelo de chave por cliente/plano). Mesmo padrão assíncrono do
+  enriquecimento via IA (`bigdatacorp_enrichment_runs`/`_leads`, migration
+  `0012_bigdatacorp_enrichment.sql`, worker a cada 10s) — tabelas
+  próprias, não reaproveita `enrichment_runs` (entrada/saída diferentes).
+  Endpoint único `POST /empresas` da BigDataCorp, combinando os datasets
+  `basic_data` + `registration_data` + `dynamic_qsa_data` numa chamada só
+  por CNPJ (`src/lib/integrations/bigdatacorp.ts`). Ressalva: o dataset de
+  sócios/QSA teve o nome técnico inferido de uma referência indexada — a
+  página de doc específica não carregou durante a pesquisa, então a
+  estrutura exata da resposta não foi 100% confirmada; a resposta bruta
+  fica guardada em `extras` (jsonb) como rede de segurança, e o parsing
+  (`extrairSocios()`) é defensivo — ajustar assim que o primeiro resultado
+  real chegar, se o formato divergir. Disponível em três lugares que
+  compartilham a mesma infra: aba dedicada em `/enriquecimento` (cola uma
+  lista de CNPJs), extra opcional na busca avulsa de CNPJ (cria uma
+  execução em background pros CNPJs encontrados), e nó
+  `enriquecimento_bigdatacorp` no construtor de fluxos — os três só criam
+  a run; quem processa é sempre o mesmo worker tick. O merge de volta no
+  lote de um fluxo (`mesclarBigDataCorpNoLote()`) casa por CNPJ (chave
+  exata, ao contrário do merge da IA que precisa de heurística por
+  e-mail/telefone/nome) e retroalimenta `telefone`/`email` do lead quando
+  estavam vazios — isso é o que deixa o contato do sócio pronto pro
+  disparo (WhatsApp/e-mail) sem exigir que quem monta o fluxo saiba que
+  existe um campo separado.
 
 ## Estrutura
 

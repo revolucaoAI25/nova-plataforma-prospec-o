@@ -14,6 +14,7 @@ export function MobileNav({
   linkedinVisible,
   disparoHabilitado,
   enriquecimentoIaHabilitado,
+  bigdatacorpEnrichmentHabilitado,
   emailDisparoHabilitado,
   linkedinDisparoHabilitado,
 }: {
@@ -22,6 +23,7 @@ export function MobileNav({
   linkedinVisible: boolean;
   disparoHabilitado: boolean;
   enriquecimentoIaHabilitado: boolean;
+  bigdatacorpEnrichmentHabilitado: boolean;
   emailDisparoHabilitado: boolean;
   linkedinDisparoHabilitado: boolean;
 }) {
@@ -47,7 +49,7 @@ export function MobileNav({
 
   const sections = buildNavSections({
     isAdmin: role === "admin", instagramVisible, linkedinVisible, disparoHabilitado, enriquecimentoIaHabilitado,
-    emailDisparoHabilitado, linkedinDisparoHabilitado,
+    bigdatacorpEnrichmentHabilitado, emailDisparoHabilitado, linkedinDisparoHabilitado,
   });
 
   return (

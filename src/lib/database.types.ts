@@ -82,6 +82,8 @@ export interface Profile {
   email_disparo_habilitado: boolean;
   linkedin_disparo_habilitado: boolean;
 
+  bigdatacorp_enrichment_habilitado: boolean;
+
   google_client_id: string | null;
   google_client_secret: string | null;
   google_sheets_creds: GoogleSheetsCreds | null;
@@ -179,10 +181,55 @@ export interface UserStatsRow {
   linkedin_visible: boolean;
   email_disparo_habilitado: boolean;
   linkedin_disparo_habilitado: boolean;
+  bigdatacorp_enrichment_habilitado: boolean;
 }
 
 export type EnrichmentRunStatus = "pendente" | "processando" | "concluido" | "erro";
 export type EnrichmentLeadStatus = "pendente" | "concluido" | "nao_encontrado" | "erro";
+
+// ── Enriquecimento via BigDataCorp (por CNPJ) ───────────────────────────
+
+export type BigDataCorpRunStatus = "pendente" | "processando" | "concluido" | "erro";
+export type BigDataCorpLeadStatus = "pendente" | "concluido" | "nao_encontrado" | "erro";
+export type BigDataCorpRunOrigem = "manual" | "busca_cnpj" | "fluxo";
+
+export interface BigDataCorpSocioRow {
+  nome: string;
+  documento: string;
+  qualificacao: string;
+}
+
+export interface BigDataCorpEnrichmentRunRow {
+  id: string;
+  user_id: string;
+  status: BigDataCorpRunStatus;
+  total: number;
+  processados: number;
+  encontrados: number;
+  nao_encontrados: number;
+  erros: number;
+  origem: BigDataCorpRunOrigem;
+  erro: string | null;
+  created_at: string;
+  concluido_em: string | null;
+}
+
+export interface BigDataCorpEnrichmentLeadRow {
+  id: string;
+  run_id: string;
+  user_id: string;
+  cnpj_entrada: string;
+  nome_lead: string | null;
+  status: BigDataCorpLeadStatus;
+  razao_social: string | null;
+  socios: BigDataCorpSocioRow[] | Json | null;
+  telefone: string | null;
+  email: string | null;
+  endereco: string | null;
+  extras: Json | null;
+  erro: string | null;
+  created_at: string;
+}
 export type NivelRaciocinio = "rapido" | "equilibrado" | "profundo";
 
 export interface EnrichmentOpcoes {
@@ -603,6 +650,7 @@ export type FlowNodeTipo =
   | "fonte_historico"
   | "enriquecimento_ia"
   | "enriquecimento_maps"
+  | "enriquecimento_bigdatacorp"
   | "filtro_leads"
   | "espera"
   | "disparo_whatsapp"

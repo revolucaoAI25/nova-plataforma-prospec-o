@@ -13,6 +13,8 @@ import { enriquecerComMaps, QuotaExceededError, MapsAccessError } from "@/lib/in
 import { salvarPesquisa, salvarLeads, buscarIdentificadoresExistentes } from "@/lib/db";
 import { autoExportarSheetsSeConfigurado } from "@/lib/auto-export";
 import { CODIGO_PARA_DESC } from "@/lib/data/cnaes";
+import { criarRunBigDataCorp, perfilComBigDataCorpEnrichmentHabilitado } from "@/lib/bigdatacorp-enrichment-db";
+import { bigDataCorpConfigurado } from "@/lib/integrations/bigdatacorp";
 
 const bodySchema = z.object({
   cnaes: z.array(z.string()),
@@ -39,6 +41,7 @@ const bodySchema = z.object({
   recuperacaoJudicial: z.boolean().default(false),
   mapsModo: z.enum(["nao_usar", "enriquecer", "filtrar", "filtrar_enriquecer"]).default("nao_usar"),
   minAvaliacoes: z.number().int().min(0).default(0),
+  enriquecerBigDataCorp: z.boolean().default(false),
 });
 
 export async function POST(request: Request) {
@@ -230,10 +233,28 @@ export async function POST(request: Request) {
 
   const avisoSheets = await autoExportarSheetsSeConfigurado(supabase, user.id, searchId);
 
+  let bigdatacorpRunId: string | null = null;
+  let avisoBigDataCorp: string | null = null;
+  if (filtros.enriquecerBigDataCorp && resultados.length) {
+    if (!bigDataCorpConfigurado()) {
+      avisoBigDataCorp = "Enriquecimento por CNPJ (BigDataCorp) não configurado nesta plataforma — etapa não rodou.";
+    } else if (!(await perfilComBigDataCorpEnrichmentHabilitado(supabase, user.id))) {
+      avisoBigDataCorp = "Enriquecimento por CNPJ (BigDataCorp) não habilitado para sua conta — etapa não rodou.";
+    } else {
+      const itens = resultados.filter((r) => r.cnpj).map((r) => ({ cnpj: r.cnpj, nomeLead: r.nome }));
+      const run = await criarRunBigDataCorp(supabase, user.id, itens, "busca_cnpj");
+      if (run) {
+        bigdatacorpRunId = run.id;
+        avisoBigDataCorp = `Enriquecimento por CNPJ (sócios/contato) iniciado em background pra ${run.total} empresa(s) — acompanhe em Enriquecimento → Sócios e Contato (BigDataCorp).`;
+      }
+    }
+  }
+
   return NextResponse.json({
     searchId,
     total: resultados.length,
     leads: resultados,
-    avisos: [avisoSaldo, avisoMaps, avisoHistorico, avisoSheets].filter(Boolean),
+    bigdatacorpRunId,
+    avisos: [avisoSaldo, avisoMaps, avisoHistorico, avisoSheets, avisoBigDataCorp].filter(Boolean),
   });
 }

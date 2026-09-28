@@ -7,6 +7,7 @@ import { executarExtracaoLinkedin } from "./extracao-linkedin";
 import { executarFonteHistorico } from "./fonte-historico";
 import { executarEnriquecimentoIa } from "./enriquecimento-ia";
 import { executarEnriquecimentoMaps } from "./enriquecimento-maps";
+import { executarEnriquecimentoBigDataCorp } from "./enriquecimento-bigdatacorp";
 import { executarFiltroLeads } from "./filtro-leads";
 import { executarEspera } from "./espera";
 import { executarDisparoWhatsapp } from "./disparo-whatsapp";
@@ -29,6 +30,7 @@ export const FLOW_NODE_EXECUTORS: Partial<Record<FlowNodeTipo, FlowNodeExecutor>
   fonte_historico: executarFonteHistorico,
   enriquecimento_ia: executarEnriquecimentoIa,
   enriquecimento_maps: executarEnriquecimentoMaps,
+  enriquecimento_bigdatacorp: executarEnriquecimentoBigDataCorp,
   filtro_leads: executarFiltroLeads,
   espera: executarEspera,
   disparo_whatsapp: executarDisparoWhatsapp,

@@ -1,7 +1,7 @@
 import { getProfile } from "@/lib/credits";
 import { exportarGenerico } from "@/lib/integrations/google-sheets";
 import { COLUNAS_PADRAO } from "@/lib/export";
-import { ENRIQUECIMENTO_LABELS } from "../enrichment-merge";
+import { ENRIQUECIMENTO_LABELS, BIGDATACORP_LABELS } from "../enrichment-merge";
 import type { GoogleSheetsCreds } from "@/lib/database.types";
 import type { FlowExecutorContext, FlowExecutorOutcome } from "../executor-types";
 
@@ -30,8 +30,10 @@ function colunasParaLote(lote: Array<Record<string, unknown>>): Array<{ chave: s
   }
 
   const enriquecimento = [...chavesExtras].filter((c) => c.startsWith("enriquecimento_")).sort();
-  const outras = [...chavesExtras].filter((c) => !c.startsWith("enriquecimento_")).sort();
+  const bigdatacorp = [...chavesExtras].filter((c) => c.startsWith("bigdatacorp_")).sort();
+  const outras = [...chavesExtras].filter((c) => !c.startsWith("enriquecimento_") && !c.startsWith("bigdatacorp_")).sort();
   for (const chave of enriquecimento) colunas.push({ chave, label: ENRIQUECIMENTO_LABELS[chave] || humanizarChave(chave) });
+  for (const chave of bigdatacorp) colunas.push({ chave, label: BIGDATACORP_LABELS[chave] || humanizarChave(chave) });
   for (const chave of outras) colunas.push({ chave, label: humanizarChave(chave) });
 
   return colunas;

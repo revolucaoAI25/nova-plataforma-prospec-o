@@ -27,6 +27,7 @@ function UserRow({ user, isSelf }: { user: UserStatsRow; isSelf: boolean }) {
   const [emailDisparoHabilitado, setEmailDisparoHabilitado] = useState(user.email_disparo_habilitado);
   const [linkedinDisparoHabilitado, setLinkedinDisparoHabilitado] = useState(user.linkedin_disparo_habilitado);
   const [enriquecimentoIa, setEnriquecimentoIa] = useState(user.enriquecimento_ia_habilitado);
+  const [bigdatacorpEnrichment, setBigdatacorpEnrichment] = useState(user.bigdatacorp_enrichment_habilitado);
   const [role, setRole] = useState(user.role);
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
@@ -57,6 +58,7 @@ function UserRow({ user, isSelf }: { user: UserStatsRow; isSelf: boolean }) {
         email_disparo_habilitado: emailDisparoHabilitado,
         linkedin_disparo_habilitado: linkedinDisparoHabilitado,
         enriquecimento_ia_habilitado: enriquecimentoIa,
+        bigdatacorp_enrichment_habilitado: bigdatacorpEnrichment,
         role,
       }),
     });
@@ -122,6 +124,9 @@ function UserRow({ user, isSelf }: { user: UserStatsRow; isSelf: boolean }) {
         <Switch checked={enriquecimentoIa} onCheckedChange={markDirty(setEnriquecimentoIa)} />
       </TableCell>
       <TableCell>
+        <Switch checked={bigdatacorpEnrichment} onCheckedChange={markDirty(setBigdatacorpEnrichment)} />
+      </TableCell>
+      <TableCell>
         <Badge variant="secondary">{user.total_searches}</Badge>
       </TableCell>
       <TableCell>
@@ -163,6 +168,7 @@ export function AdminUsersTable({ users, currentUserId }: { users: UserStatsRow[
           <TableHead>Disparo E-mail</TableHead>
           <TableHead>Disparo LinkedIn</TableHead>
           <TableHead>Enriq. IA</TableHead>
+          <TableHead>Enriq. BigDataCorp</TableHead>
           <TableHead>Buscas</TableHead>
           <TableHead>Leads</TableHead>
           <TableHead className="text-right">Ações</TableHead>

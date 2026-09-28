@@ -37,6 +37,7 @@ const patchSchema = z.object({
   email_disparo_habilitado: z.boolean().optional(),
   linkedin_disparo_habilitado: z.boolean().optional(),
   enriquecimento_ia_habilitado: z.boolean().optional(),
+  bigdatacorp_enrichment_habilitado: z.boolean().optional(),
   conta_teste: z.boolean().optional(),
   teste_expira_em: z.string().nullable().optional(),
 });

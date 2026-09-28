@@ -1,4 +1,4 @@
-import type { EnrichmentLeadRow } from "@/lib/database.types";
+import type { EnrichmentLeadRow, BigDataCorpEnrichmentLeadRow, BigDataCorpSocioRow } from "@/lib/database.types";
 import { apenasDigitos } from "@/lib/phone";
 
 /**
@@ -79,6 +79,57 @@ export function mesclarEnriquecimentoNoLote(
       enriquecimento_fundacao: resultado.fundacao || "",
       enriquecimento_processos: resultado.processos_jusbrasil || "",
       ...extras,
+    };
+  });
+}
+
+export const BIGDATACORP_LABELS: Record<string, string> = {
+  bigdatacorp_status: "BigDataCorp — Status",
+  bigdatacorp_razao_social: "BigDataCorp — Razão social",
+  bigdatacorp_socios: "BigDataCorp — Sócios",
+  bigdatacorp_telefone: "BigDataCorp — Telefone",
+  bigdatacorp_email: "BigDataCorp — E-mail",
+  bigdatacorp_endereco: "BigDataCorp — Endereço",
+};
+
+/**
+ * Mescla os resultados de uma execução de enriquecimento por CNPJ
+ * (`bigdatacorp_enrichment_leads`) de volta no lote — casando por CNPJ
+ * (chave exata, ao contrário do enriquecimento via IA que precisa de
+ * heurística por e-mail/telefone/nome: aqui o CNPJ já é o identificador
+ * único usado na consulta). Também retroalimenta `telefone`/`email` do
+ * próprio lead quando estavam vazios — é isso que deixa o contato do
+ * sócio pronto pro disparo (WhatsApp/e-mail) sem exigir que quem monta o
+ * fluxo saiba que existe um campo `bigdatacorp_telefone` separado.
+ */
+export function mesclarBigDataCorpNoLote(
+  lote: Array<Record<string, unknown>>,
+  bigdatacorpLeads: BigDataCorpEnrichmentLeadRow[],
+): Array<Record<string, unknown>> {
+  const porCnpj = new Map<string, BigDataCorpEnrichmentLeadRow>();
+  for (const bl of bigdatacorpLeads) {
+    const doc = apenasDigitos(bl.cnpj_entrada);
+    if (doc) porCnpj.set(doc, bl);
+  }
+
+  return lote.map((lead) => {
+    const doc = apenasDigitos(String(lead.cnpj || ""));
+    const resultado = doc ? porCnpj.get(doc) : undefined;
+    if (!resultado) return lead;
+
+    const socios = Array.isArray(resultado.socios) ? (resultado.socios as BigDataCorpSocioRow[]) : [];
+    const sociosTexto = socios.map((s) => s.nome + (s.qualificacao ? ` (${s.qualificacao})` : "")).join("; ");
+
+    return {
+      ...lead,
+      telefone: lead.telefone || resultado.telefone || "",
+      email: lead.email || resultado.email || "",
+      bigdatacorp_status: resultado.status,
+      bigdatacorp_razao_social: resultado.razao_social || "",
+      bigdatacorp_socios: sociosTexto,
+      bigdatacorp_telefone: resultado.telefone || "",
+      bigdatacorp_email: resultado.email || "",
+      bigdatacorp_endereco: resultado.endereco || "",
     };
   });
 }

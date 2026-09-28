@@ -26,6 +26,7 @@ import { tickEnrichment } from "./enrichment-tick";
 import { tickFlows } from "./flow-tick";
 import { tickEmailDispatch, tickEmailSheetWatchAndAutoTrigger } from "./email-dispatch-tick";
 import { tickLinkedInDispatch, tickLinkedInSheetWatchAndAutoTrigger, tickLinkedInRelationsPoll } from "./linkedin-dispatch-tick";
+import { tickBigDataCorpEnrichment } from "./bigdatacorp-enrichment-tick";
 
 const AUTOMATION_TICK_MS = 60_000;
 const DISPATCH_TICK_MS = 15_000;
@@ -49,6 +50,9 @@ const LINKEDIN_RELATIONS_POLL_MS = 7_200_000;
 // ninguém olhando), quem dispara um enriquecimento costuma estar com a
 // tela aberta esperando o progresso.
 const ENRICHMENT_TICK_MS = 10_000;
+// Mesmo raciocínio do enriquecimento via IA — quem dispara costuma estar
+// acompanhando o progresso na tela.
+const BIGDATACORP_ENRICHMENT_TICK_MS = 10_000;
 // Fluxos (construtor visual) — avança 1 nó por run por tick; frequência
 // parecida com a de disparo, já que uma run pode ter vários nós em
 // sequência e o usuário pode estar acompanhando o histórico de execução.
@@ -72,7 +76,8 @@ async function main() {
     "Iniciado — automações a cada 60s, disparo a cada 15s, sheet-watch/auto-trigger a cada 120s, " +
       "enriquecimento IA a cada 10s, fluxos a cada 20s, disparo e-mail a cada 20s, " +
       "sheet-watch/auto-trigger e-mail a cada 120s, disparo LinkedIn a cada 30s, " +
-      "sheet-watch/auto-trigger LinkedIn a cada 120s, poll de aceite de convite a cada 2h.",
+      "sheet-watch/auto-trigger LinkedIn a cada 120s, poll de aceite de convite a cada 2h, " +
+      "enriquecimento BigDataCorp a cada 10s.",
   );
 
   // Aguarda um pouco no início, mesma cautela do produto atual (deixa o
@@ -118,6 +123,10 @@ async function main() {
   setInterval(() => {
     tickLinkedInRelationsPoll(sb, (m) => log("linkedin-dispatch/poll", m)).catch((e) => log("linkedin-dispatch/poll", `tick error: ${e.message}`));
   }, LINKEDIN_RELATIONS_POLL_MS);
+
+  setInterval(() => {
+    tickBigDataCorpEnrichment(sb, (m) => log("bigdatacorp-enrichment", m)).catch((e) => log("bigdatacorp-enrichment", `tick error: ${e.message}`));
+  }, BIGDATACORP_ENRICHMENT_TICK_MS);
 }
 
 main().catch((e) => {

@@ -26,6 +26,7 @@ export function Topbar({ profile }: { profile: Profile }) {
           linkedinVisible={profile.linkedin_visible}
           disparoHabilitado={profile.disparo_habilitado}
           enriquecimentoIaHabilitado={profile.enriquecimento_ia_habilitado}
+          bigdatacorpEnrichmentHabilitado={profile.bigdatacorp_enrichment_habilitado}
           emailDisparoHabilitado={profile.email_disparo_habilitado}
           linkedinDisparoHabilitado={profile.linkedin_disparo_habilitado}
         />
