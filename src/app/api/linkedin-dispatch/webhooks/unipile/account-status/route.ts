@@ -1,13 +1,15 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { obterConta, obterContaPorUnipileId, atualizarConta } from "@/lib/linkedin-dispatch-db";
+import { webhookSegredoValido } from "@/lib/integrations/unipile";
 import type { LinkedinAccountStatus } from "@/lib/database.types";
 
 // Rota PÚBLICA (sem auth de usuário) — recebida pela Unipile quando o
 // status de uma conta conectada muda (conexão concluída, credencial
 // expirada/precisa reconectar, etc.). Configurada via
 // criarWebhook(url, "account_status") em src/lib/integrations/unipile.ts
-// (chamada uma vez, não a cada request).
+// (chamada uma vez, não a cada request). URL cadastrada na Unipile deve
+// incluir `?secret=<UNIPILE_WEBHOOK_SECRET>` — ver webhookSegredoValido().
 //
 // Ressalva: a doc pública da Unipile não publica o schema exato desse
 // payload (só descreve o conceito — comparar o novo status com o
@@ -22,6 +24,8 @@ const STATUS_MAP: Record<string, LinkedinAccountStatus> = {
 };
 
 export async function POST(request: Request) {
+  if (!webhookSegredoValido(request)) return NextResponse.json({ error: "Não autorizado." }, { status: 401 });
+
   const sb = createAdminClient();
   const body = await request.json().catch(() => null);
   if (!body) return NextResponse.json({ ok: true });

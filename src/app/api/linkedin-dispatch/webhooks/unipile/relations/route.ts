@@ -1,18 +1,22 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { obterContaPorUnipileId, obterTargetAguardandoAceitePorProviderId, liberarAlvoAposAceite } from "@/lib/linkedin-dispatch-db";
+import { webhookSegredoValido } from "@/lib/integrations/unipile";
 
 // Rota PÚBLICA (sem auth de usuário) — recebida pela Unipile no evento
 // `new_relation` (fonte USERS), mecanismo principal pra detectar que um
 // pedido de conexão foi aceito. Não é em tempo real (a doc da Unipile
 // avisa: atraso de até ~8h é esperado do lado do LinkedIn) — por isso
 // existe também o poll de reforço em worker/linkedin-dispatch-tick.ts
-// (tickLinkedInRelationsPoll).
+// (tickLinkedInRelationsPoll). URL cadastrada na Unipile deve incluir
+// `?secret=<UNIPILE_WEBHOOK_SECRET>` — ver webhookSegredoValido().
 //
 // Ressalva: schema exato do payload não publicado nas páginas de doc
 // consultadas — tenta os campos mais prováveis de forma defensiva.
 
 export async function POST(request: Request) {
+  if (!webhookSegredoValido(request)) return NextResponse.json({ error: "Não autorizado." }, { status: 401 });
+
   const sb = createAdminClient();
   const body = await request.json().catch(() => null);
   if (!body) return NextResponse.json({ ok: true });

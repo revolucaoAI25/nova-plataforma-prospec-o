@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
-import { listarDominiosEmail, criarDominioEmail, perfilComEmailDisparoHabilitado } from "@/lib/email-dispatch-db";
+import { listarDominiosEmail, criarDominioEmail, perfilComEmailDisparoHabilitado, DominioJaRegistradoError } from "@/lib/email-dispatch-db";
 
 export async function GET() {
   const supabase = await createClient();
@@ -30,8 +30,12 @@ export async function POST(request: Request) {
   const parsed = bodySchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "Dados inválidos.", detalhes: parsed.error.flatten() }, { status: 400 });
 
-  const domain = await criarDominioEmail(supabase, user.id, parsed.data.dominio);
-  if (!domain) return NextResponse.json({ error: "Erro ao registrar o domínio." }, { status: 500 });
-
-  return NextResponse.json({ domain }, { status: 201 });
+  try {
+    const domain = await criarDominioEmail(supabase, user.id, parsed.data.dominio);
+    if (!domain) return NextResponse.json({ error: "Erro ao registrar o domínio." }, { status: 500 });
+    return NextResponse.json({ domain }, { status: 201 });
+  } catch (e) {
+    if (e instanceof DominioJaRegistradoError) return NextResponse.json({ error: e.message }, { status: 409 });
+    return NextResponse.json({ error: "Erro ao registrar o domínio." }, { status: 500 });
+  }
 }

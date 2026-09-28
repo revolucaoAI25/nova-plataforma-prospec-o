@@ -46,6 +46,7 @@ No [painel do Supabase](https://supabase.com/dashboard), crie um projeto novo
 8. `supabase/migrations/0008_email_dispatch.sql` (disparo por e-mail via Resend)
 9. `supabase/migrations/0009_linkedin_dispatch.sql` (disparo por LinkedIn via Unipile)
 10. `supabase/migrations/0010_email_domains.sql` (verificação de domínio por usuário, disparo por e-mail)
+11. `supabase/migrations/0011_email_domains_global_unique.sql` (corrige falha de segurança multi-tenant — ver "Decisões de arquitetura")
 
 Em **Authentication → Providers**, deixe E-mail/senha habilitado (é o único método
 usado no login). Contas são criadas pelo admin — não há cadastro público.
@@ -76,6 +77,9 @@ indisponível/com erro amigável se faltar, o resto da plataforma funciona norma
 - `UNIPILE_DSN` / `UNIPILE_API_KEY` — disparo por LinkedIn. Além da chave,
   exige registrar dois webhooks manualmente (uma vez, no dashboard da
   Unipile ou via `criarWebhook()`) — ver comentário no `.env.example`.
+  `UNIPILE_WEBHOOK_SECRET` (também opcional, mas recomendado) protege
+  esses dois endpoints públicos com um segredo na própria URL — ver
+  "Decisões de arquitetura".
 
 Enriquecimento de Leads via IA não tem variável de ambiente nenhuma: fica
 desativado por padrão, admin libera por usuário (`/admin`), e cada usuário
@@ -391,6 +395,41 @@ mas nada é processado — é só fila).
   `POST /api/email-dispatch/senders` antes de aceitar um `fromEmail` novo;
   `senders-panel.tsx` trocou o campo de e-mail livre por um seletor de
   domínio verificado + parte local do endereço.
+  **Correção de segurança pós-lançamento** (migration
+  `0011_email_domains_global_unique.sql`): a reconciliação original
+  confiava cegamente no status que a Resend devolvia pra QUALQUER domínio
+  já existente na conta compartilhada — como a conta é uma só pra todos os
+  usuários, um usuário B que digitasse um domínio que o usuário A já tinha
+  verificado (ex: o `revolucao-ai.com` da própria plataforma) herdava
+  `status: verified` na hora, sem provar posse do DNS, e podia criar
+  remetente `qualquercoisa@dominiodeoutrem.com`. Corrigido trocando a
+  constraint de `UNIQUE(user_id, dominio)` pra `UNIQUE(dominio)` global — um
+  domínio só pode pertencer a UM usuário na tabela inteira — e
+  `criarDominioEmail()` agora rejeita explicitamente
+  (`DominioJaRegistradoError`, HTTP 409) quando o domínio já é de outro
+  usuário, em vez de reconciliar o status.
+- **Auditoria de disparo por e-mail/LinkedIn pós-lançamento**: revisão
+  completa de `email-dispatch-db.ts`/`linkedin-dispatch-db.ts`/workers/rotas
+  depois que o usuário configurou Resend e Unipile em produção, encontrou
+  mais 3 problemas reais além do de domínio acima: (1) campanhas de
+  LinkedIn no modo "gatilho automático" (sem planilha) nunca inscreviam
+  nenhum alvo — `buscarLeadsFiltro()` (`src/lib/dispatch-db.ts`, reaproveitada
+  dos 3 canais) não selecionava a coluna `linkedin_url`, então todo lead
+  chegava em `enrollLinkedInTargets()` sem URL e era descartado como
+  inválido, silenciosamente, sem erro no log — corrigido incluindo a coluna
+  no `select()`. (2) os dois webhooks públicos da Unipile
+  (`/api/linkedin-dispatch/webhooks/unipile/{account-status,relations}`)
+  aceitavam qualquer POST sem verificar origem (a Unipile não documenta
+  assinatura de payload) — mitigado com um segredo compartilhado na própria
+  URL (`UNIPILE_WEBHOOK_SECRET`, checado por `webhookSegredoValido()` em
+  `unipile.ts`; opcional, mas recomendado — sem ele o endpoint só loga um
+  aviso e segue aceitando, comportamento antigo). (3) dois ajustes menores
+  de qualidade de log: envio de e-mail em lote não marcava mais "sucesso"
+  um item que a Resend não confirmou na resposta do `/emails/batch`
+  (`worker/email-dispatch-tick.ts`); log de falha do LinkedIn não gravava
+  mais `tipo_acao: "convite"` fixo quando a campanha estava inativa e a
+  etapa real do alvo era "mensagem" (`worker/linkedin-dispatch-tick.ts`,
+  corrigido computando a etapa antes de checar se a campanha está ativa).
 
 ## Estrutura
 

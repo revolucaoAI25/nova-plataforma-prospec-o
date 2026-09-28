@@ -36,33 +36,45 @@ export async function senderPertenceAoUsuario(sb: SupabaseClient, senderId: stri
   return profile.role === "admin" || sender.user_id === profile.id;
 }
 
-/**
- * Confirma que um domínio pertence de fato ao usuário — mesmo padrão de
- * IDOR-check que `senderPertenceAoUsuario`/`instanciaPertenceAoUsuario` já
- * seguem nos outros canais.
- */
-export async function domainPertenceAoUsuario(sb: SupabaseClient, domainId: string, profile: Profile): Promise<boolean> {
-  const dominio = await obterDominioEmail(sb, domainId);
-  if (!dominio) return false;
-  return profile.role === "admin" || dominio.user_id === profile.id;
-}
-
 // ── Domínios (verificação por usuário, via API da Resend) ──────────────────
+//
+// Sem IDOR-check tipo `senderPertenceAoUsuario()` aqui: diferente de
+// sender/instância/conta, um `domainId` nunca é aceito como referência de
+// outra rota (campanhas/templates não referenciam domínio por id, só o
+// endereço do sender é checado contra o domínio por string em
+// `dominioVerificadoPeloUsuario()`). As rotas de domínio por id (GET/
+// DELETE/verify) já são protegidas só por RLS, mesmo padrão de
+// `senders/[id]/route.ts`.
 
 function mapearStatusResend(status: string): EmailDomainStatus {
   return status === "verified" || status === "pending" || status === "failed" ? status : "not_started";
 }
 
+/** Lançado por `criarDominioEmail()` quando o domínio já pertence a outro usuário — ver comentário lá. */
+export class DominioJaRegistradoError extends Error {
+  constructor() { super("Esse domínio já está registrado por outro usuário na plataforma."); }
+}
+
 /**
- * Registra um domínio pra esse usuário. Antes de criar um domínio novo na
- * conta da Resend, RECONCILIA com o que já existe lá (via listagem) — evita
- * duplicar/conflitar quando o domínio já foi verificado manualmente no
- * dashboard da Resend (como o `revolucao-ai.com` da própria plataforma) ou
- * por outro fluxo. Ver comentário de topo de
- * supabase/migrations/0010_email_domains.sql.
+ * Registra um domínio pra esse usuário. Um domínio só tem UM dono na
+ * tabela (constraint global, migration 0011_email_domains_global_unique.sql)
+ * — corrige uma falha real: a versão antiga reconciliava com o que já
+ * existisse na conta Resend (compartilhada por TODOS os usuários) e
+ * copiava o status de lá direto pro registro do usuário, inclusive
+ * `verified`, sem nenhuma prova de posse do DNS por parte dele. Agora,
+ * se o domínio já existir pra OUTRO usuário, rejeita explicitamente.
+ * A reconciliação com a Resend (evitar duplicar o `revolucao-ai.com`,
+ * verificado manualmente no dashboard antes desse fluxo existir) só
+ * acontece na primeira vez que alguém registra aquele nome por aqui.
  */
 export async function criarDominioEmail(sb: SupabaseClient, userId: string, dominio: string): Promise<EmailDomainRow | null> {
   const nomeNormalizado = dominio.trim().toLowerCase();
+
+  const { data: existente } = await sb.from("email_domains").select("*").eq("dominio", nomeNormalizado).maybeSingle();
+  if (existente) {
+    if ((existente as EmailDomainRow).user_id !== userId) throw new DominioJaRegistradoError();
+    return existente as EmailDomainRow;
+  }
 
   const existentesResend = await listarDominiosResend();
   const jaExisteNaResend = existentesResend.find((d) => d.name.toLowerCase() === nomeNormalizado);
@@ -70,14 +82,10 @@ export async function criarDominioEmail(sb: SupabaseClient, userId: string, domi
 
   const { data } = await sb
     .from("email_domains")
-    .upsert(
-      {
-        user_id: userId, dominio: nomeNormalizado, resend_domain_id: resultado.id,
-        status: mapearStatusResend(resultado.status), records: resultado.records,
-        atualizado_em: new Date().toISOString(),
-      },
-      { onConflict: "user_id,dominio" },
-    )
+    .insert({
+      user_id: userId, dominio: nomeNormalizado, resend_domain_id: resultado.id,
+      status: mapearStatusResend(resultado.status), records: resultado.records,
+    })
     .select("*")
     .single();
   return (data as EmailDomainRow) || null;

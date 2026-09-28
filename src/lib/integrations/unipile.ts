@@ -111,8 +111,8 @@ export async function listarConvitesEnviados(accountId: string): Promise<Array<{
 /**
  * Cria um webhook na Unipile — chamado uma vez (setup manual/script), não
  * a cada request. Pode ser feito também pelo dashboard da Unipile em vez
- * de via API; ambos os caminhos levam ao mesmo endpoint público em
- * `/api/linkedin-dispatch/webhooks/unipile` recebendo os eventos.
+ * de via API; ambos os caminhos levam aos dois endpoints públicos em
+ * `/api/linkedin-dispatch/webhooks/unipile/{account-status,relations}`.
  */
 export async function criarWebhook(requestUrl: string, source: "account_status" | "users" | "messaging"): Promise<{ id?: string }> {
   return req("/webhooks", {
@@ -120,4 +120,26 @@ export async function criarWebhook(requestUrl: string, source: "account_status" 
     headers: headersJson(),
     body: JSON.stringify({ request_url: requestUrl, source }),
   });
+}
+
+/**
+ * A Unipile não documenta um mecanismo claro de assinatura de payload de
+ * webhook (ver ressalva no topo do arquivo) — como defesa mínima, os dois
+ * endpoints públicos (`webhooks/unipile/account-status` e `.../relations`)
+ * exigem um segredo compartilhado na própria URL (`?secret=...`), definido
+ * em `UNIPILE_WEBHOOK_SECRET` e configurado nas duas URLs cadastradas no
+ * dashboard da Unipile. Se a variável não estiver definida, a checagem é
+ * pulada (comportamento antigo, sem segredo) — só loga um aviso; é o mesmo
+ * padrão "opcional, funcionalidade correspondente indisponível/degradada
+ * se faltar" das outras integrações do projeto, aqui aplicado à segurança
+ * em vez de uma feature inteira.
+ */
+export function webhookSegredoValido(request: Request): boolean {
+  const esperado = process.env.UNIPILE_WEBHOOK_SECRET;
+  if (!esperado) {
+    console.warn("[unipile webhook] UNIPILE_WEBHOOK_SECRET não configurado — endpoint aceitando requisições sem verificação de origem.");
+    return true;
+  }
+  const url = new URL(request.url);
+  return url.searchParams.get("secret") === esperado;
 }

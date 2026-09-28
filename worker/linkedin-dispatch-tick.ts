@@ -34,9 +34,13 @@ async function processarConta(sb: SupabaseClient, conta: LinkedinAccountRow, log
   const target = await claimLinkedInTarget(sb, conta.id);
   if (!target) return;
 
+  const etapas = await listarEtapasLinkedin(sb, target.campaign_id);
+  const ordemAtual = etapaAtualOrdem(target, etapas);
+  const step = proximaEtapaLinkedin(etapas, ordemAtual);
+
   const campanha = await obterCampanhaLinkedin(sb, target.campaign_id);
   if (!campanha || campanha.status !== "ativa") {
-    await marcarFalhaLinkedin(sb, target, target.campaign_id, null, "convite", "Campanha não está mais ativa nesse momento.");
+    await marcarFalhaLinkedin(sb, target, target.campaign_id, null, step?.tipo || "convite", "Campanha não está mais ativa nesse momento.");
     return;
   }
 
@@ -44,10 +48,6 @@ async function processarConta(sb: SupabaseClient, conta: LinkedinAccountRow, log
     await atualizarTargetLinkedin(sb, target.id, { status: "removido", atualizado_em: new Date().toISOString() });
     return;
   }
-
-  const etapas = await listarEtapasLinkedin(sb, target.campaign_id);
-  const ordemAtual = etapaAtualOrdem(target, etapas);
-  const step = proximaEtapaLinkedin(etapas, ordemAtual);
 
   if (!step) {
     await atualizarTargetLinkedin(sb, target.id, { status: "concluido", atualizado_em: new Date().toISOString() });

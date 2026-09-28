@@ -231,9 +231,16 @@ interface LeadFiltroRow {
   endereco: string | null; municipio: string | null; uf: string | null; cep: string | null;
   site: string | null; maps_url: string | null; avaliacao: number | null; total_avaliacoes: number | null;
   cnpj: string | null; nicho: string | null; subnicho: string | null; fonte: string | null; created_at: string;
+  linkedin_url: string | null;
 }
 
-/** Leads do próprio dono da campanha que batem com nicho/subnicho/UF, extraídos depois de `desde`. */
+/**
+ * Leads do próprio dono da campanha que batem com nicho/subnicho/UF,
+ * extraídos depois de `desde` — reaproveitada por WhatsApp/e-mail/LinkedIn
+ * pro modo "gatilho automático". Inclui `linkedin_url` (ausente até aqui,
+ * o que fazia toda campanha de LinkedIn nesse modo inscrever zero alvos —
+ * `enrollLinkedInTargets` descartava 100% dos leads por falta desse campo).
+ */
 export async function buscarLeadsFiltro(
   sb: SupabaseClient, userId: string, nicho = "", subnicho = "", uf = "", desde?: string | null,
 ): Promise<LeadFiltroRow[]> {
@@ -243,7 +250,7 @@ export async function buscarLeadsFiltro(
   for (;;) {
     let q = sb
       .from("leads")
-      .select("nome, telefone, telefone2, email, endereco, municipio, uf, cep, site, maps_url, avaliacao, total_avaliacoes, cnpj, nicho, subnicho, fonte, created_at")
+      .select("nome, telefone, telefone2, email, endereco, municipio, uf, cep, site, maps_url, avaliacao, total_avaliacoes, cnpj, nicho, subnicho, fonte, created_at, linkedin_url")
       .eq("user_id", userId);
     if (nicho) q = q.ilike("nicho", `%${nicho}%`);
     if (subnicho) q = q.ilike("subnicho", `%${subnicho}%`);

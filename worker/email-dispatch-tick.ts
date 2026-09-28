@@ -78,7 +78,14 @@ async function processarCampanha(sb: SupabaseClient, campanha: EmailCampaignRow,
     const resultados = await enviarLoteEmails(envios.map((e) => e.envio));
     for (let i = 0; i < envios.length; i++) {
       const { target, step, envio } = envios[i];
-      const providerMessageId = resultados[i]?.id || "";
+      const providerMessageId = resultados[i]?.id;
+      if (!providerMessageId) {
+        // A chamada em lote respondeu 2xx, mas esse item específico não
+        // veio na resposta (a Resend rejeitou só esse endereço, por ex.) —
+        // não marca como sucesso sem confirmação real de envio.
+        await marcarFalhaEmail(sb, target, campanha.id, step, "Item não confirmado na resposta do envio em lote.", envio.subject, envio.text);
+        continue;
+      }
       await marcarEnviadoEmail(sb, target, campanha.id, step, etapas, providerMessageId, envio.subject, envio.text);
     }
   } catch (e) {
