@@ -80,6 +80,7 @@ export interface Profile {
   linkedin_visible: boolean;
 
   email_disparo_habilitado: boolean;
+  linkedin_disparo_habilitado: boolean;
 
   google_client_id: string | null;
   google_client_secret: string | null;
@@ -177,6 +178,7 @@ export interface UserStatsRow {
   linkedin_credits_enabled: boolean;
   linkedin_visible: boolean;
   email_disparo_habilitado: boolean;
+  linkedin_disparo_habilitado: boolean;
 }
 
 export type EnrichmentRunStatus = "pendente" | "processando" | "concluido" | "erro";
@@ -431,6 +433,110 @@ export interface EmailSheetWatcherRow {
   criado_em: string;
 }
 
+// ── Disparo por LinkedIn (Unipile) — espelha as interfaces acima do
+// disparo por e-mail; ver comentário de topo de
+// 0009_linkedin_dispatch.sql pras diferenças deliberadas (conta real
+// logada, tipos de etapa, estado de aceite de convite). ─────────────
+
+export type LinkedinAccountStatus = "conectando" | "conectado" | "desconectado" | "requer_reconexao";
+
+export interface LinkedinAccountRow {
+  id: string;
+  user_id: string;
+  nome: string;
+  unipile_account_id: string | null;
+  status: LinkedinAccountStatus;
+  perfil_nome: string | null;
+  limite_diario_convites: number;
+  limite_diario_mensagens: number;
+  ultimo_convite_em: string | null;
+  proximo_convite_liberado_em: string | null;
+  ultima_mensagem_em: string | null;
+  proximo_mensagem_liberado_em: string | null;
+  criado_em: string;
+}
+
+export interface LinkedinCampaignRow {
+  id: string;
+  user_id: string;
+  nome: string;
+  account_id: string | null;
+  status: CampaignStatus;
+  tipo_origem: CampaignOrigem;
+  origem_search_id: string | null;
+  filtro_nicho: string | null;
+  filtro_subnicho: string | null;
+  filtro_uf: string | null;
+  ultimo_trigger_em: string | null;
+  intervalo_min_seg: number;
+  intervalo_max_seg: number;
+  criado_em: string;
+}
+
+export interface LinkedinTemplateRow {
+  id: string;
+  user_id: string;
+  nome: string;
+  corpo: string;
+  criado_em: string;
+}
+
+export type LinkedinStepTipo = "convite" | "mensagem";
+
+export interface LinkedinCadenceStepRow {
+  id: string;
+  campaign_id: string;
+  ordem: number;
+  atraso_horas: number;
+  tipo: LinkedinStepTipo;
+  nota: string | null;
+  corpo: string | null;
+  template_id: string | null;
+  criado_em: string;
+}
+
+export type LinkedinTargetStatus = "pendente" | "enviando" | "aguardando_aceite" | "enviado" | "concluido" | "falhou" | "removido";
+
+export interface LinkedinTargetRow {
+  id: string;
+  campaign_id: string;
+  nome: string | null;
+  linkedin_url: string;
+  provider_id: string | null;
+  chat_id: string | null;
+  lead_snapshot: Json;
+  status: LinkedinTargetStatus;
+  current_step_id: string | null;
+  proxima_etapa_em: string;
+  reservado_em: string | null;
+  criado_em: string;
+  atualizado_em: string;
+}
+
+export interface LinkedinMessageLogRow {
+  id: string;
+  target_id: string;
+  campaign_id: string;
+  step_id: string | null;
+  enviado_em: string;
+  status: "sucesso" | "erro";
+  tipo_acao: LinkedinStepTipo;
+  provider_ref: string | null;
+  erro_msg: string | null;
+  corpo_enviado: string | null;
+}
+
+export interface LinkedinSheetWatcherRow {
+  id: string;
+  campaign_id: string;
+  sheet_id: string;
+  aba_nome: string;
+  coluna_url: string;
+  coluna_nome: string | null;
+  ultima_linha_processada: number;
+  criado_em: string;
+}
+
 export type AutomationTipo = "maps" | "cnpj";
 
 export interface AutomationRow {
@@ -478,6 +584,7 @@ export type FlowNodeTipo =
   | "espera"
   | "disparo_whatsapp"
   | "disparo_email"
+  | "disparo_linkedin"
   | "destino_sheets";
 
 export interface FlowNode {

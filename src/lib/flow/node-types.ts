@@ -178,6 +178,11 @@ const disparoEmailConfigSchema = z.object({
   senderId: z.string().uuid().nullable().default(null),
 });
 
+const disparoLinkedinConfigSchema = z.object({
+  campaignId: z.string().uuid().nullable().default(null),
+  accountId: z.string().uuid().nullable().default(null),
+});
+
 const destinoSheetsConfigSchema = z.object({
   sheetId: z.string().min(1),
   aba: z.string().min(1),
@@ -331,6 +336,15 @@ export const FLOW_NODE_TYPES: Record<FlowNodeTipo, FlowNodeTypeMeta> = {
     descricao: "Inscreve os leads recebidos numa campanha de disparo por e-mail.",
     icon: "Mail",
     configSchema: disparoEmailConfigSchema,
+    disponivel: true,
+  },
+  disparo_linkedin: {
+    tipo: "disparo_linkedin",
+    categoria: "disparo",
+    label: "Disparo LinkedIn",
+    descricao: "Inscreve os leads recebidos numa campanha de pedido de conexão/mensagem por LinkedIn.",
+    icon: "UserSearch",
+    configSchema: disparoLinkedinConfigSchema,
     disponivel: true,
   },
   destino_sheets: {

@@ -569,6 +569,38 @@ function CamposDisparoWhatsapp({ config, set }: CamposProps) {
   );
 }
 
+function CamposDisparoLinkedin({ config, set }: CamposProps) {
+  const campanhas = useListaFetch<{ id: string; nome: string; status: string }>("/api/linkedin-dispatch/campaigns");
+  const contas = useListaFetch<{ id: string; nome: string }>("/api/linkedin-dispatch/accounts");
+  return (
+    <>
+      <Campo label="Campanha de disparo por LinkedIn">
+        <Select value={String(config.campaignId || "")} onValueChange={(v) => set({ campaignId: v })}>
+          <SelectTrigger><SelectValue placeholder="Selecione uma campanha" /></SelectTrigger>
+          <SelectContent>
+            {campanhas.map((c) => <SelectItem key={c.id} value={c.id}>{c.nome} ({c.status})</SelectItem>)}
+          </SelectContent>
+        </Select>
+      </Campo>
+      <Campo label="Conta LinkedIn">
+        <Select value={String(config.accountId || "")} onValueChange={(v) => set({ accountId: v })}>
+          <SelectTrigger><SelectValue placeholder="Selecione uma conta" /></SelectTrigger>
+          <SelectContent>
+            {contas.map((c) => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}
+          </SelectContent>
+        </Select>
+      </Campo>
+      <p className="text-xs text-muted-foreground">
+        Este nó só inscreve os leads na campanha — a nota de convite e o corpo da mensagem são editados lá, em{" "}
+        <strong className="text-foreground">/disparo-linkedin</strong>. Mesma sintaxe dos outros campos do fluxo:{" "}
+        <code className="rounded bg-secondary px-1">{"{{campo}}"}</code> direto (ex.: <code className="rounded bg-secondary px-1">{"{{nome}}"}</code>).
+        O lead precisa ter um <code className="rounded bg-secondary px-1">linkedin_url</code> válido neste ponto do
+        fluxo (vindo de uma extração LinkedIn ou de um nó de enriquecimento) pra ser inscrito.
+      </p>
+    </>
+  );
+}
+
 function CamposDisparoEmail({ config, set }: CamposProps) {
   const campanhas = useListaFetch<{ id: string; nome: string; status: string }>("/api/email-dispatch/campaigns");
   const senders = useListaFetch<{ id: string; nome: string }>("/api/email-dispatch/senders");
@@ -668,6 +700,7 @@ function CamposDoNo({ node, config, set }: { node: FlowNode } & CamposProps) {
     case "espera": return <CamposEspera config={config} set={set} />;
     case "disparo_whatsapp": return <CamposDisparoWhatsapp config={config} set={set} />;
     case "disparo_email": return <CamposDisparoEmail config={config} set={set} />;
+    case "disparo_linkedin": return <CamposDisparoLinkedin config={config} set={set} />;
     case "destino_sheets": return <CamposDestinoSheets config={config} set={set} />;
     default: return null;
   }

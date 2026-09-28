@@ -11,6 +11,7 @@ import { executarFiltroLeads } from "./filtro-leads";
 import { executarEspera } from "./espera";
 import { executarDisparoWhatsapp } from "./disparo-whatsapp";
 import { executarDisparoEmail } from "./disparo-email";
+import { executarDisparoLinkedin } from "./disparo-linkedin";
 import { executarDestinoSheets } from "./destino-sheets";
 
 /**
@@ -32,5 +33,6 @@ export const FLOW_NODE_EXECUTORS: Partial<Record<FlowNodeTipo, FlowNodeExecutor>
   espera: executarEspera,
   disparo_whatsapp: executarDisparoWhatsapp,
   disparo_email: executarDisparoEmail,
+  disparo_linkedin: executarDisparoLinkedin,
   destino_sheets: executarDestinoSheets,
 };

@@ -35,6 +35,7 @@ const patchSchema = z.object({
   linkedin_visible: z.boolean().optional(),
   disparo_habilitado: z.boolean().optional(),
   email_disparo_habilitado: z.boolean().optional(),
+  linkedin_disparo_habilitado: z.boolean().optional(),
   enriquecimento_ia_habilitado: z.boolean().optional(),
   conta_teste: z.boolean().optional(),
   teste_expira_em: z.string().nullable().optional(),

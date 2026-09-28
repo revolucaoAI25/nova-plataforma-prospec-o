@@ -25,6 +25,7 @@ import { tickDispatch, tickSheetWatchAndAutoTrigger } from "./dispatch-tick";
 import { tickEnrichment } from "./enrichment-tick";
 import { tickFlows } from "./flow-tick";
 import { tickEmailDispatch, tickEmailSheetWatchAndAutoTrigger } from "./email-dispatch-tick";
+import { tickLinkedInDispatch, tickLinkedInSheetWatchAndAutoTrigger, tickLinkedInRelationsPoll } from "./linkedin-dispatch-tick";
 
 const AUTOMATION_TICK_MS = 60_000;
 const DISPATCH_TICK_MS = 15_000;
@@ -34,6 +35,16 @@ const SHEET_WATCH_TICK_MS = 120_000;
 // por isso pode ser mais espaçado sem perder throughput.
 const EMAIL_DISPATCH_TICK_MS = 20_000;
 const EMAIL_SHEET_WATCH_TICK_MS = 120_000;
+// Disparo por LinkedIn — 1 ação por conta por tick, como o WhatsApp
+// (nunca em lote: o volume seguro por dia é baixo e o espaçamento entre
+// ações precisa ser de minutos, não segundos, pra não parecer bot). A
+// maioria dos ticks não faz nada por causa do pacing/limite diário.
+const LINKEDIN_DISPATCH_TICK_MS = 30_000;
+const LINKEDIN_SHEET_WATCH_TICK_MS = 120_000;
+// Poll de reforço pra detectar aceite de convite (atrás do webhook
+// new_relation) — bem espaçado de propósito, seguindo a recomendação da
+// própria doc da Unipile de checar isso só algumas vezes por dia.
+const LINKEDIN_RELATIONS_POLL_MS = 7_200_000;
 // Mais frequente que as outras: ao contrário de automações (rodam sem
 // ninguém olhando), quem dispara um enriquecimento costuma estar com a
 // tela aberta esperando o progresso.
@@ -60,7 +71,8 @@ async function main() {
     "worker",
     "Iniciado — automações a cada 60s, disparo a cada 15s, sheet-watch/auto-trigger a cada 120s, " +
       "enriquecimento IA a cada 10s, fluxos a cada 20s, disparo e-mail a cada 20s, " +
-      "sheet-watch/auto-trigger e-mail a cada 120s.",
+      "sheet-watch/auto-trigger e-mail a cada 120s, disparo LinkedIn a cada 30s, " +
+      "sheet-watch/auto-trigger LinkedIn a cada 120s, poll de aceite de convite a cada 2h.",
   );
 
   // Aguarda um pouco no início, mesma cautela do produto atual (deixa o
@@ -94,6 +106,18 @@ async function main() {
   setInterval(() => {
     tickEmailSheetWatchAndAutoTrigger(sb, (m) => log("email-dispatch/watch", m)).catch((e) => log("email-dispatch/watch", `tick error: ${e.message}`));
   }, EMAIL_SHEET_WATCH_TICK_MS);
+
+  setInterval(() => {
+    tickLinkedInDispatch(sb, (m) => log("linkedin-dispatch", m)).catch((e) => log("linkedin-dispatch", `tick error: ${e.message}`));
+  }, LINKEDIN_DISPATCH_TICK_MS);
+
+  setInterval(() => {
+    tickLinkedInSheetWatchAndAutoTrigger(sb, (m) => log("linkedin-dispatch/watch", m)).catch((e) => log("linkedin-dispatch/watch", `tick error: ${e.message}`));
+  }, LINKEDIN_SHEET_WATCH_TICK_MS);
+
+  setInterval(() => {
+    tickLinkedInRelationsPoll(sb, (m) => log("linkedin-dispatch/poll", m)).catch((e) => log("linkedin-dispatch/poll", `tick error: ${e.message}`));
+  }, LINKEDIN_RELATIONS_POLL_MS);
 }
 
 main().catch((e) => {

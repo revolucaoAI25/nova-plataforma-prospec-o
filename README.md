@@ -44,6 +44,7 @@ No [painel do Supabase](https://supabase.com/dashboard), crie um projeto novo
 6. `supabase/migrations/0006_linkedin_extraction.sql` (busca por pessoas/decisores no LinkedIn)
 7. `supabase/migrations/0007_flow_automations.sql` (construtor de fluxos)
 8. `supabase/migrations/0008_email_dispatch.sql` (disparo por e-mail via Resend)
+9. `supabase/migrations/0009_linkedin_dispatch.sql` (disparo por LinkedIn via Unipile)
 
 Em **Authentication → Providers**, deixe E-mail/senha habilitado (é o único método
 usado no login). Contas são criadas pelo admin — não há cadastro público.
@@ -68,6 +69,9 @@ indisponível/com erro amigável se faltar, o resto da plataforma funciona norma
 - `RESEND_API_KEY` — disparo por e-mail. O domínio usado em cada remetente
   cadastrado em `/disparo-email` precisa estar verificado no dashboard da
   Resend (Domains → Add Domain) antes do primeiro envio.
+- `UNIPILE_DSN` / `UNIPILE_API_KEY` — disparo por LinkedIn. Além da chave,
+  exige registrar dois webhooks manualmente (uma vez, no dashboard da
+  Unipile ou via `criarWebhook()`) — ver comentário no `.env.example`.
 
 Enriquecimento de Leads via IA não tem variável de ambiente nenhuma: fica
 desativado por padrão, admin libera por usuário (`/admin`), e cada usuário
@@ -323,6 +327,42 @@ mas nada é processado — é só fila).
   automático — ambos ficam como follow-up natural. UI nova em
   `/disparo-email` (mesma estrutura de abas de `/disparo`: Remetentes,
   Campanhas, Templates, Relatórios) e `src/components/email-dispatch/`.
+- **Disparo por LinkedIn (Unipile)**: terceiro canal de prospecção ativa —
+  pedido de conexão + mensagem, focado em decisores (LinkedIn não tem API
+  oficial pra isso; Unipile é um provedor terceiro que gerencia a sessão
+  LinkedIn real do usuário por trás de uma API de verdade, mesmo papel que
+  a Evolution API cumpre pro WhatsApp). Mesmo padrão dos outros dois
+  canais — migration espelho (`0009_linkedin_dispatch.sql`), gate próprio
+  (`profiles.linkedin_disparo_habilitado`), IDOR-check
+  (`contaPertenceAoUsuario()`) em `src/lib/linkedin-dispatch-db.ts`, nó
+  `disparo_linkedin` no construtor de fluxos — com diferenças estruturais
+  reais que o canal exige:
+  - `linkedin_accounts` é conceitualmente como `whatsapp_instances` (conta
+    real logada, com estado de conexão/reconexão via hosted auth link da
+    Unipile), não como `email_senders` (só metadados).
+  - Só dá pra iniciar conversa com quem já é 1º grau — uma etapa de
+    `convite` precisa ser aceita antes de uma etapa de `mensagem`
+    seguinte poder disparar. Novo status de alvo `aguardando_aceite`
+    cobre esse gate; liberado pelo webhook `new_relation` da Unipile (não
+    é em tempo real — até ~8h de atraso é esperado do lado do LinkedIn) ou
+    por um poll de reforço bem espaçado (`tickLinkedInRelationsPoll`, a
+    cada 2h, seguindo a recomendação da própria doc da Unipile de não
+    checar isso com frequência).
+  - Fila processa 1 ação por conta por tick (`claim_linkedin_target`,
+    mirror de `claim_dispatch_target` do WhatsApp), não em lote como o
+    e-mail — limites diários separados pra convite/mensagem
+    (`limite_diario_convites`/`limite_diario_mensagens`) e pacing bem mais
+    espaçado (3-10min entre ações, default) de propósito: automação
+    "rápida" no LinkedIn é o padrão que mais chama atenção de detecção de
+    bot, e os ~80-100 convites/dia que a Unipile documenta como teto do
+    LinkedIn são um limite da plataforma, não uma recomendação segura de
+    volume de automação.
+  - `provider_id` (formato que a API da Unipile exige) e `chat_id` (pra
+    não duplicar conversa numa cadência de várias mensagens) são
+    resolvidos sob demanda pelo worker e cacheados no próprio alvo.
+  Fora de escopo nesta v1: InMail/Sales Navigator, anexos, importação em
+  massa de conexões já existentes. UI em `/disparo-linkedin`
+  (`src/components/linkedin-dispatch/`).
 
 ## Estrutura
 

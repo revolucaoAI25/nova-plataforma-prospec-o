@@ -16,6 +16,7 @@ import {
   Radio,
   BrainCircuit,
   Mail,
+  Contact,
 } from "lucide-react";
 
 export interface NavLeaf {
@@ -51,6 +52,7 @@ export function buildNavSections({
   disparoHabilitado,
   enriquecimentoIaHabilitado,
   emailDisparoHabilitado,
+  linkedinDisparoHabilitado,
 }: {
   isAdmin: boolean;
   instagramVisible: boolean;
@@ -58,6 +60,7 @@ export function buildNavSections({
   disparoHabilitado: boolean;
   enriquecimentoIaHabilitado: boolean;
   emailDisparoHabilitado: boolean;
+  linkedinDisparoHabilitado: boolean;
 }): NavSection[] {
   const buscaChildren: NavLeaf[] = [
     { type: "link", href: "/busca/cnpj", label: "CNPJ", icon: Building2 },
@@ -103,6 +106,9 @@ export function buildNavSections({
     // Só uma página (sem canal oficial/QR pra "solicitar") — link direto,
     // não um grupo como o disparo WhatsApp acima.
     engajamentoItems.push({ type: "link", href: "/disparo-email", label: "Disparo E-mail", icon: Mail });
+  }
+  if (linkedinDisparoHabilitado || isAdmin) {
+    engajamentoItems.push({ type: "link", href: "/disparo-linkedin", label: "Disparo LinkedIn", icon: Contact });
   }
   if (engajamentoItems.length) {
     sections.push({ label: "Engajamento", items: engajamentoItems });

@@ -148,7 +148,7 @@ function normalizarLocalizacao(loc: string): string {
 }
 
 /** Remove query string/trailing slash e força https — chave de dedup estável entre buscas. */
-function normalizarUrlPerfil(url: string): string {
+export function normalizarUrlPerfil(url: string): string {
   if (!url) return "";
   try {
     const u = new URL(url.startsWith("http") ? url : `https://${url}`);
