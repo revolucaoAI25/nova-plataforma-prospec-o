@@ -1,14 +1,15 @@
 // Wrapper fino para a API REST da Resend (https://resend.com) — envio de
-// e-mail. Auth: header `Authorization: Bearer <RESEND_API_KEY>` (chave
-// única da plataforma, mesmo padrão de CDD_API_KEY/GOOGLE_MAPS_API_KEY:
-// usada por todos os remetentes, já que `email_senders` só guarda
-// metadados de from/reply-to, não uma credencial própria).
+// e-mail e verificação de domínio. Auth: header `Authorization: Bearer
+// <RESEND_API_KEY>` (chave única da plataforma — todos os domínios de
+// todos os usuários são criados sob essa MESMA conta Resend via API, não
+// um dashboard por cliente; é o padrão que a própria Resend documenta pra
+// plataformas multiusuário).
 //
-// Configuração necessária: RESEND_API_KEY. O domínio usado em
-// `from_email` precisa estar verificado no dashboard da Resend
-// (Domains → Add Domain, configurando os registros DNS indicados) —
-// passo manual do usuário, feito uma vez, fora do código. Sem isso todo
-// envio falha.
+// Configuração necessária: RESEND_API_KEY. Cada usuário verifica o
+// PRÓPRIO domínio pela nossa UI (`/disparo-email` → Domínios), que chama
+// `criarDominioResend()`/`verificarDominioResend()` abaixo — ver
+// `email-dispatch-db.ts::criarDominioEmail()` pro fluxo completo,
+// inclusive a reconciliação com domínios já existentes na conta.
 
 function baseUrl(): string {
   return "https://api.resend.com";
@@ -74,4 +75,55 @@ export async function enviarEmail(envio: EmailEnvio) {
 export async function enviarLoteEmails(itens: EmailEnvio[]): Promise<Array<{ id: string }>> {
   const resp = await req("/emails/batch", { method: "POST", body: JSON.stringify(itens.map(paraPayload)) });
   return (resp?.data as Array<{ id: string }>) || [];
+}
+
+// ── Domínios (verificação por usuário) ────────────────────────────────
+
+export interface ResendDnsRecord {
+  record: string;
+  name: string;
+  value: string;
+  type: string;
+  status: string;
+  ttl: string;
+  priority?: number;
+}
+
+export interface ResendDominio {
+  id: string;
+  name: string;
+  status: string;
+  records: ResendDnsRecord[];
+  region?: string;
+}
+
+/** `POST /domains` — cria o domínio na conta da plataforma e devolve os registros DNS que o usuário precisa adicionar no provedor dele. */
+export async function criarDominioResend(nome: string): Promise<ResendDominio> {
+  return req("/domains", { method: "POST", body: JSON.stringify({ name: nome }) });
+}
+
+/** `GET /domains` — lista todos os domínios já cadastrados na conta da plataforma (usado pra reconciliar em vez de duplicar um domínio já existente). */
+export async function listarDominiosResend(): Promise<ResendDominio[]> {
+  const resp = await req("/domains");
+  return (resp?.data as ResendDominio[]) || [];
+}
+
+/** `GET /domains/{id}` — status atual (inclusive por registro) de um domínio. */
+export async function obterDominioResend(resendDomainId: string): Promise<ResendDominio> {
+  return req(`/domains/${encodeURIComponent(resendDomainId)}`);
+}
+
+/**
+ * `POST /domains/{id}/verify` — dispara a checagem assíncrona dos
+ * registros DNS. A resposta não confirma sucesso/falha (só que o processo
+ * começou) — é preciso um `obterDominioResend()` logo em seguida pra ler o
+ * status atualizado, mesma ressalva documentada na doc pública da Resend.
+ */
+export async function verificarDominioResend(resendDomainId: string): Promise<void> {
+  await req(`/domains/${encodeURIComponent(resendDomainId)}/verify`, { method: "POST" });
+}
+
+/** `DELETE /domains/{id}` — remove o domínio da conta da plataforma. */
+export async function deletarDominioResend(resendDomainId: string): Promise<void> {
+  await req(`/domains/${encodeURIComponent(resendDomainId)}`, { method: "DELETE" });
 }

@@ -45,6 +45,7 @@ No [painel do Supabase](https://supabase.com/dashboard), crie um projeto novo
 7. `supabase/migrations/0007_flow_automations.sql` (construtor de fluxos)
 8. `supabase/migrations/0008_email_dispatch.sql` (disparo por e-mail via Resend)
 9. `supabase/migrations/0009_linkedin_dispatch.sql` (disparo por LinkedIn via Unipile)
+10. `supabase/migrations/0010_email_domains.sql` (verificação de domínio por usuário, disparo por e-mail)
 
 Em **Authentication → Providers**, deixe E-mail/senha habilitado (é o único método
 usado no login). Contas são criadas pelo admin — não há cadastro público.
@@ -66,9 +67,12 @@ indisponível/com erro amigável se faltar, o resto da plataforma funciona norma
 - `EVOLUTION_API_URL` / `EVOLUTION_API_KEY` — disparo WhatsApp (canal não-oficial).
 - `DATAFY_API_BASE_URL` — canal oficial do WhatsApp (tem um padrão razoável, só
   precisa mudar se usar outro provedor).
-- `RESEND_API_KEY` — disparo por e-mail. O domínio usado em cada remetente
-  cadastrado em `/disparo-email` precisa estar verificado no dashboard da
-  Resend (Domains → Add Domain) antes do primeiro envio.
+- `RESEND_API_KEY` — disparo por e-mail. Cada usuário verifica o próprio
+  domínio direto em `/disparo-email` → aba "Domínios" (a plataforma cria o
+  domínio na conta Resend via API e mostra os registros DNS na nossa UI —
+  nada de dashboard da Resend pro cliente). Um remetente só pode ser criado
+  com endereço em domínio já verificado — ver "Decisões de arquitetura"
+  abaixo.
 - `UNIPILE_DSN` / `UNIPILE_API_KEY` — disparo por LinkedIn. Além da chave,
   exige registrar dois webhooks manualmente (uma vez, no dashboard da
   Unipile ou via `criarWebhook()`) — ver comentário no `.env.example`.
@@ -363,6 +367,30 @@ mas nada é processado — é só fila).
   Fora de escopo nesta v1: InMail/Sales Navigator, anexos, importação em
   massa de conexões já existentes. UI em `/disparo-linkedin`
   (`src/components/linkedin-dispatch/`).
+- **Verificação de domínio multi-tenant (Resend Domains API)**: gap real do
+  desenho original do disparo por e-mail — `email_senders.from_email`
+  aceitava qualquer endereço digitado, o que só funcionava assumindo um
+  único domínio verificado manualmente no dashboard da Resend pelo admin da
+  plataforma. Não escala pra multiusuário: cada cliente precisa mandar do
+  próprio domínio, e não tem (nem deve ter) acesso à conta Resend da
+  plataforma. Corrigido com a própria Domains API da Resend, que é feita
+  pra esse exato cenário (múltiplos domínios sob uma única conta/API key):
+  `criarDominioResend()`/`listarDominiosResend()`/`verificarDominioResend()`/
+  `deletarDominioResend()` em `src/lib/integrations/resend.ts` chamam
+  `POST/GET/POST verify/DELETE /domains`, sempre com a mesma
+  `RESEND_API_KEY` da plataforma — nunca uma conta por cliente. Nova tabela
+  `email_domains` (migration `0010_email_domains.sql`, `user_id` +
+  `dominio` + `status` + `records` jsonb com os registros DNS retornados
+  pela Resend) guarda um domínio por usuário; `criarDominioEmail()` em
+  `src/lib/email-dispatch-db.ts` reconcilia com o que já existe na conta
+  Resend antes de criar (evita duplicar o `revolucao-ai.com`, que já foi
+  verificado manualmente antes desse fluxo existir). Os registros DNS são
+  mostrados na nossa própria UI (`/disparo-email` → aba "Domínios") pro
+  usuário copiar pro provedor DNS dele — nunca expõe o dashboard da Resend.
+  `dominioVerificadoPeloUsuario()` passou a ser checado em
+  `POST /api/email-dispatch/senders` antes de aceitar um `fromEmail` novo;
+  `senders-panel.tsx` trocou o campo de e-mail livre por um seletor de
+  domínio verificado + parte local do endereço.
 
 ## Estrutura
 

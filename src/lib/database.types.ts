@@ -358,6 +358,29 @@ export interface EmailSenderRow {
   criado_em: string;
 }
 
+export type EmailDomainStatus = "not_started" | "pending" | "verified" | "failed";
+
+export interface EmailDomainDnsRecord {
+  record: string;
+  name: string;
+  value: string;
+  type: string;
+  status: string;
+  ttl: string;
+  priority?: number;
+}
+
+export interface EmailDomainRow {
+  id: string;
+  user_id: string;
+  dominio: string;
+  resend_domain_id: string | null;
+  status: EmailDomainStatus;
+  records: EmailDomainDnsRecord[];
+  criado_em: string;
+  atualizado_em: string;
+}
+
 export interface EmailCampaignRow {
   id: string;
   user_id: string;

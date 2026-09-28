@@ -1,10 +1,11 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { validarEmail } from "@/lib/email";
+import { validarEmail, extrairDominio } from "@/lib/email";
 import { getProfile } from "@/lib/credits";
 import { buscarLeadsFiltro } from "@/lib/dispatch-db";
+import { criarDominioResend, listarDominiosResend, obterDominioResend, verificarDominioResend, deletarDominioResend } from "@/lib/integrations/resend";
 import type {
   EmailSenderRow, EmailCampaignRow, EmailTemplateRow, EmailCadenceStepRow, EmailTargetRow,
-  EmailSheetWatcherRow, CampaignOrigem, Profile,
+  EmailSheetWatcherRow, EmailDomainRow, EmailDomainStatus, CampaignOrigem, Profile,
 } from "@/lib/database.types";
 
 // CRUD do disparo por e-mail — espelha src/lib/dispatch-db.ts (disparo
@@ -33,6 +34,101 @@ export async function senderPertenceAoUsuario(sb: SupabaseClient, senderId: stri
   const sender = await obterSender(sb, senderId);
   if (!sender) return false;
   return profile.role === "admin" || sender.user_id === profile.id;
+}
+
+/**
+ * Confirma que um domínio pertence de fato ao usuário — mesmo padrão de
+ * IDOR-check que `senderPertenceAoUsuario`/`instanciaPertenceAoUsuario` já
+ * seguem nos outros canais.
+ */
+export async function domainPertenceAoUsuario(sb: SupabaseClient, domainId: string, profile: Profile): Promise<boolean> {
+  const dominio = await obterDominioEmail(sb, domainId);
+  if (!dominio) return false;
+  return profile.role === "admin" || dominio.user_id === profile.id;
+}
+
+// ── Domínios (verificação por usuário, via API da Resend) ──────────────────
+
+function mapearStatusResend(status: string): EmailDomainStatus {
+  return status === "verified" || status === "pending" || status === "failed" ? status : "not_started";
+}
+
+/**
+ * Registra um domínio pra esse usuário. Antes de criar um domínio novo na
+ * conta da Resend, RECONCILIA com o que já existe lá (via listagem) — evita
+ * duplicar/conflitar quando o domínio já foi verificado manualmente no
+ * dashboard da Resend (como o `revolucao-ai.com` da própria plataforma) ou
+ * por outro fluxo. Ver comentário de topo de
+ * supabase/migrations/0010_email_domains.sql.
+ */
+export async function criarDominioEmail(sb: SupabaseClient, userId: string, dominio: string): Promise<EmailDomainRow | null> {
+  const nomeNormalizado = dominio.trim().toLowerCase();
+
+  const existentesResend = await listarDominiosResend();
+  const jaExisteNaResend = existentesResend.find((d) => d.name.toLowerCase() === nomeNormalizado);
+  const resultado = jaExisteNaResend || (await criarDominioResend(nomeNormalizado));
+
+  const { data } = await sb
+    .from("email_domains")
+    .upsert(
+      {
+        user_id: userId, dominio: nomeNormalizado, resend_domain_id: resultado.id,
+        status: mapearStatusResend(resultado.status), records: resultado.records,
+        atualizado_em: new Date().toISOString(),
+      },
+      { onConflict: "user_id,dominio" },
+    )
+    .select("*")
+    .single();
+  return (data as EmailDomainRow) || null;
+}
+
+export async function listarDominiosEmail(sb: SupabaseClient, userId: string): Promise<EmailDomainRow[]> {
+  const { data } = await sb.from("email_domains").select("*").eq("user_id", userId).order("criado_em", { ascending: false });
+  return (data as EmailDomainRow[]) || [];
+}
+
+export async function obterDominioEmail(sb: SupabaseClient, domainId: string): Promise<EmailDomainRow | null> {
+  const { data } = await sb.from("email_domains").select("*").eq("id", domainId).single();
+  return (data as EmailDomainRow) || null;
+}
+
+/** Dispara a verificação na Resend e já busca o status atualizado (a resposta do /verify não confirma sucesso — ver comentário em resend.ts). */
+export async function verificarDominioEmail(sb: SupabaseClient, domainId: string): Promise<EmailDomainRow | null> {
+  const dominio = await obterDominioEmail(sb, domainId);
+  if (!dominio || !dominio.resend_domain_id) return dominio;
+
+  await verificarDominioResend(dominio.resend_domain_id);
+  const atualizado = await obterDominioResend(dominio.resend_domain_id);
+
+  const { data } = await sb
+    .from("email_domains")
+    .update({ status: mapearStatusResend(atualizado.status), records: atualizado.records, atualizado_em: new Date().toISOString() })
+    .eq("id", domainId)
+    .select("*")
+    .single();
+  return (data as EmailDomainRow) || dominio;
+}
+
+export async function deletarDominioEmail(sb: SupabaseClient, domainId: string): Promise<boolean> {
+  const dominio = await obterDominioEmail(sb, domainId);
+  if (dominio?.resend_domain_id) {
+    try {
+      await deletarDominioResend(dominio.resend_domain_id);
+    } catch {
+      // segue removendo do banco mesmo se a Resend já não tiver o domínio
+    }
+  }
+  const { error } = await sb.from("email_domains").delete().eq("id", domainId);
+  return !error;
+}
+
+/** Domínio do e-mail (parte depois do @) está verificado pra esse usuário? Usado antes de aceitar `from_email` de um novo remetente. */
+export async function dominioVerificadoPeloUsuario(sb: SupabaseClient, userId: string, email: string): Promise<boolean> {
+  const dominio = extrairDominio(email);
+  if (!dominio) return false;
+  const { data } = await sb.from("email_domains").select("id").eq("user_id", userId).eq("dominio", dominio).eq("status", "verified").limit(1);
+  return Boolean(data?.length);
 }
 
 // ── Remetentes ─────────────────────────────────────────────────────────────
