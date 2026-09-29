@@ -26,8 +26,8 @@ export async function listarComprasDoUsuario(sb: SupabaseClient, userId: string)
   return (data as CreditPurchaseRow[]) ?? [];
 }
 
-/** Reusa `profiles.asaas_customer_id` se já existir; senão cria o cliente no Asaas e persiste o id (evita duplicar cliente a cada compra). */
-async function obterOuCriarClienteAsaas(sb: SupabaseClient, profile: Profile, cpfCnpj: string): Promise<string> {
+/** Reusa `profiles.asaas_customer_id` se já existir; senão cria o cliente no Asaas e persiste o id (evita duplicar cliente a cada compra). Exportada pra reuso em subscriptions-db.ts — o cliente Asaas é o mesmo pra compra avulsa e assinatura. */
+export async function obterOuCriarClienteAsaas(sb: SupabaseClient, profile: Profile, cpfCnpj: string): Promise<string> {
   if (profile.asaas_customer_id) return profile.asaas_customer_id;
 
   const customerId = await criarClienteAsaas({

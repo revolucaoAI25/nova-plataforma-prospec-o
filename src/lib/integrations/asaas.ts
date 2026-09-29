@@ -92,3 +92,49 @@ export async function criarCobranca(dados: {
     }),
   });
 }
+
+interface AsaasSubscription {
+  id: string;
+  status: string;
+}
+
+/**
+ * Cria a assinatura recorrente (`cycle: MONTHLY`) — mesma escolha de
+ * `billingType: UNDEFINED` das cobranças avulsas, o pagador decide o
+ * método na fatura de cada ciclo. `externalReference` carrega o id do
+ * usuário (não temos uma linha própria de "assinatura pendente" pra
+ * referenciar como em `criarCompra`, já que `profiles` já guarda o
+ * estado atual da assinatura diretamente).
+ */
+export async function criarAssinatura(dados: {
+  customerId: string;
+  valorCentavos: number;
+  descricao: string;
+  externalReference: string;
+}): Promise<AsaasSubscription> {
+  const primeiraCobranca = new Date();
+  primeiraCobranca.setDate(primeiraCobranca.getDate() + 1);
+  return req<AsaasSubscription>("/subscriptions", {
+    method: "POST",
+    body: JSON.stringify({
+      customer: dados.customerId,
+      billingType: "UNDEFINED",
+      value: Math.round(dados.valorCentavos) / 100,
+      nextDueDate: primeiraCobranca.toISOString().slice(0, 10),
+      cycle: "MONTHLY",
+      description: dados.descricao,
+      externalReference: dados.externalReference,
+    }),
+  });
+}
+
+/** Encerra definitivamente a recorrência (o Asaas remove cobranças pendentes/vencidas, mantém as já pagas). */
+export async function cancelarAssinatura(subscriptionId: string): Promise<void> {
+  await req(`/subscriptions/${subscriptionId}`, { method: "DELETE" });
+}
+
+/** A criação da assinatura não retorna a fatura da 1ª cobrança — precisa buscar separado pra redirecionar o cliente já no ato de assinar. */
+export async function obterPrimeiraFaturaAssinatura(subscriptionId: string): Promise<AsaasCobranca | null> {
+  const lista = await req<{ data: AsaasCobranca[] }>(`/subscriptions/${subscriptionId}/payments`);
+  return lista.data?.[0] ?? null;
+}

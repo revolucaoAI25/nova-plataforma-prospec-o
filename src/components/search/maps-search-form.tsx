@@ -231,7 +231,7 @@ export function MapsSearchForm({ custoPorResultado }: { custoPorResultado: numbe
             {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
             {loading ? "Buscando…" : "Buscar no Google Maps"}
           </Button>
-          <CreditoEstimado custoPorUnidade={custoPorResultado} quantidade={limite} unidade="lugar" />
+          <CreditoEstimado custoPorUnidade={custoPorResultado} unidade="lugar" />
         </div>
       </form>
 

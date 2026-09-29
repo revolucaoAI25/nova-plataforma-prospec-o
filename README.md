@@ -748,6 +748,46 @@ mas nada é processado — é só fila).
   o Radix já usa `transform` inline pra posicionar o popover relativo ao
   gatilho (floating-ui), e uma animação CSS na mesma propriedade
   entraria em conflito e quebraria o posicionamento.
+- **Correção no indicador de créditos — taxa, não total "até X"**:
+  feedback do usuário depois de ver a v1 do `CreditoEstimado`: multiplicar
+  o custo por unidade pelo limite escolhido gerava números grandes e
+  estranhos numa busca de LinkedIn com limite alto (ex: "até 6.000
+  créditos"), que não refletiam o custo real (cobrado pelo que for
+  ENCONTRADO, quase sempre bem menos que o limite) e mais assustavam do
+  que informavam. Trocado por só a taxa — "12 créditos por perfil —
+  cobrado só pelo que for encontrado" — mais simples, mais direto, sem
+  fazer conta que engana.
+- **Assinatura recorrente de plano via Asaas** (migration
+  `0018_asaas_subscriptions.sql`): mesma conta/API dos créditos avulsos
+  (0017), agora também pra cobrança mensal — pedido explícito do usuário,
+  antes de existir uma landing page própria de vendas ("por enquanto");
+  quando essa LP existir, ela deve poder linkar direto pro fluxo de
+  assinar aqui dentro. `POST /v3/subscriptions` com `cycle: MONTHLY` e
+  `billingType: UNDEFINED` (mesma escolha de deixar o pagador decidir
+  PIX/boleto/cartão na fatura). Diferente de `credit_purchases`, onde a
+  gente sempre cria a linha ANTES de cobrar, as cobranças de renovação
+  são geradas pelo próprio Asaas de forma assíncrona a cada ciclo — só
+  sabemos que uma existe quando o webhook avisa. É o campo
+  `payment.subscription` (presente só em cobranças geradas por uma
+  assinatura) que diferencia uma renovação de uma compra avulsa no mesmo
+  endpoint de webhook; `subscription_payments` é alimentada por INSERT
+  ali (não por UPDATE como `credit_purchases`), e o próprio `unique` em
+  `asaas_payment_id` garante que reentrega do webhook não credita duas
+  vezes (insert conflita, `processarPagamentoAssinatura` não faz nada).
+  Cada renovação confirmada credita `plans.creditos_mensais` via
+  `increment_creditos` (mesma RPC dos créditos avulsos) — de quebra,
+  isso finalmente dá uso real a `profiles.monthly_creditos`/
+  `credits_renewed_at`, que já existiam no schema desde o produto
+  original mas nunca tinham um mecanismo automático de renovação por
+  trás, só edição manual pelo admin. `PAYMENT_OVERDUE` marca a
+  assinatura como `inadimplente` (não credita nada, só avisa na UI).
+  Escopo deliberadamente fora da v1: assinar um plano NÃO libera
+  automaticamente os outros flags de feature por usuário
+  (`disparo_habilitado`, `linkedin_visible` etc.) — esses continuam
+  admin-editáveis manualmente, como já eram; decidir exatamente o que
+  cada tier (Starter/Pro/Business) libera é uma decisão de produto maior,
+  que fica pra quando a LP de vendas entrar em cena. Trocar de plano
+  nesta v1 é cancelar e assinar de novo — sem proration.
 
 ## Estrutura
 

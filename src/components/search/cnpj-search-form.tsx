@@ -391,7 +391,6 @@ export function CnpjSearchForm({
               (mapsModo !== "nao_usar" ? custos.cnpj_maps_extra || 0 : 0) +
               (bigdatacorpDisponivel && enriquecerBigDataCorp ? custos.bigdatacorp || 0 : 0)
             }
-            quantidade={limite}
             unidade="empresa"
           />
         </div>

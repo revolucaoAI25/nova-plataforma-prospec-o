@@ -1,30 +1,29 @@
 import { Coins } from "lucide-react";
 
 /**
- * Indicador sutil do custo em créditos, logo acima/ao lado do botão de
- * buscar — antes disso não havia NENHUM lugar mostrando quantos créditos
- * uma ação ia custar até ela já ter rodado. "Até" porque o débito real é
- * pelo que for ENCONTRADO, não pelo limite pedido (pode custar menos).
+ * Indicador sutil do custo em créditos, logo acima do botão de buscar.
+ * Mostra só a taxa por unidade (não multiplica pelo limite escolhido) —
+ * versão anterior mostrava "até 1.200 créditos" pra buscas com limite
+ * alto, um número grande e alarmante que não refletia o custo real (o
+ * débito é pelo que for ENCONTRADO, quase sempre bem menos que o limite).
+ * Mais simples e mais honesto: só a taxa, com a ressalva de que o total
+ * depende do resultado.
  */
 export function CreditoEstimado({
   custoPorUnidade,
-  quantidade,
   unidade = "resultado",
 }: {
   custoPorUnidade: number;
-  quantidade: number;
   unidade?: string;
 }) {
-  if (custoPorUnidade <= 0 || quantidade <= 0) return null;
-  const total = custoPorUnidade * quantidade;
+  if (custoPorUnidade <= 0) return null;
 
   return (
-    <p className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+    <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
       <Coins className="h-3.5 w-3.5 shrink-0 text-primary" />
-      Até <span className="font-semibold text-foreground">{total.toLocaleString("pt-BR")}</span> créditos nesta busca
-      <span className="text-muted-2">
-        ({custoPorUnidade} por {unidade}, cobrado só pelo que for encontrado)
-      </span>
+      <span className="font-semibold text-foreground">{custoPorUnidade}</span>{" "}
+      {custoPorUnidade === 1 ? "crédito" : "créditos"} por {unidade}
+      <span className="text-muted-2">— cobrado só pelo que for encontrado</span>
     </p>
   );
 }

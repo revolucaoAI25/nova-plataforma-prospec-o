@@ -94,6 +94,10 @@ export interface Profile {
   asaas_customer_id: string | null;
   cpf_cnpj: string | null;
 
+  plano_id: string | null;
+  asaas_subscription_id: string | null;
+  assinatura_status: AssinaturaStatus;
+
   created_at: string;
   updated_at: string;
 }
@@ -138,6 +142,30 @@ export interface CreditPurchaseRow {
   invoice_url: string | null;
   criado_em: string;
   pago_em: string | null;
+}
+
+export interface PlanRow {
+  id: string;
+  nome: string;
+  preco_centavos: number;
+  creditos_mensais: number;
+  ordem: number;
+  ativo: boolean;
+  descricao: string | null;
+  criado_em: string;
+}
+
+export type AssinaturaStatus = "sem_assinatura" | "pendente" | "ativa" | "inadimplente" | "cancelada";
+
+export interface SubscriptionPaymentRow {
+  id: string;
+  user_id: string;
+  plan_id: string | null;
+  asaas_subscription_id: string;
+  asaas_payment_id: string | null;
+  preco_centavos: number;
+  status: "pago" | "falhou";
+  criado_em: string;
 }
 
 export type SearchFonte = "cnpj" | "google_maps" | "instagram" | "linkedin";

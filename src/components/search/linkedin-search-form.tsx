@@ -205,7 +205,7 @@ export function LinkedInSearchForm({ custoPorResultado }: { custoPorResultado: n
             {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
             {loading ? "Buscando… (pode levar alguns minutos)" : "Buscar no LinkedIn"}
           </Button>
-          <CreditoEstimado custoPorUnidade={custoPorResultado} quantidade={limite} unidade="perfil" />
+          <CreditoEstimado custoPorUnidade={custoPorResultado} unidade="perfil" />
         </div>
       </form>
 
