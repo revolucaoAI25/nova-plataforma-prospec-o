@@ -781,13 +781,31 @@ mas nada é processado — é só fila).
   original mas nunca tinham um mecanismo automático de renovação por
   trás, só edição manual pelo admin. `PAYMENT_OVERDUE` marca a
   assinatura como `inadimplente` (não credita nada, só avisa na UI).
-  Escopo deliberadamente fora da v1: assinar um plano NÃO libera
-  automaticamente os outros flags de feature por usuário
-  (`disparo_habilitado`, `linkedin_visible` etc.) — esses continuam
-  admin-editáveis manualmente, como já eram; decidir exatamente o que
-  cada tier (Starter/Pro/Business) libera é uma decisão de produto maior,
-  que fica pra quando a LP de vendas entrar em cena. Trocar de plano
-  nesta v1 é cancelar e assinar de novo — sem proration.
+  Trocar de plano nesta v1 é cancelar e assinar de novo — sem proration.
+  **Atualização**: a decisão original de deixar o bundle de features fora
+  do escopo foi revertida — ver bullet "Bundle de features por plano"
+  logo abaixo.
+- **Bundle de features por plano** (migration `0020_plan_feature_flags.sql`):
+  pedido explícito do usuário, reverte a decisão anterior. `plans` ganha as
+  mesmas 7 colunas booleanas que já existiam em `profiles`
+  (`disparo_habilitado`, `instagram_visible`, `linkedin_visible`,
+  `enriquecimento_ia_habilitado`, `bigdatacorp_enrichment_habilitado`,
+  `email_disparo_habilitado`, `linkedin_disparo_habilitado`), configuráveis
+  no popover "Recursos" de cada linha em `PlansPanel` (admin). Aplicado em
+  `subscriptions-db.ts::processarPagamentoAssinatura`, só na **1ª
+  ativação** de cada assinatura (checa `assinatura_status !== "ativa"`
+  ANTES do update — não reaplica a cada renovação mensal) e sempre por OR:
+  só liga um flag que o plano concede, nunca desliga um que já estava
+  ligado. Cancelar a assinatura também não revoga nada automaticamente —
+  revogar continua manual pelo admin, como sempre foi; a automação é só
+  pra CONCEDER, nunca pra tirar (menor superfície de erro: um flag a mais
+  concedido incorretamente é inofensivo, um flag a menos revogado
+  incorretamente pode quebrar uma campanha ativa do usuário sem aviso).
+  Defaults semeados pros 3 planos: Starter libera os 3 canais de busca
+  (WhatsApp, Instagram, LinkedIn); Pro soma enriquecimento (IA +
+  BigDataCorp) e disparo por e-mail; Business soma disparo por LinkedIn
+  (o canal mais caro/arriscado, ver `AGENTS.md`/plano de disparo LinkedIn) —
+  tudo reconfigurável livremente pelo admin, é só um ponto de partida.
 - **Chaves de API de plataforma administráveis em `/admin`** (migration
   `0019_platform_settings.sql`, `src/lib/platform-settings.ts`): pedido
   explícito pra não depender só de variável de ambiente do Railway (trocar

@@ -144,7 +144,18 @@ export interface CreditPurchaseRow {
   pago_em: string | null;
 }
 
-export interface PlanRow {
+/** Flags booleanos de feature que um plano concede quando a assinatura ativa — mesmo shape dos flags equivalentes em Profile. */
+export interface PlanFeatureFlags {
+  disparo_habilitado: boolean;
+  instagram_visible: boolean;
+  linkedin_visible: boolean;
+  enriquecimento_ia_habilitado: boolean;
+  bigdatacorp_enrichment_habilitado: boolean;
+  email_disparo_habilitado: boolean;
+  linkedin_disparo_habilitado: boolean;
+}
+
+export interface PlanRow extends PlanFeatureFlags {
   id: string;
   nome: string;
   preco_centavos: number;
@@ -154,6 +165,16 @@ export interface PlanRow {
   descricao: string | null;
   criado_em: string;
 }
+
+export const PLAN_FEATURE_FLAG_KEYS: (keyof PlanFeatureFlags)[] = [
+  "disparo_habilitado",
+  "instagram_visible",
+  "linkedin_visible",
+  "enriquecimento_ia_habilitado",
+  "bigdatacorp_enrichment_habilitado",
+  "email_disparo_habilitado",
+  "linkedin_disparo_habilitado",
+];
 
 export type AssinaturaStatus = "sem_assinatura" | "pendente" | "ativa" | "inadimplente" | "cancelada";
 

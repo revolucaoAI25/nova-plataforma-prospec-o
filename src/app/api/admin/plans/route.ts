@@ -56,7 +56,24 @@ const patchSchema = z.object({
   descricao: z.string().optional(),
   ordem: z.number().int().optional(),
   ativo: z.boolean().optional(),
+  disparo_habilitado: z.boolean().optional(),
+  instagram_visible: z.boolean().optional(),
+  linkedin_visible: z.boolean().optional(),
+  enriquecimento_ia_habilitado: z.boolean().optional(),
+  bigdatacorp_enrichment_habilitado: z.boolean().optional(),
+  email_disparo_habilitado: z.boolean().optional(),
+  linkedin_disparo_habilitado: z.boolean().optional(),
 });
+
+const FLAG_KEYS = [
+  "disparo_habilitado",
+  "instagram_visible",
+  "linkedin_visible",
+  "enriquecimento_ia_habilitado",
+  "bigdatacorp_enrichment_habilitado",
+  "email_disparo_habilitado",
+  "linkedin_disparo_habilitado",
+] as const;
 
 export async function PATCH(request: Request) {
   if (!(await checarAdmin())) return NextResponse.json({ error: "Acesso restrito ao admin." }, { status: 403 });
@@ -70,6 +87,9 @@ export async function PATCH(request: Request) {
   if (parsed.data.descricao !== undefined) campos.descricao = parsed.data.descricao || null;
   if (parsed.data.ordem !== undefined) campos.ordem = parsed.data.ordem;
   if (parsed.data.ativo !== undefined) campos.ativo = parsed.data.ativo;
+  for (const chave of FLAG_KEYS) {
+    if (parsed.data[chave] !== undefined) campos[chave] = parsed.data[chave];
+  }
 
   const admin = createAdminClient();
   const { error } = await admin.from("plans").update(campos).eq("id", parsed.data.id);

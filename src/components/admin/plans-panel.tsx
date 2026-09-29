@@ -1,14 +1,29 @@
 "use client";
 
 import { useState } from "react";
-import { Crown, Save, Plus, Trash2 } from "lucide-react";
+import { Crown, Save, Plus, Trash2, ShieldCheck } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { useConfirm } from "@/components/ui/confirm-provider";
-import type { PlanRow } from "@/lib/database.types";
+import { PLAN_FEATURE_FLAG_KEYS, type PlanFeatureFlags, type PlanRow } from "@/lib/database.types";
+
+const FEATURE_FLAG_LABELS: Record<keyof PlanFeatureFlags, string> = {
+  disparo_habilitado: "Disparo WhatsApp",
+  instagram_visible: "Busca Instagram",
+  linkedin_visible: "Busca LinkedIn",
+  enriquecimento_ia_habilitado: "Enriquecimento via IA",
+  bigdatacorp_enrichment_habilitado: "Enriquecimento por CNPJ (BigDataCorp)",
+  email_disparo_habilitado: "Disparo e-mail",
+  linkedin_disparo_habilitado: "Disparo LinkedIn",
+};
+
+function contarFlagsAtivos(plano: PlanFeatureFlags): number {
+  return PLAN_FEATURE_FLAG_KEYS.filter((k) => plano[k]).length;
+}
 
 function LinhaPlano({ plano, onRemovido }: { plano: PlanRow; onRemovido: (id: string) => void }) {
   const confirmar = useConfirm();
@@ -16,6 +31,7 @@ function LinhaPlano({ plano, onRemovido }: { plano: PlanRow; onRemovido: (id: st
   const [preco, setPreco] = useState(plano.preco_centavos / 100);
   const [creditosMensais, setCreditosMensais] = useState(plano.creditos_mensais);
   const [ativo, setAtivo] = useState(plano.ativo);
+  const [flags, setFlags] = useState<PlanFeatureFlags>(plano);
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
 
@@ -36,6 +52,15 @@ function LinhaPlano({ plano, onRemovido }: { plano: PlanRow; onRemovido: (id: st
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id: plano.id, ativo: v }),
+    });
+  }
+
+  async function alternarFlag(chave: keyof PlanFeatureFlags, v: boolean) {
+    setFlags((prev) => ({ ...prev, [chave]: v }));
+    await fetch("/api/admin/plans", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: plano.id, [chave]: v }),
     });
   }
 
@@ -70,6 +95,26 @@ function LinhaPlano({ plano, onRemovido }: { plano: PlanRow; onRemovido: (id: st
       </TableCell>
       <TableCell>
         <Switch checked={ativo} onCheckedChange={alternarAtivo} />
+      </TableCell>
+      <TableCell>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button size="sm" variant="outline" className="gap-1.5">
+              <ShieldCheck className="h-3.5 w-3.5" /> {contarFlagsAtivos(flags)}/{PLAN_FEATURE_FLAG_KEYS.length}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="flex flex-col gap-2.5">
+            <p className="text-xs text-muted-foreground">
+              O que assinar &quot;{plano.nome}&quot; concede automaticamente ao usuário (soma com o que o admin já liberou manualmente — nunca remove).
+            </p>
+            {PLAN_FEATURE_FLAG_KEYS.map((chave) => (
+              <label key={chave} className="flex items-center justify-between gap-3 text-sm">
+                <span>{FEATURE_FLAG_LABELS[chave]}</span>
+                <Switch checked={flags[chave]} onCheckedChange={(v) => alternarFlag(chave, v)} />
+              </label>
+            ))}
+          </PopoverContent>
+        </Popover>
       </TableCell>
       <TableCell className="text-right">
         <div className="flex justify-end gap-1">
@@ -112,6 +157,9 @@ export function PlansPanel({ planosIniciais }: { planosIniciais: PlanRow[] }) {
     setPlanos((prev) => [...prev, {
       id: data.id, nome: novoNome.trim(), preco_centavos: Math.round(Number(novoPreco) * 100),
       creditos_mensais: Number(novosCreditos), ordem: prev.length, ativo: true, descricao: null, criado_em: new Date().toISOString(),
+      disparo_habilitado: false, instagram_visible: false, linkedin_visible: false,
+      enriquecimento_ia_habilitado: false, bigdatacorp_enrichment_habilitado: false,
+      email_disparo_habilitado: false, linkedin_disparo_habilitado: false,
     }]);
     setNovoNome(""); setNovoPreco(""); setNovosCreditos("");
   }
@@ -134,6 +182,7 @@ export function PlansPanel({ planosIniciais }: { planosIniciais: PlanRow[] }) {
               <TableHead>Preço/mês (R$)</TableHead>
               <TableHead>Créditos/mês</TableHead>
               <TableHead>Ativo</TableHead>
+              <TableHead>Recursos</TableHead>
               <TableHead className="text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>

@@ -2,7 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { obterOuCriarClienteAsaas } from "@/lib/credit-purchases-db";
 import { criarAssinatura, cancelarAssinatura, obterPrimeiraFaturaAssinatura } from "@/lib/integrations/asaas";
-import type { PlanRow, Profile } from "@/lib/database.types";
+import { PLAN_FEATURE_FLAG_KEYS, type PlanRow, type Profile } from "@/lib/database.types";
 
 // Assinatura recorrente de plano via Asaas — ver comentário de topo de
 // supabase/migrations/0018_asaas_subscriptions.sql pro desenho geral.
@@ -67,7 +67,7 @@ export async function processarPagamentoAssinatura(asaasSubscriptionId: string, 
 
   const { data: dono } = await sbAdmin
     .from("profiles")
-    .select("id, plano_id")
+    .select("id, plano_id, assinatura_status")
     .eq("asaas_subscription_id", asaasSubscriptionId)
     .maybeSingle();
   if (!dono) return; // assinatura cancelada/desconhecida — ignora silenciosamente.
@@ -86,13 +86,27 @@ export async function processarPagamentoAssinatura(asaasSubscriptionId: string, 
     .maybeSingle();
   if (error || !inserido) return; // conflito de unique (evento repetido) ou outro erro — não credita.
 
-  const { data: plano } = await sbAdmin.from("plans").select("creditos_mensais").eq("id", dono.plano_id).maybeSingle();
+  const { data: planoData } = await sbAdmin.from("plans").select("*").eq("id", dono.plano_id).maybeSingle();
+  const plano = planoData as PlanRow | null;
   const creditosMensais = plano?.creditos_mensais ?? 0;
 
-  await sbAdmin
-    .from("profiles")
-    .update({ assinatura_status: "ativa", monthly_creditos: creditosMensais, credits_renewed_at: new Date().toISOString().slice(0, 10) })
-    .eq("id", dono.id);
+  const campos: Record<string, unknown> = {
+    assinatura_status: "ativa",
+    monthly_creditos: creditosMensais,
+    credits_renewed_at: new Date().toISOString().slice(0, 10),
+  };
+
+  // Bundle de features do plano — só aplicado na 1ª ativação desta
+  // assinatura (não a cada renovação mensal, pra não sobrescrever um
+  // flag que o admin tenha revogado manualmente depois). Sempre por OR:
+  // nunca tira um flag que o usuário já tinha, só concede o que falta.
+  if (plano && dono.assinatura_status !== "ativa") {
+    for (const chave of PLAN_FEATURE_FLAG_KEYS) {
+      if (plano[chave]) campos[chave] = true;
+    }
+  }
+
+  await sbAdmin.from("profiles").update(campos).eq("id", dono.id);
 
   if (creditosMensais > 0) {
     await sbAdmin.rpc("increment_creditos", { p_user_id: dono.id, p_delta: creditosMensais });
