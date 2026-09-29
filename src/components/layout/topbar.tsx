@@ -1,7 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { LogOut, Coins } from "lucide-react";
+import { LogOut, Coins, Plus } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { MobileNav } from "@/components/layout/mobile-nav";
@@ -32,11 +33,16 @@ export function Topbar({ profile }: { profile: Profile }) {
           linkedinDisparoHabilitado={profile.linkedin_disparo_habilitado}
         />
         <div className="flex items-center gap-2 text-sm">
-          <div className="flex items-center gap-1.5 rounded-full border border-primary/20 bg-accent px-3 py-1">
+          <Link
+            href="/creditos"
+            title="Comprar créditos"
+            className="group flex items-center gap-1.5 rounded-full border border-primary/20 bg-accent px-3 py-1 transition-colors hover:border-primary/40"
+          >
             <Coins className="h-3.5 w-3.5 text-primary" />
             <span className="font-semibold text-accent-foreground">{profile.creditos}</span>
             <span className="hidden text-muted-foreground sm:inline">créditos</span>
-          </div>
+            <Plus className="h-3 w-3 text-primary opacity-0 transition-opacity group-hover:opacity-100" />
+          </Link>
         </div>
       </div>
       <div className="flex items-center gap-3">

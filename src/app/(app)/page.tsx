@@ -39,7 +39,7 @@ export default async function DashboardPage() {
       </Reveal>
 
       <Reveal delay={60} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Créditos disponíveis" value={profile?.creditos ?? 0} icon={Coins} tone="primary" />
+        <StatCard label="Créditos disponíveis" value={profile?.creditos ?? 0} icon={Coins} tone="primary" href="/creditos" hint="Comprar mais →" />
         <StatCard label="Renovação mensal" value={profile?.monthly_creditos ?? 0} icon={Coins} tone="info" />
         <StatCard label="Pesquisas realizadas" value={totalPesquisas} icon={Search} tone="violet" />
         <StatCard label="Leads coletados" value={totalLeads} icon={Users} tone="amber" />

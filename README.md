@@ -684,6 +684,31 @@ mas nada é processado — é só fila).
   `if (!confirm("..."))` por `if (!(await confirmar({ title: "...",
   destructive: true })))`. Ação destrutiva ganha ícone de alerta e botão
   vermelho; todas as 17 chamadas migradas.
+- **Compra de créditos avulsos — Asaas** (migration
+  `0017_asaas_credit_purchases.sql`): escolha explícita do usuário (conta
+  já existente lá, PIX/boleto/cartão nativos, taxas boas pro público
+  brasileiro — avaliamos Stripe e Mercado Pago/Pagar.me como alternativas,
+  mas não havia motivo pra trocar uma conta já ativa). Fluxo: usuário
+  escolhe um pacote em `/creditos` → na 1ª compra informa CPF/CNPJ (o
+  Asaas exige isso pra criar um cliente; fica salvo em `profiles.cpf_cnpj`
+  pras próximas) → criamos (ou reusamos) o cliente Asaas
+  (`profiles.asaas_customer_id`) e uma cobrança com `billingType:
+  UNDEFINED` — o pagador escolhe PIX, boleto ou cartão na própria fatura
+  hospedada do Asaas (`invoiceUrl`), sem a gente precisar implementar um
+  checkout customizado → usuário é redirecionado pra lá → um webhook
+  (`/api/webhooks/asaas`, autenticado pelo header `asaas-access-token`
+  que o próprio Asaas ecoa, configurado manualmente no dashboard deles)
+  credita o pool único assim que `PAYMENT_CONFIRMED`/`PAYMENT_RECEIVED`
+  chega. Decisão de segurança central: `credit_purchases` não tem policy
+  de UPDATE pro usuário comum — só o webhook (via cliente admin) marca
+  uma compra como paga, e `marcarCompraPaga()` é idempotente (compara e
+  troca o `status` de `pendente` pra `pago` numa única query — entrega
+  duplicada do webhook, que o próprio Asaas documenta como possível, não
+  credita duas vezes). RPC `increment_creditos` é a irmã simétrica de
+  `decrement_creditos` (0013), mesma proteção via `security definer`
+  contra race condition. Pacotes (`credit_packages`) são admin-editáveis
+  em `/admin` (nome, quantidade, preço, ativo/inativo) — igual
+  `credit_costs`, ajustar preço não exige deploy.
 
 ## Estrutura
 

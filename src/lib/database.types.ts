@@ -91,6 +91,9 @@ export interface Profile {
   creditos: number;
   monthly_creditos: number;
 
+  asaas_customer_id: string | null;
+  cpf_cnpj: string | null;
+
   created_at: string;
   updated_at: string;
 }
@@ -109,6 +112,32 @@ export interface CreditCostRow {
   custo: number;
   descricao: string;
   updated_at: string;
+}
+
+export interface CreditPackageRow {
+  id: string;
+  nome: string;
+  quantidade_creditos: number;
+  preco_centavos: number;
+  ordem: number;
+  ativo: boolean;
+  criado_em: string;
+}
+
+export type CreditPurchaseStatus = "pendente" | "pago" | "falhou" | "cancelado";
+
+export interface CreditPurchaseRow {
+  id: string;
+  user_id: string;
+  package_id: string | null;
+  quantidade_creditos: number;
+  preco_centavos: number;
+  asaas_customer_id: string | null;
+  asaas_payment_id: string | null;
+  status: CreditPurchaseStatus;
+  invoice_url: string | null;
+  criado_em: string;
+  pago_em: string | null;
 }
 
 export type SearchFonte = "cnpj" | "google_maps" | "instagram" | "linkedin";

@@ -3,10 +3,11 @@ import Link from "next/link";
 import { Send } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getProfile } from "@/lib/credits";
-import type { CreditCostRow, UserStatsRow } from "@/lib/database.types";
+import type { CreditCostRow, CreditPackageRow, UserStatsRow } from "@/lib/database.types";
 import { AdminUsersTable } from "@/components/admin/admin-users-table";
 import { CreateUserForm } from "@/components/admin/create-user-form";
 import { CreditCostsPanel } from "@/components/admin/credit-costs-panel";
+import { CreditPackagesPanel } from "@/components/admin/credit-packages-panel";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/layout/page-header";
 
@@ -26,6 +27,8 @@ export default async function AdminPage() {
   const users = (data as UserStatsRow[]) ?? [];
   const { data: custosData } = await supabase.from("credit_costs").select("*").order("acao");
   const custos = (custosData as CreditCostRow[]) ?? [];
+  const { data: pacotesData } = await supabase.from("credit_packages").select("*").order("ordem");
+  const pacotes = (pacotesData as CreditPackageRow[]) ?? [];
 
   return (
     <div className="flex flex-col gap-6">
@@ -43,6 +46,7 @@ export default async function AdminPage() {
       />
       <CreateUserForm />
       <CreditCostsPanel custos={custos} />
+      <CreditPackagesPanel pacotesIniciais={pacotes} />
       <AdminUsersTable users={users} currentUserId={user.id} />
     </div>
   );

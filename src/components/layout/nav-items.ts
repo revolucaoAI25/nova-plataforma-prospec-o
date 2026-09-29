@@ -18,6 +18,7 @@ import {
   Mail,
   Contact,
   Kanban,
+  Coins,
 } from "lucide-react";
 
 export interface NavLeaf {
@@ -120,7 +121,10 @@ export function buildNavSections({
 
   sections.push({
     label: "Conta",
-    items: [{ type: "link", href: "/configuracoes", label: "Configurações", icon: Settings }],
+    items: [
+      { type: "link", href: "/creditos", label: "Créditos", icon: Coins },
+      { type: "link", href: "/configuracoes", label: "Configurações", icon: Settings },
+    ],
   });
 
   if (isAdmin) {

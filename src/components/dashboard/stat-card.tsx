@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { LucideIcon } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -17,6 +18,7 @@ export function StatCard({
   hint,
   tone = "primary",
   className,
+  href,
 }: {
   label: string;
   value: React.ReactNode;
@@ -24,8 +26,10 @@ export function StatCard({
   hint?: string;
   tone?: keyof typeof TONE_CLASSES;
   className?: string;
+  /** Torna o card inteiro clicável (ex: saldo de créditos → /creditos). */
+  href?: string;
 }) {
-  return (
+  const card = (
     <Card interactive className={cn("relative overflow-hidden p-5", className)}>
       <div
         aria-hidden
@@ -47,5 +51,12 @@ export function StatCard({
       <p className="relative mt-3 text-3xl font-bold tabular-nums tracking-tight text-foreground">{value}</p>
       {hint && <p className="relative mt-1 text-xs text-muted-foreground">{hint}</p>}
     </Card>
+  );
+
+  if (!href) return card;
+  return (
+    <Link href={href} className="block rounded-3xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40">
+      {card}
+    </Link>
   );
 }
