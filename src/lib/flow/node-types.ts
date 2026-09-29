@@ -26,7 +26,8 @@ export type LucideIconName =
   | "Hourglass"
   | "Send"
   | "Mail"
-  | "Database";
+  | "Database"
+  | "Kanban";
 
 // ── Schemas de config por tipo de nó ──────────────────────────────
 
@@ -192,6 +193,11 @@ const destinoSheetsConfigSchema = z.object({
   sheetId: z.string().min(1),
   aba: z.string().min(1),
   modo: z.enum(["substituir", "acrescentar"]).default("acrescentar"),
+});
+
+const destinoFunilConfigSchema = z.object({
+  funilId: z.string().uuid(),
+  colunaId: z.string().uuid(),
 });
 
 // ── Metadados por tipo ─────────────────────────────────────────────
@@ -368,6 +374,15 @@ export const FLOW_NODE_TYPES: Record<FlowNodeTipo, FlowNodeTypeMeta> = {
     descricao: "Exporta os leads recebidos (com todos os campos, inclusive de enriquecimento) para uma planilha Google Sheets.",
     icon: "FileSpreadsheet",
     configSchema: destinoSheetsConfigSchema,
+    disponivel: true,
+  },
+  destino_funil: {
+    tipo: "destino_funil",
+    categoria: "destino",
+    label: "Adicionar ao Funil",
+    descricao: "Deposita os leads recebidos numa coluna de um Funil (Kanban) — não dispara o fluxo configurado naquela coluna (só o arraste manual dispara, evita loop).",
+    icon: "Kanban",
+    configSchema: destinoFunilConfigSchema,
     disponivel: true,
   },
 };

@@ -555,6 +555,24 @@ mas nada é processado — é só fila).
   `cnpj_maps_extra` estava calculado como se já fosse Apify (5 créditos)
   e foi corrigido pro custo real da API oficial (~55 créditos/lead
   verificado — Text Search + Place Details com telefone/site).
+- **Funil (Kanban) integrado ao construtor de fluxos** (migration
+  `0015_funis.sql`): visão de pipeline sobre leads já extraídos —
+  `funis` → `funil_colunas` (ordenadas, cada uma com um `fluxo_id`
+  opcional) → `funil_cards` (1 por lead, guarda `lead_snapshot` — sobrevive
+  mesmo se o lead original em `leads` for apagado). Integração nas duas
+  direções, deliberadamente assimétrica pra evitar loop: (1) **Fluxo →
+  Funil**, o nó `destino_funil` deposita o lote numa coluna, sem disparar
+  o fluxo configurado nela; (2) **Funil → Fluxo**, só o **arraste manual**
+  de um card (endpoint `PATCH /api/funis/[id]/cards/[cardId]`) dispara o
+  `fluxo_id` da coluna de destino — via `criarRunDoFluxo` do próprio motor
+  de fluxos (`src/lib/flow/flow-engine.ts`), passando o lead movido como
+  `lote` de 1 item, sem checar `temRunAtiva` (cada card é uma run
+  independente, concorrência entre cards é esperada). Sem gate/flag nova —
+  disponível pra todo usuário, como Histórico. Leads entram no funil de
+  duas formas: pelo botão "Adicionar ao Funil" em `/historico/[id]` (a
+  pesquisa inteira, mesma granularidade do "puxar do histórico" já usado
+  nos enriquecimentos) ou pelo nó de fluxo. Board com drag-and-drop nativo
+  (HTML5 `draggable`, sem biblioteca nova).
 
 ## Estrutura
 
@@ -565,6 +583,7 @@ src/
     (app)/                    área autenticada (proxy.ts redireciona sem sessão)
       busca/cnpj|maps|instagram|linkedin/  as quatro buscas
       historico/                lista + detalhe de pesquisas
+      funil/                     Kanban de pipeline (funil/[id] = board)
       automacoes/                buscas agendadas + construtor de fluxos (fluxos/novo, fluxos/[id])
       disparo/                   instâncias, campanhas, cadência, solicitação de canal oficial
       configuracoes/              chaves próprias (Maps, Apify) e Google Sheets
@@ -579,6 +598,7 @@ src/
     supabase/                  clientes (browser, server, admin) e sessão do proxy
     credits.ts db.ts export.ts maps-key.ts apify-key.ts    lógica de negócio de extração
     dispatch-db.ts automation-db.ts automation-logic.ts automation-runner.ts   disparo e automações
+    funil-db.ts                CRUD do Funil (Kanban)
     flow/                      construtor de fluxos: node-types, flow-engine, executors/
 worker/                        processo de background (automações, disparo, enriquecimento IA, fluxos)
 supabase/migrations/           schema SQL (0001 Fase 0 · 0002 plataforma completa · 0003–0007 incrementais)

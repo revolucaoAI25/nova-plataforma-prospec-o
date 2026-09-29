@@ -678,6 +678,36 @@ function CamposDestinoSheets({ config, set }: CamposProps) {
   );
 }
 
+function CamposDestinoFunil({ config, set }: CamposProps) {
+  const funilId = String(config.funilId || "");
+  const funis = useListaFetch<{ id: string; nome: string }>("/api/funis");
+  const colunas = useListaFetch<{ id: string; nome: string }>(funilId ? `/api/funis/${funilId}` : null);
+  return (
+    <>
+      <Campo label="Funil">
+        <Select value={funilId} onValueChange={(v) => set({ funilId: v, colunaId: "" })}>
+          <SelectTrigger><SelectValue placeholder="Selecione o funil" /></SelectTrigger>
+          <SelectContent>
+            {funis.map((f) => <SelectItem key={f.id} value={f.id}>{f.nome}</SelectItem>)}
+          </SelectContent>
+        </Select>
+      </Campo>
+      <Campo label="Coluna">
+        <Select value={String(config.colunaId || "")} onValueChange={(v) => set({ colunaId: v })} disabled={!funilId}>
+          <SelectTrigger><SelectValue placeholder="Selecione a coluna" /></SelectTrigger>
+          <SelectContent>
+            {colunas.map((c) => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}
+          </SelectContent>
+        </Select>
+      </Campo>
+      <p className="text-xs text-muted-foreground">
+        Se a coluna escolhida tiver um fluxo configurado pra disparar quando um card entra nela, esse depósito NÃO
+        dispara esse fluxo — só o arraste manual do card na tela do Funil dispara (evita loop entre fluxo e funil).
+      </p>
+    </>
+  );
+}
+
 interface CamposProps {
   config: Record<string, unknown>;
   set: (patch: Record<string, unknown>) => void;
@@ -702,6 +732,7 @@ function CamposDoNo({ node, config, set }: { node: FlowNode } & CamposProps) {
     case "disparo_email": return <CamposDisparoEmail config={config} set={set} />;
     case "disparo_linkedin": return <CamposDisparoLinkedin config={config} set={set} />;
     case "destino_sheets": return <CamposDestinoSheets config={config} set={set} />;
+    case "destino_funil": return <CamposDestinoFunil config={config} set={set} />;
     default: return null;
   }
 }

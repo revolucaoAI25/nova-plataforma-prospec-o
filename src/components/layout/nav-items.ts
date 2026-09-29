@@ -17,6 +17,7 @@ import {
   BrainCircuit,
   Mail,
   Contact,
+  Kanban,
 } from "lucide-react";
 
 export interface NavLeaf {
@@ -84,6 +85,7 @@ export function buildNavSections({
       items: [
         { type: "group", label: "Busca", icon: Search, children: buscaChildren },
         { type: "link", href: "/historico", label: "Histórico", icon: History },
+        { type: "link", href: "/funil", label: "Funil", icon: Kanban },
         { type: "link", href: "/automacoes", label: "Automações", icon: CalendarClock },
         ...(enriquecimentoIaHabilitado || bigdatacorpEnrichmentHabilitado || isAdmin
           ? [{ type: "link" as const, href: "/enriquecimento", label: "Enriquecimento", icon: BrainCircuit }]

@@ -677,7 +677,8 @@ export type FlowNodeTipo =
   | "disparo_whatsapp"
   | "disparo_email"
   | "disparo_linkedin"
-  | "destino_sheets";
+  | "destino_sheets"
+  | "destino_funil";
 
 export interface FlowNode {
   id: string;
@@ -732,6 +733,37 @@ export interface FlowRunStepRow {
   erro: string | null;
   iniciado_em: string | null;
   concluido_em: string | null;
+}
+
+// ── Funil (Kanban) ──────────────────────────────────────────────────
+
+export interface FunilRow {
+  id: string;
+  user_id: string;
+  nome: string;
+  criado_em: string;
+}
+
+export interface FunilColunaRow {
+  id: string;
+  funil_id: string;
+  nome: string;
+  ordem: number;
+  cor: string | null;
+  fluxo_id: string | null;
+  criado_em: string;
+}
+
+export interface FunilCardRow {
+  id: string;
+  funil_id: string;
+  coluna_id: string;
+  user_id: string;
+  lead_id: string | null;
+  lead_snapshot: Record<string, unknown>;
+  ordem: number;
+  criado_em: string;
+  atualizado_em: string;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

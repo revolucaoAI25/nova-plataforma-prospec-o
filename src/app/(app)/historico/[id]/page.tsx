@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LeadsTable } from "@/components/historico/leads-table";
+import { AdicionarAoFunilButton } from "@/components/historico/adicionar-ao-funil-button";
 import { PageHeader } from "@/components/layout/page-header";
 import { ResultsSummary, buildGeneralMetrics, buildInstagramMetrics, buildLinkedInMetrics } from "@/components/search/results-summary";
 
@@ -38,6 +39,7 @@ export default async function HistoricoDetailPage({ params }: { params: Promise<
         <CardHeader className="flex flex-wrap items-center justify-between gap-2">
           <CardTitle className="text-base">{leads.length} leads</CardTitle>
           <div className="flex gap-2">
+            {leads.length > 0 && <AdicionarAoFunilButton searchId={id} />}
             <Button asChild variant="outline" size="sm">
               <a href={`/api/export/${id}?formato=xlsx`}>
                 <Download className="h-4 w-4" /> Excel
