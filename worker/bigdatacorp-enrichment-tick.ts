@@ -8,7 +8,20 @@ import { debitarCreditos } from "../src/lib/credits";
  * roda em background, não na requisição HTTP, porque cada lote pode ter
  * várias consultas pagas em sequência.
  */
+/**
+ * Se o worker reiniciar (deploy, crash) com uma execução em `processando`,
+ * ela ficava travada pra sempre — sem isto, nada nunca a devolvia pra
+ * `pendente`. Mesmo padrão de `dispatch-db.ts::requeueTravados()`.
+ */
+async function requeueTravados(sb: SupabaseClient, minutos = 10): Promise<void> {
+  const limite = new Date(Date.now() - minutos * 60_000).toISOString();
+  await sb.from("bigdatacorp_enrichment_runs").update({ status: "pendente", processando_desde: null })
+    .eq("status", "processando").lt("processando_desde", limite);
+}
+
 export async function tickBigDataCorpEnrichment(sb: SupabaseClient, log: (msg: string) => void): Promise<void> {
+  await requeueTravados(sb);
+
   const { data: pendentes } = await sb
     .from("bigdatacorp_enrichment_runs")
     .select("id")
@@ -22,7 +35,7 @@ export async function tickBigDataCorpEnrichment(sb: SupabaseClient, log: (msg: s
   // pegarem a mesma execução).
   const { data: run } = await sb
     .from("bigdatacorp_enrichment_runs")
-    .update({ status: "processando" })
+    .update({ status: "processando", processando_desde: new Date().toISOString() })
     .eq("id", pendentes[0].id)
     .eq("status", "pendente")
     .select()

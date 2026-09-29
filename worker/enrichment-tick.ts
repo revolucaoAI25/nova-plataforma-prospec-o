@@ -11,7 +11,20 @@ import type { EnrichmentOpcoes } from "../src/lib/database.types";
  * depende de manter uma requisição aberta por vários minutos (cada busca
  * pode levar até 240s, e um lote tem até 50 leads).
  */
+/**
+ * Se o worker reiniciar (deploy, crash) com uma execução em `processando`,
+ * ela ficava travada pra sempre — sem isto, nada nunca a devolvia pra
+ * `pendente`. Mesmo padrão de `dispatch-db.ts::requeueTravados()`.
+ */
+async function requeueTravados(sb: SupabaseClient, minutos = 10): Promise<void> {
+  const limite = new Date(Date.now() - minutos * 60_000).toISOString();
+  await sb.from("enrichment_runs").update({ status: "pendente", processando_desde: null })
+    .eq("status", "processando").lt("processando_desde", limite);
+}
+
 export async function tickEnrichment(sb: SupabaseClient, log: (msg: string) => void): Promise<void> {
+  await requeueTravados(sb);
+
   const { data: pendentes } = await sb
     .from("enrichment_runs")
     .select("id")
@@ -25,7 +38,7 @@ export async function tickEnrichment(sb: SupabaseClient, log: (msg: string) => v
   // pegarem a mesma execução).
   const { data: run } = await sb
     .from("enrichment_runs")
-    .update({ status: "processando" })
+    .update({ status: "processando", processando_desde: new Date().toISOString() })
     .eq("id", pendentes[0].id)
     .eq("status", "pendente")
     .select()

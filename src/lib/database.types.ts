@@ -333,6 +333,7 @@ export interface BigDataCorpEnrichmentRunRow {
   erro: string | null;
   created_at: string;
   concluido_em: string | null;
+  processando_desde: string | null;
 }
 
 export interface BigDataCorpEnrichmentLeadRow {
@@ -374,6 +375,7 @@ export interface EnrichmentRunRow {
   erro: string | null;
   created_at: string;
   concluido_em: string | null;
+  processando_desde: string | null;
 }
 
 export interface EnrichmentLeadRow {

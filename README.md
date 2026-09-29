@@ -873,15 +873,18 @@ mas nada é processado — é só fila).
   encadeados (extração → enriquecimento → disparo/funil), e wiring de todo
   tick do worker em `worker/index.ts`.
 
-  **Achado documentado, não corrigido nesta rodada** (exige migration, fora
-  do escopo de um fix pontual): uma run de fluxo em `aguardando_subprocesso`
-  (esperando um `enrichment_runs`/`bigdatacorp_enrichment_runs` terminar)
-  não tem timeout — se o worker reiniciar com a linha em `processando`,
-  ela fica travada pra sempre, fora do orçamento de retry da 0016. Precisa
-  de uma coluna de "processando desde" nessas duas tabelas + um
-  `requeueTravados`-equivalente nos dois ticks de enriquecimento, mesmo
-  padrão que `dispatch-db.ts::requeueTravados()` já usa pros alvos de
-  disparo.
+  **Follow-up da rodada anterior, agora corrigido** (migration
+  `0021_enrichment_runs_requeue.sql`): uma run de fluxo em
+  `aguardando_subprocesso` (esperando um `enrichment_runs`/
+  `bigdatacorp_enrichment_runs` terminar) não tinha timeout — se o worker
+  reiniciasse com a linha em `processando`, ela ficava travada pra sempre,
+  fora do orçamento de retry da 0016. Nova coluna `processando_desde`
+  nas duas tabelas, gravada no momento da reserva atômica
+  (`pendente` → `processando`), lida por um `requeueTravados`-equivalente
+  chamado no início dos dois ticks de enriquecimento (`worker/enrichment-tick.ts`,
+  `worker/bigdatacorp-enrichment-tick.ts`) — mesmo padrão que
+  `dispatch-db.ts::requeueTravados()` já usa pros alvos de disparo, limite
+  de 10 minutos.
 
 ## Estrutura
 
