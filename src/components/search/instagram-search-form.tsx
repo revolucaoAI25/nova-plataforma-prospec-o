@@ -10,6 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { FieldGroup, FieldRow } from "@/components/ui/field-group";
 import { LimiteSlider } from "@/components/search/limite-slider";
+import { CreditoEstimado } from "@/components/search/credito-estimado";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { InstagramResultsTable } from "@/components/search/instagram-results-table";
@@ -17,7 +18,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { ResultsSummary, buildInstagramMetrics } from "@/components/search/results-summary";
 import type { InstagramTipo, Lead } from "@/lib/types";
 
-export function InstagramSearchForm() {
+export function InstagramSearchForm({ custoPorResultado }: { custoPorResultado: number }) {
   const [tipo, setTipo] = useState<InstagramTipo>("seguidores");
   const [alvo, setAlvo] = useState("");
   const [limite, setLimite] = useState(200);
@@ -111,10 +112,13 @@ export function InstagramSearchForm() {
           </Alert>
         )}
 
-        <Button type="submit" disabled={loading} size="lg" className="self-start">
-          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
-          {loading ? "Buscando… (pode levar alguns minutos)" : "Buscar no Instagram"}
-        </Button>
+        <div className="flex flex-col gap-2 self-start">
+          <Button type="submit" disabled={loading} size="lg">
+            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+            {loading ? "Buscando… (pode levar alguns minutos)" : "Buscar no Instagram"}
+          </Button>
+          <CreditoEstimado custoPorUnidade={custoPorResultado} quantidade={limite} unidade="perfil" />
+        </div>
       </form>
 
       {avisos.map((a, i) => (

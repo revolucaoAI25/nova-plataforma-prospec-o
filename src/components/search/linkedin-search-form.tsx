@@ -14,6 +14,7 @@ import { LinkedInResultsTable } from "@/components/search/linkedin-results-table
 import { ResultsSummary, buildLinkedInMetrics } from "@/components/search/results-summary";
 import { MultiSelect } from "@/components/search/multi-select";
 import { LimiteSlider } from "@/components/search/limite-slider";
+import { CreditoEstimado } from "@/components/search/credito-estimado";
 import { LINKEDIN_INDUSTRIES } from "@/lib/data/linkedin-industries";
 import type { Lead } from "@/lib/types";
 
@@ -72,7 +73,7 @@ function TagInput({
   );
 }
 
-export function LinkedInSearchForm() {
+export function LinkedInSearchForm({ custoPorResultado }: { custoPorResultado: number }) {
   const [cargos, setCargos] = useState<string[]>([]);
   const [localizacoes, setLocalizacoes] = useState<string[]>([]);
   const [industrias, setIndustrias] = useState<string[]>([]);
@@ -185,7 +186,7 @@ export function LinkedInSearchForm() {
               />
               <FieldRow
                 label="Buscar e-mail"
-                description="Tenta encontrar o e-mail de cada perfil (custa mais — cerca de 2,5x o preço por perfil — e não é garantido para todos)."
+                description="Tenta encontrar o e-mail de cada perfil — não é garantido para todos, mas não muda o custo em créditos desta busca."
                 control={<Switch checked={buscarEmail} onCheckedChange={setBuscarEmail} />}
               />
             </FieldGroup>
@@ -199,10 +200,13 @@ export function LinkedInSearchForm() {
           </Alert>
         )}
 
-        <Button type="submit" disabled={loading} size="lg" className="self-start">
-          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
-          {loading ? "Buscando… (pode levar alguns minutos)" : "Buscar no LinkedIn"}
-        </Button>
+        <div className="flex flex-col gap-2 self-start">
+          <Button type="submit" disabled={loading} size="lg">
+            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+            {loading ? "Buscando… (pode levar alguns minutos)" : "Buscar no LinkedIn"}
+          </Button>
+          <CreditoEstimado custoPorUnidade={custoPorResultado} quantidade={limite} unidade="perfil" />
+        </div>
       </form>
 
       {avisos.map((a, i) => (

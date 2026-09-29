@@ -14,6 +14,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { MultiSelect, type MultiSelectOption } from "@/components/search/multi-select";
 import { LimiteSlider } from "@/components/search/limite-slider";
+import { CreditoEstimado } from "@/components/search/credito-estimado";
 import { ResultsTable } from "@/components/search/results-table";
 import { ResultsSummary, buildGeneralMetrics } from "@/components/search/results-summary";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -40,7 +41,13 @@ const PORTE_OPTIONS: MultiSelectOption[] = [
 
 type MapsModo = "nao_usar" | "enriquecer" | "filtrar" | "filtrar_enriquecer";
 
-export function CnpjSearchForm({ bigdatacorpDisponivel }: { bigdatacorpDisponivel: boolean }) {
+export function CnpjSearchForm({
+  bigdatacorpDisponivel,
+  custos,
+}: {
+  bigdatacorpDisponivel: boolean;
+  custos: Record<string, number>;
+}) {
   const [cnaes, setCnaes] = useState<string[]>([]);
   const [cnaeManual, setCnaeManual] = useState("");
   const [cnaeTipo, setCnaeTipo] = useState<CnaeTipo>("principal");
@@ -373,10 +380,21 @@ export function CnpjSearchForm({ bigdatacorpDisponivel }: { bigdatacorpDisponive
           </Alert>
         )}
 
-        <Button type="submit" disabled={loading} size="lg" className="self-start">
-          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
-          {loading ? "Buscando…" : "Buscar empresas por CNPJ"}
-        </Button>
+        <div className="flex flex-col gap-2 self-start">
+          <Button type="submit" disabled={loading} size="lg">
+            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+            {loading ? "Buscando…" : "Buscar empresas por CNPJ"}
+          </Button>
+          <CreditoEstimado
+            custoPorUnidade={
+              (custos.cnpj || 0) +
+              (mapsModo !== "nao_usar" ? custos.cnpj_maps_extra || 0 : 0) +
+              (bigdatacorpDisponivel && enriquecerBigDataCorp ? custos.bigdatacorp || 0 : 0)
+            }
+            quantidade={limite}
+            unidade="empresa"
+          />
+        </div>
       </form>
 
       {avisos.map((a, i) => (

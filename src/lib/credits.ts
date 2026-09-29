@@ -34,6 +34,23 @@ export async function custoAcao(supabase: SupabaseClient, acao: AcaoCredito): Pr
   return valor;
 }
 
+/**
+ * Busca vários custos de uma vez (1 query) — usado pelas páginas de busca
+ * pra mostrar "até X créditos" antes do usuário disparar a ação (pedido
+ * explícito: o custo em créditos não estava visível em lugar nenhum antes
+ * de rodar a busca).
+ */
+export async function custosVisiveis(
+  supabase: SupabaseClient,
+  acoes: AcaoCredito[],
+): Promise<Record<string, number>> {
+  const { data } = await supabase.from("credit_costs").select("acao, custo").in("acao", acoes);
+  const mapa: Record<string, number> = {};
+  for (const acao of acoes) mapa[acao] = 1;
+  for (const row of data ?? []) mapa[row.acao] = row.custo;
+  return mapa;
+}
+
 /** Debita `quantidade` unidades de `acao` do pool único, atomicamente via RPC — evita race condition entre buscas concorrentes. */
 export async function debitarCreditos(
   supabase: SupabaseClient,

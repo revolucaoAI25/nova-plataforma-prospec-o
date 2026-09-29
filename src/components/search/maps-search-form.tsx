@@ -13,6 +13,7 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@
 import { FieldGroup, FieldRow } from "@/components/ui/field-group";
 import { MultiSelect, type MultiSelectOption } from "@/components/search/multi-select";
 import { LimiteSlider } from "@/components/search/limite-slider";
+import { CreditoEstimado } from "@/components/search/credito-estimado";
 import { ResultsTable } from "@/components/search/results-table";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ResultsSummary, buildGeneralMetrics } from "@/components/search/results-summary";
@@ -27,7 +28,7 @@ const UF_OPTIONS: MultiSelectOption[] = Object.entries(ESTADOS).map(([sigla, nom
   label: `${sigla} — ${nome}`,
 }));
 
-export function MapsSearchForm() {
+export function MapsSearchForm({ custoPorResultado }: { custoPorResultado: number }) {
   const [nicho, setNicho] = useState(NOMES_NICHOS[0]);
   const [queryCustom, setQueryCustom] = useState("");
   const [subnicho, setSubnicho] = useState("");
@@ -225,10 +226,13 @@ export function MapsSearchForm() {
           </Alert>
         )}
 
-        <Button type="submit" disabled={loading} size="lg" className="self-start">
-          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
-          {loading ? "Buscando…" : "Buscar no Google Maps"}
-        </Button>
+        <div className="flex flex-col gap-2 self-start">
+          <Button type="submit" disabled={loading} size="lg">
+            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+            {loading ? "Buscando…" : "Buscar no Google Maps"}
+          </Button>
+          <CreditoEstimado custoPorUnidade={custoPorResultado} quantidade={limite} unidade="lugar" />
+        </div>
       </form>
 
       {avisos.map((a, i) => (

@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { getProfile } from "@/lib/credits";
+import { getProfile, custosVisiveis } from "@/lib/credits";
 import { LinkedInSearchForm } from "@/components/search/linkedin-search-form";
 import { PageHeader } from "@/components/layout/page-header";
 
@@ -14,6 +14,7 @@ export default async function BuscaLinkedInPage() {
   if (!user) redirect("/login");
   const profile = await getProfile(supabase, user.id);
   if (!profile?.linkedin_visible) redirect("/");
+  const custos = await custosVisiveis(supabase, ["linkedin"]);
 
   return (
     <div className="flex flex-col gap-6">
@@ -22,7 +23,7 @@ export default async function BuscaLinkedInPage() {
         title="Busca por LinkedIn"
         description="Encontra pessoas e decisores por cargo e localização."
       />
-      <LinkedInSearchForm />
+      <LinkedInSearchForm custoPorResultado={custos.linkedin} />
     </div>
   );
 }

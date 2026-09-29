@@ -709,6 +709,25 @@ mas nada é processado — é só fila).
   contra race condition. Pacotes (`credit_packages`) são admin-editáveis
   em `/admin` (nome, quantidade, preço, ativo/inativo) — igual
   `credit_costs`, ajustar preço não exige deploy.
+- **Transparência de custo em créditos ANTES de buscar**: pedido explícito
+  do usuário ("não está sendo informado quantos créditos vão ser
+  gastos") — nenhum dos 4 formulários de busca avulsa mostrava o custo em
+  crédito em lugar nenhum antes de rodar a busca, só depois (no saldo que
+  caía). `CreditoEstimado` (`src/components/search/credito-estimado.tsx`)
+  é um indicador pequeno acima do botão de buscar — "Até N créditos
+  nesta busca (custo/resultado, cobrado só pelo que for encontrado)" —
+  recalculado ao vivo conforme o slider de limite (e, na busca por CNPJ,
+  também os toggles de verificação extra no Maps e enriquecimento
+  BigDataCorp, cada um somando seu próprio custo por unidade ao total).
+  Os números vêm de `credit_costs` via novo helper
+  `custosVisiveis()` (`src/lib/credits.ts`) — mesma tabela que já
+  alimentava o débito real, então o indicador nunca diverge do que é
+  cobrado de fato. Efeito colateral de auditar isso: achamos um texto
+  desatualizado no formulário de LinkedIn prometendo que "buscar e-mail"
+  custava 2,5x mais créditos — a rota nunca implementou essa cobrança
+  diferenciada (sempre cobrou a taxa plana), então o texto foi corrigido
+  pra não prometer algo que não acontece, em vez de inventar uma nova
+  camada de billing sem ser pedido.
 
 ## Estrutura
 
