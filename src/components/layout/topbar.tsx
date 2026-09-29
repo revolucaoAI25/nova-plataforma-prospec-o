@@ -5,6 +5,7 @@ import { LogOut, Coins } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { MobileNav } from "@/components/layout/mobile-nav";
+import { ThemeToggle } from "@/components/layout/theme-toggle";
 import type { Profile } from "@/lib/database.types";
 
 export function Topbar({ profile }: { profile: Profile }) {
@@ -41,6 +42,7 @@ export function Topbar({ profile }: { profile: Profile }) {
       <div className="flex items-center gap-3">
         {/* No desktop (md+) o e-mail já aparece no rodapé da sidebar — evita duplicar. */}
         <span className="hidden text-sm text-muted-foreground sm:inline md:hidden">{profile.email}</span>
+        <ThemeToggle />
         <Button variant="ghost" size="icon" onClick={handleLogout} title="Sair">
           <LogOut className="h-4 w-4" />
         </Button>

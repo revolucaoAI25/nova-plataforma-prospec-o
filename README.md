@@ -573,6 +573,39 @@ mas nada é processado — é só fila).
   pesquisa inteira, mesma granularidade do "puxar do histórico" já usado
   nos enriquecimentos) ou pelo nó de fluxo. Board com drag-and-drop nativo
   (HTML5 `draggable`, sem biblioteca nova).
+- **Modo claro + hierarquia de elevação** (`src/app/globals.css`): escuro
+  continua sendo o tema padrão/histórico — quem nunca clicou no toggle
+  não vê nada diferente. Claro é opt-in, construído do zero pra fundo
+  claro (não é um filtro de inversão) mas reaproveitando a mesma
+  identidade (verde da marca): acentos de estatística (`--info`/
+  `--violet`/`--amber`) usam o tom mais escuro da mesma família de cor no
+  claro (ex: `--amber: #b45309` em vez de `#f5a623`) só pra manter 4.5:1
+  de contraste em texto pequeno sobre branco — no escuro usam o tom mais
+  vívido, que funciona melhor sobre fundo escuro (`color-dark-mode` do
+  guia de design usado: tons dessaturados/claros no escuro, nunca cor
+  invertida). Troca é feita via atributo `data-theme` em `<html>`,
+  persistida em `localStorage` (chave `theme`) — um script inline
+  síncrone no `<head>` (`src/app/layout.tsx`) aplica o tema salvo ANTES
+  do 1º paint pra não piscar (FOUC); sem nada salvo, segue
+  `prefers-color-scheme` do sistema operacional via `@media` em
+  `globals.css`. Toggle (sol/lua) na Topbar
+  (`components/layout/theme-toggle.tsx`).
+  **Hierarquia**: o tema escuro tinha só 3 camadas de superfície muito
+  próximas em luminosidade (`bg`/`surface`/`surface-2` quase
+  indistinguíveis — card, página e input pareciam a mesma cor) — virou 4
+  camadas com separação real (`bg` → `surface` → `surface-2` →
+  `surface-3`, essa última pro nível mais alto: dropdown/popover/modal,
+  `--color-popover` agora aponta pra `surface-3` em vez de `surface`).
+  Também formalizada uma escala de sombra (`--elevation-sm/md/lg`,
+  theme-aware) que substitui os valores de `shadow-[...]` soltos que
+  existiam hardcoded dentro de componentes (`Card`, `Select`) — e como
+  Tailwind v4 permite sobrescrever a paleta de sombra padrão dentro de
+  `@theme`, as classes `shadow-sm`/`shadow-md`/`shadow-lg` do resto do
+  app já usam essa escala automaticamente, sem precisar tocar em cada
+  componente individualmente. Escopo deliberado desta rodada: os tokens
+  compartilhados (cor, sombra, elevação) e o componente `Card` — não uma
+  reescrita de cada tela; outras sombras ad hoc que sobraram (`button.tsx`,
+  `switch.tsx` etc.) ficam pra uma passada futura se fizer sentido.
 
 ## Estrutura
 
