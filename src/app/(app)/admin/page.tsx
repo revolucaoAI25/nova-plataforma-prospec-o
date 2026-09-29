@@ -3,9 +3,10 @@ import Link from "next/link";
 import { Send } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getProfile } from "@/lib/credits";
-import type { UserStatsRow } from "@/lib/database.types";
+import type { CreditCostRow, UserStatsRow } from "@/lib/database.types";
 import { AdminUsersTable } from "@/components/admin/admin-users-table";
 import { CreateUserForm } from "@/components/admin/create-user-form";
+import { CreditCostsPanel } from "@/components/admin/credit-costs-panel";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/layout/page-header";
 
@@ -23,6 +24,8 @@ export default async function AdminPage() {
 
   const { data } = await supabase.from("user_stats").select("*").order("created_at", { ascending: false });
   const users = (data as UserStatsRow[]) ?? [];
+  const { data: custosData } = await supabase.from("credit_costs").select("*").order("acao");
+  const custos = (custosData as CreditCostRow[]) ?? [];
 
   return (
     <div className="flex flex-col gap-6">
@@ -39,6 +42,7 @@ export default async function AdminPage() {
         }
       />
       <CreateUserForm />
+      <CreditCostsPanel custos={custos} />
       <AdminUsersTable users={users} currentUserId={user.id} />
     </div>
   );

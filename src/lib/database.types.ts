@@ -88,7 +88,26 @@ export interface Profile {
   google_client_secret: string | null;
   google_sheets_creds: GoogleSheetsCreds | null;
 
+  creditos: number;
+  monthly_creditos: number;
+
   created_at: string;
+  updated_at: string;
+}
+
+/** Chaves de `credit_costs.acao` — cada ação que consome o pool único de créditos. */
+export type AcaoCredito =
+  | "cnpj"
+  | "cnpj_maps_extra"
+  | "maps"
+  | "instagram"
+  | "linkedin"
+  | "bigdatacorp";
+
+export interface CreditCostRow {
+  acao: AcaoCredito;
+  custo: number;
+  descricao: string;
   updated_at: string;
 }
 
@@ -182,6 +201,8 @@ export interface UserStatsRow {
   email_disparo_habilitado: boolean;
   linkedin_disparo_habilitado: boolean;
   bigdatacorp_enrichment_habilitado: boolean;
+  creditos: number;
+  monthly_creditos: number;
 }
 
 export type EnrichmentRunStatus = "pendente" | "processando" | "concluido" | "erro";

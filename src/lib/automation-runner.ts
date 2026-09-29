@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { getProfile, debitarCreditos } from "@/lib/credits";
+import { getProfile, debitarCreditos, custoAcao } from "@/lib/credits";
 import { resolverChaveMaps, resolverChaveMapsOverflow, registrarUsoChaveMaps } from "@/lib/maps-key";
 import { resolverChaveApify, registrarUsoChaveApify } from "@/lib/apify-key";
 import { buscarCnpj, type BuscaTextual } from "@/lib/integrations/casa-dos-dados";
@@ -60,12 +60,13 @@ export async function executarAutomacao(sb: SupabaseClient, auto: AutomationRow)
 
   let limite = Number(filtros.limite ?? 50);
   if (auto.tipo === "cnpj") {
-    if (profile.cdd_credits < 1) {
+    const custoCnpj = await custoAcao(sb, "cnpj");
+    if (profile.creditos < custoCnpj) {
       await registrarExecucao(sb, auto.id, auto.user_id, "sem_creditos");
       await reagendar(sb, auto);
       return;
     }
-    limite = Math.min(limite, profile.cdd_credits);
+    limite = Math.min(limite, Math.floor(profile.creditos / custoCnpj));
   }
 
   const excludeTels = new Set<string>();
@@ -197,9 +198,9 @@ export async function executarAutomacao(sb: SupabaseClient, auto: AutomationRow)
   }
 
   if (auto.tipo === "cnpj" && total > 0) {
-    await debitarCreditos(sb, auto.user_id, "cdd_credits", total);
+    await debitarCreditos(sb, auto.user_id, "cnpj", total);
   } else if (auto.tipo === "maps" && profile.maps_credits_enabled && total > 0 && (!usouApify || apifyResolucaoUsada?.source === "pool")) {
-    await debitarCreditos(sb, auto.user_id, "maps_credits", total);
+    await debitarCreditos(sb, auto.user_id, "maps", total);
   }
 
   let sheetsStatus: "success" | "error" | "sem_sheets" = "success";

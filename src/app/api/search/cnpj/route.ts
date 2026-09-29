@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
-import { getProfile, debitarCreditos } from "@/lib/credits";
+import { getProfile, debitarCreditos, custoAcao } from "@/lib/credits";
 import { resolverChaveMaps, resolverChaveMapsOverflow, registrarUsoChaveMaps } from "@/lib/maps-key";
 import {
   buscarCnpj,
@@ -70,16 +70,18 @@ export async function POST(request: Request) {
   const profile = await getProfile(supabase, user.id);
   if (!profile) return NextResponse.json({ error: "Perfil não encontrado." }, { status: 404 });
 
-  const saldo = profile.cdd_credits;
-  if (saldo <= 0) {
-    return NextResponse.json({ error: "Você não tem créditos CNPJ disponíveis. Solicite mais ao administrador." }, { status: 402 });
+  const custoCnpj = await custoAcao(supabase, "cnpj");
+  const saldo = profile.creditos;
+  if (saldo < custoCnpj) {
+    return NextResponse.json({ error: "Você não tem créditos suficientes. Solicite mais ao administrador." }, { status: 402 });
   }
 
   let avisoSaldo: string | null = null;
   let limite = filtros.limite;
-  if (saldo < limite) {
-    avisoSaldo = `Você tem ${saldo} créditos — a busca considerou esse teto em vez dos ${limite} solicitados. Você só é cobrado pelos resultados que realmente vierem.`;
-    limite = saldo;
+  const limiteViaSaldo = Math.floor(saldo / custoCnpj);
+  if (limiteViaSaldo < limite) {
+    avisoSaldo = `Seu saldo dá pra ${limiteViaSaldo} resultado(s) desta busca — a busca considerou esse teto em vez dos ${limite} solicitados. Você só é cobrado pelos resultados que realmente vierem.`;
+    limite = limiteViaSaldo;
   }
 
   const cddApiKey = profile.cdd_api_key || profile.cdd_api_key_admin || process.env.CDD_API_KEY || "";
@@ -226,9 +228,9 @@ export async function POST(request: Request) {
     avisoHistorico = "Os resultados foram encontrados, mas não foi possível salvá-los no Histórico. Exporte agora antes de sair desta tela.";
   }
 
-  await debitarCreditos(supabase, user.id, "cdd_credits", resultados.length);
+  await debitarCreditos(supabase, user.id, "cnpj", resultados.length);
   if (mapsVerificados > 0 && profile.maps_credits_enabled) {
-    await debitarCreditos(supabase, user.id, "maps_credits", mapsVerificados);
+    await debitarCreditos(supabase, user.id, "cnpj_maps_extra", mapsVerificados);
   }
 
   const avisoSheets = await autoExportarSheetsSeConfigurado(supabase, user.id, searchId);

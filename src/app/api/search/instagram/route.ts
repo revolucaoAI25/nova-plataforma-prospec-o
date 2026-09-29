@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
-import { getProfile, debitarCreditos } from "@/lib/credits";
+import { getProfile, debitarCreditos, custoAcao } from "@/lib/credits";
 import { resolverChaveApify, registrarUsoChaveApify } from "@/lib/apify-key";
 import { buscarInstagram } from "@/lib/integrations/instagram";
 import { salvarPesquisa, salvarLeads, buscarInstagramIdsExistentes } from "@/lib/db";
@@ -35,10 +35,11 @@ export async function POST(request: Request) {
 
   const limite = filtros.limite;
   if (profile.instagram_credits_enabled) {
-    const saldo = profile.instagram_credits;
-    if (saldo < limite) {
+    const custo = await custoAcao(supabase, "instagram");
+    const saldo = profile.creditos;
+    if (saldo < limite * custo) {
       return NextResponse.json(
-        { error: `Créditos insuficientes. Você tem ${saldo} créditos Instagram e a busca requer ${limite}. Reduza o limite ou solicite mais créditos ao administrador.` },
+        { error: `Créditos insuficientes. Você tem ${saldo} créditos e essa busca pode custar até ${limite * custo}. Reduza o limite ou solicite mais créditos ao administrador.` },
         { status: 402 },
       );
     }
@@ -86,7 +87,7 @@ export async function POST(request: Request) {
   }
 
   if (profile.instagram_credits_enabled) {
-    await debitarCreditos(supabase, user.id, "instagram_credits", resultados.length);
+    await debitarCreditos(supabase, user.id, "instagram", resultados.length);
   }
   // Registra uso no pool Apify quando a chave usada veio do pool — sem
   // isso o rodízio nunca detectava uma chave como esgotada (mesma lógica

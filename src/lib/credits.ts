@@ -1,11 +1,16 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { ApiKeyPoolEntry, MapsKeyPoolEntry, Profile } from "@/lib/database.types";
+import type { AcaoCredito, ApiKeyPoolEntry, MapsKeyPoolEntry, Profile } from "@/lib/database.types";
 
 // Lógica de créditos e rodízio de chaves de API — portada de
 // modules/database.py do produto atual. Ver seção 5.5 do plano:
 // créditos são debitados pelo que foi ENCONTRADO, não pelo que foi
 // pedido; a pré-checagem reduz o limite pedido ao saldo disponível
 // em vez de bloquear a busca inteira.
+//
+// Pool único (`profiles.creditos`) desde a migration 0013 — cada ação tem
+// um peso em `credit_costs`, proporcional ao custo real de mercado (busca
+// LinkedIn custa ~12x mais que busca CNPJ, por exemplo), em vez da taxa
+// uniforme de 1 crédito/lead que o produto tinha antes disso.
 
 export async function getProfile(
   supabase: SupabaseClient,
@@ -15,15 +20,30 @@ export async function getProfile(
   return (data as Profile) ?? null;
 }
 
-/** Debita créditos atomicamente via RPC — evita race condition entre buscas concorrentes. */
+/** Custo em créditos de 1 unidade da ação (ex: 1 lead de LinkedIn) — cacheado em memória do processo, já que muda raramente e é lido em todo request de busca/enriquecimento. */
+const cacheCusto = new Map<AcaoCredito, { valor: number; expiraEm: number }>();
+const CACHE_TTL_MS = 60_000;
+
+export async function custoAcao(supabase: SupabaseClient, acao: AcaoCredito): Promise<number> {
+  const cached = cacheCusto.get(acao);
+  if (cached && cached.expiraEm > Date.now()) return cached.valor;
+
+  const { data } = await supabase.from("credit_costs").select("custo").eq("acao", acao).single();
+  const valor = data?.custo ?? 1;
+  cacheCusto.set(acao, { valor, expiraEm: Date.now() + CACHE_TTL_MS });
+  return valor;
+}
+
+/** Debita `quantidade` unidades de `acao` do pool único, atomicamente via RPC — evita race condition entre buscas concorrentes. */
 export async function debitarCreditos(
   supabase: SupabaseClient,
   userId: string,
-  campo: "cdd_credits" | "maps_credits" | "instagram_credits" | "linkedin_credits",
+  acao: AcaoCredito,
   quantidade: number,
 ): Promise<void> {
   if (quantidade <= 0) return;
-  await supabase.rpc("decrement_credits", { p_user_id: userId, p_campo: campo, p_delta: quantidade });
+  const custo = await custoAcao(supabase, acao);
+  await supabase.rpc("decrement_creditos", { p_user_id: userId, p_delta: quantidade * custo });
 }
 
 // Teto oculto de chamadas de Text Search por chave/mês — não é o limite

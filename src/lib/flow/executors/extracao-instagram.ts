@@ -1,4 +1,4 @@
-import { getProfile, debitarCreditos } from "@/lib/credits";
+import { getProfile, debitarCreditos, custoAcao } from "@/lib/credits";
 import { resolverChaveApify, registrarUsoChaveApify } from "@/lib/apify-key";
 import { buscarInstagram } from "@/lib/integrations/instagram";
 import { salvarPesquisa, salvarLeads, buscarInstagramIdsExistentes } from "@/lib/db";
@@ -18,8 +18,11 @@ export async function executarExtracaoInstagram(ctx: FlowExecutorContext): Promi
   const profile = await getProfile(sb, userId);
   if (!profile) return { status: "erro", erro: "Perfil não encontrado." };
   if (!profile.instagram_visible) return { status: "erro", erro: "A busca por Instagram não está habilitada para sua conta." };
-  if (profile.instagram_credits_enabled && profile.instagram_credits < limite) {
-    return { status: "erro", erro: `Créditos Instagram insuficientes (${profile.instagram_credits} disponíveis, ${limite} necessários).` };
+  if (profile.instagram_credits_enabled) {
+    const custo = await custoAcao(sb, "instagram");
+    if (profile.creditos < limite * custo) {
+      return { status: "erro", erro: `Créditos insuficientes (${profile.creditos} disponíveis, até ${limite * custo} necessários).` };
+    }
   }
 
   const resolucao = resolverChaveApify(profile);
@@ -52,7 +55,7 @@ export async function executarExtracaoInstagram(ctx: FlowExecutorContext): Promi
     filtros: config as Json,
   });
   if (searchId && total) await salvarLeads(sb, userId, searchId, resultados);
-  if (profile.instagram_credits_enabled) await debitarCreditos(sb, userId, "instagram_credits", total);
+  if (profile.instagram_credits_enabled) await debitarCreditos(sb, userId, "instagram", total);
   if (resolucao.source === "pool") await registrarUsoChaveApify(sb, userId, profile, resolucao, total);
 
   return {

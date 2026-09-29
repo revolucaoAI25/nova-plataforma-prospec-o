@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { consultarEmpresaBigDataCorp, bigDataCorpConfigurado } from "../src/lib/integrations/bigdatacorp";
+import { debitarCreditos } from "../src/lib/credits";
 
 /**
  * Processa execuções de Enriquecimento por CNPJ (BigDataCorp) pendentes —
@@ -68,6 +69,10 @@ export async function tickBigDataCorpEnrichment(sb: SupabaseClient, log: (msg: s
       processados += 1;
       if (resultado.encontrado) encontrados += 1;
       else naoEncontrados += 1;
+      // Cobrado na tentativa de consulta (achado ou não), não só quando
+      // encontra — a BigDataCorp cobra por chamada feita, não por match
+      // (diferente da busca de leads, cobrada pelo que foi encontrado).
+      await debitarCreditos(sb, run.user_id, "bigdatacorp", 1);
     } catch (e) {
       await sb.from("bigdatacorp_enrichment_leads").update({ status: "erro", erro: (e as Error).message }).eq("id", leadRow.id);
       processados += 1;

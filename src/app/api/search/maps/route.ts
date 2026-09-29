@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
-import { getProfile, debitarCreditos } from "@/lib/credits";
+import { getProfile, debitarCreditos, custoAcao } from "@/lib/credits";
 import { resolverChaveMaps, resolverChaveMapsOverflow, registrarUsoChaveMaps } from "@/lib/maps-key";
 import { resolverChaveApify, registrarUsoChaveApify } from "@/lib/apify-key";
 import { buscarMaps, QuotaExceededError, MapsAccessError, type Stats } from "@/lib/integrations/google-maps";
@@ -48,10 +48,11 @@ export async function POST(request: Request) {
   // do produto atual (app.py, `_maps_err` antes do `buscar_btn`).
   const limite = filtros.limite;
   if (profile.maps_credits_enabled) {
-    const saldo = profile.maps_credits;
-    if (saldo < limite) {
+    const custo = await custoAcao(supabase, "maps");
+    const saldo = profile.creditos;
+    if (saldo < limite * custo) {
       return NextResponse.json(
-        { error: `Créditos Maps insuficientes. Você tem ${saldo} créditos e a busca requer ${limite}. Solicite mais créditos ao administrador.` },
+        { error: `Créditos insuficientes. Você tem ${saldo} créditos e essa busca pode custar até ${limite * custo}. Solicite mais créditos ao administrador.` },
         { status: 402 },
       );
     }
@@ -184,7 +185,7 @@ export async function POST(request: Request) {
   // caso o custo é dele, não da plataforma). Mesma regra de app.py
   // (`_apify_platform_used`), que fica implícita aqui em `source === "pool"`.
   if (profile.maps_credits_enabled && resultados.length > 0 && (!usouApify || apifyResolucao.source === "pool")) {
-    await debitarCreditos(supabase, user.id, "maps_credits", resultados.length);
+    await debitarCreditos(supabase, user.id, "maps", resultados.length);
   }
 
   const avisoApify = usouApify ? "Cota do Google Maps esgotada — esta busca usou uma fonte alternativa." : null;

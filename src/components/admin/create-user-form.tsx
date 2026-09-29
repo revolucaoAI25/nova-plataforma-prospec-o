@@ -16,7 +16,7 @@ export function CreateUserForm() {
   const [open, setOpen] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [cddCredits, setCddCredits] = useState(0);
+  const [creditos, setCreditos] = useState(0);
   const [contaTeste, setContaTeste] = useState(false);
   const [testeExpiraEm, setTesteExpiraEm] = useState("");
   const [loading, setLoading] = useState(false);
@@ -29,7 +29,7 @@ export function CreateUserForm() {
     const resp = await fetch("/api/admin/users", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password, cddCredits, contaTeste, testeExpiraEm: testeExpiraEm || undefined }),
+      body: JSON.stringify({ email, password, creditos, contaTeste, testeExpiraEm: testeExpiraEm || undefined }),
     });
     const data = await resp.json();
     if (!resp.ok) {
@@ -39,7 +39,7 @@ export function CreateUserForm() {
     }
     setEmail("");
     setPassword("");
-    setCddCredits(0);
+    setCreditos(0);
     setContaTeste(false);
     setTesteExpiraEm("");
     setOpen(false);
@@ -73,8 +73,8 @@ export function CreateUserForm() {
               <Input id="new-password" type="text" required minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} className="w-48" />
             </div>
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="new-credits">Créditos CNPJ iniciais</Label>
-              <Input id="new-credits" type="number" min={0} value={cddCredits} onChange={(e) => setCddCredits(Number(e.target.value))} className="w-36" />
+              <Label htmlFor="new-credits">Créditos iniciais</Label>
+              <Input id="new-credits" type="number" min={0} value={creditos} onChange={(e) => setCreditos(Number(e.target.value))} className="w-36" />
             </div>
           </div>
 

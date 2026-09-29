@@ -98,7 +98,7 @@ export async function executarExtracaoMaps(ctx: FlowExecutorContext): Promise<Fl
   });
   if (searchId && total) await salvarLeads(sb, userId, searchId, resultados);
   if (profile.maps_credits_enabled && total > 0 && (!usouApify || resolucaoApify.source === "pool")) {
-    await debitarCreditos(sb, userId, "maps_credits", total);
+    await debitarCreditos(sb, userId, "maps", total);
   }
 
   return {

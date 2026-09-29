@@ -507,6 +507,33 @@ mas nada é processado — é só fila).
   seletor de pesquisas só lista as de fonte `cnpj` (é a única fonte que
   preenche `leads.cnpj`); no enriquecimento via IA lista qualquer fonte,
   filtrando client-side quem tem e-mail ou telefone.
+- **Pool único de créditos** (migration `0013_unified_credits.sql`):
+  substitui as 4 carteiras separadas (`cdd_credits`/`maps_credits`/
+  `instagram_credits`/`linkedin_credits`), que antes debitavam todas a 1
+  crédito por lead sem relação com o custo real de cada fornecedor por
+  trás. Agora é um saldo único (`profiles.creditos`) e cada ação tem um
+  peso em `credit_costs` (tabela, não hardcoded — admin edita em
+  `/admin`, sem precisar de deploy quando o preço de um fornecedor muda),
+  calculado com base no custo real de mercado levantado com o usuário: 1
+  crédito ≈ R$0,005 (Casa dos Dados, a fonte mais barata). Busca CNPJ = 1
+  crédito; verificação extra de Maps na busca CNPJ = +5; Maps avulso = 5;
+  Instagram = 1; LinkedIn = 12 (a Apify cobra ~$100/1000 páginas de busca
+  + $4-10/1000 perfis — de longe o canal mais caro); enriquecimento
+  BigDataCorp = 40 (consulta sempre os 3 datasets — cadastro, contato e
+  sócios/QSA — numa chamada só, não existe modo "só básico" mais barato
+  pra oferecer separado hoje). `debitarCreditos()` em `src/lib/credits.ts`
+  busca o custo da ação (cacheado 60s em memória do processo) e debita
+  `quantidade × custo` via a RPC `decrement_creditos`. As 4 colunas
+  antigas continuam na tabela como registro histórico — nada no código
+  novo lê ou escreve nelas. Ficaram fora do pool por decisão explícita do
+  usuário: **Resend** (disparo e-mail) — não é cobrado por lead aqui, a
+  ideia é um limite mensal de envios por conta/plano, não implementado
+  ainda; **Unipile** (disparo LinkedIn) — não escala por mensagem (é
+  assinatura fixa por conta conectada, ~€49/mês), não faz sentido
+  transformar em crédito por ação, pensado como módulo add-on separado;
+  **Evolution API** (WhatsApp não-oficial) — self-hosted, custo zero;
+  **OpenAI** (enriquecimento via IA) — BYOK, cada cliente usa a própria
+  chave.
 
 ## Estrutura
 

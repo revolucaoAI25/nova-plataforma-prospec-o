@@ -1,4 +1,4 @@
-import { getProfile, debitarCreditos } from "@/lib/credits";
+import { getProfile, debitarCreditos, custoAcao } from "@/lib/credits";
 import { resolverChaveApify, registrarUsoChaveApify } from "@/lib/apify-key";
 import { buscarLinkedIn } from "@/lib/integrations/linkedin";
 import { salvarPesquisa, salvarLeads, buscarLinkedInUrlsExistentes } from "@/lib/db";
@@ -19,8 +19,11 @@ export async function executarExtracaoLinkedin(ctx: FlowExecutorContext): Promis
   const profile = await getProfile(sb, userId);
   if (!profile) return { status: "erro", erro: "Perfil não encontrado." };
   if (!profile.linkedin_visible) return { status: "erro", erro: "A busca por LinkedIn não está habilitada para sua conta." };
-  if (profile.linkedin_credits_enabled && profile.linkedin_credits < limite) {
-    return { status: "erro", erro: `Créditos LinkedIn insuficientes (${profile.linkedin_credits} disponíveis, ${limite} necessários).` };
+  if (profile.linkedin_credits_enabled) {
+    const custo = await custoAcao(sb, "linkedin");
+    if (profile.creditos < limite * custo) {
+      return { status: "erro", erro: `Créditos insuficientes (${profile.creditos} disponíveis, até ${limite * custo} necessários).` };
+    }
   }
 
   const resolucao = resolverChaveApify(profile);
@@ -56,7 +59,7 @@ export async function executarExtracaoLinkedin(ctx: FlowExecutorContext): Promis
     filtros: config as Json,
   });
   if (searchId && total) await salvarLeads(sb, userId, searchId, resultados);
-  if (profile.linkedin_credits_enabled) await debitarCreditos(sb, userId, "linkedin_credits", total);
+  if (profile.linkedin_credits_enabled) await debitarCreditos(sb, userId, "linkedin", total);
   if (resolucao.source === "pool") await registrarUsoChaveApify(sb, userId, profile, resolucao, total);
 
   return {

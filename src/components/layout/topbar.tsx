@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { LogOut, Building2, MapPin } from "lucide-react";
+import { LogOut, Coins } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { MobileNav } from "@/components/layout/mobile-nav";
@@ -32,17 +32,10 @@ export function Topbar({ profile }: { profile: Profile }) {
         />
         <div className="flex items-center gap-2 text-sm">
           <div className="flex items-center gap-1.5 rounded-full border border-primary/20 bg-accent px-3 py-1">
-            <Building2 className="h-3.5 w-3.5 text-primary" />
-            <span className="font-semibold text-accent-foreground">{profile.cdd_credits}</span>
-            <span className="hidden text-muted-foreground sm:inline">créditos CNPJ</span>
+            <Coins className="h-3.5 w-3.5 text-primary" />
+            <span className="font-semibold text-accent-foreground">{profile.creditos}</span>
+            <span className="hidden text-muted-foreground sm:inline">créditos</span>
           </div>
-          {profile.maps_credits_enabled && (
-            <div className="flex items-center gap-1.5 rounded-full border border-primary/20 bg-accent px-3 py-1">
-              <MapPin className="h-3.5 w-3.5 text-primary" />
-              <span className="font-semibold text-accent-foreground">{profile.maps_credits}</span>
-              <span className="hidden text-muted-foreground sm:inline">créditos Maps</span>
-            </div>
-          )}
         </div>
       </div>
       <div className="flex items-center gap-3">

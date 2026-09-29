@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
-import { getProfile, debitarCreditos } from "@/lib/credits";
+import { getProfile, debitarCreditos, custoAcao } from "@/lib/credits";
 import { resolverChaveApify, registrarUsoChaveApify } from "@/lib/apify-key";
 import { buscarLinkedIn } from "@/lib/integrations/linkedin";
 import { salvarPesquisa, salvarLeads, buscarLinkedInUrlsExistentes } from "@/lib/db";
@@ -38,10 +38,11 @@ export async function POST(request: Request) {
 
   const limite = filtros.limite;
   if (profile.linkedin_credits_enabled) {
-    const saldo = profile.linkedin_credits;
-    if (saldo < limite) {
+    const custo = await custoAcao(supabase, "linkedin");
+    const saldo = profile.creditos;
+    if (saldo < limite * custo) {
       return NextResponse.json(
-        { error: `Créditos insuficientes. Você tem ${saldo} créditos LinkedIn e a busca requer ${limite}. Reduza o limite ou solicite mais créditos ao administrador.` },
+        { error: `Créditos insuficientes. Você tem ${saldo} créditos e essa busca pode custar até ${limite * custo} (busca LinkedIn é a mais cara por resultado). Reduza o limite ou solicite mais créditos ao administrador.` },
         { status: 402 },
       );
     }
@@ -92,7 +93,7 @@ export async function POST(request: Request) {
   }
 
   if (profile.linkedin_credits_enabled) {
-    await debitarCreditos(supabase, user.id, "linkedin_credits", resultados.length);
+    await debitarCreditos(supabase, user.id, "linkedin", resultados.length);
   }
   if (resolucao.source === "pool") {
     await registrarUsoChaveApify(supabase, user.id, profile, resolucao, resultados.length);

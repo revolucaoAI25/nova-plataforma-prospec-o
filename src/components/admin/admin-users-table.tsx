@@ -14,13 +14,10 @@ import type { UserStatsRow } from "@/lib/database.types";
 
 function UserRow({ user, isSelf }: { user: UserStatsRow; isSelf: boolean }) {
   const router = useRouter();
-  const [cddCredits, setCddCredits] = useState(user.cdd_credits);
-  const [monthlyCdd, setMonthlyCdd] = useState(user.monthly_cdd_credits);
-  const [mapsCredits, setMapsCredits] = useState(user.maps_credits);
+  const [creditos, setCreditos] = useState(user.creditos);
+  const [monthlyCreditos, setMonthlyCreditos] = useState(user.monthly_creditos);
   const [mapsEnabled, setMapsEnabled] = useState(user.maps_credits_enabled);
   const [instagramVisible, setInstagramVisible] = useState(user.instagram_visible);
-  const [linkedinCredits, setLinkedinCredits] = useState(user.linkedin_credits);
-  const [monthlyLinkedin, setMonthlyLinkedin] = useState(user.monthly_linkedin_credits);
   const [linkedinCreditsEnabled, setLinkedinCreditsEnabled] = useState(user.linkedin_credits_enabled);
   const [linkedinVisible, setLinkedinVisible] = useState(user.linkedin_visible);
   const [disparoHabilitado, setDisparoHabilitado] = useState(user.disparo_habilitado);
@@ -45,13 +42,10 @@ function UserRow({ user, isSelf }: { user: UserStatsRow; isSelf: boolean }) {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        cdd_credits: cddCredits,
-        monthly_cdd_credits: monthlyCdd,
-        maps_credits: mapsCredits,
+        creditos,
+        monthly_creditos: monthlyCreditos,
         maps_credits_enabled: mapsEnabled,
         instagram_visible: instagramVisible,
-        linkedin_credits: linkedinCredits,
-        monthly_linkedin_credits: monthlyLinkedin,
         linkedin_credits_enabled: linkedinCreditsEnabled,
         linkedin_visible: linkedinVisible,
         disparo_habilitado: disparoHabilitado,
@@ -85,25 +79,16 @@ function UserRow({ user, isSelf }: { user: UserStatsRow; isSelf: boolean }) {
         </Select>
       </TableCell>
       <TableCell>
-        <Input type="number" className="h-8 w-24" value={cddCredits} onChange={(e) => markDirty(setCddCredits)(Number(e.target.value))} />
+        <Input type="number" className="h-8 w-24" value={creditos} onChange={(e) => markDirty(setCreditos)(Number(e.target.value))} />
       </TableCell>
       <TableCell>
-        <Input type="number" className="h-8 w-24" value={monthlyCdd} onChange={(e) => markDirty(setMonthlyCdd)(Number(e.target.value))} />
-      </TableCell>
-      <TableCell>
-        <Input type="number" className="h-8 w-24" value={mapsCredits} onChange={(e) => markDirty(setMapsCredits)(Number(e.target.value))} />
+        <Input type="number" className="h-8 w-24" value={monthlyCreditos} onChange={(e) => markDirty(setMonthlyCreditos)(Number(e.target.value))} />
       </TableCell>
       <TableCell>
         <Switch checked={mapsEnabled} onCheckedChange={markDirty(setMapsEnabled)} />
       </TableCell>
       <TableCell>
         <Switch checked={instagramVisible} onCheckedChange={markDirty(setInstagramVisible)} />
-      </TableCell>
-      <TableCell>
-        <Input type="number" className="h-8 w-24" value={linkedinCredits} onChange={(e) => markDirty(setLinkedinCredits)(Number(e.target.value))} />
-      </TableCell>
-      <TableCell>
-        <Input type="number" className="h-8 w-24" value={monthlyLinkedin} onChange={(e) => markDirty(setMonthlyLinkedin)(Number(e.target.value))} />
       </TableCell>
       <TableCell>
         <Switch checked={linkedinCreditsEnabled} onCheckedChange={markDirty(setLinkedinCreditsEnabled)} />
@@ -155,13 +140,10 @@ export function AdminUsersTable({ users, currentUserId }: { users: UserStatsRow[
         <TableRow>
           <TableHead>E-mail</TableHead>
           <TableHead>Papel</TableHead>
-          <TableHead>Créditos CNPJ</TableHead>
+          <TableHead>Créditos</TableHead>
           <TableHead>Renovação mensal</TableHead>
-          <TableHead>Créditos Maps</TableHead>
           <TableHead>Debita Maps?</TableHead>
           <TableHead>Instagram</TableHead>
-          <TableHead>Créditos LinkedIn</TableHead>
-          <TableHead>Renovação mensal</TableHead>
           <TableHead>Debita LinkedIn?</TableHead>
           <TableHead>LinkedIn</TableHead>
           <TableHead>Disparo</TableHead>

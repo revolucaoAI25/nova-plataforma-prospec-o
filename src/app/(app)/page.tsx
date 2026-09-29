@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Building2, MapPin, AtSign, UserSearch, History, ArrowRight, Search, Users } from "lucide-react";
+import { Building2, MapPin, AtSign, UserSearch, History, ArrowRight, Search, Users, Coins } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getProfile } from "@/lib/credits";
 import { listarPesquisas, contarPesquisasELeads } from "@/lib/db";
@@ -39,13 +39,8 @@ export default async function DashboardPage() {
       </Reveal>
 
       <Reveal delay={60} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Créditos CNPJ" value={profile?.cdd_credits ?? 0} icon={Building2} tone="primary" />
-        <StatCard
-          label="Créditos Maps"
-          value={profile?.maps_credits_enabled ? profile.maps_credits : "Ilimitado"}
-          icon={MapPin}
-          tone="info"
-        />
+        <StatCard label="Créditos disponíveis" value={profile?.creditos ?? 0} icon={Coins} tone="primary" />
+        <StatCard label="Renovação mensal" value={profile?.monthly_creditos ?? 0} icon={Coins} tone="info" />
         <StatCard label="Pesquisas realizadas" value={totalPesquisas} icon={Search} tone="violet" />
         <StatCard label="Leads coletados" value={totalLeads} icon={Users} tone="amber" />
       </Reveal>
@@ -71,7 +66,7 @@ export default async function DashboardPage() {
             <CardContent>
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">
-                  Saldo: <strong className="text-foreground">{profile?.cdd_credits ?? 0}</strong> créditos
+                  Saldo: <strong className="text-foreground">{profile?.creditos ?? 0}</strong> créditos
                 </span>
                 <ArrowRight className="h-4 w-4 text-primary transition-transform group-hover:translate-x-1" />
               </div>
@@ -100,7 +95,7 @@ export default async function DashboardPage() {
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">
                   {profile?.maps_credits_enabled ? (
-                    <>Saldo: <strong className="text-foreground">{profile.maps_credits}</strong> créditos</>
+                    <>Saldo: <strong className="text-foreground">{profile.creditos}</strong> créditos</>
                   ) : (
                     "Sem cobrança de créditos"
                   )}

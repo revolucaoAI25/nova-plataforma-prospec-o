@@ -24,7 +24,7 @@ const createSchema = z.object({
   role: z.enum(["user", "admin"]).default("user"),
   contaTeste: z.boolean().default(false),
   testeExpiraEm: z.string().optional(),
-  cddCredits: z.number().int().min(0).default(0),
+  creditos: z.number().int().min(0).default(0),
 });
 
 export async function POST(request: Request) {
@@ -52,7 +52,7 @@ export async function POST(request: Request) {
 
   // O trigger handle_new_user já cria o perfil — garante que o role pedido
   // e os campos de conta de teste (se houver) sejam aplicados.
-  const patch: Record<string, unknown> = { role: parsed.data.role, cdd_credits: parsed.data.cddCredits };
+  const patch: Record<string, unknown> = { role: parsed.data.role, creditos: parsed.data.creditos };
   if (parsed.data.contaTeste) {
     patch.conta_teste = true;
     patch.teste_expira_em = parsed.data.testeExpiraEm ? new Date(parsed.data.testeExpiraEm).toISOString() : null;

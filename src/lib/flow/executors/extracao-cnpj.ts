@@ -1,4 +1,4 @@
-import { getProfile, debitarCreditos } from "@/lib/credits";
+import { getProfile, debitarCreditos, custoAcao } from "@/lib/credits";
 import { resolverChaveMaps, resolverChaveMapsOverflow, registrarUsoChaveMaps } from "@/lib/maps-key";
 import { buscarCnpj, removerDuplicadosLote, CasaDosDadosError, type BuscaTextual } from "@/lib/integrations/casa-dos-dados";
 import { enriquecerComMaps, QuotaExceededError, MapsAccessError } from "@/lib/integrations/google-maps";
@@ -32,7 +32,8 @@ export async function executarExtracaoCnpj(ctx: FlowExecutorContext): Promise<Fl
 
   const profile = await getProfile(sb, userId);
   if (!profile) return { status: "erro", erro: "Perfil não encontrado." };
-  if (profile.cdd_credits <= 0) return { status: "erro", erro: "Créditos de busca CNPJ insuficientes." };
+  const custoCnpj = await custoAcao(sb, "cnpj");
+  if (profile.creditos < custoCnpj) return { status: "erro", erro: "Créditos insuficientes." };
 
   const cddApiKey = profile.cdd_api_key || profile.cdd_api_key_admin || process.env.CDD_API_KEY || "";
   if (!cddApiKey) return { status: "erro", erro: "Nenhuma chave da Casa dos Dados configurada." };
@@ -52,7 +53,7 @@ export async function executarExtracaoCnpj(ctx: FlowExecutorContext): Promise<Fl
     excludeCnpjs = existentes.cnpjs;
   }
 
-  const limite = Math.min(Number(config.limite ?? 300), profile.cdd_credits);
+  const limite = Math.min(Number(config.limite ?? 300), Math.floor(profile.creditos / custoCnpj));
 
   let resultados;
   try {
@@ -141,9 +142,9 @@ export async function executarExtracaoCnpj(ctx: FlowExecutorContext): Promise<Fl
   });
   if (searchId && total) await salvarLeads(sb, userId, searchId, resultados);
 
-  await debitarCreditos(sb, userId, "cdd_credits", total);
+  await debitarCreditos(sb, userId, "cnpj", total);
   if (mapsVerificados > 0 && profile.maps_credits_enabled) {
-    await debitarCreditos(sb, userId, "maps_credits", mapsVerificados);
+    await debitarCreditos(sb, userId, "cnpj_maps_extra", mapsVerificados);
   }
 
   return {
