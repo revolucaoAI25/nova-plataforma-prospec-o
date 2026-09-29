@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import type { BadgeProps } from "@/components/ui/badge";
+import { useConfirm } from "@/components/ui/confirm-provider";
 import { extrairParametrosTemplate } from "@/lib/dispatch-template-shared";
 import type { MessageTemplateRow, WhatsappInstanceRow } from "@/lib/database.types";
 
@@ -31,6 +32,7 @@ export function TemplatesPanel({
   templatesIniciais: MessageTemplateRow[];
   instanciasOficiais: WhatsappInstanceRow[];
 }) {
+  const confirmar = useConfirm();
   const [templates, setTemplates] = useState(templatesIniciais);
   const [instanceId, setInstanceId] = useState(instanciasOficiais[0]?.id ?? "");
   const [nome, setNome] = useState("");
@@ -99,7 +101,7 @@ export function TemplatesPanel({
   }
 
   async function remover(id: string) {
-    if (!confirm("Remover este template?")) return;
+    if (!(await confirmar({ title: "Remover este template?", destructive: true }))) return;
     await fetch(`/api/dispatch/templates/${id}`, { method: "DELETE" });
     setTemplates((prev) => prev.filter((t) => t.id !== id));
   }

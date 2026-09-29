@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useConfirm } from "@/components/ui/confirm-provider";
 import { FunilCardView } from "@/components/funil/funil-card";
 import { AdicionarLeadsDialog } from "@/components/funil/adicionar-leads-dialog";
 import type { FunilColunaRow, FunilCardRow, AutomationFlowRow } from "@/lib/database.types";
@@ -31,6 +32,7 @@ interface Props {
 }
 
 export function FunilBoard({ funilId, colunasIniciais, cardsIniciais, flows }: Props) {
+  const confirmar = useConfirm();
   const [colunas, setColunas] = useState(colunasIniciais);
   const [cards, setCards] = useState(cardsIniciais);
   const [novaColuna, setNovaColuna] = useState("");
@@ -87,7 +89,7 @@ export function FunilBoard({ funilId, colunasIniciais, cardsIniciais, flows }: P
   }
 
   async function excluirColuna(colunaId: string) {
-    if (!confirm("Excluir esta coluna? Os cards dentro dela também serão apagados.")) return;
+    if (!(await confirmar({ title: "Excluir esta coluna?", description: "Os cards dentro dela também serão apagados.", destructive: true }))) return;
     const resp = await fetch(`/api/funis/${funilId}/colunas/${colunaId}`, { method: "DELETE" });
     if (!resp.ok) return mostrarAviso("Não foi possível excluir a coluna.");
     setColunas((prev) => prev.filter((c) => c.id !== colunaId));

@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useConfirm } from "@/components/ui/confirm-provider";
 import type { LinkedinAccountRow } from "@/lib/database.types";
 
 const STATUS_LABEL: Record<string, { label: string; variant: "success" | "secondary" | "destructive" }> = {
@@ -73,6 +74,7 @@ function ContaCard({ conta, onAtualizada, onRemover }: { conta: LinkedinAccountR
 }
 
 export function AccountsPanel({ contasIniciais }: { contasIniciais: LinkedinAccountRow[] }) {
+  const confirmar = useConfirm();
   const [contas, setContas] = useState(contasIniciais);
   const [nome, setNome] = useState("");
   const [creating, setCreating] = useState(false);
@@ -102,7 +104,7 @@ export function AccountsPanel({ contasIniciais }: { contasIniciais: LinkedinAcco
   }
 
   async function remover(id: string) {
-    if (!confirm("Remover esta conta?")) return;
+    if (!(await confirmar({ title: "Remover esta conta?", destructive: true }))) return;
     await fetch(`/api/linkedin-dispatch/accounts/${id}`, { method: "DELETE" });
     setContas((prev) => prev.filter((c) => c.id !== id));
   }

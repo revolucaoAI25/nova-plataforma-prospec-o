@@ -666,6 +666,26 @@ mas nada é processado — é só fila).
   dois cards de atalho do dashboard (CNPJ/Maps) ganharam o mesmo glow
   radial tonal que o `StatCard` já usava, intensificando no hover —
   reaproveita um padrão que já existia em vez de inventar um novo.
+- **Diálogo de confirmação em vez do `confirm()` nativo do navegador**:
+  auditoria de UX encontrou 17 pontos (excluir coluna do Funil, remover
+  instância/template/campanha/domínio/conta, desconectar Google Sheets,
+  apagar fluxo/pesquisa/execução etc.) usando `window.confirm()` — um
+  popup fora do tema, sem animação, que trava a thread principal.
+  `@radix-ui/react-dialog` já estava instalado mas nunca tinha sido
+  usado (nem `@radix-ui/react-toast`, ainda sem uso — próxima
+  oportunidade). Criado `src/components/ui/dialog.tsx` (wrapper temático,
+  mesma linguagem visual do resto da UI: `rounded-3xl`, elevação
+  `--elevation-lg`, animação própria `dialog-in` em vez do plugin
+  `tailwindcss-animate` — que este projeto não usa, reaproveitando o
+  vocabulário de keyframes já existente em `globals.css`) e
+  `ConfirmProvider`/`useConfirm()` (`src/components/ui/confirm-provider.tsx`):
+  um único provider no root layout resolve a promessa de qualquer
+  chamador, então cada callsite só trocou
+  `if (!confirm("..."))` por `if (!(await confirmar({ title: "...",
+  destructive: true })))`. Ação destrutiva ganha ícone de alerta e botão
+  vermelho; todas as 17 chamadas migradas.
+
+## Estrutura
 
 ```
 src/

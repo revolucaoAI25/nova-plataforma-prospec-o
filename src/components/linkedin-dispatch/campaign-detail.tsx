@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
+import { useConfirm } from "@/components/ui/confirm-provider";
 import type { BadgeProps } from "@/components/ui/badge";
 import type {
   LinkedinCadenceStepRow,
@@ -159,6 +160,7 @@ export function CampaignDetail({
   templates: LinkedinTemplateRow[];
 }) {
   const router = useRouter();
+  const confirmar = useConfirm();
   const [status, setStatus] = useState(campanha.status);
   const [etapas, setEtapas] = useState(etapasIniciais);
   const [stats, setStats] = useState(statsIniciais);
@@ -167,7 +169,7 @@ export function CampaignDetail({
   const [feedback, setFeedback] = useState<{ ok: boolean; msg: string } | null>(null);
 
   async function removerAlvo(targetId: string) {
-    if (!confirm("Remover este alvo? Ele para de receber contato desta e de qualquer outra campanha sua (opt-out).")) return;
+    if (!(await confirmar({ title: "Remover este alvo?", description: "Ele para de receber contato desta e de qualquer outra campanha sua (opt-out).", destructive: true }))) return;
     setRemovendoId(targetId);
     const resp = await fetch(`/api/linkedin-dispatch/campaigns/${campanha.id}/targets/${targetId}`, { method: "DELETE" });
     setRemovendoId(null);

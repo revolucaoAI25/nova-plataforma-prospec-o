@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useConfirm } from "@/components/ui/confirm-provider";
 import type { EmailDomainRow, EmailDomainStatus } from "@/lib/database.types";
 
 const STATUS_LABEL: Record<EmailDomainStatus, string> = {
@@ -30,6 +31,7 @@ function copiar(texto: string) {
 }
 
 export function DomainsPanel({ dominiosIniciais }: { dominiosIniciais: EmailDomainRow[] }) {
+  const confirmar = useConfirm();
   const [dominios, setDominios] = useState(dominiosIniciais);
   const [novoDominio, setNovoDominio] = useState("");
   const [creating, setCreating] = useState(false);
@@ -70,7 +72,7 @@ export function DomainsPanel({ dominiosIniciais }: { dominiosIniciais: EmailDoma
   }
 
   async function remover(id: string) {
-    if (!confirm("Remover este domínio? Remetentes que usam ele deixarão de poder enviar.")) return;
+    if (!(await confirmar({ title: "Remover este domínio?", description: "Remetentes que usam ele deixarão de poder enviar.", destructive: true }))) return;
     await fetch(`/api/email-dispatch/domains/${id}`, { method: "DELETE" });
     setDominios((prev) => prev.filter((d) => d.id !== id));
   }

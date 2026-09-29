@@ -8,17 +8,19 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
+import { useConfirm } from "@/components/ui/confirm-provider";
 import type { SearchRow } from "@/lib/database.types";
 
 const FONTE_LABEL: Record<string, string> = { cnpj: "CNPJ", google_maps: "Google Maps", instagram: "Instagram", linkedin: "LinkedIn" };
 
 export function HistoricoTable({ pesquisas }: { pesquisas: SearchRow[] }) {
   const router = useRouter();
+  const confirmar = useConfirm();
   const [removendo, setRemovendo] = useState<string | null>(null);
   const [lista, setLista] = useState(pesquisas);
 
   async function remover(id: string) {
-    if (!confirm("Remover esta pesquisa e todos os leads associados?")) return;
+    if (!(await confirmar({ title: "Remover esta pesquisa?", description: "Todos os leads associados também serão apagados.", destructive: true }))) return;
     setRemovendo(id);
     const resp = await fetch(`/api/historico/${id}`, { method: "DELETE" });
     if (resp.ok) {

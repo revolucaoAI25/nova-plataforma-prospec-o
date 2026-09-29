@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
+import { ConfirmProvider } from "@/components/ui/confirm-provider";
 import "./globals.css";
 
 const inter = Inter({
@@ -35,7 +36,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <script dangerouslySetInnerHTML={{ __html: NO_FOUC_THEME_SCRIPT }} />
       </head>
       <body className="min-h-full flex flex-col">
-        {children}
+        <ConfirmProvider>{children}</ConfirmProvider>
         <div className="bg-noise" aria-hidden="true" />
       </body>
     </html>

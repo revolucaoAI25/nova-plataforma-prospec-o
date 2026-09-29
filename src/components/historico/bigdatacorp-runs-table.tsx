@@ -8,6 +8,7 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
+import { useConfirm } from "@/components/ui/confirm-provider";
 import type { BigDataCorpEnrichmentRunRow } from "@/lib/database.types";
 
 const STATUS_LABEL: Record<string, { label: string; variant: "success" | "outline" | "destructive" }> = {
@@ -19,11 +20,12 @@ const STATUS_LABEL: Record<string, { label: string; variant: "success" | "outlin
 
 export function BigDataCorpRunsTable({ runs }: { runs: BigDataCorpEnrichmentRunRow[] }) {
   const router = useRouter();
+  const confirmar = useConfirm();
   const [removendo, setRemovendo] = useState<string | null>(null);
   const [lista, setLista] = useState(runs);
 
   async function remover(id: string) {
-    if (!confirm("Remover esta execução e todos os resultados associados?")) return;
+    if (!(await confirmar({ title: "Remover esta execução?", description: "Todos os resultados associados também serão apagados.", destructive: true }))) return;
     setRemovendo(id);
     const resp = await fetch(`/api/bigdatacorp-enrichment/${id}`, { method: "DELETE" });
     if (resp.ok) {

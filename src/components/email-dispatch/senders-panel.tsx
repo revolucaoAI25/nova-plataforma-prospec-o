@@ -10,9 +10,11 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useConfirm } from "@/components/ui/confirm-provider";
 import type { EmailSenderRow, EmailDomainRow } from "@/lib/database.types";
 
 export function SendersPanel({ sendersIniciais, dominiosVerificados }: { sendersIniciais: EmailSenderRow[]; dominiosVerificados: EmailDomainRow[] }) {
+  const confirmar = useConfirm();
   const [senders, setSenders] = useState(sendersIniciais);
   const [nome, setNome] = useState("");
   const [fromName, setFromName] = useState("");
@@ -55,7 +57,7 @@ export function SendersPanel({ sendersIniciais, dominiosVerificados }: { senders
   }
 
   async function remover(id: string) {
-    if (!confirm("Remover este remetente?")) return;
+    if (!(await confirmar({ title: "Remover este remetente?", destructive: true }))) return;
     await fetch(`/api/email-dispatch/senders/${id}`, { method: "DELETE" });
     setSenders((prev) => prev.filter((s) => s.id !== id));
   }

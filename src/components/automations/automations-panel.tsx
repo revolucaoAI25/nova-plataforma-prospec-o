@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { EmptyState } from "@/components/ui/empty-state";
+import { useConfirm } from "@/components/ui/confirm-provider";
 import type { AutomationRow, DispatchCampaignRow } from "@/lib/database.types";
 import { formatarDias, formatarHorarios, formatarProximaExecucao } from "@/lib/automation-logic";
 import { AutomationForm } from "@/components/automations/automation-form";
@@ -18,6 +19,7 @@ export function AutomationsPanel({
   automacoesIniciais: AutomationRow[];
   campanhas: DispatchCampaignRow[];
 }) {
+  const confirmar = useConfirm();
   const [automacoes, setAutomacoes] = useState(automacoesIniciais);
   const [showForm, setShowForm] = useState(false);
   const [runningId, setRunningId] = useState<string | null>(null);
@@ -39,7 +41,7 @@ export function AutomationsPanel({
   }
 
   async function remover(id: string) {
-    if (!confirm("Remover esta automação?")) return;
+    if (!(await confirmar({ title: "Remover esta automação?", destructive: true }))) return;
     await fetch(`/api/automations/${id}`, { method: "DELETE" });
     setAutomacoes((prev) => prev.filter((a) => a.id !== id));
   }

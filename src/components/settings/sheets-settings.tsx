@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { FieldGroup, FieldRow, FieldGroupLabel } from "@/components/ui/field-group";
+import { useConfirm } from "@/components/ui/confirm-provider";
 import type { Profile, SheetConfig } from "@/lib/database.types";
 
 export function SheetsSettings({
@@ -21,6 +22,7 @@ export function SheetsSettings({
   initialFeedback?: string | null;
   oauthConfigured: boolean;
 }) {
+  const confirmar = useConfirm();
   const conectado = Boolean(profile.google_sheets_creds?.oauth);
   const [planilhas, setPlanilhas] = useState<SheetConfig[]>(profile.google_sheets_creds?.planilhas || []);
   const [autoExport, setAutoExport] = useState(profile.google_sheets_creds?.auto_export || false);
@@ -86,7 +88,7 @@ export function SheetsSettings({
   }
 
   async function desconectar() {
-    if (!confirm("Desconectar sua conta Google? A configuração de planilhas será perdida.")) return;
+    if (!(await confirmar({ title: "Desconectar sua conta Google?", description: "A configuração de planilhas será perdida.", destructive: true }))) return;
     await fetch("/api/integrations/google-sheets/disconnect", { method: "POST" });
     window.location.reload();
   }

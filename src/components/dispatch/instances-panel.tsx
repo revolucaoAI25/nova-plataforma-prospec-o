@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useConfirm } from "@/components/ui/confirm-provider";
 import type { WhatsappInstanceRow } from "@/lib/database.types";
 
 const STATUS_LABEL: Record<string, { label: string; variant: "success" | "secondary" | "destructive" }> = {
@@ -55,6 +56,7 @@ function InstanceQr({ instanceId, onConnected }: { instanceId: string; onConnect
 }
 
 export function InstancesPanel({ instanciasIniciais }: { instanciasIniciais: WhatsappInstanceRow[] }) {
+  const confirmar = useConfirm();
   const [instancias, setInstancias] = useState(instanciasIniciais);
   const [nome, setNome] = useState("");
   const [limiteDiarioEnvios, setLimiteDiarioEnvios] = useState("");
@@ -90,7 +92,7 @@ export function InstancesPanel({ instanciasIniciais }: { instanciasIniciais: Wha
   }
 
   async function remover(id: string) {
-    if (!confirm("Remover esta instância?")) return;
+    if (!(await confirmar({ title: "Remover esta instância?", destructive: true }))) return;
     await fetch(`/api/dispatch/instances/${id}`, { method: "DELETE" });
     setInstancias((prev) => prev.filter((i) => i.id !== id));
   }

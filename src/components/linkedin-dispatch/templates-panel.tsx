@@ -9,9 +9,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useConfirm } from "@/components/ui/confirm-provider";
 import type { LinkedinTemplateRow } from "@/lib/database.types";
 
 export function TemplatesPanel({ templatesIniciais }: { templatesIniciais: LinkedinTemplateRow[] }) {
+  const confirmar = useConfirm();
   const [templates, setTemplates] = useState(templatesIniciais);
   const [nome, setNome] = useState("");
   const [corpo, setCorpo] = useState("");
@@ -42,7 +44,7 @@ export function TemplatesPanel({ templatesIniciais }: { templatesIniciais: Linke
   }
 
   async function remover(id: string) {
-    if (!confirm("Remover este template?")) return;
+    if (!(await confirmar({ title: "Remover este template?", destructive: true }))) return;
     await fetch(`/api/linkedin-dispatch/templates/${id}`, { method: "DELETE" });
     setTemplates((prev) => prev.filter((t) => t.id !== id));
   }

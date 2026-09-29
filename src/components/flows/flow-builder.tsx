@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useConfirm } from "@/components/ui/confirm-provider";
 import { FlowCanvas } from "./flow-canvas";
 import { FlowRunHistory } from "./flow-run-history";
 import type { VariavelEntrada } from "@/lib/flow/node-types";
@@ -25,6 +26,7 @@ export function FlowBuilder({
   templateInicial?: FlowTemplate;
 }) {
   const router = useRouter();
+  const confirmar = useConfirm();
   const [id, setId] = useState<string | null>(flowInicial?.id ?? null);
   const [nome, setNome] = useState(flowInicial?.nome ?? templateInicial?.nome ?? "Novo fluxo");
   const [ativo, setAtivo] = useState(flowInicial?.ativo ?? true);
@@ -102,7 +104,7 @@ export function FlowBuilder({
 
   async function remover() {
     if (!id) return;
-    if (!confirm(`Remover o fluxo "${nome}"? Essa ação não pode ser desfeita.`)) return;
+    if (!(await confirmar({ title: `Remover o fluxo "${nome}"?`, description: "Essa ação não pode ser desfeita.", destructive: true }))) return;
     await fetch(`/api/flows/${id}`, { method: "DELETE" });
     router.push("/automacoes");
   }
