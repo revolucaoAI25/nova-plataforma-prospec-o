@@ -705,7 +705,7 @@ export interface AutomationFlowRow {
   updated_at: string;
 }
 
-export type FlowRunStatus = "executando" | "aguardando_subprocesso" | "concluido" | "erro";
+export type FlowRunStatus = "executando" | "aguardando_subprocesso" | "aguardando_retry" | "concluido" | "erro";
 
 export interface FlowRunRow {
   id: string;
@@ -717,6 +717,9 @@ export interface FlowRunRow {
   iniciado_em: string;
   concluido_em: string | null;
   erro: string | null;
+  tentativas: number;
+  max_tentativas: number;
+  proxima_tentativa_em: string | null;
 }
 
 export type FlowRunStepStatus = "pendente" | "executando" | "concluido" | "erro" | "pulado";

@@ -606,6 +606,26 @@ mas nada é processado — é só fila).
   compartilhados (cor, sombra, elevação) e o componente `Card` — não uma
   reescrita de cada tela; outras sombras ad hoc que sobraram (`button.tsx`,
   `switch.tsx` etc.) ficam pra uma passada futura se fizer sentido.
+- **Retry automático + manual em `flow_runs`** (migration
+  `0016_flow_run_retry.sql`): antes, um erro em qualquer nó marcava a run
+  inteira como terminal — sem tentar de novo, mesmo pra falha claramente
+  passageira (timeout, fornecedor fora do ar por um instante). Agora: erro
+  → `status='aguardando_retry'` com backoff (2min, 10min, 30min — array
+  `RETRY_BACKOFF_MS` em `flow-engine.ts`) até `max_tentativas` (padrão 3),
+  **no mesmo nó e com o mesmo `contexto`** — não reinicia o fluxo do
+  zero, só reexecuta o nó que falhou (`avancarRun` já funciona assim
+  naturalmente, não precisou de um caminho separado: `avancarRuns` só
+  passou a também buscar runs `aguardando_retry` cujo
+  `proxima_tentativa_em` já passou). Esgotadas as tentativas automáticas,
+  a run fica terminal (`erro`) mas com um botão **"Tentar novamente"** na
+  UI (`FlowRunHistory`) que chama `POST
+  /api/flows/[id]/runs/[runId]/retry` → `reexecutarRun()`, resetando
+  `tentativas` pra 0 (novo orçamento de retry automático) e voltando pra
+  `executando` no mesmo ponto. Simplificação deliberada: não distingue
+  erro passageiro de permanente (ex: "chave não configurada" nunca vai se
+  resolver sozinho) — todo erro entra no mesmo ciclo; o custo é só
+  demorar até ~40min a mais pra reportar um erro que já era permanente,
+  contra recuperar automaticamente os que eram passageiros.
 
 ## Estrutura
 

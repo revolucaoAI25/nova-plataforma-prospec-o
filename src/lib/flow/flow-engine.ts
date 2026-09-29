@@ -260,9 +260,31 @@ async function upsertStep(
   }
 }
 
-async function marcarErro(sb: SupabaseClient, run: FlowRunRow, mensagem: string) {
+// Backoff entre tentativas — não distingue erro passageiro (timeout,
+// fornecedor fora do ar um instante) de permanente (chave não configurada,
+// fluxo apagado): todo erro entra nesse mesmo ciclo até `max_tentativas`
+// (padrão 3). Ver comentário de topo de 0016_flow_run_retry.sql pro porquê
+// dessa simplificação deliberada.
+const RETRY_BACKOFF_MS = [2 * 60_000, 10 * 60_000, 30 * 60_000];
+
+/** Erro num nó: agenda retry (mesmo nó, mesmo contexto) se ainda houver tentativas, senão marca a run como terminal. */
+async function tratarErro(sb: SupabaseClient, run: FlowRunRow, mensagem: string) {
+  const erro = String(mensagem).slice(0, 500);
+  const tentativas = run.tentativas + 1;
+
+  if (tentativas < run.max_tentativas) {
+    const delay = RETRY_BACKOFF_MS[Math.min(tentativas - 1, RETRY_BACKOFF_MS.length - 1)];
+    await sb.from("flow_runs").update({
+      status: "aguardando_retry",
+      tentativas,
+      erro,
+      proxima_tentativa_em: new Date(Date.now() + delay).toISOString(),
+    }).eq("id", run.id);
+    return;
+  }
+
   await sb.from("flow_runs").update({
-    status: "erro", erro: String(mensagem).slice(0, 500), concluido_em: new Date().toISOString(),
+    status: "erro", erro, tentativas, concluido_em: new Date().toISOString(),
   }).eq("id", run.id);
 }
 
@@ -274,13 +296,13 @@ async function avancarRun(sb: SupabaseClient, run: FlowRunRow, log: (m: string) 
 
   const { data: flowRow } = await sb.from("automation_flows").select("*").eq("id", run.flow_id).single();
   const flow = flowRow as AutomationFlowRow | null;
-  if (!flow) return marcarErro(sb, run, "Fluxo não encontrado (pode ter sido excluído).");
+  if (!flow) return tratarErro(sb, run, "Fluxo não encontrado (pode ter sido excluído).");
 
   const node = flow.nodes.find((n) => n.id === run.no_atual_id);
-  if (!node) return marcarErro(sb, run, "Nó não encontrado — o fluxo pode ter sido editado depois desta execução começar.");
+  if (!node) return tratarErro(sb, run, "Nó não encontrado — o fluxo pode ter sido editado depois desta execução começar.");
 
   const executor = FLOW_NODE_EXECUTORS[node.tipo];
-  if (!executor) return marcarErro(sb, run, `Tipo de nó sem executor: ${node.tipo}`);
+  if (!executor) return tratarErro(sb, run, `Tipo de nó sem executor: ${node.tipo}`);
 
   await upsertStep(sb, run.id, node, "executando");
 
@@ -301,7 +323,7 @@ async function avancarRun(sb: SupabaseClient, run: FlowRunRow, log: (m: string) 
 
   if (outcome.status === "erro") {
     await upsertStep(sb, run.id, node, "erro", { erro: outcome.erro, detalhe: outcome.detalhe });
-    await marcarErro(sb, run, outcome.erro);
+    await tratarErro(sb, run, outcome.erro);
     return;
   }
 
@@ -326,9 +348,34 @@ async function avancarRun(sb: SupabaseClient, run: FlowRunRow, log: (m: string) 
   }
 }
 
+/**
+ * Retry manual (botão "Tentar novamente" numa run com status 'erro') — só
+ * faz sentido numa run já terminal (as em `aguardando_retry` já estão no
+ * ciclo automático). Reseta `tentativas` pra 0 (novo orçamento de retry
+ * automático a partir daqui) e volta pra 'executando' no MESMO nó/contexto
+ * de quando falhou — o próximo tick do worker já reexecuta.
+ */
+export async function reexecutarRun(sb: SupabaseClient, runId: string): Promise<boolean> {
+  const { data, error } = await sb
+    .from("flow_runs")
+    .update({ status: "executando", tentativas: 0, erro: null, proxima_tentativa_em: null, concluido_em: null })
+    .eq("id", runId)
+    .eq("status", "erro")
+    .select("id")
+    .maybeSingle();
+  return !error && Boolean(data);
+}
+
 /** Avança cada `flow_runs` ativa em 1 nó. */
 export async function avancarRuns(sb: SupabaseClient, log: (m: string) => void): Promise<void> {
-  const { data } = await sb.from("flow_runs").select("*").in("status", ["executando", "aguardando_subprocesso"]);
+  const agora = new Date().toISOString();
+  // Pega as runs em andamento de sempre + as que estão esperando retry cujo
+  // horário já chegou — avancarRun() reexecuta o mesmo no_atual_id com o
+  // mesmo contexto, então isso É o retry (não precisa de um caminho à parte).
+  const { data } = await sb
+    .from("flow_runs")
+    .select("*")
+    .or(`status.in.(executando,aguardando_subprocesso),and(status.eq.aguardando_retry,proxima_tentativa_em.lte.${agora})`);
   const runs = (data as FlowRunRow[]) || [];
 
   for (const run of runs) {
@@ -336,7 +383,7 @@ export async function avancarRuns(sb: SupabaseClient, log: (m: string) => void):
       await avancarRun(sb, run, log);
     } catch (e) {
       log(`Run ${run.id}: erro fatal: ${(e as Error).message}`);
-      await marcarErro(sb, run, (e as Error).message);
+      await tratarErro(sb, run, (e as Error).message);
     }
   }
 }
