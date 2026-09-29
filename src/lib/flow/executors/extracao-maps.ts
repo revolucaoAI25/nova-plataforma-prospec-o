@@ -1,7 +1,5 @@
 import { getProfile, debitarCreditos } from "@/lib/credits";
-import { resolverChaveMaps, resolverChaveMapsOverflow, registrarUsoChaveMaps } from "@/lib/maps-key";
 import { resolverChaveApify, registrarUsoChaveApify } from "@/lib/apify-key";
-import { buscarMaps, QuotaExceededError } from "@/lib/integrations/google-maps";
 import { buscarApifyMaps } from "@/lib/integrations/apify-maps";
 import { salvarPesquisa, salvarLeads, buscarIdentificadoresExistentes } from "@/lib/db";
 import { NICHOS } from "@/lib/data/nichos";
@@ -42,12 +40,8 @@ export async function executarExtracaoMaps(ctx: FlowExecutorContext): Promise<Fl
 
   const { telefones } = apenasNovos ? await buscarIdentificadoresExistentes(sb, userId) : { telefones: new Set<string>() };
 
-  let resolucaoMaps = await resolverChaveMaps(profile);
   const resolucaoApify = resolverChaveApify(profile);
-  if ((resolucaoMaps.bloqueado || !resolucaoMaps.key) && !resolucaoApify.key) {
-    const overflow = await resolverChaveMapsOverflow(profile);
-    if (overflow.key) resolucaoMaps = overflow;
-  }
+  if (!resolucaoApify.key) return { status: "erro", erro: "Nenhuma chave Apify configurada." };
 
   const params = {
     queryBase, localidade: localidades, limite,
@@ -55,32 +49,13 @@ export async function executarExtracaoMaps(ctx: FlowExecutorContext): Promise<Fl
     excludePhones: telefones, showPhone, showRating,
   };
 
-  let resultados: Lead[] = [];
-  let usouApify = false;
+  let resultados: Lead[];
   try {
-    if (resolucaoMaps.key && !resolucaoMaps.bloqueado) {
-      const stats = { text_search_calls: 0, contact_data_calls: 0 };
-      try {
-        resultados = await buscarMaps({ ...params, apiKey: resolucaoMaps.key, stats });
-        await registrarUsoChaveMaps(sb, userId, profile, resolucaoMaps, resultados.length, stats.text_search_calls);
-      } catch (e) {
-        if (e instanceof QuotaExceededError && resolucaoApify.key) {
-          usouApify = true;
-          resultados = await buscarApifyMaps({ ...params, apiKey: resolucaoApify.key });
-        } else {
-          throw e;
-        }
-      }
-    } else if (resolucaoApify.key) {
-      usouApify = true;
-      resultados = await buscarApifyMaps({ ...params, apiKey: resolucaoApify.key });
-    } else {
-      return { status: "erro", erro: "Nenhuma chave Google Maps/Apify configurada." };
-    }
+    resultados = await buscarApifyMaps({ ...params, apiKey: resolucaoApify.key });
   } catch (e) {
     return { status: "erro", erro: (e as Error).message };
   }
-  if (usouApify && resolucaoApify.source === "pool") {
+  if (resolucaoApify.source === "pool") {
     await registrarUsoChaveApify(sb, userId, profile, resolucaoApify, resultados.length);
   }
 
@@ -97,14 +72,14 @@ export async function executarExtracaoMaps(ctx: FlowExecutorContext): Promise<Fl
     filtros: config as Json,
   });
   if (searchId && total) await salvarLeads(sb, userId, searchId, resultados);
-  if (profile.maps_credits_enabled && total > 0 && (!usouApify || resolucaoApify.source === "pool")) {
+  if (profile.maps_credits_enabled && total > 0) {
     await debitarCreditos(sb, userId, "maps", total);
   }
 
   return {
     status: "concluido",
     leadsSaida: total,
-    detalhe: { searchId: searchId || null, usouApify },
+    detalhe: { searchId: searchId || null },
     contextoPatch: { searchId: searchId || undefined, lote: resultados as unknown as Record<string, unknown>[] },
   };
 }

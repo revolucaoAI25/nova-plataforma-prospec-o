@@ -1,9 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getProfile, debitarCreditos, custoAcao } from "@/lib/credits";
-import { resolverChaveMaps, resolverChaveMapsOverflow, registrarUsoChaveMaps } from "@/lib/maps-key";
 import { resolverChaveApify, registrarUsoChaveApify } from "@/lib/apify-key";
 import { buscarCnpj, type BuscaTextual } from "@/lib/integrations/casa-dos-dados";
-import { buscarMaps, QuotaExceededError } from "@/lib/integrations/google-maps";
 import { buscarApifyMaps } from "@/lib/integrations/apify-maps";
 import { exportar as sheetsExportar } from "@/lib/integrations/google-sheets";
 import { salvarPesquisa, salvarLeads, buscarIdentificadoresExistentes, buscarLeadsDaPesquisa } from "@/lib/db";
@@ -78,17 +76,14 @@ export async function executarAutomacao(sb: SupabaseClient, auto: AutomationRow)
   }
 
   let resultados: Lead[] = [];
-  let usouApify = false;
-  let apifyResolucaoUsada: ReturnType<typeof resolverChaveApify> | null = null;
 
   try {
     if (auto.tipo === "maps") {
-      let resolucaoMaps = await resolverChaveMaps(profile);
       const resolucaoApify = resolverChaveApify(profile);
-      apifyResolucaoUsada = resolucaoApify;
-      if ((resolucaoMaps.bloqueado || !resolucaoMaps.key) && !resolucaoApify.key) {
-        const overflow = await resolverChaveMapsOverflow(profile);
-        if (overflow.key) resolucaoMaps = overflow;
+      if (!resolucaoApify.key) {
+        await registrarExecucao(sb, auto.id, auto.user_id, "error", 0, "Chave Apify não configurada");
+        await reagendar(sb, auto);
+        return;
       }
       const params = {
         queryBase: String(filtros.queryBase || ""),
@@ -103,34 +98,8 @@ export async function executarAutomacao(sb: SupabaseClient, auto: AutomationRow)
         showRating: filtros.showRating !== false,
       };
 
-      if (resolucaoMaps.key && !resolucaoMaps.bloqueado) {
-        const stats = { text_search_calls: 0, contact_data_calls: 0 };
-        try {
-          resultados = await buscarMaps({ ...params, apiKey: resolucaoMaps.key, stats });
-          // Contador visível sempre pelo total de resultados, igual ao
-          // produto atual (scheduler.py: `registrar_uso_maps(_pool_sched,
-          // _pool_idx, len(resultados))`, sem depender de showPhone).
-          await registrarUsoChaveMaps(sb, auto.user_id, profile, resolucaoMaps, resultados.length, stats.text_search_calls);
-        } catch (e) {
-          // Uso parcial NÃO é registrado quando cai no fallback Apify — mesmo
-          // comportamento do scheduler original (só grava uso no caminho
-          // 100% bem-sucedido só-Maps).
-          if (e instanceof QuotaExceededError && resolucaoApify.key) {
-            usouApify = true;
-            resultados = await buscarApifyMaps({ ...params, apiKey: resolucaoApify.key });
-          } else {
-            throw e;
-          }
-        }
-      } else if (resolucaoApify.key) {
-        usouApify = true;
-        resultados = await buscarApifyMaps({ ...params, apiKey: resolucaoApify.key });
-      } else {
-        await registrarExecucao(sb, auto.id, auto.user_id, "error", 0, "Chave Google Maps/Apify não configurada");
-        await reagendar(sb, auto);
-        return;
-      }
-      if (usouApify && resolucaoApify.source === "pool") {
+      resultados = await buscarApifyMaps({ ...params, apiKey: resolucaoApify.key });
+      if (resolucaoApify.source === "pool") {
         await registrarUsoChaveApify(sb, auto.user_id, profile, resolucaoApify, resultados.length);
       }
     } else {
@@ -199,7 +168,7 @@ export async function executarAutomacao(sb: SupabaseClient, auto: AutomationRow)
 
   if (auto.tipo === "cnpj" && total > 0) {
     await debitarCreditos(sb, auto.user_id, "cnpj", total);
-  } else if (auto.tipo === "maps" && profile.maps_credits_enabled && total > 0 && (!usouApify || apifyResolucaoUsada?.source === "pool")) {
+  } else if (auto.tipo === "maps" && profile.maps_credits_enabled && total > 0) {
     await debitarCreditos(sb, auto.user_id, "maps", total);
   }
 

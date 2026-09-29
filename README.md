@@ -534,6 +534,27 @@ mas nada é processado — é só fila).
   **Evolution API** (WhatsApp não-oficial) — self-hosted, custo zero;
   **OpenAI** (enriquecimento via IA) — BYOK, cada cliente usa a própria
   chave.
+- **Busca avulsa de Maps: só Apify, Google Maps API oficial removida**
+  (migration `0014_credit_costs_maps_apify.sql`, decisão explícita do
+  usuário — a API oficial do Google custa bem mais caro que o scraping via
+  Apify pro mesmo resultado). `/api/search/maps`, o executor
+  `extracao-maps.ts` e a automação antiga (`automation-runner.ts`, tipo
+  `maps`) agora chamam só `buscarApifyMaps` — removida a lógica de
+  Google-primário-com-fallback-Apify (`resolverChaveMaps`,
+  `resolverChaveMapsOverflow`, `buscarMaps`). O peso de `maps` em
+  `credit_costs` já estava calculado em cima do preço da Apify desde a
+  migration 0013, então não mudou. **Limitação real, não resolvida**: a
+  verificação de telefone/site via Maps embutida na busca por CNPJ
+  (`enriquecerComMaps`, checkbox de Maps na busca CNPJ) e o nó de fluxo
+  `enriquecimento_maps` continuam na API oficial do Google — eles fazem 1
+  lookup específico por lead dentro do ciclo de uma requisição HTTP
+  síncrona (até centenas de leads por busca), e o scraper da Apify roda
+  como job assíncrono (minutos por run), então não dá pra trocar sem
+  reconstruir esse fluxo como assíncrono (padrão de
+  `bigdatacorp-enrichment-tick.ts`) — não feito aqui. O peso de
+  `cnpj_maps_extra` estava calculado como se já fosse Apify (5 créditos)
+  e foi corrigido pro custo real da API oficial (~55 créditos/lead
+  verificado — Text Search + Place Details com telefone/site).
 
 ## Estrutura
 
