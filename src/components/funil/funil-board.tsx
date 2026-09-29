@@ -12,6 +12,17 @@ import type { FunilColunaRow, FunilCardRow, AutomationFlowRow } from "@/lib/data
 
 const SEM_FLUXO = "nenhum";
 
+// Paleta fixa pra identidade de cada coluna — funciona em claro e escuro
+// (saturação/luminosidade escolhidas pra não estourar em nenhum dos dois).
+// Coluna sem `cor` explícita (a maioria, hoje) recebe uma cor por rotação
+// de índice, então o board já nasce visualmente diferenciado sem esforço
+// do usuário; escolher uma cor no editor da coluna só fixa a escolha.
+const PALETA_CORES = ["#00c853", "#3b82f6", "#a855f7", "#f5a623", "#ec4899", "#06b6d4", "#f43f5e", "#64748b"];
+
+function corDaColuna(coluna: Pick<FunilColunaRow, "cor" | "id">, indice: number): string {
+  return coluna.cor || PALETA_CORES[indice % PALETA_CORES.length];
+}
+
 interface Props {
   funilId: string;
   colunasIniciais: FunilColunaRow[];
@@ -57,7 +68,7 @@ export function FunilBoard({ funilId, colunasIniciais, cardsIniciais, flows }: P
     setNovaColuna("");
   }
 
-  async function atualizarColuna(colunaId: string, campos: { nome?: string; fluxoId?: string | null }) {
+  async function atualizarColuna(colunaId: string, campos: { nome?: string; fluxoId?: string | null; cor?: string | null }) {
     const resp = await fetch(`/api/funis/${funilId}/colunas/${colunaId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -71,6 +82,7 @@ export function FunilBoard({ funilId, colunasIniciais, cardsIniciais, flows }: P
       ...c,
       nome: campos.nome ?? c.nome,
       fluxo_id: campos.fluxoId !== undefined ? campos.fluxoId : c.fluxo_id,
+      cor: campos.cor !== undefined ? campos.cor : c.cor,
     } : c)));
   }
 
@@ -140,10 +152,15 @@ export function FunilBoard({ funilId, colunasIniciais, cardsIniciais, flows }: P
       )}
 
       <div className="flex gap-4 overflow-x-auto pb-2">
-        {colunas.map((coluna) => (
-          <div key={coluna.id} className="flex w-72 shrink-0 flex-col gap-3 rounded-2xl border border-border bg-card p-3">
+        {colunas.map((coluna, indice) => {
+          const cor = corDaColuna(coluna, indice);
+          return (
+          <div key={coluna.id} className="flex w-72 shrink-0 flex-col overflow-hidden rounded-2xl border border-border bg-card">
+            <div className="h-1" style={{ background: cor }} aria-hidden />
+            <div className="flex flex-col gap-3 p-3">
             <div className="flex items-center justify-between gap-1">
               <div className="flex items-center gap-2 overflow-hidden">
+                <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: cor }} aria-hidden />
                 <span className="truncate text-sm font-semibold text-foreground">{coluna.nome}</span>
                 {coluna.fluxo_id && <Zap className="h-3.5 w-3.5 shrink-0 text-primary" />}
               </div>
@@ -191,6 +208,21 @@ export function FunilBoard({ funilId, colunasIniciais, cardsIniciais, flows }: P
                     </SelectContent>
                   </Select>
                 </div>
+                <div className="flex flex-col gap-1">
+                  <span className="text-xs text-muted-foreground">Cor da coluna</span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {PALETA_CORES.map((c) => (
+                      <button
+                        key={c}
+                        type="button"
+                        title="Usar esta cor"
+                        onClick={() => atualizarColuna(coluna.id, { cor: c })}
+                        className="h-6 w-6 shrink-0 rounded-full ring-offset-2 ring-offset-secondary transition-transform hover:scale-110"
+                        style={{ background: c, boxShadow: coluna.cor === c ? `0 0 0 2px var(--surface-2), 0 0 0 4px ${c}` : undefined }}
+                      />
+                    ))}
+                  </div>
+                </div>
                 <Button variant="destructive" size="sm" onClick={() => excluirColuna(coluna.id)}>
                   <Trash2 className="h-3.5 w-3.5" /> Excluir coluna
                 </Button>
@@ -210,13 +242,18 @@ export function FunilBoard({ funilId, colunasIniciais, cardsIniciais, flows }: P
                 <FunilCardView
                   key={card.id}
                   card={card}
+                  accentColor={cor}
+                  dragging={dragCardId === card.id}
                   onDragStart={() => setDragCardId(card.id)}
+                  onDragEnd={() => setDragCardId(null)}
                   onRemover={() => excluirCard(card.id)}
                 />
               ))}
             </div>
+            </div>
           </div>
-        ))}
+          );
+        })}
 
         <div className="flex w-72 shrink-0 flex-col gap-2 rounded-2xl border border-dashed border-border p-3">
           <Input

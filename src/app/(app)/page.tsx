@@ -50,7 +50,8 @@ export default async function DashboardPage() {
           href="/busca/cnpj"
           className="group rounded-3xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
         >
-          <Card interactive className="h-full">
+          <Card interactive className="relative h-full overflow-hidden">
+            <div aria-hidden className="pointer-events-none absolute -right-8 -top-10 h-32 w-32 rounded-full bg-primary opacity-[0.12] blur-2xl transition-opacity duration-300 group-hover:opacity-[0.2]" />
             <CardHeader>
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent text-primary">
@@ -78,7 +79,8 @@ export default async function DashboardPage() {
           href="/busca/maps"
           className="group rounded-3xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
         >
-          <Card interactive className="h-full">
+          <Card interactive className="relative h-full overflow-hidden">
+            <div aria-hidden className="pointer-events-none absolute -right-8 -top-10 h-32 w-32 rounded-full bg-info opacity-[0.12] blur-2xl transition-opacity duration-300 group-hover:opacity-[0.2]" />
             <CardHeader>
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-info-soft text-info">
@@ -130,28 +132,33 @@ export default async function DashboardPage() {
                 }
               />
             ) : (
-              <ul className="divide-y divide-border">
+              <ul className="flex flex-col gap-1">
                 {pesquisas.map((p) => {
                   const Icon = FONTE_ICON[p.fonte] ?? Building2;
                   return (
-                    <li key={p.id} className="flex items-center justify-between gap-4 py-3 text-sm">
-                      <div className="flex items-center gap-3 overflow-hidden">
-                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-accent text-primary">
-                          <Icon className="h-4 w-4" />
+                    <li key={p.id}>
+                      <Link
+                        href={`/historico/${p.id}`}
+                        className="group flex items-center justify-between gap-4 rounded-xl px-2.5 py-2.5 text-sm transition-colors hover:bg-accent/50"
+                      >
+                        <div className="flex items-center gap-3 overflow-hidden">
+                          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-accent text-primary transition-transform group-hover:scale-105">
+                            <Icon className="h-4 w-4" />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="truncate font-medium text-foreground group-hover:text-primary">
+                              {p.nicho || p.localidade || "Pesquisa"}
+                            </p>
+                            <p className="truncate text-muted-foreground">
+                              {p.localidade} · {new Date(p.created_at).toLocaleString("pt-BR")}
+                            </p>
+                          </div>
                         </div>
-                        <div className="min-w-0">
-                          <Link href={`/historico/${p.id}`} className="truncate font-medium hover:underline">
-                            {p.nicho || p.localidade || "Pesquisa"}
-                          </Link>
-                          <p className="truncate text-muted-foreground">
-                            {p.localidade} · {new Date(p.created_at).toLocaleString("pt-BR")}
-                          </p>
+                        <div className="flex shrink-0 items-center gap-2">
+                          <Badge variant="secondary">{p.total_results} leads</Badge>
+                          <Badge variant="outline">{FONTE_LABEL[p.fonte] ?? p.fonte}</Badge>
                         </div>
-                      </div>
-                      <div className="flex shrink-0 items-center gap-2">
-                        <Badge variant="secondary">{p.total_results} leads</Badge>
-                        <Badge variant="outline">{FONTE_LABEL[p.fonte] ?? p.fonte}</Badge>
-                      </div>
+                      </Link>
                     </li>
                   );
                 })}

@@ -2,6 +2,7 @@
 
 import { Building2, Phone, Mail, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import type { FunilCardRow } from "@/lib/database.types";
 
 function campo(snapshot: Record<string, unknown>, ...chaves: string[]): string {
@@ -14,11 +15,17 @@ function campo(snapshot: Record<string, unknown>, ...chaves: string[]): string {
 
 export function FunilCardView({
   card,
+  accentColor,
+  dragging = false,
   onDragStart,
+  onDragEnd,
   onRemover,
 }: {
   card: FunilCardRow;
+  accentColor?: string;
+  dragging?: boolean;
   onDragStart: () => void;
+  onDragEnd?: () => void;
   onRemover: () => void;
 }) {
   const snapshot = card.lead_snapshot || {};
@@ -31,10 +38,15 @@ export function FunilCardView({
     <div
       draggable
       onDragStart={onDragStart}
-      className="group flex cursor-grab flex-col gap-1.5 rounded-xl border border-border bg-secondary/60 p-3 text-sm transition-colors hover:border-border-strong active:cursor-grabbing"
+      onDragEnd={onDragEnd}
+      style={accentColor ? { borderLeftColor: accentColor } : undefined}
+      className={cn(
+        "group flex cursor-grab flex-col gap-1.5 rounded-xl border border-l-[3px] border-border bg-secondary/60 p-3 text-sm shadow-sm transition-all active:cursor-grabbing",
+        dragging ? "scale-[0.97] opacity-50" : "hover:-translate-y-0.5 hover:border-border-strong hover:shadow-md",
+      )}
     >
       <div className="flex items-start justify-between gap-2">
-        <span className="truncate font-medium text-foreground">{nome}</span>
+        <span className="truncate font-semibold text-foreground">{nome}</span>
         <Button
           variant="ghost"
           size="icon"

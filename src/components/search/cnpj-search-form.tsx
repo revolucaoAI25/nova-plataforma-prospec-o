@@ -13,6 +13,7 @@ import { FieldGroup, FieldRow, FieldGroupLabel } from "@/components/ui/field-gro
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { MultiSelect, type MultiSelectOption } from "@/components/search/multi-select";
+import { LimiteSlider } from "@/components/search/limite-slider";
 import { ResultsTable } from "@/components/search/results-table";
 import { ResultsSummary, buildGeneralMetrics } from "@/components/search/results-summary";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -360,10 +361,7 @@ export function CnpjSearchForm({ bigdatacorpDisponivel }: { bigdatacorpDisponive
               </>
             )}
             <hr className="divider-fade" />
-            <div className="flex max-w-xs flex-col gap-1.5">
-              <Label htmlFor="limite">Limite de resultados (até 2000)</Label>
-              <Input id="limite" type="number" min={1} max={2000} value={limite} onChange={(e) => setLimite(Number(e.target.value))} />
-            </div>
+            <LimiteSlider label="Limite de resultados" value={limite} onChange={setLimite} min={1} max={2000} step={10} />
               </TabsContent>
             </Tabs>
           </CardContent>

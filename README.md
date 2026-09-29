@@ -638,8 +638,34 @@ mas nada é processado — é só fila).
   direto). `POST /api/funis/[id]/cards` passou a aceitar `leads: [...]`
   além de `searchId` (schema `zod` com `.refine` garantindo exatamente um
   dos dois).
-
-## Estrutura
+- **Passada de profundidade visual — slider de resultados + cor de coluna
+  no Funil + tabelas/listas com mais nuance de hover**: depois do modo
+  claro (que tratou só os tokens compartilhados e o `Card`), esta rodada
+  ataca o "tudo parece a mesma caixinha cinza" em componentes específicos.
+  (1) `LimiteSlider` (`components/search/limite-slider.tsx`, sobre
+  `@radix-ui/react-slider`) substitui o `<input type="number">` de "Limite
+  de resultados" nos 4 formulários de busca avulsa (CNPJ, Maps, Instagram,
+  LinkedIn) por uma barra arrastável com o valor atual em destaque — pedido
+  explícito do usuário. (2) `funil_colunas.cor` existia no schema e na API
+  desde a migration 0015 mas nunca tinha sido exposta na UI — toda coluna
+  do Kanban era visualmente idêntica. Agora cada coluna tem uma tarja
+  colorida no topo, uma bolinha ao lado do nome e um seletor de 8 cores no
+  painel de edição; colunas sem cor explícita recebem uma por rotação de
+  índice (`corDaColuna()`), então o board já nasce diferenciado sem exigir
+  ação do usuário. Os cards de lead ganharam a mesma cor como borda
+  esquerda (amarra visualmente card → coluna), elevação/hover real (some
+  o "achatado", sobe 2px e ganha sombra) e um estado de arraste (opacidade
+  + leve encolhimento) que antes não existia. (3) `Table`: cabeçalho fica
+  `sticky` com leve blur, linhas pares ganham zebra sutil (`bg-secondary/20`)
+  e o hover passa a usar o verde da marca (`bg-accent/50`) em vez de cinza
+  genérico, pra diferenciar claramente "linha alternada" de "linha sob o
+  cursor". (4) Lista de "Últimas pesquisas" no dashboard: item inteiro virou
+  alvo de clique (antes só o título), com fundo e cor de destaque no hover
+  e o ícone da fonte crescendo sutilmente — mesma linguagem de
+  micro-interação já usada em outros componentes clicáveis do app. (5) Os
+  dois cards de atalho do dashboard (CNPJ/Maps) ganharam o mesmo glow
+  radial tonal que o `StatCard` já usava, intensificando no hover —
+  reaproveita um padrão que já existia em vez de inventar um novo.
 
 ```
 src/

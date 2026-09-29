@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { LinkedInResultsTable } from "@/components/search/linkedin-results-table";
 import { ResultsSummary, buildLinkedInMetrics } from "@/components/search/results-summary";
 import { MultiSelect } from "@/components/search/multi-select";
+import { LimiteSlider } from "@/components/search/limite-slider";
 import { LINKEDIN_INDUSTRIES } from "@/lib/data/linkedin-industries";
 import type { Lead } from "@/lib/types";
 
@@ -188,10 +189,7 @@ export function LinkedInSearchForm() {
                 control={<Switch checked={buscarEmail} onCheckedChange={setBuscarEmail} />}
               />
             </FieldGroup>
-            <div className="flex max-w-xs flex-col gap-1.5">
-              <Label htmlFor="limite">Limite de resultados</Label>
-              <Input id="limite" type="number" min={1} max={500} value={limite} onChange={(e) => setLimite(Number(e.target.value))} />
-            </div>
+            <LimiteSlider label="Limite de resultados" value={limite} onChange={setLimite} min={1} max={500} step={1} />
           </CardContent>
         </Card>
 

@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { FieldGroup, FieldRow } from "@/components/ui/field-group";
+import { LimiteSlider } from "@/components/search/limite-slider";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { InstagramResultsTable } from "@/components/search/instagram-results-table";
@@ -100,17 +101,7 @@ export function InstagramSearchForm() {
                 control={<Switch checked={apenasNovos} onCheckedChange={setApenasNovos} />}
               />
             </FieldGroup>
-            <div className="flex max-w-xs flex-col gap-1.5">
-              <Label htmlFor="limite">Limite de resultados</Label>
-              <Input
-                id="limite"
-                type="number"
-                min={LIMITE_MIN}
-                max={LIMITE_MAX}
-                value={limite}
-                onChange={(e) => setLimite(Number(e.target.value))}
-              />
-            </div>
+            <LimiteSlider label="Limite de resultados" value={limite} onChange={setLimite} min={LIMITE_MIN} max={LIMITE_MAX} step={10} />
           </CardContent>
         </Card>
 

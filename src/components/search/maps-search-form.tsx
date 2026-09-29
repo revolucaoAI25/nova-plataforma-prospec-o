@@ -12,6 +12,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { FieldGroup, FieldRow } from "@/components/ui/field-group";
 import { MultiSelect, type MultiSelectOption } from "@/components/search/multi-select";
+import { LimiteSlider } from "@/components/search/limite-slider";
 import { ResultsTable } from "@/components/search/results-table";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ResultsSummary, buildGeneralMetrics } from "@/components/search/results-summary";
@@ -214,10 +215,7 @@ export function MapsSearchForm() {
                 control={<Switch checked={apenasNovos} onCheckedChange={setApenasNovos} />}
               />
             </FieldGroup>
-            <div className="flex max-w-xs flex-col gap-1.5">
-              <Label htmlFor="limite">Limite de resultados</Label>
-              <Input id="limite" type="number" min={1} max={500} value={limite} onChange={(e) => setLimite(Number(e.target.value))} />
-            </div>
+            <LimiteSlider label="Limite de resultados" value={limite} onChange={setLimite} min={1} max={500} step={1} />
           </CardContent>
         </Card>
 
