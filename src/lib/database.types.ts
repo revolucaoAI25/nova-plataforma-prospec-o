@@ -168,6 +168,28 @@ export interface SubscriptionPaymentRow {
   criado_em: string;
 }
 
+/** Chave de configuração de plataforma administrável — ver src/lib/platform-settings.ts. */
+export type PlatformSettingKey =
+  | "resend_api_key"
+  | "unipile_dsn"
+  | "unipile_api_key"
+  | "unipile_webhook_secret"
+  | "bigdatacorp_token_id"
+  | "bigdatacorp_access_token"
+  | "asaas_api_key"
+  | "asaas_webhook_token"
+  | "google_client_id"
+  | "google_client_secret"
+  | "evolution_api_url"
+  | "evolution_api_key";
+
+export interface PlatformSettingRow {
+  chave: PlatformSettingKey;
+  valor: string | null;
+  atualizado_em: string;
+  atualizado_por: string | null;
+}
+
 export type SearchFonte = "cnpj" | "google_maps" | "instagram" | "linkedin";
 
 export interface SearchRow {

@@ -238,7 +238,7 @@ export async function POST(request: Request) {
   let bigdatacorpRunId: string | null = null;
   let avisoBigDataCorp: string | null = null;
   if (filtros.enriquecerBigDataCorp && resultados.length) {
-    if (!bigDataCorpConfigurado()) {
+    if (!(await bigDataCorpConfigurado())) {
       avisoBigDataCorp = "Enriquecimento por CNPJ (sócios/contato) não configurado nesta plataforma — etapa não rodou.";
     } else if (!(await perfilComBigDataCorpEnrichmentHabilitado(supabase, user.id))) {
       avisoBigDataCorp = "Enriquecimento por CNPJ (sócios/contato) não habilitado para sua conta — etapa não rodou.";

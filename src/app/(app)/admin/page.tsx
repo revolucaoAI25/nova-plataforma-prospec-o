@@ -2,13 +2,16 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Send } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { getProfile } from "@/lib/credits";
-import type { CreditCostRow, CreditPackageRow, PlanRow, UserStatsRow } from "@/lib/database.types";
+import { PLATFORM_SETTINGS_META } from "@/lib/platform-settings";
+import type { CreditCostRow, CreditPackageRow, PlanRow, PlatformSettingKey, UserStatsRow } from "@/lib/database.types";
 import { AdminUsersTable } from "@/components/admin/admin-users-table";
 import { CreateUserForm } from "@/components/admin/create-user-form";
 import { CreditCostsPanel } from "@/components/admin/credit-costs-panel";
 import { CreditPackagesPanel } from "@/components/admin/credit-packages-panel";
 import { PlansPanel } from "@/components/admin/plans-panel";
+import { PlatformSettingsPanel } from "@/components/admin/platform-settings-panel";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/layout/page-header";
 
@@ -33,6 +36,26 @@ export default async function AdminPage() {
   const { data: planosData } = await supabase.from("plans").select("*").order("ordem");
   const planos = (planosData as PlanRow[]) ?? [];
 
+  const admin = createAdminClient();
+  const { data: settingsData } = await admin.from("platform_settings").select("chave, valor, atualizado_em");
+  const settingsPorChave = new Map((settingsData ?? []).map((r) => [r.chave as PlatformSettingKey, r]));
+  const platformSettings = (Object.keys(PLATFORM_SETTINGS_META) as PlatformSettingKey[]).map((chave) => {
+    const meta = PLATFORM_SETTINGS_META[chave];
+    const linha = settingsPorChave.get(chave);
+    const valorDb = linha?.valor ?? null;
+    return {
+      chave,
+      grupo: meta.grupo,
+      label: meta.label,
+      secreto: meta.secreto,
+      envFallback: meta.envFallback,
+      preenchidaNoAdmin: Boolean(valorDb && valorDb.trim()),
+      preenchidaViaEnv: Boolean(process.env[meta.envFallback]),
+      valor: !meta.secreto ? valorDb : null,
+      atualizadoEm: linha?.atualizado_em ?? null,
+    };
+  });
+
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
@@ -48,6 +71,7 @@ export default async function AdminPage() {
         }
       />
       <CreateUserForm />
+      <PlatformSettingsPanel itensIniciais={platformSettings} />
       <CreditCostsPanel custos={custos} />
       <PlansPanel planosIniciais={planos} />
       <CreditPackagesPanel pacotesIniciais={pacotes} />

@@ -15,7 +15,7 @@ import { webhookSegredoValido } from "@/lib/integrations/unipile";
 // consultadas — tenta os campos mais prováveis de forma defensiva.
 
 export async function POST(request: Request) {
-  if (!webhookSegredoValido(request)) return NextResponse.json({ error: "Não autorizado." }, { status: 401 });
+  if (!(await webhookSegredoValido(request))) return NextResponse.json({ error: "Não autorizado." }, { status: 401 });
 
   const sb = createAdminClient();
   const body = await request.json().catch(() => null);

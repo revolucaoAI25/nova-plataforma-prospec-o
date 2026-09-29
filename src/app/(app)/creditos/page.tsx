@@ -22,10 +22,11 @@ export default async function CreditosPage() {
   const profile = await getProfile(supabase, user.id);
   if (!profile) redirect("/login");
 
-  const [pacotes, compras, planos] = await Promise.all([
+  const [pacotes, compras, planos, configurado] = await Promise.all([
     listarPacotesAtivos(supabase),
     listarComprasDoUsuario(supabase, user.id),
     listarPlanosAtivos(supabase),
+    asaasConfigurado(),
   ]);
 
   return (
@@ -52,11 +53,11 @@ export default async function CreditosPage() {
             planoAtualId={profile.plano_id}
             statusAtual={profile.assinatura_status}
             temCpfCnpj={Boolean(profile.cpf_cnpj)}
-            configurado={asaasConfigurado()}
+            configurado={configurado}
           />
         </TabsContent>
         <TabsContent value="avulso" className="flex flex-col gap-6">
-          <PacotesGrid pacotes={pacotes} temCpfCnpj={Boolean(profile.cpf_cnpj)} configurado={asaasConfigurado()} />
+          <PacotesGrid pacotes={pacotes} temCpfCnpj={Boolean(profile.cpf_cnpj)} configurado={configurado} />
           <HistoricoCompras comprasIniciais={compras} />
         </TabsContent>
       </Tabs>

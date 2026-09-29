@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { marcarCompraPaga } from "@/lib/credit-purchases-db";
 import { processarPagamentoAssinatura, marcarAssinaturaInadimplente } from "@/lib/subscriptions-db";
+import { configPlataforma } from "@/lib/platform-settings";
 
 // Rota PÚBLICA (sem auth de usuário) — recebida pelo Asaas quando o
 // status de uma cobrança muda. Configurada manualmente no dashboard do
@@ -21,7 +22,7 @@ import { processarPagamentoAssinatura, marcarAssinaturaInadimplente } from "@/li
 const EVENTOS_PAGO = new Set(["PAYMENT_CONFIRMED", "PAYMENT_RECEIVED"]);
 
 export async function POST(request: Request) {
-  const tokenEsperado = process.env.ASAAS_WEBHOOK_TOKEN;
+  const tokenEsperado = await configPlataforma("asaas_webhook_token", process.env.ASAAS_WEBHOOK_TOKEN);
   if (tokenEsperado) {
     const tokenRecebido = request.headers.get("asaas-access-token");
     if (tokenRecebido !== tokenEsperado) {

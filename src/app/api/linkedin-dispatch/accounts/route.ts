@@ -25,7 +25,7 @@ export async function POST(request: Request) {
   if (!(await perfilComLinkedinDisparoHabilitado(supabase, user.id))) {
     return NextResponse.json({ error: "Disparo por LinkedIn não habilitado para sua conta." }, { status: 403 });
   }
-  if (!unipileConfigurado()) {
+  if (!(await unipileConfigurado())) {
     return NextResponse.json({ error: "Disparo por LinkedIn não configurado nesta plataforma." }, { status: 501 });
   }
 

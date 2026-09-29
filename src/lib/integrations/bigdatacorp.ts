@@ -5,10 +5,13 @@
 // mesma chamada (cada dataset pedido em `Datasets` é cobrado
 // separadamente pela BigDataCorp, mas dentro de uma única requisição).
 //
-// Configuração necessária: BIGDATACORP_TOKEN_ID, BIGDATACORP_ACCESS_TOKEN
-// — chave ÚNICA da plataforma por enquanto (custo absorvido pela
-// plataforma, não por usuário — diferente do enriquecimento via IA, que
-// usa a chave OpenAI de cada usuário).
+// Configuração: cadastrada em /admin (platform_settings:
+// bigdatacorp_token_id, bigdatacorp_access_token) ou, na ausência,
+// BIGDATACORP_TOKEN_ID/BIGDATACORP_ACCESS_TOKEN do ambiente — ver
+// src/lib/platform-settings.ts. Chave ÚNICA da plataforma por enquanto
+// (custo absorvido pela plataforma, não por usuário — diferente do
+// enriquecimento via IA, que usa a chave OpenAI de cada usuário).
+import { configPlataforma } from "@/lib/platform-settings";
 //
 // Ressalva (mesmo espírito de evolution-api.ts/resend.ts/unipile.ts):
 // `basic_data` e `registration_data` (e-mail/telefone/endereço da empresa)
@@ -28,16 +31,20 @@ function baseUrl(): string {
   return "https://plataforma.bigdatacorp.com.br";
 }
 
-function headers(): Record<string, string> {
-  return {
-    AccessToken: process.env.BIGDATACORP_ACCESS_TOKEN || "",
-    TokenId: process.env.BIGDATACORP_TOKEN_ID || "",
-    "Content-Type": "application/json",
-  };
+async function headers(): Promise<Record<string, string>> {
+  const [accessToken, tokenId] = await Promise.all([
+    configPlataforma("bigdatacorp_access_token", process.env.BIGDATACORP_ACCESS_TOKEN),
+    configPlataforma("bigdatacorp_token_id", process.env.BIGDATACORP_TOKEN_ID),
+  ]);
+  return { AccessToken: accessToken, TokenId: tokenId, "Content-Type": "application/json" };
 }
 
-export function bigDataCorpConfigurado(): boolean {
-  return Boolean(process.env.BIGDATACORP_ACCESS_TOKEN && process.env.BIGDATACORP_TOKEN_ID);
+export async function bigDataCorpConfigurado(): Promise<boolean> {
+  const [accessToken, tokenId] = await Promise.all([
+    configPlataforma("bigdatacorp_access_token", process.env.BIGDATACORP_ACCESS_TOKEN),
+    configPlataforma("bigdatacorp_token_id", process.env.BIGDATACORP_TOKEN_ID),
+  ]);
+  return Boolean(accessToken && tokenId);
 }
 
 export interface BigDataCorpSocio {
@@ -116,7 +123,7 @@ export async function consultarEmpresaBigDataCorp(cnpj: string): Promise<BigData
   const doc = apenasDigitos(cnpj);
   const resp = await fetch(`${baseUrl()}/empresas`, {
     method: "POST",
-    headers: headers(),
+    headers: await headers(),
     body: JSON.stringify({ Datasets: DATASETS, q: `doc{${doc}}`, Limit: 1 }),
   });
   if (!resp.ok) throw new Error(`BigDataCorp HTTP ${resp.status}: ${(await resp.text()).slice(0, 300)}`);

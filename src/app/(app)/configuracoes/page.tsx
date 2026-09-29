@@ -23,6 +23,7 @@ export default async function ConfiguracoesPage({
   } = await supabase.auth.getUser();
   const profile = user ? await getProfile(supabase, user.id) : null;
   const podeUsarIa = Boolean(profile && (profile.enriquecimento_ia_habilitado || profile.role === "admin"));
+  const sheetsOauthConfigurado = await oauthDisponivel();
 
   return (
     <div className="flex flex-col gap-6">
@@ -42,7 +43,7 @@ export default async function ConfiguracoesPage({
             <ApifySettings profile={profile} />
           </TabsContent>
           <TabsContent value="sheets">
-            <SheetsSettings profile={profile} initialFeedback={sheets} oauthConfigured={oauthDisponivel()} />
+            <SheetsSettings profile={profile} initialFeedback={sheets} oauthConfigured={sheetsOauthConfigurado} />
           </TabsContent>
           {podeUsarIa && (
             <TabsContent value="openai">

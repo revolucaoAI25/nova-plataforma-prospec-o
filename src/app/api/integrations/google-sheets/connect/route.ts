@@ -14,14 +14,14 @@ export async function GET() {
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.redirect(new URL("/login", process.env.NEXT_PUBLIC_APP_URL));
 
-  if (!oauthDisponivel()) {
+  if (!(await oauthDisponivel())) {
     const settingsUrl = new URL("/configuracoes", process.env.NEXT_PUBLIC_APP_URL);
     settingsUrl.searchParams.set("sheets", "nao_configurado");
     return NextResponse.redirect(settingsUrl);
   }
 
   const state = randomBytes(24).toString("hex");
-  const url = gerarUrlAuth(redirectUri(), state);
+  const url = await gerarUrlAuth(redirectUri(), state);
 
   const resp = NextResponse.redirect(url);
   resp.cookies.set("gs_oauth_state", state, { httpOnly: true, secure: true, maxAge: 600, path: "/" });

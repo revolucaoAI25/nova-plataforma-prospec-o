@@ -11,7 +11,7 @@ export default async function BuscaCnpjPage() {
   const { data: { user } } = await supabase.auth.getUser();
   const profile = user ? await getProfile(supabase, user.id) : null;
   const bigdatacorpDisponivel = Boolean(
-    bigDataCorpConfigurado() && profile && (profile.bigdatacorp_enrichment_habilitado || profile.role === "admin"),
+    (await bigDataCorpConfigurado()) && profile && (profile.bigdatacorp_enrichment_habilitado || profile.role === "admin"),
   );
   const custos = await custosVisiveis(supabase, ["cnpj", "cnpj_maps_extra", "bigdatacorp"]);
 

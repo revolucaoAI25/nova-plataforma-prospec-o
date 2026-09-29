@@ -3,31 +3,39 @@
 // usuário (conta já existente lá, PIX/boleto/cartão nativos, taxas boas
 // pro público brasileiro).
 //
-// Auth: header `access_token: <ASAAS_API_KEY>` (chave única da
-// plataforma). A base URL é resolvida pelo PREFIXO da própria chave —
-// chaves de sandbox começam com `$aact_hmlg_`, produção com
-// `$aact_prod_` — evitando uma variável de ambiente extra só pra isso.
+// Auth: header `access_token: <chave>` (chave única da plataforma,
+// cadastrada em /admin — platform_settings: asaas_api_key — ou, na
+// ausência, ASAAS_API_KEY do ambiente; ver src/lib/platform-settings.ts).
+// A base URL é resolvida pelo PREFIXO da própria chave — chaves de
+// sandbox começam com `$aact_hmlg_`, produção com `$aact_prod_` —
+// evitando uma variável extra só pra isso.
 //
 // Ressalva: nenhum endpoint abaixo teve schema de resposta 100%
 // confirmado contra o servidor real (baseado na documentação oficial,
 // docs.asaas.com) — mesma ressalva que resend.ts/evolution-api.ts já
 // carregam.
+import { configPlataforma } from "@/lib/platform-settings";
 
-function baseUrl(): string {
-  const chave = process.env.ASAAS_API_KEY || "";
+async function chaveApi(): Promise<string> {
+  return configPlataforma("asaas_api_key", process.env.ASAAS_API_KEY);
+}
+
+async function baseUrl(): Promise<string> {
+  const chave = await chaveApi();
   return chave.startsWith("$aact_prod_") ? "https://api.asaas.com/v3" : "https://api-sandbox.asaas.com/v3";
 }
 
-export function asaasConfigurado(): boolean {
-  return Boolean(process.env.ASAAS_API_KEY);
+export async function asaasConfigurado(): Promise<boolean> {
+  return Boolean(await chaveApi());
 }
 
 async function req<T>(path: string, init?: RequestInit): Promise<T> {
-  const resp = await fetch(`${baseUrl()}${path}`, {
+  const [url, chave] = await Promise.all([baseUrl(), chaveApi()]);
+  const resp = await fetch(`${url}${path}`, {
     ...init,
     headers: {
       "Content-Type": "application/json",
-      access_token: process.env.ASAAS_API_KEY || "",
+      access_token: chave,
       "User-Agent": "RevolucaoAI-ProspeccaoAtiva",
       ...init?.headers,
     },

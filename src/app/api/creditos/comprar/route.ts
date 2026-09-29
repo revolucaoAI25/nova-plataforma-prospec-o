@@ -13,7 +13,7 @@ const bodySchema = z.object({
 });
 
 export async function POST(request: Request) {
-  if (!asaasConfigurado()) {
+  if (!(await asaasConfigurado())) {
     return NextResponse.json({ error: "Compra de créditos ainda não está configurada." }, { status: 503 });
   }
 

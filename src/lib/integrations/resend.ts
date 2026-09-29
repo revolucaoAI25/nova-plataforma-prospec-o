@@ -5,26 +5,30 @@
 // um dashboard por cliente; é o padrão que a própria Resend documenta pra
 // plataformas multiusuário).
 //
-// Configuração necessária: RESEND_API_KEY. Cada usuário verifica o
-// PRÓPRIO domínio pela nossa UI (`/disparo-email` → Domínios), que chama
+// Configuração: chave cadastrada em /admin (platform_settings, chave
+// resend_api_key) ou, na ausência dela, RESEND_API_KEY do ambiente — ver
+// src/lib/platform-settings.ts. Cada usuário verifica o PRÓPRIO domínio
+// pela nossa UI (`/disparo-email` → Domínios), que chama
 // `criarDominioResend()`/`verificarDominioResend()` abaixo — ver
 // `email-dispatch-db.ts::criarDominioEmail()` pro fluxo completo,
 // inclusive a reconciliação com domínios já existentes na conta.
+import { configPlataforma } from "@/lib/platform-settings";
 
 function baseUrl(): string {
   return "https://api.resend.com";
 }
 
-function headers(): Record<string, string> {
-  return { Authorization: `Bearer ${process.env.RESEND_API_KEY || ""}`, "Content-Type": "application/json" };
+async function headers(): Promise<Record<string, string>> {
+  const chave = await configPlataforma("resend_api_key", process.env.RESEND_API_KEY);
+  return { Authorization: `Bearer ${chave}`, "Content-Type": "application/json" };
 }
 
-export function resendConfigurado(): boolean {
-  return Boolean(process.env.RESEND_API_KEY);
+export async function resendConfigurado(): Promise<boolean> {
+  return Boolean(await configPlataforma("resend_api_key", process.env.RESEND_API_KEY));
 }
 
 async function req(path: string, init?: RequestInit) {
-  const resp = await fetch(`${baseUrl()}${path}`, { ...init, headers: headers() });
+  const resp = await fetch(`${baseUrl()}${path}`, { ...init, headers: await headers() });
   if (!resp.ok) throw new Error(`Resend HTTP ${resp.status}: ${(await resp.text()).slice(0, 300)}`);
   return resp.json();
 }

@@ -1,0 +1,65 @@
+import { createAdminClient } from "@/lib/supabase/admin";
+import type { PlatformSettingKey } from "@/lib/database.types";
+
+// Resolve chaves de API de plataforma administradas em /admin (tabela
+// platform_settings), com fallback pra variável de ambiente — permite
+// migrar gradualmente sem quebrar quem ainda só tem a env var no Railway
+// configurada, e sem exigir que TODO serviço seja recadastrado no painel
+// no dia em que isto for pro ar. Mesmo espírito de cache do custoAcao em
+// credits.ts: lido em quase todo request de integração, muda raramente.
+const cache = new Map<PlatformSettingKey, string | null>();
+let carregadoEm = 0;
+const CACHE_TTL_MS = 30_000;
+
+async function carregarConfiguracoes(): Promise<Map<PlatformSettingKey, string | null>> {
+  const agora = Date.now();
+  if (carregadoEm && agora - carregadoEm < CACHE_TTL_MS) return cache;
+
+  const admin = createAdminClient();
+  const { data } = await admin.from("platform_settings").select("chave, valor");
+  cache.clear();
+  for (const row of data ?? []) {
+    cache.set(row.chave as PlatformSettingKey, row.valor);
+  }
+  carregadoEm = agora;
+  return cache;
+}
+
+/**
+ * Valor de uma configuração de plataforma: prioriza o que o admin
+ * cadastrou em /admin (tabela platform_settings), cai pra env var do
+ * Railway se não houver linha ou o valor estiver vazio.
+ */
+export async function configPlataforma(
+  chave: PlatformSettingKey,
+  envFallback?: string,
+): Promise<string> {
+  const mapa = await carregarConfiguracoes();
+  const valorDb = mapa.get(chave);
+  return (valorDb && valorDb.trim()) || envFallback || "";
+}
+
+/** Chama depois de um PATCH em /api/admin/platform-settings pra não servir valor velho pelos próximos 30s de cache. */
+export function invalidarCachePlatformSettings() {
+  carregadoEm = 0;
+  cache.clear();
+}
+
+/** Rótulo e descrição de cada chave, pra a UI de admin — env var de fallback documentada por chave. */
+export const PLATFORM_SETTINGS_META: Record<
+  PlatformSettingKey,
+  { grupo: string; label: string; envFallback: string; secreto: boolean }
+> = {
+  resend_api_key: { grupo: "Resend (e-mail)", label: "API Key", envFallback: "RESEND_API_KEY", secreto: true },
+  unipile_dsn: { grupo: "Unipile (LinkedIn)", label: "DSN (URL do tenant)", envFallback: "UNIPILE_DSN", secreto: false },
+  unipile_api_key: { grupo: "Unipile (LinkedIn)", label: "API Key", envFallback: "UNIPILE_API_KEY", secreto: true },
+  unipile_webhook_secret: { grupo: "Unipile (LinkedIn)", label: "Segredo do webhook", envFallback: "UNIPILE_WEBHOOK_SECRET", secreto: true },
+  bigdatacorp_token_id: { grupo: "BigDataCorp (enriquecimento)", label: "Token ID", envFallback: "BIGDATACORP_TOKEN_ID", secreto: true },
+  bigdatacorp_access_token: { grupo: "BigDataCorp (enriquecimento)", label: "Access Token", envFallback: "BIGDATACORP_ACCESS_TOKEN", secreto: true },
+  asaas_api_key: { grupo: "Asaas (pagamentos)", label: "API Key", envFallback: "ASAAS_API_KEY", secreto: true },
+  asaas_webhook_token: { grupo: "Asaas (pagamentos)", label: "Token do webhook", envFallback: "ASAAS_WEBHOOK_TOKEN", secreto: true },
+  google_client_id: { grupo: "Google Sheets (OAuth)", label: "Client ID", envFallback: "GOOGLE_CLIENT_ID", secreto: false },
+  google_client_secret: { grupo: "Google Sheets (OAuth)", label: "Client Secret", envFallback: "GOOGLE_CLIENT_SECRET", secreto: true },
+  evolution_api_url: { grupo: "Evolution API (WhatsApp)", label: "URL base", envFallback: "EVOLUTION_API_URL", secreto: false },
+  evolution_api_key: { grupo: "Evolution API (WhatsApp)", label: "API Key", envFallback: "EVOLUTION_API_KEY", secreto: true },
+};

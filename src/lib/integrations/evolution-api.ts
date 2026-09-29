@@ -2,22 +2,32 @@
 // self-hosted). Auth: header `apikey` (chave global da instância do
 // servidor). Portado de modules/evolution_api.py.
 //
-// Configuração necessária: EVOLUTION_API_URL, EVOLUTION_API_KEY.
+// Configuração: cadastrada em /admin (platform_settings:
+// evolution_api_url, evolution_api_key) ou, na ausência,
+// EVOLUTION_API_URL/EVOLUTION_API_KEY do ambiente — ver
+// src/lib/platform-settings.ts.
+import { configPlataforma } from "@/lib/platform-settings";
 
-function baseUrl(): string {
-  return (process.env.EVOLUTION_API_URL || "").replace(/\/$/, "");
+async function baseUrl(): Promise<string> {
+  const url = await configPlataforma("evolution_api_url", process.env.EVOLUTION_API_URL);
+  return url.replace(/\/$/, "");
 }
 
-function headers(): Record<string, string> {
-  return { apikey: process.env.EVOLUTION_API_KEY || "", "Content-Type": "application/json" };
+async function headers(): Promise<Record<string, string>> {
+  const chave = await configPlataforma("evolution_api_key", process.env.EVOLUTION_API_KEY);
+  return { apikey: chave, "Content-Type": "application/json" };
 }
 
-export function evolutionConfigurado(): boolean {
-  return Boolean(process.env.EVOLUTION_API_URL && process.env.EVOLUTION_API_KEY);
+export async function evolutionConfigurado(): Promise<boolean> {
+  const [url, chave] = await Promise.all([
+    configPlataforma("evolution_api_url", process.env.EVOLUTION_API_URL),
+    configPlataforma("evolution_api_key", process.env.EVOLUTION_API_KEY),
+  ]);
+  return Boolean(url && chave);
 }
 
 async function req(path: string, init?: RequestInit) {
-  const resp = await fetch(`${baseUrl()}${path}`, { ...init, headers: headers() });
+  const resp = await fetch(`${await baseUrl()}${path}`, { ...init, headers: await headers() });
   if (!resp.ok) throw new Error(`Evolution API HTTP ${resp.status}: ${(await resp.text()).slice(0, 300)}`);
   return resp.json();
 }
@@ -66,16 +76,16 @@ export async function statusENumero(nomeInstancia: string): Promise<{ estado: st
 }
 
 export async function desconectarInstancia(nomeInstancia: string) {
-  await fetch(`${baseUrl()}/instance/logout/${encodeURIComponent(nomeInstancia)}`, {
+  await fetch(`${await baseUrl()}/instance/logout/${encodeURIComponent(nomeInstancia)}`, {
     method: "DELETE",
-    headers: headers(),
+    headers: await headers(),
   });
 }
 
 export async function excluirInstancia(nomeInstancia: string) {
-  await fetch(`${baseUrl()}/instance/delete/${encodeURIComponent(nomeInstancia)}`, {
+  await fetch(`${await baseUrl()}/instance/delete/${encodeURIComponent(nomeInstancia)}`, {
     method: "DELETE",
-    headers: headers(),
+    headers: await headers(),
   });
 }
 

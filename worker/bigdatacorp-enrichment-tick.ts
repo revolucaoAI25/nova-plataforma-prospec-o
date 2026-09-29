@@ -31,7 +31,7 @@ export async function tickBigDataCorpEnrichment(sb: SupabaseClient, log: (msg: s
 
   log(`Execução BigDataCorp ${run.id}: iniciando (${run.total} CNPJ(s))`);
 
-  if (!bigDataCorpConfigurado()) {
+  if (!(await bigDataCorpConfigurado())) {
     await sb
       .from("bigdatacorp_enrichment_runs")
       .update({ status: "erro", erro: "Integração com a BigDataCorp não configurada.", concluido_em: new Date().toISOString() })

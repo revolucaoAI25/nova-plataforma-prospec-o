@@ -21,6 +21,7 @@ export default async function EnriquecimentoPage() {
   const podeIa = Boolean(profile && (profile.enriquecimento_ia_habilitado || profile.role === "admin"));
   const podeBigDataCorp = Boolean(profile && (profile.bigdatacorp_enrichment_habilitado || profile.role === "admin"));
   if (!profile || (!podeIa && !podeBigDataCorp)) redirect("/");
+  const bigDataCorpDisponivel = await bigDataCorpConfigurado();
 
   return (
     <div className="flex flex-col gap-6">
@@ -39,13 +40,13 @@ export default async function EnriquecimentoPage() {
             <EnrichmentPanel openaiKeyConfigurada={Boolean(profile.openai_api_key)} />
           </TabsContent>
           <TabsContent value="bigdatacorp">
-            <BigDataCorpEnrichmentPanel configurado={bigDataCorpConfigurado()} />
+            <BigDataCorpEnrichmentPanel configurado={bigDataCorpDisponivel} />
           </TabsContent>
         </Tabs>
       ) : podeIa ? (
         <EnrichmentPanel openaiKeyConfigurada={Boolean(profile.openai_api_key)} />
       ) : (
-        <BigDataCorpEnrichmentPanel configurado={bigDataCorpConfigurado()} />
+        <BigDataCorpEnrichmentPanel configurado={bigDataCorpDisponivel} />
       )}
     </div>
   );

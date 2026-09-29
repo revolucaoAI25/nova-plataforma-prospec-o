@@ -26,7 +26,7 @@ const bodySchema = z.object({
 });
 
 export async function POST(request: Request) {
-  if (!asaasConfigurado()) {
+  if (!(await asaasConfigurado())) {
     return NextResponse.json({ error: "Assinatura de plano ainda não está configurada." }, { status: 503 });
   }
 

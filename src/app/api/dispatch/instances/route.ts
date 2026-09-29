@@ -25,7 +25,7 @@ export async function POST(request: Request) {
   if (!(await perfilComDisparoHabilitado(supabase, user.id))) {
     return NextResponse.json({ error: "Disparo não habilitado para sua conta." }, { status: 403 });
   }
-  if (!evolutionConfigurado()) {
+  if (!(await evolutionConfigurado())) {
     return NextResponse.json({ error: "Disparo por WhatsApp não configurado nesta plataforma." }, { status: 501 });
   }
 

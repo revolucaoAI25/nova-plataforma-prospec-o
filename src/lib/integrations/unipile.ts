@@ -2,9 +2,11 @@
 // por LinkedIn (pedido de conexão e mensagem), via uma conta LinkedIn real
 // conectada pelo usuário. Auth: header `X-API-KEY: <UNIPILE_API_KEY>`.
 //
-// Configuração necessária: UNIPILE_DSN (URL base específica do tenant,
-// dada pela Unipile no cadastro — ex: https://apiXXX.unipile.com:XXX) e
-// UNIPILE_API_KEY.
+// Configuração: cadastrada em /admin (platform_settings: unipile_dsn,
+// unipile_api_key, unipile_webhook_secret) ou, na ausência, as env vars
+// UNIPILE_DSN/UNIPILE_API_KEY/UNIPILE_WEBHOOK_SECRET — ver
+// src/lib/platform-settings.ts. DSN é a URL base específica do tenant,
+// dada pela Unipile no cadastro (ex: https://apiXXX.unipile.com:XXX).
 //
 // Ressalva geral (mesmo espírito de evolution-api.ts/resend.ts): os
 // schemas exatos de resposta abaixo foram lidos da documentação pública
@@ -14,25 +16,33 @@
 // são documentados como `multipart/form-data`; os demais endpoints não
 // especificam content-type explicitamente, então usamos JSON (padrão REST)
 // pra eles.
+import { configPlataforma } from "@/lib/platform-settings";
 
-function baseUrl(): string {
-  return (process.env.UNIPILE_DSN || "").replace(/\/$/, "");
+async function baseUrl(): Promise<string> {
+  const dsn = await configPlataforma("unipile_dsn", process.env.UNIPILE_DSN);
+  return dsn.replace(/\/$/, "");
 }
 
-function headersJson(): Record<string, string> {
-  return { "X-API-KEY": process.env.UNIPILE_API_KEY || "", "Content-Type": "application/json" };
+async function headersJson(): Promise<Record<string, string>> {
+  const chave = await configPlataforma("unipile_api_key", process.env.UNIPILE_API_KEY);
+  return { "X-API-KEY": chave, "Content-Type": "application/json" };
 }
 
-function headersForm(): Record<string, string> {
-  return { "X-API-KEY": process.env.UNIPILE_API_KEY || "" };
+async function headersForm(): Promise<Record<string, string>> {
+  const chave = await configPlataforma("unipile_api_key", process.env.UNIPILE_API_KEY);
+  return { "X-API-KEY": chave };
 }
 
-export function unipileConfigurado(): boolean {
-  return Boolean(process.env.UNIPILE_DSN && process.env.UNIPILE_API_KEY);
+export async function unipileConfigurado(): Promise<boolean> {
+  const [dsn, chave] = await Promise.all([
+    configPlataforma("unipile_dsn", process.env.UNIPILE_DSN),
+    configPlataforma("unipile_api_key", process.env.UNIPILE_API_KEY),
+  ]);
+  return Boolean(dsn && chave);
 }
 
 async function req(path: string, init?: RequestInit) {
-  const resp = await fetch(`${baseUrl()}/api/v1${path}`, init);
+  const resp = await fetch(`${await baseUrl()}/api/v1${path}`, init);
   if (!resp.ok) throw new Error(`Unipile HTTP ${resp.status}: ${(await resp.text()).slice(0, 300)}`);
   const texto = await resp.text();
   return texto ? JSON.parse(texto) : {};
@@ -51,9 +61,9 @@ export async function criarLinkHostedAuth(params: {
   const expiresOn = new Date(Date.now() + 30 * 60_000).toISOString();
   return req("/hosted/accounts/link", {
     method: "POST",
-    headers: headersJson(),
+    headers: await headersJson(),
     body: JSON.stringify({
-      type: params.tipo, providers: ["LINKEDIN"], api_url: baseUrl(), expiresOn,
+      type: params.tipo, providers: ["LINKEDIN"], api_url: await baseUrl(), expiresOn,
       name: params.name, success_redirect_url: params.successRedirectUrl, failure_redirect_url: params.failureRedirectUrl,
     }),
   });
@@ -65,14 +75,14 @@ export async function criarLinkHostedAuth(params: {
  */
 export async function resolverPerfil(accountId: string, identificadorPublico: string): Promise<{ provider_id: string; public_identifier?: string }> {
   const params = new URLSearchParams({ account_id: accountId });
-  return req(`/users/${encodeURIComponent(identificadorPublico)}?${params}`, { headers: headersJson() });
+  return req(`/users/${encodeURIComponent(identificadorPublico)}?${params}`, { headers: await headersJson() });
 }
 
 /** Envia um pedido de conexão, com nota opcional. */
 export async function enviarConvite(accountId: string, providerId: string, nota?: string): Promise<{ id?: string }> {
   return req("/users/invite", {
     method: "POST",
-    headers: headersJson(),
+    headers: await headersJson(),
     body: JSON.stringify({ account_id: accountId, provider_id: providerId, ...(nota ? { message: nota } : {}) }),
   });
 }
@@ -83,14 +93,14 @@ export async function criarChat(accountId: string, providerId: string, texto: st
   form.append("account_id", accountId);
   form.append("attendees_ids", providerId);
   form.append("text", texto);
-  return req("/chats", { method: "POST", headers: headersForm(), body: form });
+  return req("/chats", { method: "POST", headers: await headersForm(), body: form });
 }
 
 /** Responde num chat já existente (2ª+ mensagem de uma cadência, reaproveitando o chat_id cacheado). */
 export async function enviarMensagemChat(chatId: string, texto: string): Promise<{ id?: string }> {
   const form = new FormData();
   form.append("text", texto);
-  return req(`/chats/${encodeURIComponent(chatId)}/messages`, { method: "POST", headers: headersForm(), body: form });
+  return req(`/chats/${encodeURIComponent(chatId)}/messages`, { method: "POST", headers: await headersForm(), body: form });
 }
 
 /**
@@ -104,7 +114,7 @@ export async function enviarMensagemChat(chatId: string, texto: string): Promise
  */
 export async function listarConvitesEnviados(accountId: string): Promise<Array<{ provider_id: string }>> {
   const params = new URLSearchParams({ account_id: accountId });
-  const resp = await req(`/users/invite/sent?${params}`, { headers: headersJson() });
+  const resp = await req(`/users/invite/sent?${params}`, { headers: await headersJson() });
   return (resp?.items as Array<{ provider_id: string }>) || [];
 }
 
@@ -117,7 +127,7 @@ export async function listarConvitesEnviados(accountId: string): Promise<Array<{
 export async function criarWebhook(requestUrl: string, source: "account_status" | "users" | "messaging"): Promise<{ id?: string }> {
   return req("/webhooks", {
     method: "POST",
-    headers: headersJson(),
+    headers: await headersJson(),
     body: JSON.stringify({ request_url: requestUrl, source }),
   });
 }
@@ -134,8 +144,8 @@ export async function criarWebhook(requestUrl: string, source: "account_status" 
  * se faltar" das outras integrações do projeto, aqui aplicado à segurança
  * em vez de uma feature inteira.
  */
-export function webhookSegredoValido(request: Request): boolean {
-  const esperado = process.env.UNIPILE_WEBHOOK_SECRET;
+export async function webhookSegredoValido(request: Request): Promise<boolean> {
+  const esperado = await configPlataforma("unipile_webhook_secret", process.env.UNIPILE_WEBHOOK_SECRET);
   if (!esperado) {
     console.warn("[unipile webhook] UNIPILE_WEBHOOK_SECRET não configurado — endpoint aceitando requisições sem verificação de origem.");
     return true;

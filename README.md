@@ -788,6 +788,29 @@ mas nada é processado — é só fila).
   cada tier (Starter/Pro/Business) libera é uma decisão de produto maior,
   que fica pra quando a LP de vendas entrar em cena. Trocar de plano
   nesta v1 é cancelar e assinar de novo — sem proration.
+- **Chaves de API de plataforma administráveis em `/admin`** (migration
+  `0019_platform_settings.sql`, `src/lib/platform-settings.ts`): pedido
+  explícito pra não depender só de variável de ambiente do Railway (trocar
+  uma chave, tipo renovar a do Resend, exigia mexer lá e esperar redeploy).
+  Tabela key-value `platform_settings` (só o service role lê/escreve — sem
+  policy de select/insert pro client, mesma decisão de `subscription_payments`)
+  cobre TODAS as chaves de plataforma que eram puro `process.env.X`: Resend,
+  Unipile (DSN/API key/webhook secret), BigDataCorp, Asaas (API key/webhook
+  token) e o OAuth do Google Sheets. `configPlataforma(chave, envFallback)`
+  prioriza o valor cadastrado em `/admin` e cai pro env var do Railway se
+  não houver linha — migração incremental, quem ainda não configurou nada
+  no painel continua funcionando exatamente como antes. Cache em memória do
+  processo com TTL de 30s (mesmo padrão de `custoAcao` em `credits.ts`),
+  invalidado explicitamente a cada PATCH no admin. Ficam de fora DE
+  PROPÓSITO: a chave OpenAI do Enriquecimento por IA (é BYOK por usuário,
+  nunca da plataforma) e as chaves com pool por usuário que já tinham seu
+  próprio mecanismo administrável antes disso (Google Maps/Apify/Casa dos
+  Dados — `profiles.*_api_key_admin`/`*_keys_pool`). Efeito colateral do
+  refactor: todo wrapper de integração (`resend.ts`, `unipile.ts`,
+  `bigdatacorp.ts`, `asaas.ts`, `evolution-api.ts`, `google-sheets.ts`)
+  teve suas funções de configuração/header convertidas de síncronas pra
+  assíncronas (resolvem a chave via Supabase agora, não só `process.env`
+  direto) — todo call site foi atualizado a `await` a chamada.
 
 ## Estrutura
 

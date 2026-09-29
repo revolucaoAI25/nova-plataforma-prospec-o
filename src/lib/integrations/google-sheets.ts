@@ -1,6 +1,7 @@
 import { google } from "googleapis";
 import type { LeadRow } from "@/lib/database.types";
 import type { GoogleSheetsCreds } from "@/lib/database.types";
+import { configPlataforma } from "@/lib/platform-settings";
 
 // Integração com Google Sheets via OAuth2 — o usuário autentica com a
 // própria conta Google e escolhe a planilha de uma lista, sem precisar de
@@ -8,8 +9,10 @@ import type { GoogleSheetsCreds } from "@/lib/database.types";
 //
 // Diferente do produto atual (que aceitava client_id/secret por usuário
 // via Streamlit Secrets), aqui usamos UM client OAuth único da plataforma
-// (GOOGLE_CLIENT_ID/GOOGLE_CLIENT_SECRET) — mais simples de operar e é o
-// padrão de fato para esse tipo de fluxo "Conectar sua conta Google".
+// — cadastrado em /admin (platform_settings: google_client_id,
+// google_client_secret) ou, na ausência, GOOGLE_CLIENT_ID/
+// GOOGLE_CLIENT_SECRET do ambiente — mais simples de operar e é o padrão
+// de fato para esse tipo de fluxo "Conectar sua conta Google".
 
 export const SCOPES = [
   "https://www.googleapis.com/auth/spreadsheets",
@@ -18,16 +21,26 @@ export const SCOPES = [
 
 export type OAuthCreds = NonNullable<GoogleSheetsCreds["oauth"]>;
 
-export function oauthDisponivel(): boolean {
-  return Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
+async function credenciaisOAuth(): Promise<{ clientId: string; clientSecret: string }> {
+  const [clientId, clientSecret] = await Promise.all([
+    configPlataforma("google_client_id", process.env.GOOGLE_CLIENT_ID),
+    configPlataforma("google_client_secret", process.env.GOOGLE_CLIENT_SECRET),
+  ]);
+  return { clientId, clientSecret };
 }
 
-function criarClient(redirectUri: string) {
-  return new google.auth.OAuth2(process.env.GOOGLE_CLIENT_ID, process.env.GOOGLE_CLIENT_SECRET, redirectUri);
+export async function oauthDisponivel(): Promise<boolean> {
+  const { clientId, clientSecret } = await credenciaisOAuth();
+  return Boolean(clientId && clientSecret);
 }
 
-export function gerarUrlAuth(redirectUri: string, state: string): string {
-  const client = criarClient(redirectUri);
+async function criarClient(redirectUri: string) {
+  const { clientId, clientSecret } = await credenciaisOAuth();
+  return new google.auth.OAuth2(clientId, clientSecret, redirectUri);
+}
+
+export async function gerarUrlAuth(redirectUri: string, state: string): Promise<string> {
+  const client = await criarClient(redirectUri);
   return client.generateAuthUrl({
     access_type: "offline",
     prompt: "consent",
@@ -38,14 +51,15 @@ export function gerarUrlAuth(redirectUri: string, state: string): string {
 }
 
 export async function trocarCodigo(redirectUri: string, code: string): Promise<OAuthCreds> {
-  const client = criarClient(redirectUri);
+  const client = await criarClient(redirectUri);
   const { tokens } = await client.getToken(code);
+  const { clientId, clientSecret } = await credenciaisOAuth();
   return {
     token: tokens.access_token || "",
     refresh_token: tokens.refresh_token || undefined,
     token_uri: "https://oauth2.googleapis.com/token",
-    client_id: process.env.GOOGLE_CLIENT_ID || "",
-    client_secret: process.env.GOOGLE_CLIENT_SECRET || "",
+    client_id: clientId,
+    client_secret: clientSecret,
     scopes: (tokens.scope || SCOPES.join(" ")).split(" "),
   };
 }
