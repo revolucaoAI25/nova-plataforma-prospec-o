@@ -728,6 +728,26 @@ mas nada é processado — é só fila).
   diferenciada (sempre cobrou a taxa plana), então o texto foi corrigido
   pra não prometer algo que não acontece, em vez de inventar uma nova
   camada de billing sem ser pedido.
+- **Popover de informação — menos texto sempre visível, sem esconder
+  nada**: pedido explícito de reduzir a densidade de texto dos
+  formulários e usar mais pop-ups pra detalhes secundários. Novo
+  `Popover` (`src/components/ui/popover.tsx`, sobre
+  `@radix-ui/react-popover`) e `InfoPopover` (ícone "?" que abre a
+  explicação sob demanda). `FieldRow` (`field-group.tsx`) ganhou a prop
+  `info` — mesma posição de `description`, mas fica escondida atrás do
+  ícone em vez de sempre visível; usada nos dois campos mais longos que
+  existiam (Maps: "buscar telefone e site" consome cota mais restrita;
+  CNPJ: o que o enriquecimento BigDataCorp faz e onde acompanhar).
+  Detalhe técnico que quase virou bug: `FieldRow` usa um `<label>`
+  implícito envolvendo todo o conteúdo (clicar em qualquer lugar da
+  linha ativa o switch) — um botão comum dentro dele também ativaria o
+  switch ao ser clicado. O trigger do `InfoPopover` chama
+  `stopPropagation()` (não `preventDefault()`, que cancelaria o próprio
+  clique de abrir o popover) pra nunca deixar o clique borbulhar até o
+  `<label>`. O `PopoverContent` anima só opacidade, nunca `transform` —
+  o Radix já usa `transform` inline pra posicionar o popover relativo ao
+  gatilho (floating-ui), e uma animação CSS na mesma propriedade
+  entraria em conflito e quebraria o posicionamento.
 
 ## Estrutura
 

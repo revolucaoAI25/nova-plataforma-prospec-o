@@ -206,7 +206,7 @@ export function MapsSearchForm({ custoPorResultado }: { custoPorResultado: numbe
             <FieldGroup>
               <FieldRow
                 label="Buscar telefone e site"
-                description="Consome cota mais restrita (Contact Data). Desligue para buscas rápidas só com nome/endereço/avaliação."
+                info="Consome cota mais restrita (Contact Data). Desligue para buscas rápidas só com nome/endereço/avaliação."
                 control={<Switch checked={showPhone} onCheckedChange={setShowPhone} />}
               />
               <FieldRow label="Incluir avaliação" control={<Switch checked={showRating} onCheckedChange={setShowRating} />} />

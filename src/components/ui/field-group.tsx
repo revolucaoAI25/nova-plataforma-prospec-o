@@ -1,5 +1,6 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
+import { InfoPopover } from "@/components/ui/info-popover";
 
 /**
  * Lista agrupada — um único contêiner com divisores finos entre linhas,
@@ -21,18 +22,24 @@ export function FieldGroup({ className, children, ...props }: React.HTMLAttribut
 export function FieldRow({
   label,
   description,
+  info,
   control,
   className,
 }: {
   label: React.ReactNode;
   description?: React.ReactNode;
+  /** Explicação mais longa, disponível sob demanda num popover (ícone "?" ao lado do rótulo) em vez de sempre visível — usar no lugar de `description` quando o texto passar de ~1 linha. */
+  info?: React.ReactNode;
   control: React.ReactNode;
   className?: string;
 }) {
   return (
     <label className={cn("flex items-center justify-between gap-4 p-3.5 text-sm", className)}>
       <span className="flex flex-col gap-0.5">
-        <span className="font-medium text-foreground">{label}</span>
+        <span className="flex items-center gap-1.5 font-medium text-foreground">
+          {label}
+          {info && <InfoPopover>{info}</InfoPopover>}
+        </span>
         {description && <span className="text-xs font-normal leading-relaxed text-muted-foreground">{description}</span>}
       </span>
       <span className="shrink-0">{control}</span>
