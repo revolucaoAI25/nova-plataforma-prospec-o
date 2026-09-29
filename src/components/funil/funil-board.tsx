@@ -1,12 +1,13 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Plus, Settings2, Trash2, Zap } from "lucide-react";
+import { Plus, Settings2, Trash2, Zap, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { FunilCardView } from "@/components/funil/funil-card";
+import { AdicionarLeadsDialog } from "@/components/funil/adicionar-leads-dialog";
 import type { FunilColunaRow, FunilCardRow, AutomationFlowRow } from "@/lib/database.types";
 
 const SEM_FLUXO = "nenhum";
@@ -25,6 +26,7 @@ export function FunilBoard({ funilId, colunasIniciais, cardsIniciais, flows }: P
   const [colunaEditando, setColunaEditando] = useState<string | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
   const [dragCardId, setDragCardId] = useState<string | null>(null);
+  const [colunaAdicionando, setColunaAdicionando] = useState<string | null>(null);
 
   const cardsPorColuna = useMemo(() => {
     const mapa = new Map<string, FunilCardRow[]>();
@@ -81,6 +83,13 @@ export function FunilBoard({ funilId, colunasIniciais, cardsIniciais, flows }: P
     setColunaEditando(null);
   }
 
+  async function recarregarCards() {
+    const resp = await fetch(`/api/funis/${funilId}`);
+    if (!resp.ok) return;
+    const data = await resp.json();
+    setCards(data.cards || []);
+  }
+
   async function excluirCard(cardId: string) {
     const resp = await fetch(`/api/funis/${funilId}/cards/${cardId}`, { method: "DELETE" });
     if (!resp.ok) return mostrarAviso("Não foi possível remover o card.");
@@ -120,6 +129,16 @@ export function FunilBoard({ funilId, colunasIniciais, cardsIniciais, flows }: P
         </Alert>
       )}
 
+      {colunaAdicionando && (
+        <AdicionarLeadsDialog
+          funilId={funilId}
+          colunaId={colunaAdicionando}
+          colunaNome={colunas.find((c) => c.id === colunaAdicionando)?.nome ?? ""}
+          onAdicionado={recarregarCards}
+          onFechar={() => setColunaAdicionando(null)}
+        />
+      )}
+
       <div className="flex gap-4 overflow-x-auto pb-2">
         {colunas.map((coluna) => (
           <div key={coluna.id} className="flex w-72 shrink-0 flex-col gap-3 rounded-2xl border border-border bg-card p-3">
@@ -132,6 +151,15 @@ export function FunilBoard({ funilId, colunasIniciais, cardsIniciais, flows }: P
                 <span className="rounded-full bg-secondary px-2 py-0.5 text-xs text-muted-foreground">
                   {(cardsPorColuna.get(coluna.id) || []).length}
                 </span>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7"
+                  title="Adicionar leads nesta coluna"
+                  onClick={() => setColunaAdicionando(colunaAdicionando === coluna.id ? null : coluna.id)}
+                >
+                  <UserPlus className="h-3.5 w-3.5" />
+                </Button>
                 <Button
                   variant="ghost"
                   size="icon"

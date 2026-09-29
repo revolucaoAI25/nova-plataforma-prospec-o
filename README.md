@@ -626,6 +626,18 @@ mas nada é processado — é só fila).
   resolver sozinho) — todo erro entra no mesmo ciclo; o custo é só
   demorar até ~40min a mais pra reportar um erro que já era permanente,
   contra recuperar automaticamente os que eram passageiros.
+- **Funil: adicionar leads direto no board** (`AdicionarLeadsDialog`, botão
+  de pessoa no cabeçalho de cada coluna): antes só dava pra popular o
+  Funil inteiro de uma vez a partir do Histórico. Agora, por coluna,
+  4 formas — 1 lead avulso (soma direto, sem lote), colar texto, upload de
+  planilha (mesmo parser de `/api/enrichment/parse-upload` já usado nos
+  enriquecimentos, com detecção automática de coluna por nome), ou puxar
+  uma pesquisa inteira do histórico. Mesma arquitetura do
+  `BigDataCorpLeadStagingEditor` (texto colado/planilha acumulam numa
+  lista editável antes de enviar em lote; histórico e o avulso enviam
+  direto). `POST /api/funis/[id]/cards` passou a aceitar `leads: [...]`
+  além de `searchId` (schema `zod` com `.refine` garantindo exatamente um
+  dos dois).
 
 ## Estrutura
 
