@@ -1,4 +1,4 @@
-import { getProfile } from "@/lib/credits";
+import { getProfile, debitarCreditos } from "@/lib/credits";
 import { resolverChaveMaps, resolverChaveMapsOverflow, registrarUsoChaveMaps } from "@/lib/maps-key";
 import { enriquecerComMaps, QuotaExceededError, MapsAccessError } from "@/lib/integrations/google-maps";
 import type { Lead } from "@/lib/types";
@@ -49,6 +49,13 @@ export async function executarEnriquecimentoMaps(ctx: FlowExecutorContext): Prom
     return { status: "erro", erro: (e as Error).message };
   }
   await registrarUsoChaveMaps(sb, userId, profile, resolucao, stats.contact_data_calls, stats.text_search_calls);
+
+  // Mesma cobrança que extracao-cnpj.ts faz pro mesmo enriquecimento via
+  // Maps embutido (mapsModo) — faltava aqui, deixando esse nó de fluxo
+  // rodar de graça contra o pool de chaves compartilhado da plataforma.
+  if (profile.maps_credits_enabled) {
+    await debitarCreditos(sb, userId, "cnpj_maps_extra", lote.length);
+  }
 
   return {
     status: "concluido",

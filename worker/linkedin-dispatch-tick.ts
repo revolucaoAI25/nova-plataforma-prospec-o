@@ -6,6 +6,7 @@ import {
   listarCampanhasLinkedinSheetWatchAtivas, listarCampanhasLinkedinAutoTriggerAtivas, obterSheetWatcherLinkedin,
   atualizarSheetWatcherLinkedin, enrollLinkedInTargets, buscarLeadsFiltro, atualizarCampanhaLinkedin,
   contarConvitesHojeConta, contarMensagensHojeConta, listarTargetsAguardandoAceitePorConta, liberarAlvoAposAceite,
+  perfilComLinkedinDisparoHabilitado,
 } from "../src/lib/linkedin-dispatch-db";
 import { resolverPerfil, enviarConvite, criarChat, enviarMensagemChat, listarConvitesEnviados } from "../src/lib/integrations/unipile";
 import { extrairIdentificadorPublico } from "../src/lib/linkedin-url";
@@ -41,6 +42,13 @@ async function processarConta(sb: SupabaseClient, conta: LinkedinAccountRow, log
   const campanha = await obterCampanhaLinkedin(sb, target.campaign_id);
   if (!campanha || campanha.status !== "ativa") {
     await marcarFalhaLinkedin(sb, target, target.campaign_id, null, step?.tipo || "convite", "Campanha não está mais ativa nesse momento.");
+    return;
+  }
+
+  // Alvo pode ter sido inscrito antes de um admin revogar o flag do
+  // usuário — reconfirma a cada tick, não só na inscrição.
+  if (!(await perfilComLinkedinDisparoHabilitado(sb, campanha.user_id))) {
+    await marcarFalhaLinkedin(sb, target, target.campaign_id, null, step?.tipo || "convite", "Disparo por LinkedIn não está mais habilitado para esta conta.");
     return;
   }
 

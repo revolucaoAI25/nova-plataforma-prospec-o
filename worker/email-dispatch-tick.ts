@@ -4,7 +4,7 @@ import {
   listarEtapasEmail, proximaEtapaEmail, marcarEnviadoEmail, marcarFalhaEmail, liberarProximoEnvioSender,
   listarCampanhasEmailSheetWatchAtivas, listarCampanhasEmailAutoTriggerAtivas, obterSheetWatcherEmail,
   atualizarSheetWatcherEmail, enrollEmailTargets, buscarLeadsFiltro, atualizarCampanhaEmail,
-  contarEnviosHojeSender, estaOptOutEmail,
+  contarEnviosHojeSender, estaOptOutEmail, perfilComEmailDisparoHabilitado,
 } from "../src/lib/email-dispatch-db";
 import { enviarLoteEmails, textoParaHtml, type EmailEnvio } from "../src/lib/integrations/resend";
 import { lerValores } from "../src/lib/integrations/google-sheets";
@@ -35,6 +35,10 @@ async function processarCampanha(sb: SupabaseClient, campanha: EmailCampaignRow,
   if (!campanha.sender_id) return;
   const sender = await obterSender(sb, campanha.sender_id);
   if (!sender || !sender.ativo || !senderLiberado(sender)) return;
+
+  // Alvo pode ter sido inscrito antes de um admin revogar o flag do
+  // usuário — reconfirma a cada tick, não só na inscrição.
+  if (!(await perfilComEmailDisparoHabilitado(sb, campanha.user_id))) return;
 
   if (sender.limite_diario_envios) {
     const enviosHoje = await contarEnviosHojeSender(sb, sender.id);

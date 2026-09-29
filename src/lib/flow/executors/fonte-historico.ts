@@ -3,10 +3,19 @@ import type { FlowExecutorContext, FlowExecutorOutcome } from "../executor-types
 
 /** Usa uma pesquisa já existente do Histórico como ponto de partida do fluxo, sem nova extração. */
 export async function executarFonteHistorico(ctx: FlowExecutorContext): Promise<FlowExecutorOutcome> {
-  const { sb, node } = ctx;
+  const { sb, userId, node } = ctx;
   const config = (node.config || {}) as Record<string, unknown>;
   const searchId = String(config.searchId || "");
   if (!searchId) return { status: "erro", erro: "Selecione uma pesquisa do Histórico." };
+
+  // Execução de fluxo roda no cliente admin (ignora RLS) — diferente da
+  // leitura avulsa do Histórico, que é protegida pela sessão do usuário.
+  // Sem esta checagem, um searchId de outro usuário no config do nó
+  // vazaria o lote de leads daquela pesquisa pro dono do fluxo.
+  const { data: pesquisa } = await sb.from("searches").select("user_id").eq("id", searchId).maybeSingle();
+  if (!pesquisa || pesquisa.user_id !== userId) {
+    return { status: "erro", erro: "A pesquisa selecionada não existe (ou não pertence a você)." };
+  }
 
   const leads = await buscarLeadsDaPesquisa(sb, searchId);
   if (!leads.length) return { status: "erro", erro: "A pesquisa selecionada não tem leads (ou não pertence a você)." };

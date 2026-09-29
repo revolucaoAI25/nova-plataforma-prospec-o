@@ -1,4 +1,4 @@
-import { enrollLinkedInTargets, obterCampanhaLinkedin } from "@/lib/linkedin-dispatch-db";
+import { enrollLinkedInTargets, obterCampanhaLinkedin, perfilComLinkedinDisparoHabilitado } from "@/lib/linkedin-dispatch-db";
 import type { FlowExecutorContext, FlowExecutorOutcome } from "../executor-types";
 
 /**
@@ -17,6 +17,12 @@ export async function executarDisparoLinkedin(ctx: FlowExecutorContext): Promise
 
   const campanha = await obterCampanhaLinkedin(sb, campaignId);
   if (!campanha || campanha.user_id !== userId) return { status: "erro", erro: "Campanha de disparo por LinkedIn não encontrada." };
+
+  // Fluxo pode ter sido criado antes de um admin revogar o flag do
+  // usuário — reconfirma a cada execução, não só na hora de montar o nó.
+  if (!(await perfilComLinkedinDisparoHabilitado(sb, userId))) {
+    return { status: "erro", erro: "Disparo por LinkedIn não está mais habilitado para sua conta." };
+  }
 
   const lote = contexto.lote || [];
   if (!lote.length) {

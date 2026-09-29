@@ -1,4 +1,4 @@
-import { enrollEmailTargets, obterCampanhaEmail } from "@/lib/email-dispatch-db";
+import { enrollEmailTargets, obterCampanhaEmail, perfilComEmailDisparoHabilitado } from "@/lib/email-dispatch-db";
 import type { FlowExecutorContext, FlowExecutorOutcome } from "../executor-types";
 
 /**
@@ -16,6 +16,12 @@ export async function executarDisparoEmail(ctx: FlowExecutorContext): Promise<Fl
 
   const campanha = await obterCampanhaEmail(sb, campaignId);
   if (!campanha || campanha.user_id !== userId) return { status: "erro", erro: "Campanha de disparo por e-mail não encontrada." };
+
+  // Fluxo pode ter sido criado antes de um admin revogar o flag do
+  // usuário — reconfirma a cada execução, não só na hora de montar o nó.
+  if (!(await perfilComEmailDisparoHabilitado(sb, userId))) {
+    return { status: "erro", erro: "Disparo por e-mail não está mais habilitado para sua conta." };
+  }
 
   const lote = contexto.lote || [];
   if (!lote.length) {

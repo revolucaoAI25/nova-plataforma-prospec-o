@@ -1,4 +1,5 @@
-import { adicionarLeadsAoFunil } from "@/lib/funil-db";
+import { getProfile } from "@/lib/credits";
+import { adicionarLeadsAoFunil, funilPertenceAoUsuario, colunaPertenceAoFunil } from "@/lib/funil-db";
 import type { FlowExecutorContext, FlowExecutorOutcome } from "../executor-types";
 
 /**
@@ -14,6 +15,19 @@ export async function executarDestinoFunil(ctx: FlowExecutorContext): Promise<Fl
   const funilId = String(config.funilId || "");
   const colunaId = String(config.colunaId || "");
   if (!funilId || !colunaId) return { status: "erro", erro: "Escolha o funil e a coluna de destino." };
+
+  // Execução de fluxo roda no cliente admin (ignora RLS) — diferente da
+  // rota de API equivalente (/api/funis/[id]/cards), que já é protegida
+  // pela sessão do usuário. Sem esta checagem explícita, um funilId/
+  // colunaId de outro usuário no config do nó depositaria leads no Kanban
+  // de outra conta silenciosamente.
+  const profile = await getProfile(sb, userId);
+  if (!profile || !(await funilPertenceAoUsuario(sb, funilId, profile))) {
+    return { status: "erro", erro: "Funil não encontrado." };
+  }
+  if (!(await colunaPertenceAoFunil(sb, colunaId, funilId))) {
+    return { status: "erro", erro: "Coluna não encontrada." };
+  }
 
   const lote = contexto.lote || [];
   if (!lote.length) {

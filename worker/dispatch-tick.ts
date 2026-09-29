@@ -4,7 +4,7 @@ import {
   listarEtapas, proximaEtapa, marcarEnviado, marcarFalha, liberarProximoEnvio,
   listarCampanhasSheetWatchAtivas, listarCampanhasAutoTriggerAtivas, obterSheetWatcher,
   atualizarSheetWatcher, enrollTargets, buscarLeadsFiltro, atualizarCampanha, obterTemplateDb,
-  contarEnviosHojeInstancia,
+  contarEnviosHojeInstancia, perfilComDisparoHabilitado,
 } from "../src/lib/dispatch-db";
 import { enviarTexto as evolutionEnviarTexto, enviarMidia as evolutionEnviarMidia } from "../src/lib/integrations/evolution-api";
 import { enviarTemplate as oficialEnviarTemplate } from "../src/lib/integrations/whatsapp-oficial";
@@ -72,6 +72,13 @@ async function processarInstancia(sb: SupabaseClient, instance: WhatsappInstance
   const campanha = await obterCampanha(sb, target.campaign_id);
   if (!campanha || campanha.status !== "ativa") {
     await marcarFalha(sb, target, target.campaign_id, null, "Campanha não está mais ativa nesse momento.");
+    return;
+  }
+
+  // Alvo pode ter sido inscrito antes de um admin revogar o flag do
+  // usuário — reconfirma a cada envio, não só na inscrição.
+  if (!(await perfilComDisparoHabilitado(sb, campanha.user_id))) {
+    await marcarFalha(sb, target, target.campaign_id, null, "Disparo por WhatsApp não está mais habilitado para esta conta.");
     return;
   }
 

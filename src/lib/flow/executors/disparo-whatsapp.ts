@@ -1,4 +1,4 @@
-import { enrollTargets, obterCampanha } from "@/lib/dispatch-db";
+import { enrollTargets, obterCampanha, perfilComDisparoHabilitado } from "@/lib/dispatch-db";
 import type { FlowExecutorContext, FlowExecutorOutcome } from "../executor-types";
 
 /**
@@ -15,6 +15,12 @@ export async function executarDisparoWhatsapp(ctx: FlowExecutorContext): Promise
 
   const campanha = await obterCampanha(sb, campaignId);
   if (!campanha || campanha.user_id !== userId) return { status: "erro", erro: "Campanha de disparo não encontrada." };
+
+  // Fluxo pode ter sido criado antes de um admin revogar o flag do
+  // usuário — reconfirma a cada execução, não só na hora de montar o nó.
+  if (!(await perfilComDisparoHabilitado(sb, userId))) {
+    return { status: "erro", erro: "Disparo por WhatsApp não está mais habilitado para sua conta." };
+  }
 
   const lote = contexto.lote || [];
   if (!lote.length) {

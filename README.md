@@ -829,6 +829,59 @@ mas nada é processado — é só fila).
   teve suas funções de configuração/header convertidas de síncronas pra
   assíncronas (resolvem a chave via Supabase agora, não só `process.env`
   direto) — todo call site foi atualizado a `await` a chamada.
+- **Check-up geral do sistema de automações** (fluxos + disparo): auditoria
+  pedida explicitamente, cobrindo registro de nós, lógica de retry,
+  débito de créditos, re-checagem de flags em tempo de execução,
+  compatibilidade de formato de lote entre nós, wiring dos ticks do worker
+  e checagem de posse (IDOR) nos nós mais recentes. Achados corrigidos:
+  - **[Crítico] `destino_funil` sem checagem de posse**: o executor
+    chamava `adicionarLeadsAoFunil` direto com o `funilId`/`colunaId` do
+    config do nó, sem confirmar que pertencem ao dono do fluxo — como a
+    execução de fluxo roda no cliente admin (ignora RLS), um fluxo
+    configurado com o id de outro usuário depositaria leads no Kanban
+    alheio silenciosamente. Corrigido chamando `funilPertenceAoUsuario`/
+    `colunaPertenceAoFunil` antes, mesma checagem que a rota de API
+    `/api/funis/[id]/cards` já fazia.
+  - **[Crítico] `fonte_historico` vazava pesquisas de outros usuários**:
+    `buscarLeadsDaPesquisa` filtra só por `search_id`, contando com RLS —
+    que não vale nada no cliente admin que a execução de fluxo usa. Um
+    `searchId` de outro usuário no config do nó retornava o lote de leads
+    daquela pesquisa alheia. Corrigido validando `searches.user_id` antes
+    de buscar os leads.
+  - **[Médio] Nó `enriquecimento_maps` não debitava créditos**: mesmo
+    enriquecimento via Google Maps que `extracao_cnpj` já cobra
+    (`cnpj_maps_extra`), mas o nó de fluxo genérico esquecia de chamar
+    `debitarCreditos` — rodava de graça contra o pool de chaves
+    administrado da plataforma. Corrigido espelhando a cobrança de
+    `extracao-cnpj.ts`.
+  - **[Médio] Nós de disparo (WhatsApp/e-mail/LinkedIn) não
+    re-confirmavam o flag do usuário em tempo de execução**: um fluxo
+    criado enquanto o flag estava ligado continuava inscrevendo E enviando
+    normalmente mesmo depois de um admin revogar
+    `disparo_habilitado`/`email_disparo_habilitado`/
+    `linkedin_disparo_habilitado` — só a criação/edição de campanha
+    passava pela checagem. Corrigido em duas camadas: nos 3 executores de
+    fluxo (na inscrição) e nos 3 ticks do worker que efetivamente enviam
+    (`dispatch-tick.ts`, `email-dispatch-tick.ts`,
+    `linkedin-dispatch-tick.ts`) — defesa em profundidade, já que alvos
+    inscritos ANTES da revogação também precisam parar.
+
+  Sem problema encontrado: registro de tipo de nó (`node-types.ts` ↔
+  `executors/index.ts` ↔ visuais do canvas seguem em sincronia), orçamento
+  de retry da migration 0016 (não corre risco de loop infinito), débito de
+  créditos nas 4 extrações avulsas + BigDataCorp, formato de lote entre nós
+  encadeados (extração → enriquecimento → disparo/funil), e wiring de todo
+  tick do worker em `worker/index.ts`.
+
+  **Achado documentado, não corrigido nesta rodada** (exige migration, fora
+  do escopo de um fix pontual): uma run de fluxo em `aguardando_subprocesso`
+  (esperando um `enrichment_runs`/`bigdatacorp_enrichment_runs` terminar)
+  não tem timeout — se o worker reiniciar com a linha em `processando`,
+  ela fica travada pra sempre, fora do orçamento de retry da 0016. Precisa
+  de uma coluna de "processando desde" nessas duas tabelas + um
+  `requeueTravados`-equivalente nos dois ticks de enriquecimento, mesmo
+  padrão que `dispatch-db.ts::requeueTravados()` já usa pros alvos de
+  disparo.
 
 ## Estrutura
 
