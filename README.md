@@ -48,13 +48,14 @@ No [painel do Supabase](https://supabase.com/dashboard), crie um projeto novo
 10. `supabase/migrations/0010_email_domains.sql` (verificação de domínio por usuário, disparo por e-mail)
 11. `supabase/migrations/0011_email_domains_global_unique.sql` (corrige falha de segurança multi-tenant — ver "Decisões de arquitetura")
 12. `supabase/migrations/0012_bigdatacorp_enrichment.sql` (enriquecimento de leads por CNPJ via BigDataCorp)
-13. Em seguida, `0013` a `0030`, sempre em ordem numérica. Destaques:
+13. Em seguida, `0013` a `0031`, sempre em ordem numérica. Destaques:
     `0028_seguranca_profiles.sql` (fecha escalonamento de privilégio — ver
     "Decisões de arquitetura") e `0029_limpeza_legado.sql` (remove colunas e
     tabelas antigas e conserta `platform_settings`). Rode a `0029` **depois**
     do deploy do código desta versão: o código antigo ainda lia as colunas
     que ela apaga. `0030_onboarding.sql` cria as tabelas do onboarding com
-    presets.
+    presets; `0031_funil_automatico.sql` adiciona papéis às colunas do funil,
+    chaves de contato nos cards e o status "respondeu" nos alvos de disparo.
 
 Em **Authentication → Providers**, deixe E-mail/senha habilitado (é o único método
 usado no login). Contas são criadas pelo admin — não há cadastro público.
@@ -1156,6 +1157,47 @@ mas nada é processado — é só fila).
     `suppressHydrationWarning` porque o script anti-FOUC muda `data-theme`
     antes da hidratação.
 
+- **Sugestões, metodologia comercial e funil automático**:
+  - *Sugestão, não plano*: os caminhos gerados pelo onboarding se chamam
+    "Sugestão A–D" (plano, pro cliente, é a assinatura). Modelo padrão
+    `gpt-5.6-luna` (tier mais barato da família 5.6, com structured outputs;
+    trocável em Chaves da plataforma).
+  - *Metodologia* (`prompt.ts`, mesma régua pro gerador e pra avaliadora):
+    público em três camadas (firmográfico, momento/gatilho, pessoa), oferta
+    de entrada de baixo atrito, canal pelo perfil do decisor no Brasil,
+    cadência curta com ângulo novo a cada toque, LGPD e métrica honesta.
+    Parâmetros novos: idade mínima da empresa e capital máximo. Pergunta
+    nova no questionário: quem assina as mensagens.
+  - *Copy sem cara de IA* (`copy.ts`): revisor determinístico que acusa
+    expressões robóticas ("espero que esteja bem", "solução inovadora",
+    "só passando pra saber"…), travessão, mais de 1 emoji/exclamação,
+    CAIXA ALTA, lista com marcadores, link no 1º WhatsApp, mais de uma
+    pergunta, tamanho por canal e variável inexistente. Travessão e atraso
+    fora de múltiplos de 24h são consertados na hora; o resto vai pra
+    avaliadora e força uma rodada de revisão. O que sobrar aparece pro
+    cliente em "vale ajustar no texto".
+  - *Funil automático* (`funil-automacao.ts`, `contatos.ts`): cada sugestão
+    cria o funil com "Novos leads → Em cadência → Respondeu" (papéis
+    automáticos) + etapas do negócio escritas pela IA. A primeira mensagem
+    move o card pra "Em cadência". Resposta no WhatsApp (webhook
+    MESSAGES_UPSERT da Evolution, registrado quando o número conecta) ou no
+    LinkedIn (webhook "messaging" da Unipile) para a cadência daquele
+    contato em TODOS os canais e move o card pra "Respondeu" — antes, quem
+    respondia continuava recebendo follow-up. E-mail não tem detecção
+    automática: arrastar o card pra frente faz o mesmo. Casamento por
+    chave normalizada (telefone por DDD + 8 últimos dígitos, porque o
+    WhatsApp às vezes omite o 9º dígito).
+  - *Gerar de novo sem travar*: cada uso de sugestão guarda cópia da
+    sugestão e a geração de origem — a nova "Sugestão A" pode ser usada
+    mesmo que a A antiga já esteja rodando.
+  - *Meu perfil* (`/perfil`): todas as respostas editáveis, com
+    "Atualizar sugestões". *Buscas avulsas*: toggle "Sugestões pro seu
+    público" com públicos que a IA gera junto com as sugestões e que
+    preenchem o formulário com um clique.
+  - *Correção*: o proxy redirecionava pro /login o link de descadastro do
+    rodapé dos e-mails e os webhooks do LinkedIn (rotas públicas fora de
+    /api/webhooks) — nenhum dos dois funcionava.
+
 ## Estrutura
 
 ```
@@ -1169,7 +1211,8 @@ src/
       automacoes/                construtor de fluxos (fluxos/novo, fluxos/[id])
       disparo/                   instâncias, campanhas, cadência, solicitação de canal oficial
       conexoes/                  status das conexões (WhatsApp, e-mail, LinkedIn, Sheets, OpenAI)
-      onboarding/                questionário → planos A–D gerados por IA → passo a passo e play
+      onboarding/                questionário → sugestões A–D geradas por IA → passo a passo e play
+      perfil/                    perfil de prospecção editável + atualizar sugestões
       admin/                      usuários, planos e preços, chaves da plataforma, canal oficial
     api/                       rotas de servidor (nunca expõem chaves ao cliente), incl. flows/
   components/
