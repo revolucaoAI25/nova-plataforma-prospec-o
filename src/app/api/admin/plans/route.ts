@@ -52,6 +52,7 @@ const patchSchema = z.object({
   id: z.string().uuid(),
   nome: z.string().min(1).optional(),
   precoCentavos: z.number().int().min(1).optional(),
+  precoAnualCentavos: z.number().int().min(1).nullable().optional(),
   creditosMensais: z.number().int().min(0).optional(),
   emailLimiteDiario: z.number().int().min(0).nullable().optional(),
   descricao: z.string().optional(),
@@ -84,6 +85,7 @@ export async function PATCH(request: Request) {
   const campos: Record<string, unknown> = {};
   if (parsed.data.nome !== undefined) campos.nome = parsed.data.nome;
   if (parsed.data.precoCentavos !== undefined) campos.preco_centavos = parsed.data.precoCentavos;
+  if (parsed.data.precoAnualCentavos !== undefined) campos.preco_anual_centavos = parsed.data.precoAnualCentavos;
   if (parsed.data.creditosMensais !== undefined) campos.creditos_mensais = parsed.data.creditosMensais;
   if (parsed.data.emailLimiteDiario !== undefined) campos.email_limite_diario = parsed.data.emailLimiteDiario;
   if (parsed.data.descricao !== undefined) campos.descricao = parsed.data.descricao || null;

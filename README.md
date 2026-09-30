@@ -974,6 +974,25 @@ mas nada é processado — é só fila).
   solicitação, não um checkout. UI em `/creditos` → aba "Extras" (só
   aparece se houver algum add-on ativo) + CRUD em `/admin`
   (`AddonsPanel`, mesmo padrão de `PlansPanel`).
+- **Plano anual (opção A, decidida pelo usuário)**: assinatura Asaas de
+  verdade com `cycle: YEARLY` — 1 cobrança por ano, não 12 cobranças
+  mensais de um valor menor nem um parcelamento manual. `plans.preco_anual_centavos`
+  é um preço independente (seedado como preço mensal × 10, "paga 10 meses,
+  leva 12", ~16,7% off), não uma fórmula — o admin ajusta o desconto por
+  plano em `/admin` sem depender de recalcular nada. `profiles.assinatura_ciclo`
+  guarda qual ciclo aquela assinatura é, porque o Asaas só dispara um
+  evento de pagamento por ANO nesse ciclo — `processarPagamentoAssinatura`
+  (`subscriptions-db.ts`) usa esse campo pra decidir quanto creditar de
+  uma vez: no plano anual, credita os 12 meses (`creditos_mensais * 12`)
+  de uma vez só, na confirmação, em vez de tentar represar 1/12 por mês
+  sem ter um calendário próprio pra isso (mais simples que construir um
+  mecanismo de liberação gradual à parte do calendário de cobrança do
+  Asaas, e é o padrão comum de "assinatura anual" em outros produtos —
+  acesso ao ano todo já no ato). `monthly_creditos` continua guardando a
+  TAXA mensal equivalente (não o lote credido de uma vez), só pra manter
+  o card "Renovação mensal" do dashboard com o mesmo significado nos dois
+  ciclos. UI: toggle Mensal/Anual em `/creditos` → aba "Planos", mostrando
+  o preço equivalente por mês no ciclo anual.
 
 ## Estrutura
 

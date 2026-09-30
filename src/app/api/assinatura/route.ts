@@ -16,12 +16,13 @@ export async function GET() {
   const planos = await listarPlanosAtivos(supabase);
   return NextResponse.json({
     planos,
-    assinatura: { status: profile.assinatura_status, planoId: profile.plano_id },
+    assinatura: { status: profile.assinatura_status, planoId: profile.plano_id, ciclo: profile.assinatura_ciclo },
   });
 }
 
 const bodySchema = z.object({
   planId: z.string().uuid(),
+  ciclo: z.enum(["mensal", "anual"]).default("mensal"),
   cpfCnpj: z.string().regex(/^\d{11}$|^\d{14}$/).optional(),
 });
 
@@ -52,7 +53,7 @@ export async function POST(request: Request) {
   if (!plano) return NextResponse.json({ error: "Plano não encontrado." }, { status: 404 });
 
   try {
-    const { invoiceUrl } = await assinarPlano(supabase, profile, plano, parsed.data.cpfCnpj || null);
+    const { invoiceUrl } = await assinarPlano(supabase, profile, plano, parsed.data.cpfCnpj || null, parsed.data.ciclo);
     return NextResponse.json({ invoiceUrl });
   } catch (err) {
     console.error("[assinatura POST]", err);

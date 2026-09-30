@@ -97,6 +97,7 @@ export interface Profile {
   plano_id: string | null;
   asaas_subscription_id: string | null;
   assinatura_status: AssinaturaStatus;
+  assinatura_ciclo: AssinaturaCiclo;
 
   created_at: string;
   updated_at: string;
@@ -159,6 +160,7 @@ export interface PlanRow extends PlanFeatureFlags {
   id: string;
   nome: string;
   preco_centavos: number;
+  preco_anual_centavos: number | null;
   creditos_mensais: number;
   email_limite_diario: number | null;
   ordem: number;
@@ -178,6 +180,7 @@ export const PLAN_FEATURE_FLAG_KEYS: (keyof PlanFeatureFlags)[] = [
 ];
 
 export type AssinaturaStatus = "sem_assinatura" | "pendente" | "ativa" | "inadimplente" | "cancelada";
+export type AssinaturaCiclo = "mensal" | "anual";
 
 export interface SubscriptionPaymentRow {
   id: string;

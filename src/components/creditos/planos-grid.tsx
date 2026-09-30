@@ -12,7 +12,7 @@ import { useConfirm } from "@/components/ui/confirm-provider";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
-import type { PlanRow, AssinaturaStatus } from "@/lib/database.types";
+import type { PlanRow, AssinaturaStatus, AssinaturaCiclo } from "@/lib/database.types";
 
 const STATUS_LABEL: Record<AssinaturaStatus, { label: string; variant: "success" | "outline" | "destructive" | "secondary" } | null> = {
   sem_assinatura: null,
@@ -34,18 +34,21 @@ export function PlanosGrid({
   planos,
   planoAtualId,
   statusAtual,
+  cicloAtual,
   temCpfCnpj,
   configurado,
 }: {
   planos: PlanRow[];
   planoAtualId: string | null;
   statusAtual: AssinaturaStatus;
+  cicloAtual: AssinaturaCiclo;
   temCpfCnpj: boolean;
   configurado: boolean;
 }) {
   const confirmar = useConfirm();
   const [status, setStatus] = useState(statusAtual);
   const [planoId, setPlanoId] = useState(planoAtualId);
+  const [ciclo, setCiclo] = useState<AssinaturaCiclo>("mensal");
   const [assinando, setAssinando] = useState<string | null>(null);
   const [cancelando, setCancelando] = useState(false);
   const [planoPendenteCpf, setPlanoPendenteCpf] = useState<PlanRow | null>(null);
@@ -64,7 +67,7 @@ export function PlanosGrid({
       const resp = await fetch("/api/assinatura", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ planId: plano.id, ...(cpfCnpjInformado ? { cpfCnpj: cpfCnpjInformado } : {}) }),
+        body: JSON.stringify({ planId: plano.id, ciclo, ...(cpfCnpjInformado ? { cpfCnpj: cpfCnpjInformado } : {}) }),
       });
       const data = await resp.json();
       if (!resp.ok) {
@@ -143,6 +146,9 @@ export function PlanosGrid({
           <div className="flex items-center gap-2 text-sm">
             <span className="text-muted-foreground">Sua assinatura:</span>
             <Badge variant={statusInfo.variant}>{statusInfo.label}</Badge>
+            {temAssinaturaAtiva && (
+              <Badge variant="outline">{cicloAtual === "anual" ? "Anual" : "Mensal"}</Badge>
+            )}
             {status === "inadimplente" && (
               <span className="text-xs text-muted-foreground">A última cobrança não foi confirmada — verifique a fatura mais recente.</span>
             )}
@@ -156,10 +162,31 @@ export function PlanosGrid({
         </div>
       )}
 
+      {!temAssinaturaAtiva && (
+        <div className="inline-flex w-fit items-center gap-1 rounded-xl border border-border bg-secondary/30 p-1">
+          <button
+            type="button"
+            onClick={() => setCiclo("mensal")}
+            className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${ciclo === "mensal" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
+          >
+            Mensal
+          </button>
+          <button
+            type="button"
+            onClick={() => setCiclo("anual")}
+            className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${ciclo === "anual" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
+          >
+            Anual <Badge variant={ciclo === "anual" ? "secondary" : "success"} className="text-[10px]">2 meses grátis</Badge>
+          </button>
+        </div>
+      )}
+
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {planos.map((plano, i) => {
           const destaque = i === 1 && planos.length > 1;
           const ehPlanoAtual = plano.id === planoId && temAssinaturaAtiva;
+          const precoAnual = plano.preco_anual_centavos ?? plano.preco_centavos * 10;
+          const precoExibido = ciclo === "anual" ? precoAnual : plano.preco_centavos;
           return (
             <Card
               key={plano.id}
@@ -179,9 +206,12 @@ export function PlanosGrid({
               </CardHeader>
               <CardContent className="flex flex-col gap-3">
                 <p className="text-3xl font-bold tracking-tight text-foreground">
-                  {formatarPreco(plano.preco_centavos)}
-                  <span className="text-sm font-medium text-muted-foreground">/mês</span>
+                  {formatarPreco(precoExibido)}
+                  <span className="text-sm font-medium text-muted-foreground">{ciclo === "anual" ? "/ano" : "/mês"}</span>
                 </p>
+                {ciclo === "anual" && (
+                  <p className="text-xs text-muted-foreground">Equivale a {formatarPreco(Math.round(precoAnual / 12))}/mês — 2 meses grátis em relação ao mensal</p>
+                )}
                 <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
                   <Coins className="h-3.5 w-3.5 text-primary" /> {plano.creditos_mensais.toLocaleString("pt-BR")} créditos todo mês
                 </p>

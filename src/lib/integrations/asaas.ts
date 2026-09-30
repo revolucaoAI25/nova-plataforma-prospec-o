@@ -107,18 +107,22 @@ interface AsaasSubscription {
 }
 
 /**
- * Cria a assinatura recorrente (`cycle: MONTHLY`) — mesma escolha de
- * `billingType: UNDEFINED` das cobranças avulsas, o pagador decide o
- * método na fatura de cada ciclo. `externalReference` carrega o id do
- * usuário (não temos uma linha própria de "assinatura pendente" pra
- * referenciar como em `criarCompra`, já que `profiles` já guarda o
- * estado atual da assinatura diretamente).
+ * Cria a assinatura recorrente — mesma escolha de `billingType: UNDEFINED`
+ * das cobranças avulsas, o pagador decide o método na fatura de cada
+ * ciclo. `externalReference` carrega o id do usuário (não temos uma linha
+ * própria de "assinatura pendente" pra referenciar como em `criarCompra`,
+ * já que `profiles` já guarda o estado atual da assinatura diretamente).
+ * `cycle` default MONTHLY (mantém o comportamento de antes pra quem já
+ * chamava sem o parâmetro — add-ons, por exemplo, são sempre mensais);
+ * YEARLY é usado pelo plano anual (uma cobrança só por ano, ver
+ * `assinarPlano` em subscriptions-db.ts).
  */
 export async function criarAssinatura(dados: {
   customerId: string;
   valorCentavos: number;
   descricao: string;
   externalReference: string;
+  cycle?: "MONTHLY" | "YEARLY";
 }): Promise<AsaasSubscription> {
   const primeiraCobranca = new Date();
   primeiraCobranca.setDate(primeiraCobranca.getDate() + 1);
@@ -129,7 +133,7 @@ export async function criarAssinatura(dados: {
       billingType: "UNDEFINED",
       value: Math.round(dados.valorCentavos) / 100,
       nextDueDate: primeiraCobranca.toISOString().slice(0, 10),
-      cycle: "MONTHLY",
+      cycle: dados.cycle ?? "MONTHLY",
       description: dados.descricao,
       externalReference: dados.externalReference,
     }),

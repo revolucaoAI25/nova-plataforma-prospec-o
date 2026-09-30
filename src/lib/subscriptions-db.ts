@@ -2,7 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { obterOuCriarClienteAsaas } from "@/lib/credit-purchases-db";
 import { criarAssinatura, cancelarAssinatura, obterPrimeiraFaturaAssinatura } from "@/lib/integrations/asaas";
-import { PLAN_FEATURE_FLAG_KEYS, type PlanRow, type Profile } from "@/lib/database.types";
+import { PLAN_FEATURE_FLAG_KEYS, type AssinaturaCiclo, type PlanRow, type Profile } from "@/lib/database.types";
 
 // Assinatura recorrente de plano via Asaas — ver comentário de topo de
 // supabase/migrations/0018_asaas_subscriptions.sql pro desenho geral.
@@ -18,26 +18,33 @@ export async function listarPlanosAtivos(sb: SupabaseClient): Promise<PlanRow[]>
 /**
  * Cria a assinatura no Asaas e já marca o perfil como `pendente` (só vira
  * `ativa` quando o webhook confirmar a 1ª cobrança). Retorna a fatura
- * pra onde redirecionar o cliente.
+ * pra onde redirecionar o cliente. `ciclo` decide o preço cobrado
+ * (`preco_centavos` mensal vs `preco_anual_centavos`) e o `cycle` da
+ * assinatura no Asaas (MONTHLY vs YEARLY) — uma assinatura anual real,
+ * 1 cobrança por ano, não 12 cobranças de um valor menor.
  */
 export async function assinarPlano(
   sb: SupabaseClient,
   profile: Profile,
   plano: PlanRow,
   cpfCnpj: string | null,
+  ciclo: AssinaturaCiclo = "mensal",
 ): Promise<{ invoiceUrl: string }> {
   const customerId = await obterOuCriarClienteAsaas(sb, profile, cpfCnpj || profile.cpf_cnpj || "");
 
+  const valorCentavos = ciclo === "anual" ? (plano.preco_anual_centavos ?? plano.preco_centavos * 12) : plano.preco_centavos;
+
   const assinatura = await criarAssinatura({
     customerId,
-    valorCentavos: plano.preco_centavos,
-    descricao: `Assinatura ${plano.nome}`,
+    valorCentavos,
+    descricao: `Assinatura ${plano.nome} (${ciclo === "anual" ? "anual" : "mensal"})`,
     externalReference: profile.id,
+    cycle: ciclo === "anual" ? "YEARLY" : "MONTHLY",
   });
 
   await sb
     .from("profiles")
-    .update({ plano_id: plano.id, asaas_subscription_id: assinatura.id, assinatura_status: "pendente" })
+    .update({ plano_id: plano.id, asaas_subscription_id: assinatura.id, assinatura_status: "pendente", assinatura_ciclo: ciclo })
     .eq("id", profile.id);
 
   const fatura = await obterPrimeiraFaturaAssinatura(assinatura.id);
@@ -67,7 +74,7 @@ export async function processarPagamentoAssinatura(asaasSubscriptionId: string, 
 
   const { data: dono } = await sbAdmin
     .from("profiles")
-    .select("id, plano_id, assinatura_status")
+    .select("id, plano_id, assinatura_status, assinatura_ciclo")
     .eq("asaas_subscription_id", asaasSubscriptionId)
     .maybeSingle();
   if (!dono) return false; // não é uma assinatura de PLANO conhecida — deixa o caller tentar add-on.
@@ -89,6 +96,11 @@ export async function processarPagamentoAssinatura(asaasSubscriptionId: string, 
   const { data: planoData } = await sbAdmin.from("plans").select("*").eq("id", dono.plano_id).maybeSingle();
   const plano = planoData as PlanRow | null;
   const creditosMensais = plano?.creditos_mensais ?? 0;
+  // Anual só recebe 1 evento de pagamento por ANO (não por mês) — credita
+  // os 12 meses de uma vez no momento da confirmação, em vez de tentar
+  // represar 1/12 por mês sem ter um calendário próprio pra isso. Ver
+  // comentário de topo de 0026_annual_billing.sql.
+  const creditosConcedidos = dono.assinatura_ciclo === "anual" ? creditosMensais * 12 : creditosMensais;
 
   const campos: Record<string, unknown> = {
     assinatura_status: "ativa",
@@ -108,8 +120,8 @@ export async function processarPagamentoAssinatura(asaasSubscriptionId: string, 
 
   await sbAdmin.from("profiles").update(campos).eq("id", dono.id);
 
-  if (creditosMensais > 0) {
-    await sbAdmin.rpc("increment_creditos", { p_user_id: dono.id, p_delta: creditosMensais });
+  if (creditosConcedidos > 0) {
+    await sbAdmin.rpc("increment_creditos", { p_user_id: dono.id, p_delta: creditosConcedidos });
   }
 
   return true;

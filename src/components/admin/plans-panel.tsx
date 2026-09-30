@@ -29,6 +29,7 @@ function LinhaPlano({ plano, onRemovido }: { plano: PlanRow; onRemovido: (id: st
   const confirmar = useConfirm();
   const [nome, setNome] = useState(plano.nome);
   const [preco, setPreco] = useState(plano.preco_centavos / 100);
+  const [precoAnual, setPrecoAnual] = useState((plano.preco_anual_centavos ?? plano.preco_centavos * 10) / 100);
   const [creditosMensais, setCreditosMensais] = useState(plano.creditos_mensais);
   const [emailLimiteDiario, setEmailLimiteDiario] = useState(plano.email_limite_diario ?? 0);
   const [ativo, setAtivo] = useState(plano.ativo);
@@ -43,6 +44,7 @@ function LinhaPlano({ plano, onRemovido }: { plano: PlanRow; onRemovido: (id: st
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         id: plano.id, nome, precoCentavos: Math.round(preco * 100), creditosMensais,
+        precoAnualCentavos: Math.round(precoAnual * 100),
         emailLimiteDiario: emailLimiteDiario > 0 ? emailLimiteDiario : null,
       }),
     });
@@ -126,6 +128,15 @@ function LinhaPlano({ plano, onRemovido }: { plano: PlanRow; onRemovido: (id: st
               />
             </label>
             <p className="text-xs text-muted-2">0 = sem limite. Usado como padrão ao criar um novo remetente — clique em &quot;Salvar&quot; pra aplicar.</p>
+            <label className="flex items-center justify-between gap-3 text-sm">
+              <span>Preço/ano (R$)</span>
+              <Input
+                type="number" min={0.01} step={0.01} className="h-8 w-24"
+                value={precoAnual}
+                onChange={(e) => { setPrecoAnual(Number(e.target.value)); setDirty(true); }}
+              />
+            </label>
+            <p className="text-xs text-muted-2">Cobrança única anual (assinatura Asaas de ciclo YEARLY) — não é o preço/mês × 12, é o valor com desconto.</p>
           </PopoverContent>
         </Popover>
       </TableCell>
@@ -169,6 +180,7 @@ export function PlansPanel({ planosIniciais }: { planosIniciais: PlanRow[] }) {
     const data = await resp.json();
     setPlanos((prev) => [...prev, {
       id: data.id, nome: novoNome.trim(), preco_centavos: Math.round(Number(novoPreco) * 100),
+      preco_anual_centavos: null,
       creditos_mensais: Number(novosCreditos), email_limite_diario: null, ordem: prev.length, ativo: true, descricao: null, criado_em: new Date().toISOString(),
       disparo_habilitado: false, instagram_visible: false, linkedin_visible: false,
       enriquecimento_ia_habilitado: false, bigdatacorp_enrichment_habilitado: false,

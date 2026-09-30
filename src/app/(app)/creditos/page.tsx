@@ -57,6 +57,7 @@ export default async function CreditosPage() {
             planos={planos}
             planoAtualId={profile.plano_id}
             statusAtual={profile.assinatura_status}
+            cicloAtual={profile.assinatura_ciclo}
             temCpfCnpj={Boolean(profile.cpf_cnpj)}
             configurado={configurado}
           />
