@@ -58,6 +58,16 @@ function InstanceQr({ instanceId, onConnected }: { instanceId: string; onConnect
 export function InstancesPanel({ instanciasIniciais }: { instanciasIniciais: WhatsappInstanceRow[] }) {
   const confirmar = useConfirm();
   const [instancias, setInstancias] = useState(instanciasIniciais);
+
+  // Número já conectado mas sem o webhook de respostas (conectado antes da
+  // detecção existir): a checagem de status registra o webhook no servidor.
+  useEffect(() => {
+    for (const inst of instanciasIniciais) {
+      if (inst.canal === "evolution" && inst.status === "conectado" && !inst.webhook_configurado_em) {
+        void fetch(`/api/dispatch/instances/${inst.id}/status`).catch(() => {});
+      }
+    }
+  }, [instanciasIniciais]);
   const [nome, setNome] = useState("");
   const [limiteDiarioEnvios, setLimiteDiarioEnvios] = useState("");
   const [creating, setCreating] = useState(false);

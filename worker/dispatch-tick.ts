@@ -6,7 +6,9 @@ import {
   atualizarSheetWatcher, enrollTargets, buscarLeadsFiltro, atualizarCampanha, obterTemplateDb,
   contarEnviosHojeInstancia, perfilComDisparoHabilitado,
 } from "../src/lib/dispatch-db";
-import { enviarTexto as evolutionEnviarTexto, enviarMidia as evolutionEnviarMidia } from "../src/lib/integrations/evolution-api";
+import {
+  enviarTexto as evolutionEnviarTexto, enviarMidia as evolutionEnviarMidia, configurarWebhookMensagens, urlWebhookEvolution,
+} from "../src/lib/integrations/evolution-api";
 import { enviarTemplate as oficialEnviarTemplate } from "../src/lib/integrations/whatsapp-oficial";
 import { lerValores } from "../src/lib/integrations/google-sheets";
 import { getProfile } from "../src/lib/credits";
@@ -177,8 +179,33 @@ export async function tickDispatch(sb: SupabaseClient, log: (msg: string) => voi
   }
 }
 
+// Números conectados antes da detecção de resposta existir (ou cujo registro
+// falhou) ficam sem o webhook de mensagens recebidas. Tenta registrar no
+// scan lento, com espera de 30 min entre tentativas por instância.
+const ultimaTentativaWebhook = new Map<string, number>();
+
+async function garantirWebhooks(sb: SupabaseClient, log: (msg: string) => void) {
+  if (!urlWebhookEvolution()) return;
+  const semWebhook = (await listarInstanciasConectadas(sb)).filter(
+    (i) => i.canal === "evolution" && i.evolution_instance_name && !i.webhook_configurado_em,
+  );
+  for (const inst of semWebhook) {
+    if (Date.now() - (ultimaTentativaWebhook.get(inst.id) ?? 0) < 30 * 60_000) continue;
+    ultimaTentativaWebhook.set(inst.id, Date.now());
+    try {
+      if (await configurarWebhookMensagens(inst.evolution_instance_name!)) {
+        await sb.from("whatsapp_instances").update({ webhook_configurado_em: new Date().toISOString() }).eq("id", inst.id);
+        log(`Webhook de respostas registrado na instância ${inst.id}.`);
+      }
+    } catch (e) {
+      log(`Não foi possível registrar o webhook da instância ${inst.id}: ${(e as Error).message}`);
+    }
+  }
+}
+
 /** Scan lento de sheet_watch + auto_trigger — roda a cada SHEET_WATCH_INTERVALO_SEGUNDOS. */
 export async function tickSheetWatchAndAutoTrigger(sb: SupabaseClient, log: (msg: string) => void): Promise<void> {
+  await garantirWebhooks(sb, log).catch((e) => log(`garantirWebhooks: ${(e as Error).message}`));
   for (const campanha of await listarCampanhasSheetWatchAtivas(sb)) {
     try {
       await processarSheetWatcher(sb, campanha, log);
