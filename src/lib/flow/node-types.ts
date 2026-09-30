@@ -176,17 +176,20 @@ const esperaConfigSchema = z.object({
 });
 
 const disparoWhatsappConfigSchema = z.object({
-  campaignId: z.string().uuid().nullable().default(null),
+  // Sem campanha o executor falha na hora de rodar — melhor barrar antes de ativar.
+  campaignId: z.string().uuid().nullable().default(null).refine((v) => v !== null, "Escolha a campanha."),
   instanceId: z.string().uuid().nullable().default(null),
 });
 
 const disparoEmailConfigSchema = z.object({
-  campaignId: z.string().uuid().nullable().default(null),
+  // Sem campanha o executor falha na hora de rodar — melhor barrar antes de ativar.
+  campaignId: z.string().uuid().nullable().default(null).refine((v) => v !== null, "Escolha a campanha."),
   senderId: z.string().uuid().nullable().default(null),
 });
 
 const disparoLinkedinConfigSchema = z.object({
-  campaignId: z.string().uuid().nullable().default(null),
+  // Sem campanha o executor falha na hora de rodar — melhor barrar antes de ativar.
+  campaignId: z.string().uuid().nullable().default(null).refine((v) => v !== null, "Escolha a campanha."),
   accountId: z.string().uuid().nullable().default(null),
 });
 
@@ -418,11 +421,11 @@ export interface FlowGrafoEdge {
 }
 
 /**
- * Validação estrutural + semântica de um grafo de fluxo, usada tanto na
- * criação quanto na atualização (POST/PATCH /api/flows) — evita salvar um
- * grafo que o motor (flow-engine.ts) não conseguiria executar depois.
+ * Validação estrutural: o grafo não está corrompido (ids únicos, tipos
+ * conhecidos, conexões apontando pra nós que existem, no máximo uma saída
+ * por nó). Vale pra qualquer gravação — inclusive rascunho.
  */
-export function validarFluxo(nodes: FlowGrafoNode[], edges: FlowGrafoEdge[]): { ok: true } | { ok: false; erro: string } {
+export function validarEstruturaFluxo(nodes: FlowGrafoNode[], edges: FlowGrafoEdge[]): { ok: true } | { ok: false; erro: string } {
   if (!nodes.length) return { ok: false, erro: "O fluxo precisa ter pelo menos um nó." };
 
   const ids = new Set<string>();
@@ -430,14 +433,7 @@ export function validarFluxo(nodes: FlowGrafoNode[], edges: FlowGrafoEdge[]): { 
     if (ids.has(node.id)) return { ok: false, erro: `Id de nó duplicado: ${node.id}.` };
     ids.add(node.id);
     if (!(node.tipo in FLOW_NODE_TYPES)) return { ok: false, erro: `Tipo de nó desconhecido: ${node.tipo}.` };
-    const resultado = validarConfigDoNo(node.tipo, node.config);
-    if (!resultado.success) {
-      return { ok: false, erro: `Configuração inválida no nó '${FLOW_NODE_TYPES[node.tipo].label}': ${resultado.error.issues[0]?.message || "campo inválido"}.` };
-    }
   }
-
-  const gatilhos = nodes.filter((n) => GATILHO_TIPOS_SET.has(n.tipo));
-  if (gatilhos.length !== 1) return { ok: false, erro: "O fluxo precisa ter exatamente um nó de gatilho." };
 
   for (const edge of edges) {
     if (!ids.has(edge.from) || !ids.has(edge.to)) {
@@ -449,6 +445,28 @@ export function validarFluxo(nodes: FlowGrafoNode[], edges: FlowGrafoEdge[]): { 
   if (origens.size !== edges.length) {
     return { ok: false, erro: "Cada nó só pode ter uma conexão de saída (v1 é um grafo linear)." };
   }
+
+  return { ok: true };
+}
+
+/**
+ * Validação completa — estrutura + config de cada nó + gatilho único. Exigida
+ * pra ATIVAR ou executar um fluxo: garante que o motor (flow-engine.ts)
+ * consegue rodá-lo. Rascunhos pausados só precisam da estrutural.
+ */
+export function validarFluxo(nodes: FlowGrafoNode[], edges: FlowGrafoEdge[]): { ok: true } | { ok: false; erro: string } {
+  const estrutura = validarEstruturaFluxo(nodes, edges);
+  if (!estrutura.ok) return estrutura;
+
+  for (const node of nodes) {
+    const resultado = validarConfigDoNo(node.tipo, node.config);
+    if (!resultado.success) {
+      return { ok: false, erro: `Configuração inválida no nó '${FLOW_NODE_TYPES[node.tipo].label}': ${resultado.error.issues[0]?.message || "campo inválido"}.` };
+    }
+  }
+
+  const gatilhos = nodes.filter((n) => GATILHO_TIPOS_SET.has(n.tipo));
+  if (gatilhos.length !== 1) return { ok: false, erro: "O fluxo precisa ter exatamente um nó de gatilho." };
 
   return { ok: true };
 }

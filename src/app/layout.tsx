@@ -31,7 +31,9 @@ try {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="pt-BR" className={`${inter.variable} h-full antialiased`}>
+    // suppressHydrationWarning: o script anti-FOUC muda data-theme no <html>
+    // antes da hidratação, de propósito — sem isso o React acusa divergência.
+    <html lang="pt-BR" className={`${inter.variable} h-full antialiased`} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: NO_FOUC_THEME_SCRIPT }} />
       </head>

@@ -1130,6 +1130,32 @@ mas nada é processado — é só fila).
     celular. A visão geral mostra a chamada pro onboarding até existir um
     plano rodando.
 
+- **Construtor de fluxos — usabilidade e rascunho**:
+  - *Rascunho*: antes, salvar exigia o fluxo 100% configurado — não dava
+    pra guardar um fluxo pela metade. Agora a validação é em dois níveis
+    (`validarEstruturaFluxo` sempre; `validarFluxo` completo só pra ativar
+    ou executar). Com pendências, o editor salva como rascunho pausado. O
+    PATCH valida o estado resultante (antes, `{ativo: true}` sozinho ligava
+    um fluxo sem revalidar) e o "Executar agora" recusa fluxo incompleto.
+  - *Nó de disparo sem campanha* passou a ser pendência (o executor já
+    falhava na hora de rodar; agora barra antes de ativar).
+  - *Editor*: tela cheia (Esc sai), tema do canvas segue o do app (era
+    fixo no escuro), clique no módulo adiciona já conectado depois do nó
+    selecionado (ou no fim do caminho) — arrastar continua valendo e é o
+    único jeito que não funciona no celular —, busca na paleta, "Organizar"
+    alinha o caminho, remover um nó religa o anterior ao seguinte, gatilho
+    não some com Delete por engano. Cada cartão mostra o resumo da config
+    (`src/lib/flow/resumo.ts`), o problema pendente e o resultado da última
+    execução. Lista de pendências (gatilho, config, nó solto que nunca
+    roda) com clique que leva ao nó. Aviso de alterações não salvas
+    (inclusive ao fechar a aba), Ctrl/Cmd+S salva, histórico se atualiza
+    sozinho enquanto há execução em andamento.
+  - *Correções de HTML/hidratação*: botão "Tentar novamente" ficava dentro
+    do botão que abre o item do histórico (HTML inválido, erro de
+    hidratação) — `Collapsible` ganhou `acoes`; `<html>` com
+    `suppressHydrationWarning` porque o script anti-FOUC muda `data-theme`
+    antes da hidratação.
+
 ## Estrutura
 
 ```

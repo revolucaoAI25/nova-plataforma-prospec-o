@@ -131,7 +131,6 @@ function TokenChip({ token }: { token: string }) {
 function VariaveisDisponiveis({ variaveisFlow }: { variaveisFlow: VariavelEntrada[] }) {
   return (
     <Collapsible
-      defaultOpen
       className="rounded-lg border border-dashed border-border bg-secondary/20 p-2.5"
       trigger={<span className="text-xs font-semibold text-foreground">Variáveis disponíveis</span>}
     >
@@ -764,14 +763,15 @@ export function FlowNodeConfigPanel({
           <p className="text-sm font-semibold text-foreground">{meta.label}</p>
           <p className="text-xs text-muted-foreground">{meta.descricao}</p>
         </div>
-        <Button variant="ghost" size="icon" onClick={onClose}><X className="h-4 w-4" /></Button>
+        <Button variant="ghost" size="icon" onClick={onClose} aria-label="Fechar"><X className="h-4 w-4" /></Button>
       </div>
-
-      {meta.categoria !== "gatilho" && <VariaveisDisponiveis variaveisFlow={variaveisFlow} />}
 
       <div className="flex flex-col gap-4">
         <CamposDoNo node={node} config={config} set={set} />
       </div>
+
+      {/* Referência, não campo: fica recolhida e depois dos campos do nó. */}
+      {meta.categoria !== "gatilho" && <VariaveisDisponiveis variaveisFlow={variaveisFlow} />}
 
       <Button variant="outline" size="sm" onClick={onDelete} className="mt-auto text-destructive hover:border-destructive">
         <Trash2 className="h-3.5 w-3.5" /> Remover nó

@@ -38,18 +38,39 @@ function formatarData(iso: string | null) {
   return new Date(iso).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
 }
 
-export function FlowRunHistory({ flowId, refreshKey }: { flowId: string; refreshKey?: number }) {
+const EM_ANDAMENTO = new Set<FlowRunRow["status"]>(["executando", "aguardando_subprocesso", "aguardando_retry"]);
+
+export function FlowRunHistory({
+  flowId,
+  refreshKey,
+  onCarregado,
+}: {
+  flowId: string;
+  refreshKey?: number;
+  onCarregado?: (runs: FlowRunRow[], steps: FlowRunStepRow[]) => void;
+}) {
   const [runs, setRuns] = useState<FlowRunRow[]>([]);
   const [steps, setSteps] = useState<FlowRunStepRow[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [reexecutando, setReexecutando] = useState<string | null>(null);
 
   const recarregar = useCallback(async () => {
-    const resp = await fetch(`/api/flows/${flowId}/runs`);
+    const resp = await fetch(`/api/flows/${flowId}/runs`, { cache: "no-store" }).catch(() => null);
+    if (!resp?.ok) return;
     const d = await resp.json();
     setRuns(d.runs || []);
     setSteps(d.steps || []);
-  }, [flowId]);
+    onCarregado?.(d.runs || [], d.steps || []);
+  }, [flowId, onCarregado]);
+
+  // Enquanto houver execução em andamento, atualiza sozinho (o motor avança
+  // um nó por tick do worker) — antes precisava recarregar a página.
+  const emAndamento = runs.some((r) => EM_ANDAMENTO.has(r.status));
+  useEffect(() => {
+    if (!emAndamento) return;
+    const t = setInterval(() => void recarregar(), 5000);
+    return () => clearInterval(t);
+  }, [emAndamento, recarregar]);
 
   // recarregar() é assíncrono (await fetch) — o set-state real só roda
   // depois do 1º await, não durante a render deste efeito.
@@ -91,20 +112,22 @@ export function FlowRunHistory({ flowId, refreshKey }: { flowId: string; refresh
                   </Badge>
                 )}
                 {run.status === "erro" && (
-                  <>
-                    <Badge variant="destructive" className="ml-1">erro após {run.tentativas} tentativa(s)</Badge>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="h-6 px-2 text-xs"
-                      disabled={reexecutando === run.id}
-                      onClick={(e) => { e.stopPropagation(); tentarNovamente(run.id); }}
-                    >
-                      <RotateCw className="h-3 w-3" /> {reexecutando === run.id ? "Reiniciando…" : "Tentar novamente"}
-                    </Button>
-                  </>
+                  <Badge variant="destructive" className="ml-1">erro após {run.tentativas} tentativa(s)</Badge>
                 )}
               </div>
+            }
+            acoes={
+              run.status === "erro" ? (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 shrink-0 px-2 text-xs"
+                  disabled={reexecutando === run.id}
+                  onClick={() => tentarNovamente(run.id)}
+                >
+                  <RotateCw className="h-3 w-3" /> {reexecutando === run.id ? "Reiniciando…" : "Tentar novamente"}
+                </Button>
+              ) : undefined
             }
           >
             <div className="mt-3 flex flex-col gap-2 pl-6">

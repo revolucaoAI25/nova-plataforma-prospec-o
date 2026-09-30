@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
-import { validarFluxo, type FlowGrafoNode } from "@/lib/flow/node-types";
+import { validarEstruturaFluxo, validarFluxo, type FlowGrafoNode } from "@/lib/flow/node-types";
 import type { Json } from "@/lib/database.types";
 
 export async function GET() {
@@ -38,7 +38,9 @@ export async function POST(request: Request) {
   const parsed = bodySchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "Dados inválidos.", detalhes: parsed.error.flatten() }, { status: 400 });
 
-  const validacao = validarFluxo(parsed.data.nodes as unknown as FlowGrafoNode[], parsed.data.edges);
+  // Rascunho (pausado) pode ser salvo incompleto; ativo precisa estar pronto pra rodar.
+  const validar = parsed.data.ativo ? validarFluxo : validarEstruturaFluxo;
+  const validacao = validar(parsed.data.nodes as unknown as FlowGrafoNode[], parsed.data.edges);
   if (!validacao.ok) return NextResponse.json({ error: validacao.erro }, { status: 400 });
 
   const { data, error } = await supabase

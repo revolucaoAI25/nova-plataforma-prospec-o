@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { dispararManualmente } from "@/lib/flow/flow-engine";
+import { validarFluxo, type FlowGrafoNode, type FlowGrafoEdge } from "@/lib/flow/node-types";
 import type { AutomationFlowRow } from "@/lib/database.types";
 
 const bodySchema = z.object({
@@ -17,6 +18,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   const { data } = await supabase.from("automation_flows").select("*").eq("id", id).single();
   const flow = data as AutomationFlowRow | null;
   if (!flow) return NextResponse.json({ error: "Fluxo não encontrado." }, { status: 404 });
+
+  // Rascunhos podem estar salvos incompletos: só executa o que o motor consegue rodar.
+  const validacao = validarFluxo(flow.nodes as unknown as FlowGrafoNode[], flow.edges as unknown as FlowGrafoEdge[]);
+  if (!validacao.ok) return NextResponse.json({ error: `O fluxo ainda não está pronto pra rodar — ${validacao.erro}` }, { status: 400 });
 
   const parsed = bodySchema.safeParse(await request.json().catch(() => ({})));
   const variaveis = parsed.success ? parsed.data.variaveis : {};
