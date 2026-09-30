@@ -88,6 +88,25 @@ export async function DELETE(request: Request) {
   if (!parsed.success) return NextResponse.json({ error: "Dados inválidos." }, { status: 400 });
 
   const admin = createAdminClient();
+
+  // `user_addon_subscriptions.addon_id` é ON DELETE CASCADE — remover o
+  // add-on com assinantes ativos apaga a linha deles inteira, sem
+  // cancelar a cobrança no Asaas: o cliente continua sendo cobrado e nem
+  // aparece mais em lugar nenhum do nosso banco pra cancelar. Bloqueia em
+  // vez disso — o admin já tem o toggle "Ativo" pra tirar da vitrine sem
+  // afetar quem já assina.
+  const { count } = await admin
+    .from("user_addon_subscriptions")
+    .select("id", { count: "exact", head: true })
+    .eq("addon_id", parsed.data.id)
+    .in("status", ["ativa", "pendente", "inadimplente"]);
+  if (count && count > 0) {
+    return NextResponse.json(
+      { error: `Esse add-on tem ${count} assinante(s) ativo(s). Desative-o (toggle "Ativo") em vez de remover, ou cancele as assinaturas antes.` },
+      { status: 409 },
+    );
+  }
+
   const { error } = await admin.from("addons").delete().eq("id", parsed.data.id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ ok: true });

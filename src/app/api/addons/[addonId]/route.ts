@@ -29,8 +29,14 @@ export async function POST(request: Request, { params }: { params: Promise<{ add
     .eq("user_id", user.id)
     .eq("addon_id", addonId)
     .maybeSingle();
-  if (assinaturaAtual?.status === "ativa" || assinaturaAtual?.status === "pendente") {
-    return NextResponse.json({ error: "Você já tem uma assinatura desse add-on. Cancele antes de assinar de novo." }, { status: 409 });
+  if (assinaturaAtual?.status === "ativa" || assinaturaAtual?.status === "pendente" || assinaturaAtual?.status === "inadimplente") {
+    // Inclui "inadimplente" de propósito — mesmo motivo do bloqueio
+    // equivalente em /api/assinatura: `assinarAddon` faz upsert em
+    // (user_id, addon_id) e sobrescreve `asaas_subscription_id`, deixando
+    // a assinatura antiga (com cobrança vencida, mas ainda ativa no
+    // Asaas) órfã e sem cancelar — continua cobrando o cliente sem que
+    // nenhum webhook futuro dela bata com nada no nosso banco.
+    return NextResponse.json({ error: "Você já tem uma assinatura desse add-on em aberto. Cancele antes de assinar de novo." }, { status: 409 });
   }
 
   const parsed = bodySchema.safeParse(await request.json().catch(() => ({})));

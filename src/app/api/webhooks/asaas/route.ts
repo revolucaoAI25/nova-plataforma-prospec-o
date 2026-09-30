@@ -37,17 +37,28 @@ export async function POST(request: Request) {
   const payment = body.payment;
   const assinaturaId: string | undefined = payment?.subscription;
 
-  if (EVENTOS_PAGO.has(body.event) && payment?.id) {
-    if (assinaturaId) {
-      const valorCentavos = Math.round((payment.value ?? 0) * 100);
-      const foiPlano = await processarPagamentoAssinatura(assinaturaId, payment.id, valorCentavos);
-      if (!foiPlano) await processarPagamentoAddon(assinaturaId, payment.id, valorCentavos);
-    } else {
-      await marcarCompraPaga(payment.id);
+  // Um erro de verdade (não os "não encontrado"/"evento repetido" que já
+  // voltam como false/true das próprias funções) precisa virar 500 aqui —
+  // responder 200 OK quando algo realmente falhou faz o Asaas achar que
+  // processamos com sucesso e nunca reentregar o evento, perdendo crédito
+  // ou mudança de status silenciosamente. As funções chamadas abaixo já
+  // são idempotentes, então uma reentrega depois de um 500 é segura.
+  try {
+    if (EVENTOS_PAGO.has(body.event) && payment?.id) {
+      if (assinaturaId) {
+        const valorCentavos = Math.round((payment.value ?? 0) * 100);
+        const foiPlano = await processarPagamentoAssinatura(assinaturaId, payment.id, valorCentavos);
+        if (!foiPlano) await processarPagamentoAddon(assinaturaId, payment.id, valorCentavos);
+      } else {
+        await marcarCompraPaga(payment.id);
+      }
+    } else if (body.event === "PAYMENT_OVERDUE" && assinaturaId) {
+      const foiPlano = await marcarAssinaturaInadimplente(assinaturaId);
+      if (!foiPlano) await marcarAddonInadimplente(assinaturaId);
     }
-  } else if (body.event === "PAYMENT_OVERDUE" && assinaturaId) {
-    const foiPlano = await marcarAssinaturaInadimplente(assinaturaId);
-    if (!foiPlano) await marcarAddonInadimplente(assinaturaId);
+  } catch (err) {
+    console.error("[webhooks/asaas] falha ao processar evento", body.event, payment?.id, err);
+    return NextResponse.json({ error: "Falha ao processar o evento." }, { status: 500 });
   }
 
   return NextResponse.json({ ok: true });

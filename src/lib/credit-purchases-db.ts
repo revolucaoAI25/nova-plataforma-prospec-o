@@ -88,29 +88,20 @@ export async function criarCompra(
  * Idempotente: só credita se a compra ainda estiver `pendente` — o Asaas
  * pode reenviar o mesmo evento mais de uma vez (entrega "at least once").
  * Usa sempre o cliente admin (webhook não tem sessão de usuário).
+ * `marcar_compra_paga_e_creditar` (0027_atomic_payment_credit.sql) faz o
+ * UPDATE guardado por status E o crédito na mesma transação — se o
+ * crédito falhasse como uma chamada separada depois do UPDATE, um erro
+ * transitório deixaria a compra marcada "paga" pra sempre sem o crédito
+ * nunca ter chegado, e nenhum reenvio do webhook corrigiria isso (a
+ * guarda de idempotência bloquearia reprocessar). Erro de verdade aqui
+ * propaga (o handler do webhook responde 500, o Asaas reentrega).
  */
 export async function marcarCompraPaga(asaasPaymentId: string): Promise<boolean> {
   const sbAdmin = createAdminClient();
-
-  const { data: compra } = await sbAdmin
-    .from("credit_purchases")
-    .select("id, user_id, quantidade_creditos, status")
-    .eq("asaas_payment_id", asaasPaymentId)
-    .maybeSingle();
-  if (!compra || compra.status !== "pendente") return false;
-
-  // .eq("status", "pendente") de novo aqui é o que torna isso seguro contra
-  // entrega duplicada do webhook: se outra chamada já tiver marcado como
-  // "pago" entre a leitura acima e este update, a cláusula WHERE não bate
-  // com nenhuma linha e `data` volta vazio — não credita duas vezes.
-  const { data: atualizado, error } = await sbAdmin
-    .from("credit_purchases")
-    .update({ status: "pago", pago_em: new Date().toISOString() })
-    .eq("id", compra.id)
-    .eq("status", "pendente")
-    .select("id");
-  if (error || !atualizado?.length) return false;
-
-  await sbAdmin.rpc("increment_creditos", { p_user_id: compra.user_id, p_delta: compra.quantidade_creditos });
-  return true;
+  const { data: creditado, error } = await sbAdmin.rpc("marcar_compra_paga_e_creditar", { p_payment_id: asaasPaymentId });
+  if (error) {
+    console.error("[marcarCompraPaga] falha ao processar pagamento", asaasPaymentId, error);
+    throw new Error(`Falha ao marcar compra paga: ${error.message}`);
+  }
+  return Boolean(creditado);
 }

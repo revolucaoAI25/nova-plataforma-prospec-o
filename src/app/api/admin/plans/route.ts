@@ -109,6 +109,25 @@ export async function DELETE(request: Request) {
   if (!parsed.success) return NextResponse.json({ error: "Dados inválidos." }, { status: 400 });
 
   const admin = createAdminClient();
+
+  // `plano_id` em profiles é ON DELETE SET NULL — remover o plano com
+  // assinantes ativos não cancela a cobrança deles no Asaas (continuam
+  // sendo cobrados), só apaga a referência ao plano: a próxima renovação
+  // credita 0 (plano não existe mais pra saber quanto). Bloqueia em vez
+  // de deixar isso acontecer silenciosamente — o admin já tem o toggle
+  // "Ativo" pra tirar da vitrine sem quebrar quem já assina.
+  const { count } = await admin
+    .from("profiles")
+    .select("id", { count: "exact", head: true })
+    .eq("plano_id", parsed.data.id)
+    .in("assinatura_status", ["ativa", "pendente", "inadimplente"]);
+  if (count && count > 0) {
+    return NextResponse.json(
+      { error: `Esse plano tem ${count} assinante(s) ativo(s). Desative-o (toggle "Ativo") em vez de remover, ou cancele as assinaturas antes.` },
+      { status: 409 },
+    );
+  }
+
   const { error } = await admin.from("plans").delete().eq("id", parsed.data.id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ ok: true });

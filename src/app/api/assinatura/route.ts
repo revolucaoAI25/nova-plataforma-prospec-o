@@ -38,8 +38,16 @@ export async function POST(request: Request) {
   const profile = await getProfile(supabase, user.id);
   if (!profile) return NextResponse.json({ error: "Perfil não encontrado." }, { status: 404 });
 
-  if (profile.assinatura_status === "ativa" || profile.assinatura_status === "pendente") {
-    return NextResponse.json({ error: "Você já tem uma assinatura ativa. Cancele antes de assinar outro plano." }, { status: 409 });
+  if (profile.assinatura_status === "ativa" || profile.assinatura_status === "pendente" || profile.assinatura_status === "inadimplente") {
+    // Inclui "inadimplente" de propósito: `assinarPlano` sobrescreve
+    // `asaas_subscription_id` com o novo id, e a assinatura antiga (ainda
+    // ativa no Asaas, só com cobrança vencida) nunca é cancelada — fica
+    // órfã, continua cobrando o cliente, e o webhook de um pagamento dela
+    // não bate com nenhum perfil (já apontamos pra outra assinatura) nem
+    // com nenhuma compra avulsa, então some silenciosamente. Cancelar
+    // antes de assinar de novo (DELETE já chama cancelarAssinatura no
+    // Asaas) evita esse órfão.
+    return NextResponse.json({ error: "Você já tem uma assinatura em aberto (ativa ou com pagamento pendente). Cancele antes de assinar outro plano." }, { status: 409 });
   }
 
   const parsed = bodySchema.safeParse(await request.json().catch(() => null));

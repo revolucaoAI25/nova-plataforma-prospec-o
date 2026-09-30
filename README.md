@@ -993,6 +993,46 @@ mas nada é processado — é só fila).
   o card "Renovação mensal" do dashboard com o mesmo significado nos dois
   ciclos. UI: toggle Mensal/Anual em `/creditos` → aba "Planos", mostrando
   o preço equivalente por mês no ciclo anual.
+- **Auditoria da lógica de pagamento (avulso + plano + add-on + webhook)**:
+  revisão pedida explicitamente depois do plano anual, achou e corrigiu 4
+  problemas reais:
+  1. *Assinatura órfã ao reassinar inadimplente*: `/api/assinatura` e
+     `/api/addons/[addonId]` só bloqueavam reassinar com status `ativa`/
+     `pendente`, não `inadimplente` — como `assinarPlano`/`assinarAddon`
+     sobrescrevem `asaas_subscription_id` (addon via upsert em
+     `user_id,addon_id`), a assinatura antiga (com cobrança vencida, mas
+     ainda ativa no Asaas) nunca era cancelada: continuava cobrando o
+     cliente e, uma vez órfã do nosso banco, nenhum webhook futuro dela
+     batia com nada (créditos_purchases/subscription/addon), então
+     desaparecia. Os dois endpoints agora bloqueiam `inadimplente`
+     também — a UI já tinha o botão "Cancelar" pra esse status.
+  2. *DELETE de plano/add-on com assinantes ativos*: hard-delete direto
+     na tabela, sem checar assinantes. `profiles.plano_id` é ON DELETE
+     SET NULL (renovação seguinte credita 0, cliente continua sendo
+     cobrado) e `user_addon_subscriptions.addon_id` é ON DELETE CASCADE
+     (a linha do assinante some inteira, sem cancelar a cobrança nem
+     deixar rastro pra ele cancelar). Ambos os endpoints DELETE agora
+     recusam (409) se houver assinante `ativa`/`pendente`/`inadimplente`
+     — o toggle "Ativo" já existente é o jeito certo de tirar da vitrine.
+  3. *Crédito não-atômico com a marca de "processado"*: `marcarCompraPaga`
+     e `processarPagamentoAssinatura` faziam o UPDATE/INSERT que garante
+     idempotência (contra reentrega do webhook) e o `increment_creditos`
+     como duas chamadas separadas — um erro transitório entre as duas
+     deixava o pagamento marcado como processado pra sempre sem o
+     crédito nunca ter chegado, e a guarda de idempotência impedia
+     qualquer reenvio futuro de corrigir isso. Fix:
+     `marcar_compra_paga_e_creditar`/`registrar_pagamento_assinatura_e_creditar`
+     (0027_atomic_payment_credit.sql) fazem as duas escritas na mesma
+     função plpgsql (uma transação).
+  4. *Webhook sempre respondia 200 OK*: mesmo quando uma das funções
+     acima falhava de verdade (não "evento repetido", um erro genuíno),
+     a rota respondia `{ ok: true }` incondicionalmente — o Asaas nunca
+     reentregava, e a falha não aparecia em log nenhum. Agora a rota
+     captura exceções e responde 500 (as funções chamadas já são
+     idempotentes, reentrega é segura), com `console.error` de quem
+     falhou e o id do evento. `cancelarAssinatura` também passou a
+     tratar 404 do Asaas (assinatura já removida por lá) como sucesso,
+     em vez de deixar o usuário travado sem conseguir cancelar localmente.
 
 ## Estrutura
 

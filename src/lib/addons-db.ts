@@ -92,7 +92,15 @@ export async function processarPagamentoAddon(asaasSubscriptionId: string, asaas
     })
     .select("id")
     .maybeSingle();
-  if (error || !inserido) return true; // conflito de unique (evento repetido) ou outro erro — não credita de novo, mas já sabemos que era um add-on.
+  if (error && error.code !== "23505") {
+    // 23505 = unique_violation (evento repetido, esperado). Qualquer outro
+    // erro é genuíno — só um log aqui (add-on não credita saldo, o único
+    // efeito é o feature_flag abaixo, que é seguro reaplicar num reenvio
+    // futuro do mesmo evento; não precisa da mesma atomicidade dos casos
+    // que mexem em créditos).
+    console.error("[processarPagamentoAddon] falha ao registrar pagamento", asaasPaymentId, error);
+  }
+  if (error || !inserido) return true;
 
   const { data: addonData } = await sbAdmin.from("addons").select("*").eq("id", assinatura.addon_id).maybeSingle();
   const addon = addonData as AddonRow | null;

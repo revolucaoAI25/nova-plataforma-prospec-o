@@ -140,9 +140,22 @@ export async function criarAssinatura(dados: {
   });
 }
 
-/** Encerra definitivamente a recorrência (o Asaas remove cobranças pendentes/vencidas, mantém as já pagas). */
+/**
+ * Encerra definitivamente a recorrência (o Asaas remove cobranças
+ * pendentes/vencidas, mantém as já pagas). 404 é tratado como sucesso —
+ * a assinatura já não existe mais no Asaas (ex: removida manualmente no
+ * dashboard) — pra não deixar o usuário travado sem conseguir cancelar
+ * localmente só porque o lado de lá já não tem o que cancelar.
+ */
 export async function cancelarAssinatura(subscriptionId: string): Promise<void> {
-  await req(`/subscriptions/${subscriptionId}`, { method: "DELETE" });
+  const [url, chave] = await Promise.all([baseUrl(), chaveApi()]);
+  const resp = await fetch(`${url}/subscriptions/${subscriptionId}`, {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json", access_token: chave, "User-Agent": "RevolucaoAI-ProspeccaoAtiva" },
+  });
+  if (!resp.ok && resp.status !== 404) {
+    throw new Error(`Asaas /subscriptions/${subscriptionId} HTTP ${resp.status}: ${(await resp.text()).slice(0, 300)}`);
+  }
 }
 
 /** A criação da assinatura não retorna a fatura da 1ª cobrança — precisa buscar separado pra redirecionar o cliente já no ato de assinar. */

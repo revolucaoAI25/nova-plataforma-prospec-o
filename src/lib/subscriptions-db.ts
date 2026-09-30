@@ -66,8 +66,15 @@ export async function cancelarPlano(sb: SupabaseClient, profile: Profile): Promi
  * Chamado pelo webhook quando uma cobrança com `payment.subscription`
  * preenchido é confirmada — é assim que diferenciamos renovação de
  * assinatura de compra avulsa (que nunca tem esse campo). Idempotente
- * via `asaas_payment_id` unique: se o INSERT falhar por conflito, é
- * reentrega do mesmo evento, não credita de novo.
+ * via `asaas_payment_id` unique. O INSERT em `subscription_payments` e o
+ * crédito acontecem juntos em `registrar_pagamento_assinatura_e_creditar`
+ * (0027_atomic_payment_credit.sql, mesma razão de
+ * `marcar_compra_paga_e_creditar` em credit-purchases-db.ts) — evita que
+ * um erro transitório entre as duas escritas deixe o pagamento
+ * "registrado" sem o crédito ter sido de fato concedido. Erro de verdade
+ * aqui propaga (o handler do webhook responde 500, o Asaas reentrega); o
+ * update de status/flags do perfil, feito depois, é seguro de repetir
+ * (idempotente por natureza) e por isso fica fora da transação atômica.
  */
 export async function processarPagamentoAssinatura(asaasSubscriptionId: string, asaasPaymentId: string, precoCentavos: number): Promise<boolean> {
   const sbAdmin = createAdminClient();
@@ -79,20 +86,6 @@ export async function processarPagamentoAssinatura(asaasSubscriptionId: string, 
     .maybeSingle();
   if (!dono) return false; // não é uma assinatura de PLANO conhecida — deixa o caller tentar add-on.
 
-  const { data: inserido, error } = await sbAdmin
-    .from("subscription_payments")
-    .insert({
-      user_id: dono.id,
-      plan_id: dono.plano_id,
-      asaas_subscription_id: asaasSubscriptionId,
-      asaas_payment_id: asaasPaymentId,
-      preco_centavos: precoCentavos,
-      status: "pago",
-    })
-    .select("id")
-    .maybeSingle();
-  if (error || !inserido) return true; // conflito de unique (evento repetido) ou outro erro — não credita de novo, mas já sabemos que era um plano.
-
   const { data: planoData } = await sbAdmin.from("plans").select("*").eq("id", dono.plano_id).maybeSingle();
   const plano = planoData as PlanRow | null;
   const creditosMensais = plano?.creditos_mensais ?? 0;
@@ -101,6 +94,20 @@ export async function processarPagamentoAssinatura(asaasSubscriptionId: string, 
   // represar 1/12 por mês sem ter um calendário próprio pra isso. Ver
   // comentário de topo de 0026_annual_billing.sql.
   const creditosConcedidos = dono.assinatura_ciclo === "anual" ? creditosMensais * 12 : creditosMensais;
+
+  const { data: registrado, error } = await sbAdmin.rpc("registrar_pagamento_assinatura_e_creditar", {
+    p_user_id: dono.id,
+    p_plan_id: dono.plano_id,
+    p_asaas_subscription_id: asaasSubscriptionId,
+    p_asaas_payment_id: asaasPaymentId,
+    p_preco_centavos: precoCentavos,
+    p_creditos: creditosConcedidos,
+  });
+  if (error) {
+    console.error("[processarPagamentoAssinatura] falha ao registrar pagamento", asaasPaymentId, error);
+    throw new Error(`Falha ao registrar pagamento de assinatura: ${error.message}`);
+  }
+  if (!registrado) return true; // conflito de unique (evento repetido) — não credita de novo, mas já sabemos que era um plano.
 
   const campos: Record<string, unknown> = {
     assinatura_status: "ativa",
@@ -119,10 +126,6 @@ export async function processarPagamentoAssinatura(asaasSubscriptionId: string, 
   }
 
   await sbAdmin.from("profiles").update(campos).eq("id", dono.id);
-
-  if (creditosConcedidos > 0) {
-    await sbAdmin.rpc("increment_creditos", { p_user_id: dono.id, p_delta: creditosConcedidos });
-  }
 
   return true;
 }
