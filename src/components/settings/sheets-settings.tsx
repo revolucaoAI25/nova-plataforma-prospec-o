@@ -123,7 +123,7 @@ export function SheetsSettings({
               </AlertDescription>
             </Alert>
           ) : !conectado ? (
-            <Button asChild className="self-start">
+            <Button asChild className="self-start" data-guia="conexao_sheets">
               <a href="/api/integrations/google-sheets/connect">
                 <Link2 className="h-4 w-4" /> Conectar conta Google
               </a>

@@ -48,12 +48,13 @@ No [painel do Supabase](https://supabase.com/dashboard), crie um projeto novo
 10. `supabase/migrations/0010_email_domains.sql` (verificação de domínio por usuário, disparo por e-mail)
 11. `supabase/migrations/0011_email_domains_global_unique.sql` (corrige falha de segurança multi-tenant — ver "Decisões de arquitetura")
 12. `supabase/migrations/0012_bigdatacorp_enrichment.sql` (enriquecimento de leads por CNPJ via BigDataCorp)
-13. Em seguida, `0013` a `0029`, sempre em ordem numérica. Destaques:
+13. Em seguida, `0013` a `0030`, sempre em ordem numérica. Destaques:
     `0028_seguranca_profiles.sql` (fecha escalonamento de privilégio — ver
     "Decisões de arquitetura") e `0029_limpeza_legado.sql` (remove colunas e
     tabelas antigas e conserta `platform_settings`). Rode a `0029` **depois**
     do deploy do código desta versão: o código antigo ainda lia as colunas
-    que ela apaga.
+    que ela apaga. `0030_onboarding.sql` cria as tabelas do onboarding com
+    presets.
 
 Em **Authentication → Providers**, deixe E-mail/senha habilitado (é o único método
 usado no login). Contas são criadas pelo admin — não há cadastro público.
@@ -1081,6 +1082,54 @@ mas nada é processado — é só fila).
     fluxo (vai ser substituída pelos presets gerados no onboarding). Admin
     reorganizado em abas: Usuários · Planos e preços · Chaves da plataforma.
 
+- **Onboarding com presets gerados por IA** (`/onboarding`,
+  `src/lib/onboarding/`):
+  - *Questionário* (`questionario.ts`): 7 etapas — empresa e oferta,
+    cliente ideal, decisor, canais, volume e tolerância a risco, base
+    própria, tom das mensagens. Perguntas condicionais, salvamento
+    automático e checagem de pendências antes de gerar.
+  - *Catálogo fechado de cenários* (`cenarios.ts`): 17 caminhos mapeados
+    por tipo de lead e canal (CNPJ → WhatsApp/e-mail/multicanal, com ou sem
+    sócio validado; recém-abertas; recuperação judicial; Maps com e sem
+    IA; LinkedIn por conexão, e-mail ou ABM com IA; audiência de
+    Instagram; reativação e enriquecimento de base própria; lista pro time
+    comercial). A IA **não inventa fluxo**: escolhe o cenário, preenche os
+    parâmetros e escreve as mensagens. O servidor normaliza os parâmetros e
+    monta o grafo com os mesmos schemas dos nós do construtor — então todo
+    preset é um fluxo válido e com custo calculável.
+  - *Custo e volume são do servidor, não da IA* (`estimativa.ts`): custo
+    por lead pelas ações de crédito do cenário, capacidade do canal
+    (WhatsApp 40/80/150 por dia conforme a tolerância, LinkedIn 15–25,
+    e-mail pelo limite do plano) e orçamento = créditos do plano assinado
+    (ou o saldo, sem plano). Cada plano sozinho cabe em até 80% do
+    orçamento; se passar, o volume é reduzido e o ajuste aparece pro
+    cliente.
+  - *Gerador + avaliador* (`ia.ts`, `prompt.ts`): uma IA monta os planos
+    A–D (alternativas de verdade: fonte, canal ou investimento diferentes,
+    com as regras de custo-benefício — ex.: sócio validado só compensa em
+    ticket médio/alto; negócio local começa pelo Maps, ~10x mais barato
+    que CNPJ + verificação no Maps). Uma segunda IA julga cada plano
+    (nota, veredito, pontos de atenção) e, se algum sai "arriscado" ou
+    "inviável", o gerador faz uma rodada de revisão com os ajustes. Sem
+    revisão humana. Structured output (Responses API + zod) garante o
+    formato. Roda no worker (`worker/onboarding-tick.ts`) com lease e
+    heartbeat, até 3 tentativas. Chave: `openai_api_key_plataforma` (Chaves
+    da plataforma) ou `OPENAI_API_KEY`; modelo: `onboarding_modelo_ia` ou
+    `ONBOARDING_MODELO_IA` (padrão `gpt-5`). Os textos pro cliente não
+    citam fornecedores.
+  - *Usar o plano → passo a passo → play* (`aplicar.ts`): "Usar este plano"
+    cria funil, campanhas (rascunho, com a cadência escrita pela IA) e o
+    fluxo desligado. O checklist é calculado do estado real
+    (`statusConexoes`, planilha da base, mensagens, créditos), nunca de
+    marcação manual. O play liga campanhas e fluxo usando o primeiro
+    recurso conectado de cada canal (WhatsApp só instância não oficial).
+  - *Guia flutuante* (`guia-flutuante.tsx`): enquanto houver plano em
+    configuração, um cartão no canto mostra o próximo passo, leva à tela
+    certa e destaca o ponto exato (`data-guia="<id do passo>"`). Reserva
+    espaço no rodapé da página pra não cobrir botões e começa recolhido no
+    celular. A visão geral mostra a chamada pro onboarding até existir um
+    plano rodando.
+
 ## Estrutura
 
 ```
@@ -1091,10 +1140,11 @@ src/
       busca/cnpj|maps|instagram|linkedin/  as quatro buscas
       historico/                lista + detalhe de pesquisas
       funil/                     Kanban de pipeline (funil/[id] = board)
-      automacoes/                buscas agendadas + construtor de fluxos (fluxos/novo, fluxos/[id])
+      automacoes/                construtor de fluxos (fluxos/novo, fluxos/[id])
       disparo/                   instâncias, campanhas, cadência, solicitação de canal oficial
-      configuracoes/              chaves próprias (Maps, Apify) e Google Sheets
-      admin/                      usuários, créditos, chaves administradas, canal oficial
+      conexoes/                  status das conexões (WhatsApp, e-mail, LinkedIn, Sheets, OpenAI)
+      onboarding/                questionário → planos A–D gerados por IA → passo a passo e play
+      admin/                      usuários, planos e preços, chaves da plataforma, canal oficial
     api/                       rotas de servidor (nunca expõem chaves ao cliente), incl. flows/
   components/
     ui/                        componentes de base (botão, input, tabela...)

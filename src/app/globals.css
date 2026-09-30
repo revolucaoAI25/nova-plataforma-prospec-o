@@ -348,8 +348,22 @@ body {
   animation: dialog-in 0.18s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
+/* ── Guia do onboarding: destaca onde o cliente precisa agir ─────── */
+@keyframes guia-pulso {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--color-primary) 45%, transparent); }
+  50%      { box-shadow: 0 0 0 8px color-mix(in oklab, var(--color-primary) 0%, transparent); }
+}
+.guia-destaque {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 4px;
+  border-radius: 14px;
+  scroll-margin: 96px;
+  animation: guia-pulso 1.8s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
+  .guia-destaque { animation: none !important; }
   .reveal { opacity: 1; animation: none !important; }
   .animate-pulse-glow, .animate-pop { animation: none !important; }
   * {

@@ -66,12 +66,13 @@ Hoje é ${new Date().toISOString().slice(0, 10)}.
 - Plano A é o ponto de partida recomendado: melhor custo-benefício pro caso dele. Inclua pelo menos um plano barato (poucos créditos por lead) e, se o ticket justificar, um plano mais qualificado (sócio/decisor validado, personalização por IA).
 - Respeite a preferência de canal do cliente. Pode propor outro canal em UM plano se houver motivo forte — e explique o motivo no porQue.
 - Custo-benefício é central. Pense assim:
-  - Enriquecer com sócio e contato validado (bigdatacorp, ~40 créditos/lead) vale quando o ticket é médio/alto e o decisor é o dono/sócio, ou quando o telefone da base pública de CNPJ costuma estar desatualizado pro segmento.
+  - Enriquecer com sócio e contato validado (ação de crédito "bigdatacorp", ~40 créditos/lead) vale quando o ticket é médio/alto e o decisor é o dono/sócio, ou quando o telefone da base pública de CNPJ costuma estar desatualizado pro segmento.
   - Negócio local com ponto físico: comece pelo Google Maps (~5/lead) — é ~10x mais barato que CNPJ + verificação no Maps (~56/lead). Esse último só vale quando os filtros de CNPJ (porte, capital, idade) são indispensáveis.
   - Pesquisa por IA não gasta créditos, mas gasta a conta OpenAI do cliente e é lenta: use pra personalização em ticket alto e volume baixo. ${ctx.temChaveOpenai ? "O cliente tem chave OpenAI." : "O cliente NÃO tem chave OpenAI: se usar cenário com IA, avise isso em riscos."}
   - Cargo específico em empresa média/grande → LinkedIn. PME e dono atendendo → CNPJ + WhatsApp.
   - Base própria parada é o começo mais barato (0 créditos) — se ele tem base, considere seriamente um plano de reativação.
   - O gargalo costuma ser o canal, não a extração: WhatsApp aguenta ~40-150 envios/dia por número (depende da tolerância a risco), LinkedIn ~15-25 convites/dia, e-mail o limite diário do plano. Não adianta extrair mais do que o canal aborda.
+- Nos textos pro cliente (diagnóstico, porQue, comoFunciona, riscos, parecer), nunca cite fornecedores ou APIs por nome (BigDataCorp, Casa dos Dados, Apify, Unipile, Resend, Evolution etc.). Fale da função: "base pública de CNPJ", "enriquecimento de sócios e contatos", "busca no Google Maps", "pesquisa por IA".
 - Orçamento: o cliente tem ${orc.creditosMes} créditos/mês (${orc.origemCreditos === "plano" ? `plano ${orc.nomePlano}` : "saldo atual, sem plano mensal"}). Cada plano sozinho deve caber em até 80% disso; o servidor recalcula e reduz o volume se passar.
 - Parâmetros:
   - leadsPorExecucao: volume mensal desejado ÷ (dias por semana × 4,3), limitado pelo canal. LinkedIn: 15 a 20.
@@ -112,7 +113,7 @@ Para cada plano, avalie:
 4. Mensagens: soam humanas, curtas, específicas pro público? Usam as provas/oferta do cliente? Têm CTA claro e uma saída educada? Usam variáveis de forma segura (nunca começando com variável que pode vir vazia)?
 5. Diversidade: os planos são alternativas realmente diferentes?
 
-Dê nota de 0 a 10 e um veredito: "recomendado" (8+, faria agora), "viavel" (6-7), "arriscado" (4-5, precisa ajuste) ou "inviavel" (0-3). Seja específico nos pontos de atenção — cada um deve dizer O QUE mudar. Em ajustes, descreva a correção concreta (ou null se nada a corrigir). Escolha o planoPrincipal (o que você mandaria o cliente começar) e escreva um parecer final de 3-5 frases, dirigido ao cliente, explicando a recomendação.
+Dê nota de 0 a 10 e um veredito: "recomendado" (8+, faria agora), "viavel" (6-7), "arriscado" (4-5, precisa ajuste) ou "inviavel" (0-3). Seja específico nos pontos de atenção — cada um deve dizer O QUE mudar. Em ajustes, descreva a correção concreta (ou null se nada a corrigir). Escolha o planoPrincipal (o que você mandaria o cliente começar) e escreva um parecer final de 3-5 frases, dirigido ao cliente, explicando a recomendação. Tudo o que você escreve é lido pelo cliente: nunca cite fornecedores ou APIs por nome (BigDataCorp, Casa dos Dados, Apify, Unipile etc.) — fale da função ("base pública de CNPJ", "enriquecimento de sócios e contatos").
 
 ## Respostas do cliente
 ${ctx.respostasTexto}`;

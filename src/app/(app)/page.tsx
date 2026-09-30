@@ -9,6 +9,9 @@ import { PageHeader } from "@/components/layout/page-header";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Reveal } from "@/components/ui/reveal";
+import { OnboardingCta } from "@/components/dashboard/onboarding-cta";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { listarAplicacoes, obterOnboarding } from "@/lib/onboarding/db";
 
 const FONTE_LABEL: Record<string, string> = { cnpj: "CNPJ", google_maps: "Google Maps", instagram: "Instagram", linkedin: "LinkedIn" };
 const FONTE_ICON: Record<string, typeof Building2> = { cnpj: Building2, google_maps: MapPin, instagram: AtSign, linkedin: UserSearch };
@@ -19,9 +22,12 @@ export default async function DashboardPage() {
     data: { user },
   } = await supabase.auth.getUser();
   const profile = user ? await getProfile(supabase, user.id) : null;
-  const [pesquisas, { totalPesquisas, totalLeads }] = await Promise.all([
+  const admin = createAdminClient();
+  const [pesquisas, { totalPesquisas, totalLeads }, onboarding, aplicacoes] = await Promise.all([
     listarPesquisas(supabase, 5),
     contarPesquisasELeads(supabase),
+    user ? obterOnboarding(admin, user.id) : null,
+    user ? listarAplicacoes(admin, user.id) : [],
   ]);
 
   return (
@@ -34,8 +40,12 @@ export default async function DashboardPage() {
         <PageHeader
           eyebrow="Painel"
           title="Visão geral"
-          description={`Bem-vindo(a)${profile ? `, ${profile.email}` : ""}. Extraia leads por CNPJ, Google Maps ou Instagram.`}
+          description={`Bem-vindo(a)${profile ? `, ${profile.email}` : ""}. Extraia leads, aborde pelos seus canais e acompanhe tudo no funil.`}
         />
+      </Reveal>
+
+      <Reveal delay={30}>
+        <OnboardingCta status={onboarding?.status ?? null} aplicacoes={aplicacoes} />
       </Reveal>
 
       <Reveal delay={60} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

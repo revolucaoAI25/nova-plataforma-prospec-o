@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getProfile } from "@/lib/credits";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Topbar } from "@/components/layout/topbar";
+import { GuiaFlutuante } from "@/components/onboarding/guia-flutuante";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
@@ -48,8 +49,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           empurra a página inteira pro lado em vez de rolar só por dentro. */}
       <div className="flex min-w-0 flex-1 flex-col transition-[padding-left] duration-200 md:pl-[var(--app-sidebar-w)]">
         <Topbar profile={profile} />
-        <main className="min-w-0 flex-1 p-4 md:p-8">{children}</main>
+        <main className="min-w-0 flex-1 p-4 pb-[max(1rem,var(--guia-espaco,0px))] md:p-8 md:pb-[max(2rem,var(--guia-espaco,0px))]">{children}</main>
       </div>
+      <GuiaFlutuante />
     </div>
   );
 }

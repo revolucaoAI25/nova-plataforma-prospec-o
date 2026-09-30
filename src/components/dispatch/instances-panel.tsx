@@ -140,7 +140,7 @@ export function InstancesPanel({ instanciasIniciais }: { instanciasIniciais: Wha
           </div>
         ))}
 
-        <form onSubmit={criar} className="flex gap-2">
+        <form onSubmit={criar} className="flex gap-2" data-guia="conexao_whatsapp">
           <Input value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Nome da instância (ex: WhatsApp Vendas)" />
           <Input
             type="number"

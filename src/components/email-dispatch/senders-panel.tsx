@@ -99,7 +99,7 @@ export function SendersPanel({ sendersIniciais, dominiosVerificados }: { senders
           </div>
         ))}
 
-        <form onSubmit={criar} className="flex flex-col gap-3 rounded-xl border border-dashed border-border p-3">
+        <form onSubmit={criar} className="flex flex-col gap-3 rounded-xl border border-dashed border-border p-3" data-guia="conexao_email">
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="sender-nome">Nome interno</Label>

@@ -19,6 +19,7 @@ import {
   Contact,
   Kanban,
   Coins,
+  Compass,
 } from "lucide-react";
 
 export interface NavLeaf {
@@ -79,7 +80,10 @@ export function buildNavSections({
 
   const sections: NavSection[] = [
     {
-      items: [{ type: "link", href: "/", label: "Visão geral", icon: LayoutDashboard }],
+      items: [
+        { type: "link", href: "/", label: "Visão geral", icon: LayoutDashboard },
+        { type: "link", href: "/onboarding", label: "Plano de prospecção", icon: Compass },
+      ],
     },
     {
       label: "Prospecção",

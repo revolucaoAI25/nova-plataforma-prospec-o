@@ -131,7 +131,7 @@ export function AccountsPanel({ contasIniciais }: { contasIniciais: LinkedinAcco
           <ContaCard key={c.id} conta={c} onAtualizada={atualizarConta} onRemover={remover} />
         ))}
 
-        <form onSubmit={criar} className="flex gap-2">
+        <form onSubmit={criar} className="flex gap-2" data-guia="conexao_linkedin">
           <Input value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Nome da conta (ex: Vendas — João)" />
           <Button type="submit" disabled={creating}>
             <Plus className="h-4 w-4" /> {creating ? "Gerando link…" : "Conectar LinkedIn"}

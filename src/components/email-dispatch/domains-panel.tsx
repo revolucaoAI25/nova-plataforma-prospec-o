@@ -157,7 +157,7 @@ export function DomainsPanel({ dominiosIniciais }: { dominiosIniciais: EmailDoma
           </div>
         ))}
 
-        <form onSubmit={criar} className="flex flex-col gap-3 rounded-xl border border-dashed border-border p-3 sm:flex-row sm:items-end">
+        <form onSubmit={criar} className="flex flex-col gap-3 rounded-xl border border-dashed border-border p-3 sm:flex-row sm:items-end" data-guia="conexao_email">
           <div className="flex flex-1 flex-col gap-1.5">
             <Label htmlFor="dominio-novo">Domínio</Label>
             <Input id="dominio-novo" value={novoDominio} onChange={(e) => setNovoDominio(e.target.value)} placeholder="seudominio.com" />

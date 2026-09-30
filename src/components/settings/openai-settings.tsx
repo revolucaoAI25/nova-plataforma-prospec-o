@@ -28,7 +28,7 @@ export function OpenAiSettings({ profile }: { profile: Profile }) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+    <form onSubmit={handleSubmit} className="flex flex-col gap-6" data-guia="conexao_openai">
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base"><BrainCircuit className="h-4 w-4 text-primary" /> OpenAI</CardTitle>

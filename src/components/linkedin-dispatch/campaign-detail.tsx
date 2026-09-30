@@ -317,7 +317,7 @@ export function CampaignDetail({
         </CardContent>
       </Card>
 
-      <Card>
+      <Card data-guia="mensagens_linkedin">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base"><ListOrdered className="h-4 w-4 text-primary" /> Cadência</CardTitle>
           <CardDescription>

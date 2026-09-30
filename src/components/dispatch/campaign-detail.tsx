@@ -326,7 +326,7 @@ export function CampaignDetail({
         </CardContent>
       </Card>
 
-      <Card>
+      <Card data-guia="mensagens_whatsapp">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base"><ListOrdered className="h-4 w-4 text-primary" /> Cadência de mensagens</CardTitle>
           <CardDescription>Cada etapa dispara após o atraso configurado desde a etapa anterior (ou desde a inscrição, na 1ª).</CardDescription>
