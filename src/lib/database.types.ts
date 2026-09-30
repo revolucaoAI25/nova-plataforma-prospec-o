@@ -160,6 +160,7 @@ export interface PlanRow extends PlanFeatureFlags {
   nome: string;
   preco_centavos: number;
   creditos_mensais: number;
+  email_limite_diario: number | null;
   ordem: number;
   ativo: boolean;
   descricao: string | null;
@@ -182,6 +183,41 @@ export interface SubscriptionPaymentRow {
   id: string;
   user_id: string;
   plan_id: string | null;
+  asaas_subscription_id: string;
+  asaas_payment_id: string | null;
+  preco_centavos: number;
+  status: "pago" | "falhou";
+  criado_em: string;
+}
+
+/** Add-on pago avulso por assinatura recorrente própria — ver 0025_addon_subscriptions.sql. */
+export interface AddonRow {
+  id: string;
+  nome: string;
+  preco_centavos: number;
+  feature_flag: keyof PlanFeatureFlags;
+  ordem: number;
+  ativo: boolean;
+  descricao: string | null;
+  criado_em: string;
+}
+
+export type AddonSubscriptionStatus = "pendente" | "ativa" | "inadimplente" | "cancelada";
+
+export interface UserAddonSubscriptionRow {
+  id: string;
+  user_id: string;
+  addon_id: string;
+  asaas_subscription_id: string | null;
+  status: AddonSubscriptionStatus;
+  criado_em: string;
+  atualizado_em: string;
+}
+
+export interface AddonPaymentRow {
+  id: string;
+  user_id: string;
+  addon_id: string | null;
   asaas_subscription_id: string;
   asaas_payment_id: string | null;
   preco_centavos: number;

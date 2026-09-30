@@ -1,14 +1,16 @@
-import { Coins, Crown, Package } from "lucide-react";
+import { Coins, Crown, Package, Puzzle } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getProfile } from "@/lib/credits";
 import { listarPacotesAtivos, listarComprasDoUsuario } from "@/lib/credit-purchases-db";
 import { listarPlanosAtivos } from "@/lib/subscriptions-db";
+import { listarAddonsAtivos, listarAssinaturasAddonsDoUsuario } from "@/lib/addons-db";
 import { PageHeader } from "@/components/layout/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { PacotesGrid } from "@/components/creditos/pacotes-grid";
 import { HistoricoCompras } from "@/components/creditos/historico-compras";
 import { PlanosGrid } from "@/components/creditos/planos-grid";
+import { AddonsGrid } from "@/components/creditos/addons-grid";
 import { asaasConfigurado } from "@/lib/integrations/asaas";
 import { redirect } from "next/navigation";
 
@@ -22,10 +24,12 @@ export default async function CreditosPage() {
   const profile = await getProfile(supabase, user.id);
   if (!profile) redirect("/login");
 
-  const [pacotes, compras, planos, configurado] = await Promise.all([
+  const [pacotes, compras, planos, addons, assinaturasAddons, configurado] = await Promise.all([
     listarPacotesAtivos(supabase),
     listarComprasDoUsuario(supabase, user.id),
     listarPlanosAtivos(supabase),
+    listarAddonsAtivos(supabase),
+    listarAssinaturasAddonsDoUsuario(supabase, user.id),
     asaasConfigurado(),
   ]);
 
@@ -46,6 +50,7 @@ export default async function CreditosPage() {
         <TabsList>
           <TabsTrigger value="planos"><Crown className="h-3.5 w-3.5" /> Planos</TabsTrigger>
           <TabsTrigger value="avulso"><Package className="h-3.5 w-3.5" /> Créditos avulsos</TabsTrigger>
+          {addons.length > 0 && <TabsTrigger value="extras"><Puzzle className="h-3.5 w-3.5" /> Extras</TabsTrigger>}
         </TabsList>
         <TabsContent value="planos">
           <PlanosGrid
@@ -60,6 +65,16 @@ export default async function CreditosPage() {
           <PacotesGrid pacotes={pacotes} temCpfCnpj={Boolean(profile.cpf_cnpj)} configurado={configurado} />
           <HistoricoCompras comprasIniciais={compras} />
         </TabsContent>
+        {addons.length > 0 && (
+          <TabsContent value="extras">
+            <AddonsGrid
+              addons={addons}
+              assinaturasIniciais={assinaturasAddons}
+              temCpfCnpj={Boolean(profile.cpf_cnpj)}
+              configurado={configurado}
+            />
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   );

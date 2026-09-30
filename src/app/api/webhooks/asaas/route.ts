@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { marcarCompraPaga } from "@/lib/credit-purchases-db";
 import { processarPagamentoAssinatura, marcarAssinaturaInadimplente } from "@/lib/subscriptions-db";
+import { processarPagamentoAddon, marcarAddonInadimplente } from "@/lib/addons-db";
 import { configPlataforma } from "@/lib/platform-settings";
 
 // Rota PÚBLICA (sem auth de usuário) — recebida pelo Asaas quando o
@@ -38,12 +39,15 @@ export async function POST(request: Request) {
 
   if (EVENTOS_PAGO.has(body.event) && payment?.id) {
     if (assinaturaId) {
-      await processarPagamentoAssinatura(assinaturaId, payment.id, Math.round((payment.value ?? 0) * 100));
+      const valorCentavos = Math.round((payment.value ?? 0) * 100);
+      const foiPlano = await processarPagamentoAssinatura(assinaturaId, payment.id, valorCentavos);
+      if (!foiPlano) await processarPagamentoAddon(assinaturaId, payment.id, valorCentavos);
     } else {
       await marcarCompraPaga(payment.id);
     }
   } else if (body.event === "PAYMENT_OVERDUE" && assinaturaId) {
-    await marcarAssinaturaInadimplente(assinaturaId);
+    const foiPlano = await marcarAssinaturaInadimplente(assinaturaId);
+    if (!foiPlano) await marcarAddonInadimplente(assinaturaId);
   }
 
   return NextResponse.json({ ok: true });

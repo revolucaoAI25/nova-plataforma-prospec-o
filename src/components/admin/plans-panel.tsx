@@ -30,6 +30,7 @@ function LinhaPlano({ plano, onRemovido }: { plano: PlanRow; onRemovido: (id: st
   const [nome, setNome] = useState(plano.nome);
   const [preco, setPreco] = useState(plano.preco_centavos / 100);
   const [creditosMensais, setCreditosMensais] = useState(plano.creditos_mensais);
+  const [emailLimiteDiario, setEmailLimiteDiario] = useState(plano.email_limite_diario ?? 0);
   const [ativo, setAtivo] = useState(plano.ativo);
   const [flags, setFlags] = useState<PlanFeatureFlags>(plano);
   const [saving, setSaving] = useState(false);
@@ -40,7 +41,10 @@ function LinhaPlano({ plano, onRemovido }: { plano: PlanRow; onRemovido: (id: st
     const resp = await fetch("/api/admin/plans", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id: plano.id, nome, precoCentavos: Math.round(preco * 100), creditosMensais }),
+      body: JSON.stringify({
+        id: plano.id, nome, precoCentavos: Math.round(preco * 100), creditosMensais,
+        emailLimiteDiario: emailLimiteDiario > 0 ? emailLimiteDiario : null,
+      }),
     });
     setSaving(false);
     if (resp.ok) setDirty(false);
@@ -113,6 +117,15 @@ function LinhaPlano({ plano, onRemovido }: { plano: PlanRow; onRemovido: (id: st
                 <Switch checked={flags[chave]} onCheckedChange={(v) => alternarFlag(chave, v)} />
               </label>
             ))}
+            <label className="flex items-center justify-between gap-3 text-sm">
+              <span>Cota de e-mail (envios/dia)</span>
+              <Input
+                type="number" min={0} className="h-8 w-24"
+                value={emailLimiteDiario}
+                onChange={(e) => { setEmailLimiteDiario(Number(e.target.value)); setDirty(true); }}
+              />
+            </label>
+            <p className="text-xs text-muted-2">0 = sem limite. Usado como padrão ao criar um novo remetente — clique em &quot;Salvar&quot; pra aplicar.</p>
           </PopoverContent>
         </Popover>
       </TableCell>
@@ -156,7 +169,7 @@ export function PlansPanel({ planosIniciais }: { planosIniciais: PlanRow[] }) {
     const data = await resp.json();
     setPlanos((prev) => [...prev, {
       id: data.id, nome: novoNome.trim(), preco_centavos: Math.round(Number(novoPreco) * 100),
-      creditos_mensais: Number(novosCreditos), ordem: prev.length, ativo: true, descricao: null, criado_em: new Date().toISOString(),
+      creditos_mensais: Number(novosCreditos), email_limite_diario: null, ordem: prev.length, ativo: true, descricao: null, criado_em: new Date().toISOString(),
       disparo_habilitado: false, instagram_visible: false, linkedin_visible: false,
       enriquecimento_ia_habilitado: false, bigdatacorp_enrichment_habilitado: false,
       email_disparo_habilitado: false, linkedin_disparo_habilitado: false,

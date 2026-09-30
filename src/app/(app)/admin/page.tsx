@@ -5,12 +5,13 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getProfile } from "@/lib/credits";
 import { PLATFORM_SETTINGS_META } from "@/lib/platform-settings";
-import type { CreditCostRow, CreditPackageRow, PlanRow, PlatformSettingKey, UserStatsRow } from "@/lib/database.types";
+import type { AddonRow, CreditCostRow, CreditPackageRow, PlanRow, PlatformSettingKey, UserStatsRow } from "@/lib/database.types";
 import { AdminUsersTable } from "@/components/admin/admin-users-table";
 import { CreateUserForm } from "@/components/admin/create-user-form";
 import { CreditCostsPanel } from "@/components/admin/credit-costs-panel";
 import { CreditPackagesPanel } from "@/components/admin/credit-packages-panel";
 import { PlansPanel } from "@/components/admin/plans-panel";
+import { AddonsPanel } from "@/components/admin/addons-panel";
 import { PlatformSettingsPanel } from "@/components/admin/platform-settings-panel";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/layout/page-header";
@@ -35,6 +36,8 @@ export default async function AdminPage() {
   const pacotes = (pacotesData as CreditPackageRow[]) ?? [];
   const { data: planosData } = await supabase.from("plans").select("*").order("ordem");
   const planos = (planosData as PlanRow[]) ?? [];
+  const { data: addonsData } = await supabase.from("addons").select("*").order("ordem");
+  const addons = (addonsData as AddonRow[]) ?? [];
 
   const admin = createAdminClient();
   const { data: settingsData } = await admin.from("platform_settings").select("chave, valor, atualizado_em");
@@ -74,6 +77,7 @@ export default async function AdminPage() {
       <PlatformSettingsPanel itensIniciais={platformSettings} />
       <CreditCostsPanel custos={custos} />
       <PlansPanel planosIniciais={planos} />
+      <AddonsPanel addonsIniciais={addons} />
       <CreditPackagesPanel pacotesIniciais={pacotes} />
       <AdminUsersTable users={users} currentUserId={user.id} />
     </div>

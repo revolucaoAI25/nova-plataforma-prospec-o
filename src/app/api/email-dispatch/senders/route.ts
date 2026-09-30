@@ -38,7 +38,18 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "O domínio desse e-mail ainda não foi verificado. Verifique-o em Disparo por E-mail → Domínios antes de criar o remetente." }, { status: 403 });
   }
 
-  const id = await criarSender(supabase, user.id, parsed.data);
+  // Sem limite explícito no request, usa a cota diária do plano do usuário
+  // como ponto de partida (editável por remetente depois, como já era).
+  let limiteDiarioEnvios = parsed.data.limiteDiarioEnvios;
+  if (limiteDiarioEnvios === undefined) {
+    const { data: profile } = await supabase.from("profiles").select("plano_id").eq("id", user.id).maybeSingle();
+    if (profile?.plano_id) {
+      const { data: plano } = await supabase.from("plans").select("email_limite_diario").eq("id", profile.plano_id).maybeSingle();
+      limiteDiarioEnvios = plano?.email_limite_diario ?? undefined;
+    }
+  }
+
+  const id = await criarSender(supabase, user.id, { ...parsed.data, limiteDiarioEnvios });
   if (!id) return NextResponse.json({ error: "Erro ao salvar o remetente." }, { status: 500 });
 
   return NextResponse.json({ id }, { status: 201 });

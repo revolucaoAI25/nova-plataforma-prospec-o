@@ -937,12 +937,43 @@ mas nada é processado — é só fila).
     do que já vem incluso no plano (incentivo a migrar de plano em vez de
     só comprar avulso, sem ser punitivo), com desconto por volume no
     pacote maior.
-  - Fora de escopo desta migration (dados, não código): cota mensal de
-    e-mail diferenciada por plano (hoje o limite é só por remetente,
-    `email_senders.limite_diario_envios`, não por plano) e um mecanismo
-    de compra self-service dos add-ons (LinkedIn/oficial) — ambos ficam
-    como próxima decisão de produto quando o checkout de add-ons entrar
-    em pauta.
+  - **Atualização**: os dois itens que este bullet listava como "fora de
+    escopo" foram resolvidos nos dois bullets seguintes — cota de e-mail
+    por plano e checkout self-service de add-ons.
+- **Cota de e-mail por plano** (migration `0024_plan_email_quota.sql`):
+  `plans.email_limite_diario` (Starter 100/dia, Pro 300/dia, Business
+  1000/dia — mesma unidade diária que `email_senders.limite_diario_envios`
+  já suportava, sem inventar um contador mensal agregado novo). Usado como
+  valor padrão de qualquer remetente novo que o usuário criar (rota
+  `POST /api/email-dispatch/senders`) — o usuário continua podendo editar
+  por remetente depois, como já era. Editável em `/admin` (popover
+  "Recursos" de `PlansPanel`, junto dos feature flags).
+- **Add-ons pagos por assinatura recorrente própria** (migration
+  `0025_addon_subscriptions.sql`), pedido explícito: em vez de só
+  liberar disparo por LinkedIn nos planos mais caros, qualquer usuário
+  pode assinar esse recurso separadamente, como uma segunda assinatura
+  Asaas independente do plano. Como `profiles` só tem colunas SINGULARES
+  pra assinatura (`plano_id`/`asaas_subscription_id`/`assinatura_status`
+  — não cabe um usuário com plano + add-on ativos ao mesmo tempo), a
+  solução é uma tabela nova em vez de reaproveitar essas colunas:
+  `addons` (catálogo, mirror mínimo de `plans` — nome, preço,
+  `feature_flag` que concede) + `user_addon_subscriptions` (1 linha por
+  `(usuário, add-on)`, com seu próprio `asaas_subscription_id`/status —
+  equivalente em linhas do que as 3 colunas singulares fazem pro plano) +
+  `addon_payments` (mirror de `subscription_payments`, alimentada pelo
+  webhook). O webhook do Asaas (`/api/webhooks/asaas`) agora tenta
+  `processarPagamentoAssinatura` primeiro (plano) e só se não bater
+  tenta `processarPagamentoAddon` — mesmo `payment.subscription` do
+  Asaas serve pros dois casos, só muda em qual tabela o
+  `asaas_subscription_id` é procurado. v1 cobre só o add-on de disparo
+  por LinkedIn (único "extra" da tabela de preços com um flag binário
+  dedicado e sem dependência de provisionamento manual) — o canal
+  oficial de WhatsApp continua de fora de propósito, já que depende de
+  aprovação manual do admin de qualquer forma (`/disparo/solicitar-oficial`),
+  então cobrar por ele nesta v1 é uma decisão na hora de aprovar a
+  solicitação, não um checkout. UI em `/creditos` → aba "Extras" (só
+  aparece se houver algum add-on ativo) + CRUD em `/admin`
+  (`AddonsPanel`, mesmo padrão de `PlansPanel`).
 
 ## Estrutura
 

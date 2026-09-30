@@ -62,7 +62,7 @@ export async function cancelarPlano(sb: SupabaseClient, profile: Profile): Promi
  * via `asaas_payment_id` unique: se o INSERT falhar por conflito, é
  * reentrega do mesmo evento, não credita de novo.
  */
-export async function processarPagamentoAssinatura(asaasSubscriptionId: string, asaasPaymentId: string, precoCentavos: number): Promise<void> {
+export async function processarPagamentoAssinatura(asaasSubscriptionId: string, asaasPaymentId: string, precoCentavos: number): Promise<boolean> {
   const sbAdmin = createAdminClient();
 
   const { data: dono } = await sbAdmin
@@ -70,7 +70,7 @@ export async function processarPagamentoAssinatura(asaasSubscriptionId: string, 
     .select("id, plano_id, assinatura_status")
     .eq("asaas_subscription_id", asaasSubscriptionId)
     .maybeSingle();
-  if (!dono) return; // assinatura cancelada/desconhecida — ignora silenciosamente.
+  if (!dono) return false; // não é uma assinatura de PLANO conhecida — deixa o caller tentar add-on.
 
   const { data: inserido, error } = await sbAdmin
     .from("subscription_payments")
@@ -84,7 +84,7 @@ export async function processarPagamentoAssinatura(asaasSubscriptionId: string, 
     })
     .select("id")
     .maybeSingle();
-  if (error || !inserido) return; // conflito de unique (evento repetido) ou outro erro — não credita.
+  if (error || !inserido) return true; // conflito de unique (evento repetido) ou outro erro — não credita de novo, mas já sabemos que era um plano.
 
   const { data: planoData } = await sbAdmin.from("plans").select("*").eq("id", dono.plano_id).maybeSingle();
   const plano = planoData as PlanRow | null;
@@ -111,13 +111,18 @@ export async function processarPagamentoAssinatura(asaasSubscriptionId: string, 
   if (creditosMensais > 0) {
     await sbAdmin.rpc("increment_creditos", { p_user_id: dono.id, p_delta: creditosMensais });
   }
+
+  return true;
 }
 
-/** Chamado pelo webhook em falha/vencimento de cobrança de assinatura (PAYMENT_OVERDUE) — não credita nada, só marca o status pra UI avisar o usuário. */
-export async function marcarAssinaturaInadimplente(asaasSubscriptionId: string): Promise<void> {
+/** Chamado pelo webhook em falha/vencimento de cobrança de assinatura (PAYMENT_OVERDUE) — não credita nada, só marca o status pra UI avisar o usuário. Retorna se era uma assinatura de PLANO conhecida, pra o caller tentar add-on senão. */
+export async function marcarAssinaturaInadimplente(asaasSubscriptionId: string): Promise<boolean> {
   const sbAdmin = createAdminClient();
-  await sbAdmin
+  const { data } = await sbAdmin
     .from("profiles")
     .update({ assinatura_status: "inadimplente" })
-    .eq("asaas_subscription_id", asaasSubscriptionId);
+    .eq("asaas_subscription_id", asaasSubscriptionId)
+    .select("id")
+    .maybeSingle();
+  return Boolean(data);
 }
