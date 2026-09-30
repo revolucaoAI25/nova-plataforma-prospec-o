@@ -29,6 +29,13 @@ export async function executarExtracaoCnpj(ctx: FlowExecutorContext): Promise<Fl
   const apenasNovos = config.apenasNovos !== false;
   const mapsModo = (config.mapsModo as "nao_usar" | "enriquecer" | "filtrar" | "filtrar_enriquecer") || "nao_usar";
   const minAvaliacoes = Number(config.minAvaliacoes ?? 0);
+  // Janela móvel ("abertas nos últimos N dias") tem prioridade sobre as datas
+  // fixas — um fluxo agendado com data fixa deixaria de achar empresas novas.
+  const ultimosDias = Number(config.aberturaUltimosDias ?? 0);
+  const dataAberturaInicio = ultimosDias > 0
+    ? new Date(Date.now() - ultimosDias * 86_400_000).toISOString().slice(0, 10)
+    : String(config.dataAberturaInicio || "");
+  const dataAberturaFim = ultimosDias > 0 ? "" : String(config.dataAberturaFim || "");
 
   const profile = await getProfile(sb, userId);
   if (!profile) return { status: "erro", erro: "Perfil não encontrado." };
@@ -74,8 +81,8 @@ export async function executarExtracaoCnpj(ctx: FlowExecutorContext): Promise<Fl
       somenteCelular: tipoTelefone === "celular",
       somenteFixo: tipoTelefone === "fixo",
       excluirEmailContab: config.excluirEmailContab !== false,
-      dataAberturaInicio: String(config.dataAberturaInicio || ""),
-      dataAberturaFim: String(config.dataAberturaFim || ""),
+      dataAberturaInicio,
+      dataAberturaFim,
       capitalMin: (config.capitalMin as number | null) ?? null,
       capitalMax: (config.capitalMax as number | null) ?? null,
       limite,

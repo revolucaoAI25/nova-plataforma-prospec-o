@@ -202,6 +202,8 @@ export type PlatformSettingKey =
   | "google_maps_api_key"
   | "apify_api_key"
   | "creditos_conta_teste"
+  | "openai_api_key_plataforma"
+  | "onboarding_modelo_ia"
   | "resend_api_key"
   | "unipile_dsn"
   | "unipile_api_key"

@@ -53,6 +53,8 @@ export const PLATFORM_SETTINGS_META: Record<
   cdd_api_key: { grupo: "Casa dos Dados (busca CNPJ)", label: "API Key", envFallback: "CDD_API_KEY", secreto: true },
   google_maps_api_key: { grupo: "Google Maps (verificação de CNPJ)", label: "API Key", envFallback: "GOOGLE_MAPS_API_KEY", secreto: true },
   apify_api_key: { grupo: "Apify (Maps, Instagram, LinkedIn)", label: "API Token", envFallback: "APIFY_API_KEY", secreto: true },
+  openai_api_key_plataforma: { grupo: "IA do onboarding (OpenAI)", label: "API Key da plataforma", envFallback: "OPENAI_API_KEY", secreto: true },
+  onboarding_modelo_ia: { grupo: "IA do onboarding (OpenAI)", label: "Modelo (padrão gpt-5)", envFallback: "ONBOARDING_MODELO_IA", secreto: false },
   creditos_conta_teste: { grupo: "Conta de teste", label: "Créditos concedidos a cada nova conta de teste", envFallback: "CREDITOS_CONTA_TESTE", secreto: false },
   resend_api_key: { grupo: "Resend (e-mail)", label: "API Key", envFallback: "RESEND_API_KEY", secreto: true },
   unipile_dsn: { grupo: "Unipile (LinkedIn)", label: "DSN (URL do tenant)", envFallback: "UNIPILE_DSN", secreto: false },

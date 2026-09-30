@@ -77,6 +77,7 @@ const extracaoCnpjConfigSchema = z
     meiOptante: z.enum(["indiferente", "apenas", "excluir"]).default("indiferente"),
     dataAberturaInicio: z.string().default(""),
     dataAberturaFim: z.string().default(""),
+    aberturaUltimosDias: z.number().int().min(1).max(3650).nullable().default(null),
     capitalMin: z.number().nullable().default(null),
     capitalMax: z.number().nullable().default(null),
     comTelefone: z.boolean().default(true),

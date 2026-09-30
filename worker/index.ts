@@ -22,6 +22,7 @@ import { tickFlows } from "./flow-tick";
 import { tickEmailDispatch, tickEmailSheetWatchAndAutoTrigger } from "./email-dispatch-tick";
 import { tickLinkedInDispatch, tickLinkedInSheetWatchAndAutoTrigger, tickLinkedInRelationsPoll } from "./linkedin-dispatch-tick";
 import { tickBigDataCorpEnrichment } from "./bigdatacorp-enrichment-tick";
+import { tickOnboarding } from "./onboarding-tick";
 
 const DISPATCH_TICK_MS = 15_000;
 const SHEET_WATCH_TICK_MS = 120_000;
@@ -50,6 +51,8 @@ const BIGDATACORP_ENRICHMENT_TICK_MS = 10_000;
 // parecida com a de disparo, já que uma run pode ter vários nós em
 // sequência e o usuário pode estar acompanhando o histórico de execução.
 const FLOW_TICK_MS = 20_000;
+// Geração dos planos do onboarding — o cliente fica na tela esperando.
+const ONBOARDING_TICK_MS = 10_000;
 
 function log(origem: string, msg: string) {
   console.log(`[${new Date().toISOString()}] [${origem}] ${msg}`);
@@ -70,7 +73,7 @@ async function main() {
       "enriquecimento IA a cada 10s, fluxos a cada 20s, disparo e-mail a cada 20s, " +
       "sheet-watch/auto-trigger e-mail a cada 120s, disparo LinkedIn a cada 30s, " +
       "sheet-watch/auto-trigger LinkedIn a cada 120s, poll de aceite de convite a cada 2h, " +
-      "enriquecimento BigDataCorp a cada 10s.",
+      "enriquecimento BigDataCorp a cada 10s, planos do onboarding a cada 10s.",
   );
 
   // Aguarda um pouco no início, mesma cautela do produto atual (deixa o
@@ -116,6 +119,10 @@ async function main() {
   setInterval(() => {
     tickBigDataCorpEnrichment(sb, (m) => log("bigdatacorp-enrichment", m)).catch((e) => log("bigdatacorp-enrichment", `tick error: ${e.message}`));
   }, BIGDATACORP_ENRICHMENT_TICK_MS);
+
+  setInterval(() => {
+    tickOnboarding(sb, (m) => log("onboarding", m)).catch((e) => log("onboarding", `tick error: ${e.message}`));
+  }, ONBOARDING_TICK_MS);
 }
 
 main().catch((e) => {

@@ -87,6 +87,7 @@ export const BIGDATACORP_LABELS: Record<string, string> = {
   bigdatacorp_status: "Sócios e Contato — Status",
   bigdatacorp_razao_social: "Sócios e Contato — Razão social",
   bigdatacorp_socios: "Sócios e Contato — Sócios",
+  bigdatacorp_socio_nome: "Sócios e Contato — Nome do sócio principal",
   bigdatacorp_telefone: "Sócios e Contato — Telefone",
   bigdatacorp_email: "Sócios e Contato — E-mail",
   bigdatacorp_endereco: "Sócios e Contato — Endereço",
@@ -97,10 +98,12 @@ export const BIGDATACORP_LABELS: Record<string, string> = {
  * (`bigdatacorp_enrichment_leads`) de volta no lote — casando por CNPJ
  * (chave exata, ao contrário do enriquecimento via IA que precisa de
  * heurística por e-mail/telefone/nome: aqui o CNPJ já é o identificador
- * único usado na consulta). Também retroalimenta `telefone`/`email` do
- * próprio lead quando estavam vazios — é isso que deixa o contato do
- * sócio pronto pro disparo (WhatsApp/e-mail) sem exigir que quem monta o
- * fluxo saiba que existe um campo `bigdatacorp_telefone` separado.
+ * único usado na consulta). Também sobrescreve `telefone`/`email` do
+ * próprio lead quando a consulta trouxe um — é o contato validado e pago,
+ * então tem prioridade sobre o da base pública de CNPJ (que costuma estar
+ * desatualizado); sem resultado, o original é mantido. É isso que deixa o
+ * contato do sócio pronto pro disparo sem exigir que quem monta o fluxo
+ * saiba que existe um campo `bigdatacorp_telefone` separado.
  */
 export function mesclarBigDataCorpNoLote(
   lote: Array<Record<string, unknown>>,
@@ -122,11 +125,12 @@ export function mesclarBigDataCorpNoLote(
 
     return {
       ...lead,
-      telefone: lead.telefone || resultado.telefone || "",
-      email: lead.email || resultado.email || "",
+      telefone: resultado.telefone || lead.telefone || "",
+      email: resultado.email || lead.email || "",
       bigdatacorp_status: resultado.status,
       bigdatacorp_razao_social: resultado.razao_social || "",
       bigdatacorp_socios: sociosTexto,
+      bigdatacorp_socio_nome: socios[0]?.nome || "",
       bigdatacorp_telefone: resultado.telefone || "",
       bigdatacorp_email: resultado.email || "",
       bigdatacorp_endereco: resultado.endereco || "",

@@ -315,12 +315,19 @@ function CamposExtracaoCnpj({ config, set }: CamposProps) {
         opcoes={[["indiferente", "Indiferente"], ["apenas", "Apenas MEI"], ["excluir", "Excluir MEI"]]}
       />
 
+      <Campo label="Abertas nos últimos (dias)">
+        <Input
+          type="number" min={1} placeholder="Ex.: 30 — vale a cada execução"
+          value={(config.aberturaUltimosDias as number) ?? ""}
+          onChange={(e) => set({ aberturaUltimosDias: e.target.value ? Number(e.target.value) : null })}
+        />
+      </Campo>
       <div className="grid grid-cols-2 gap-2">
         <Campo label="Abertura — de">
-          <Input type="date" value={String(config.dataAberturaInicio || "")} onChange={(e) => set({ dataAberturaInicio: e.target.value })} />
+          <Input type="date" disabled={Boolean(config.aberturaUltimosDias)} value={String(config.dataAberturaInicio || "")} onChange={(e) => set({ dataAberturaInicio: e.target.value })} />
         </Campo>
         <Campo label="Abertura — até">
-          <Input type="date" value={String(config.dataAberturaFim || "")} onChange={(e) => set({ dataAberturaFim: e.target.value })} />
+          <Input type="date" disabled={Boolean(config.aberturaUltimosDias)} value={String(config.dataAberturaFim || "")} onChange={(e) => set({ dataAberturaFim: e.target.value })} />
         </Campo>
         <Campo label="Capital mín. (R$)">
           <Input type="number" min={0} value={(config.capitalMin as number) ?? ""} onChange={(e) => set({ capitalMin: e.target.value ? Number(e.target.value) : null })} />
