@@ -17,6 +17,7 @@ function UserRow({ user, isSelf }: { user: UserStatsRow; isSelf: boolean }) {
   const [creditos, setCreditos] = useState(user.creditos);
   const [monthlyCreditos, setMonthlyCreditos] = useState(user.monthly_creditos);
   const [mapsEnabled, setMapsEnabled] = useState(user.maps_credits_enabled);
+  const [instagramCreditsEnabled, setInstagramCreditsEnabled] = useState(user.instagram_credits_enabled);
   const [instagramVisible, setInstagramVisible] = useState(user.instagram_visible);
   const [linkedinCreditsEnabled, setLinkedinCreditsEnabled] = useState(user.linkedin_credits_enabled);
   const [linkedinVisible, setLinkedinVisible] = useState(user.linkedin_visible);
@@ -45,6 +46,7 @@ function UserRow({ user, isSelf }: { user: UserStatsRow; isSelf: boolean }) {
         creditos,
         monthly_creditos: monthlyCreditos,
         maps_credits_enabled: mapsEnabled,
+        instagram_credits_enabled: instagramCreditsEnabled,
         instagram_visible: instagramVisible,
         linkedin_credits_enabled: linkedinCreditsEnabled,
         linkedin_visible: linkedinVisible,
@@ -86,6 +88,9 @@ function UserRow({ user, isSelf }: { user: UserStatsRow; isSelf: boolean }) {
       </TableCell>
       <TableCell>
         <Switch checked={mapsEnabled} onCheckedChange={markDirty(setMapsEnabled)} />
+      </TableCell>
+      <TableCell>
+        <Switch checked={instagramCreditsEnabled} onCheckedChange={markDirty(setInstagramCreditsEnabled)} />
       </TableCell>
       <TableCell>
         <Switch checked={instagramVisible} onCheckedChange={markDirty(setInstagramVisible)} />
@@ -143,6 +148,7 @@ export function AdminUsersTable({ users, currentUserId }: { users: UserStatsRow[
           <TableHead>Créditos</TableHead>
           <TableHead>Renovação mensal</TableHead>
           <TableHead>Debita Maps?</TableHead>
+          <TableHead>Debita Instagram?</TableHead>
           <TableHead>Instagram</TableHead>
           <TableHead>Debita LinkedIn?</TableHead>
           <TableHead>LinkedIn</TableHead>

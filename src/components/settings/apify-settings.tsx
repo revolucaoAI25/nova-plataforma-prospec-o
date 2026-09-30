@@ -42,23 +42,28 @@ export function ApifySettings({ profile }: { profile: Profile }) {
           <CardDescription>
             {contaTeste
               ? "Contas de teste sempre usam a chave compartilhada da plataforma — não é possível configurar uma chave própria."
-              : "Usada como fallback automático na busca Google Maps (quando a cota é esgotada) e nas buscas Instagram e LinkedIn. Configure uma ou mais chaves — o sistema usa rodízio automático quando uma chave atinge o limite mensal."}
+              : "Por padrão sua conta já usa o acesso administrado pela plataforma (cobrado do seu saldo de créditos) — não precisa configurar nada aqui. Isto é opcional, só pra quem quiser usar a própria conta/cota da Apify em vez da administrada."}
           </CardDescription>
         </CardHeader>
         {!contaTeste && (
           <CardContent className="flex flex-col gap-4">
-            <KeyPoolEditor value={pool} onChange={setPool} keyPlaceholder="Cole sua chave" />
             <details className="rounded-xl border border-dashed border-border p-3">
-              <summary className="cursor-pointer text-sm font-medium">Ou use chave única (modo legado)</summary>
-              <div className="mt-3 flex flex-col gap-1.5">
-                <Label htmlFor="apify-key">Chave única</Label>
-                <Input
-                  id="apify-key"
-                  type="password"
-                  value={apifyKey}
-                  onChange={(e) => setApifyKey(e.target.value)}
-                  placeholder="Cole sua chave"
-                />
+              <summary className="cursor-pointer text-sm font-medium">Configurar chave própria (opcional)</summary>
+              <div className="mt-3 flex flex-col gap-4">
+                <KeyPoolEditor value={pool} onChange={setPool} keyPlaceholder="Cole sua chave" />
+                <details className="rounded-xl border border-dashed border-border p-3">
+                  <summary className="cursor-pointer text-sm font-medium">Ou use chave única (modo legado)</summary>
+                  <div className="mt-3 flex flex-col gap-1.5">
+                    <Label htmlFor="apify-key">Chave única</Label>
+                    <Input
+                      id="apify-key"
+                      type="password"
+                      value={apifyKey}
+                      onChange={(e) => setApifyKey(e.target.value)}
+                      placeholder="Cole sua chave"
+                    />
+                  </div>
+                </details>
               </div>
             </details>
           </CardContent>

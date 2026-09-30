@@ -4,13 +4,19 @@
 // oficial da Meta. Portado de modules/whatsapp_oficial.py.
 //
 // Cada instância oficial tem suas PRÓPRIAS credenciais (token,
-// phone_number_id, waba_id) — por isso recebidas explicitamente em vez de
-// lidas de env global (diferente da Evolution API).
+// phone_number_id, waba_id), provisionadas manualmente pelo admin em
+// /admin/disparo — por isso recebidas explicitamente em vez de lidas de
+// env global (diferente da Evolution API). A URL base, essa sim, é única
+// da plataforma: cadastrada em /admin (platform_settings:
+// datafy_api_base_url) ou, na ausência, DATAFY_API_BASE_URL do ambiente —
+// ver src/lib/platform-settings.ts.
+import { configPlataforma } from "@/lib/platform-settings";
 
 const BASE_PADRAO = "https://cloud.datafyapi.com.br/v1";
 
-function baseUrl(): string {
-  return (process.env.DATAFY_API_BASE_URL || BASE_PADRAO).replace(/\/$/, "");
+async function baseUrl(): Promise<string> {
+  const url = await configPlataforma("datafy_api_base_url", process.env.DATAFY_API_BASE_URL || BASE_PADRAO);
+  return url.replace(/\/$/, "");
 }
 
 function headers(token: string): Record<string, string> {
@@ -18,7 +24,7 @@ function headers(token: string): Record<string, string> {
 }
 
 async function req(token: string, path: string, init?: RequestInit) {
-  const resp = await fetch(`${baseUrl()}${path}`, { ...init, headers: headers(token) });
+  const resp = await fetch(`${await baseUrl()}${path}`, { ...init, headers: headers(token) });
   if (!resp.ok) throw new Error(`WhatsApp oficial HTTP ${resp.status}: ${(await resp.text()).slice(0, 300)}`);
   return resp.json();
 }

@@ -885,6 +885,35 @@ mas nada é processado — é só fila).
   `worker/bigdatacorp-enrichment-tick.ts`) — mesmo padrão que
   `dispatch-db.ts::requeueTravados()` já usa pros alvos de disparo, limite
   de 10 minutos.
+- **Bug real de billing: `maps_credits_enabled`/`instagram_credits_enabled`/
+  `linkedin_credits_enabled` nasciam `false`** (migration
+  `0022_credits_enabled_default_true.sql`, achado pelo usuário revisando o
+  admin): essas 3 colunas datam de antes da unificação do pool de créditos
+  (0013) e nunca tiveram o default atualizado depois. Efeito em produção:
+  toda busca avulsa Maps/Instagram/LinkedIn só debita créditos
+  `if (profile.<canal>_credits_enabled)` — com o default em `false`, a
+  busca RODA (cai no fallback de chave administrada) mas nunca cobra
+  créditos; a plataforma paga a Apify, o usuário não paga nada. De quebra,
+  o indicador de custo em `/busca/maps` some (`CreditoEstimado` recebe 0) e
+  as telas de Configurações mostram os campos de "configure sua própria
+  chave" pra todo usuário novo, mesmo sem essa ser a intenção (o Maps já
+  escondia esses campos quando o flag estava true; o Apify nunca teve essa
+  checagem — corrigido separadamente, ver abaixo). Corrigido: default das
+  3 colunas para `true` + backfill de quem ainda estava em `false` (exceto
+  conta_teste, que usa outro mecanismo). `ApifySettings.tsx` também ganhou
+  a mesma mensagem "opcional, gerenciado pela plataforma por padrão" que o
+  Maps já tinha, com os campos de chave própria colapsados atrás de um
+  `<details>` em vez de abertos por padrão. Admin ganhou o toggle
+  `instagram_credits_enabled` em `AdminUsersTable` (existia na API/schema
+  mas não tinha controle na UI — só Maps e LinkedIn tinham).
+- **Datafy (canal oficial WhatsApp) — URL base movida pro admin**: a
+  URL base do provedor (`datafy_api_base_url`) entrou em `/admin` junto
+  das outras chaves de plataforma. As credenciais REAIS de cada número
+  oficial (token, phone_number_id, waba_id) continuam por design fora
+  dali — são por instância, não por plataforma, provisionadas
+  manualmente pelo admin em `/admin/disparo` por conexão (mesmo padrão
+  documentado em `.env.example`), então não fazem sentido num campo
+  único de "chave de API".
 
 ## Estrutura
 

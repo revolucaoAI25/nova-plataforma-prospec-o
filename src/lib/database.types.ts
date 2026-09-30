@@ -202,7 +202,8 @@ export type PlatformSettingKey =
   | "google_client_id"
   | "google_client_secret"
   | "evolution_api_url"
-  | "evolution_api_key";
+  | "evolution_api_key"
+  | "datafy_api_base_url";
 
 export interface PlatformSettingRow {
   chave: PlatformSettingKey;
