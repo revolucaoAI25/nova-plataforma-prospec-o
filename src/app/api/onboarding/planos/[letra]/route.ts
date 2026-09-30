@@ -18,10 +18,11 @@ async function contexto(letra: string) {
     obterOnboarding(admin, user.id),
     listarAplicacoes(admin, user.id),
   ]);
-  const plano = onboarding?.resultado?.planos.find((p) => p.letra === letra);
-  if (!profile || !plano) return { erro: NextResponse.json({ error: "Plano não encontrado." }, { status: 404 }) } as const;
-  const aplicacao = aplicacoes.find((a) => a.letra === letra) ?? null;
-  return { admin, profile, plano, aplicacao } as const;
+  const resultado = onboarding?.resultado;
+  const plano = resultado?.planos.find((p) => p.letra === letra);
+  if (!profile || !resultado || !plano) return { erro: NextResponse.json({ error: "Sugestão não encontrada." }, { status: 404 }) } as const;
+  const aplicacao = aplicacoes.find((a) => a.letra === letra && a.geracao === resultado.geradoEm) ?? null;
+  return { admin, profile, plano: aplicacao?.plano ?? plano, aplicacao, geracao: resultado.geradoEm } as const;
 }
 
 export async function GET(_request: Request, { params }: { params: Promise<{ letra: string }> }) {
@@ -47,15 +48,15 @@ export async function POST(request: Request, { params }: { params: Promise<{ let
     if (parsed.data.acao === "aplicar") {
       const cenario = CENARIOS[plano.cenarioId];
       const liberado = profile.role === "admin" || cenario.recursos.every((r) => profile[r] && !(profile.conta_teste && r === "linkedin_disparo_habilitado"));
-      if (!liberado) return NextResponse.json({ error: "Seu plano atual não inclui todos os recursos deste plano de prospecção." }, { status: 403 });
-      const aplicacao = await aplicarPlano(admin, profile.id, plano);
+      if (!liberado) return NextResponse.json({ error: "Sua assinatura atual não inclui todos os recursos desta sugestão." }, { status: 403 });
+      const aplicacao = await aplicarPlano(admin, profile.id, plano, ctx.geracao);
       return NextResponse.json({ aplicacao, passos: await checklistDoPlano(admin, profile, plano, aplicacao) });
     }
-    if (!ctx.aplicacao) return NextResponse.json({ error: "Use este plano antes de ativá-lo." }, { status: 400 });
+    if (!ctx.aplicacao) return NextResponse.json({ error: "Use esta sugestão antes de ativá-la." }, { status: 400 });
     if (parsed.data.acao === "ativar") await ativarPlano(admin, profile, plano, ctx.aplicacao);
     else await pausarPlano(admin, ctx.aplicacao);
 
-    const [atualizada] = (await listarAplicacoes(admin, profile.id)).filter((a) => a.letra === letra);
+    const [atualizada] = (await listarAplicacoes(admin, profile.id)).filter((a) => a.id === ctx.aplicacao!.id);
     return NextResponse.json({ aplicacao: atualizada, passos: await checklistDoPlano(admin, profile, plano, atualizada ?? null) });
   } catch (e) {
     return NextResponse.json({ error: e instanceof Error ? e.message : "Não foi possível concluir a ação." }, { status: 400 });

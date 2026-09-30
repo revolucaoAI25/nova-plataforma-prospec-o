@@ -28,7 +28,7 @@ function caminhoDe(href: string): string {
 }
 
 /**
- * Cartão fixo no canto da tela enquanto houver um plano em configuração:
+ * Cartão fixo no canto da tela enquanto houver uma sugestão em configuração:
  * mostra o próximo passo, leva até a tela certa e, quando o cliente já está
  * nela, destaca o elemento marcado com data-guia="<id do passo>".
  */
@@ -122,7 +122,7 @@ export function GuiaFlutuante() {
         className="fixed bottom-5 right-5 z-40 flex cursor-pointer items-center gap-2 rounded-full border border-primary/40 bg-card px-4 py-2.5 text-sm font-medium text-foreground shadow-[var(--elevation-lg)] hover:border-primary"
         aria-label="Abrir guia de configuração"
       >
-        <Compass className="h-4 w-4 text-primary" /> Plano {guia.letra}: {feitos}/{obrigatorios.length}
+        <Compass className="h-4 w-4 text-primary" /> Sugestão {guia.letra}: {feitos}/{obrigatorios.length}
       </button>
     );
   }
@@ -130,12 +130,12 @@ export function GuiaFlutuante() {
   return (
     <aside
       ref={cartaoRef}
-      aria-label="Guia de configuração do plano"
+      aria-label="Guia de configuração da sugestão"
       className="fixed bottom-5 right-5 z-40 flex w-[min(360px,calc(100vw-2.5rem))] flex-col gap-3 rounded-2xl border border-primary/40 bg-card p-4 shadow-[var(--elevation-lg)]"
     >
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-primary"><Compass className="h-3.5 w-3.5" /> Configurando o Plano {guia.letra}</p>
+          <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-primary"><Compass className="h-3.5 w-3.5" /> Configurando a Sugestão {guia.letra}</p>
           <p className="truncate text-xs text-muted-foreground">{guia.titulo}</p>
         </div>
         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => alternarMinimizado(true)} aria-label="Minimizar guia">
@@ -163,14 +163,14 @@ export function GuiaFlutuante() {
       ) : (
         <div className="flex flex-col gap-2">
           <p className="flex items-center gap-1.5 text-sm font-semibold text-foreground"><PartyPopper className="h-4 w-4 text-primary" /> Tudo pronto!</p>
-          <p className="text-xs text-muted-foreground">Os passos obrigatórios estão concluídos. Volte ao plano, revise as mensagens se quiser e dê play.</p>
+          <p className="text-xs text-muted-foreground">Os passos obrigatórios estão concluídos. Volte à sugestão, revise as mensagens se quiser e dê play.</p>
           <Button asChild size="sm" className="self-start">
-            <Link href="/onboarding">Dar play no plano <ArrowRight className="h-3.5 w-3.5" /></Link>
+            <Link href="/onboarding">Dar play <ArrowRight className="h-3.5 w-3.5" /></Link>
           </Button>
         </div>
       )}
       {atual && (
-        <Link href="/onboarding" className="text-xs font-medium text-muted-foreground hover:text-foreground hover:underline">Ver o plano completo</Link>
+        <Link href="/onboarding" className="text-xs font-medium text-muted-foreground hover:text-foreground hover:underline">Ver a sugestão completa</Link>
       )}
     </aside>
   );

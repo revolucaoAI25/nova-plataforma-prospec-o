@@ -3,6 +3,7 @@ import { getProfile, custosVisiveis } from "@/lib/credits";
 import { bigDataCorpConfigurado } from "@/lib/integrations/bigdatacorp";
 import { CnpjSearchForm } from "@/components/search/cnpj-search-form";
 import { PageHeader } from "@/components/layout/page-header";
+import { sugestoesDaBusca } from "@/lib/onboarding/publicos";
 
 export const metadata = { title: "Busca por CNPJ" };
 
@@ -15,6 +16,7 @@ export default async function BuscaCnpjPage() {
   );
   const custos = await custosVisiveis(supabase, ["cnpj", "cnpj_maps_extra", "bigdatacorp"]);
 
+  const sugestoes = await sugestoesDaBusca(user?.id, "cnpj");
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
@@ -22,7 +24,7 @@ export default async function BuscaCnpjPage() {
         title="Busca por CNPJ"
         description="Empresas ativas na Receita Federal. Créditos são debitados pelo que for encontrado, não pelo que for pedido."
       />
-      <CnpjSearchForm bigdatacorpDisponivel={bigdatacorpDisponivel} custos={custos} />
+      <CnpjSearchForm bigdatacorpDisponivel={bigdatacorpDisponivel} custos={custos} publicos={sugestoes.publicos} temPerfil={sugestoes.temPerfil} precisaAtualizar={sugestoes.precisaAtualizar} />
     </div>
   );
 }

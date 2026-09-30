@@ -6,12 +6,14 @@ import { configPlataforma } from "@/lib/platform-settings";
 import { statusConexoes } from "@/lib/conexoes";
 import type { AcaoCredito, PlanRow, Profile } from "@/lib/database.types";
 import {
-  CENARIO_IDS, CENARIOS, LISTA_CENARIOS, lacunasDoCenario, normalizarParametros, parametrosCenarioSchema,
+  CENARIO_IDS, CENARIOS, LISTA_CENARIOS, lacunasDoCenario, normalizarFiltros, normalizarParametros, parametrosCenarioSchema,
   type Cenario, type CenarioId, type ParametrosCenario,
 } from "./cenarios";
 import { ajustarAoOrcamento, estimar, tamanhoBaseEstimado, toleranciaDe, type ContextoOrcamento, type Estimativa } from "./estimativa";
 import { respostasLegiveis, type RespostasOnboarding } from "./questionario";
 import { promptAvaliador, promptGerador, promptRevisao, type ContextoCliente } from "./prompt";
+import { normalizarMensagens, revisarCopy, type ProblemaCopy } from "./copy";
+import { ETAPAS_AUTOMATICAS, etapasDoFunil } from "./funil";
 
 // ── Formatos de saída da IA (structured output) ───────────────────
 
@@ -41,18 +43,30 @@ const planoGeradoSchema = z.object({
   metricaSucesso: z.string(),
   quandoTrocar: z.string(),
   riscos: z.array(z.string()),
+  etapasFunil: z.array(z.string()),
 });
 type PlanoGerado = z.infer<typeof planoGeradoSchema>;
 
-const geracaoSchema = z.object({
+export const FONTES_PUBLICO = ["cnpj", "maps", "linkedin", "instagram"] as const;
+export type FontePublico = (typeof FONTES_PUBLICO)[number];
+
+const publicoSchema = z.object({
+  nome: z.string(),
+  porQue: z.string(),
+  fonte: z.enum(FONTES_PUBLICO),
+  parametros: parametrosCenarioSchema,
+});
+
+export const geracaoSchema = z.object({
   diagnostico: z.string(),
   planos: z.array(planoGeradoSchema),
   ordemSugerida: z.array(z.enum(LETRAS)),
   proximosPassos: z.string(),
+  publicos: z.array(publicoSchema),
 });
 type Geracao = z.infer<typeof geracaoSchema>;
 
-const avaliacaoSchema = z.object({
+export const avaliacaoSchema = z.object({
   avaliacoes: z.array(
     z.object({
       letra: z.enum(LETRAS),
@@ -86,6 +100,18 @@ export interface PlanoOnboarding {
   ajustesAutomaticos: string[];
   lacunas: string[];
   avaliacao: AvaliacaoPlano | null;
+  /** Etapas do funil depois da resposta (as automáticas são fixas — ver ETAPAS_AUTOMATICAS). Ausente em resultados antigos. */
+  etapasFunil?: string[];
+  /** O que o revisor automático de copy ainda aponta na versão final. */
+  problemasCopy?: ProblemaCopy[];
+}
+
+/** Público pronto pra aplicar nas buscas avulsas (toggle "Sugestões" nos formulários). */
+export interface PublicoSugerido {
+  nome: string;
+  porQue: string;
+  fonte: FontePublico;
+  parametros: ParametrosCenario;
 }
 
 export interface ResultadoOnboarding {
@@ -99,7 +125,11 @@ export interface ResultadoOnboarding {
   modelo: string;
   orcamento: { creditosMes: number; origem: "plano" | "saldo"; nomePlano: string | null };
   geradoEm: string;
+  /** Ausente em resultados gerados antes dessa versão. */
+  publicos?: PublicoSugerido[];
 }
+
+export { ETAPAS_AUTOMATICAS, etapasDoFunil } from "./funil";
 
 // ── Contexto ──────────────────────────────────────────────────────
 
@@ -144,10 +174,16 @@ async function montarContexto(sb: SupabaseClient, profile: Profile, respostas: R
 
 // ── Chamadas ──────────────────────────────────────────────────────
 
+// GPT-5.6 Luna: o tier mais barato da família 5.6 (equivalente ao antigo
+// "nano"), com structured outputs e raciocínio ajustável. Trocável sem
+// deploy em Chaves da plataforma (onboarding_modelo_ia) — ex.: gpt-5.6-terra
+// se quiser mais qualidade por um custo maior.
+const MODELO_PADRAO = "gpt-5.6-luna";
+
 async function clienteIa(): Promise<{ client: OpenAI; modelo: string }> {
   const chave = await configPlataforma("openai_api_key_plataforma", process.env.OPENAI_API_KEY);
   if (!chave) throw new Error("A IA do onboarding não está configurada (chave OpenAI da plataforma ausente).");
-  const modelo = (await configPlataforma("onboarding_modelo_ia", process.env.ONBOARDING_MODELO_IA)) || "gpt-5";
+  const modelo = (await configPlataforma("onboarding_modelo_ia", process.env.ONBOARDING_MODELO_IA)) || MODELO_PADRAO;
   return { client: new OpenAI({ apiKey: chave }), modelo };
 }
 
@@ -190,16 +226,34 @@ function processarPlanos(geracao: Geracao, ctx: ContextoCliente): PlanoOnboardin
     const cenario: Cenario = CENARIOS[p.cenarioId];
     const normalizados = normalizarParametros(p.parametros, cenario);
     const { parametros, ajustes } = ajustarAoOrcamento(cenario, normalizados, ctx.orcamento);
+    const mensagens = normalizarMensagens(p.mensagens);
     return {
       ...p,
       letra: LETRAS[i],
       parametros,
+      mensagens,
       estimativa: estimar(cenario, parametros, ctx.orcamento),
       ajustesAutomaticos: ajustes,
       lacunas: lacunasDoCenario(parametros, cenario),
       avaliacao: null,
+      etapasFunil: etapasDoFunil(p).slice(ETAPAS_AUTOMATICAS.length),
+      problemasCopy: revisarCopy(mensagens, cenario.canais, cenario.variaveis),
     };
   });
+}
+
+function processarPublicos(geracao: Geracao): PublicoSugerido[] {
+  return geracao.publicos
+    .map((p) => ({ nome: p.nome.trim().slice(0, 80), porQue: p.porQue.trim(), fonte: p.fonte, parametros: normalizarFiltros(p.parametros) }))
+    .filter((p) => {
+      const f = p.parametros;
+      if (!p.nome) return false;
+      if (p.fonte === "cnpj") return f.cnaes.length > 0;
+      if (p.fonte === "maps") return Boolean(f.nichoMaps || f.termoMaps);
+      if (p.fonte === "linkedin") return f.cargosLinkedin.length > 0 || Boolean(f.palavraChaveLinkedin);
+      return Boolean(f.perfilInstagram);
+    })
+    .slice(0, 8);
 }
 
 function resumoParaAvaliacao(planos: PlanoOnboarding[]): string {
@@ -222,6 +276,8 @@ function resumoParaAvaliacao(planos: PlanoOnboarding[]): string {
       },
       ajustesAutomaticos: p.ajustesAutomaticos,
       lacunas: p.lacunas,
+      etapasFunil: etapasDoFunil(p),
+      problemasDeCopy: p.problemasCopy ?? [],
     })),
     null,
     1,
@@ -261,7 +317,11 @@ export async function gerarPlanosOnboarding(
   log("avaliando planos");
   let avaliacao = await chamar(ia, promptAvaliador(ctx), resumoParaAvaliacao(planos), avaliacaoSchema, "avaliacao_planos");
 
-  const precisaRevisar = avaliacao.avaliacoes.some((a) => a.veredito === "inviavel" || a.veredito === "arriscado");
+  // Revisa se a avaliadora reprovou algo OU se o revisor de copy achou
+  // marca de texto robótico — isso nunca deve chegar no cliente.
+  const precisaRevisar =
+    avaliacao.avaliacoes.some((a) => a.veredito === "inviavel" || a.veredito === "arriscado") ||
+    planos.some((p) => (p.problemasCopy ?? []).length > 0);
   if (precisaRevisar) {
     log("revisando planos com o parecer do avaliador");
     const entradaRevisao = [
@@ -282,6 +342,7 @@ export async function gerarPlanosOnboarding(
   }
 
   planos = aplicarAvaliacao(planos, avaliacao);
+  const publicos = processarPublicos(geracao);
   const letrasValidas = new Set(planos.map((p) => p.letra));
   const ordem = geracao.ordemSugerida.filter((l) => letrasValidas.has(l));
 
@@ -296,5 +357,6 @@ export async function gerarPlanosOnboarding(
     modelo: ia.modelo,
     orcamento: { creditosMes: ctx.orcamento.creditosMes, origem: ctx.orcamento.origemCreditos, nomePlano: ctx.orcamento.nomePlano },
     geradoEm: new Date().toISOString(),
+    publicos,
   };
 }

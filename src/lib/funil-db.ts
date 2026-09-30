@@ -1,6 +1,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { FunilRow, FunilColunaRow, FunilCardRow, Profile, AutomationFlowRow } from "@/lib/database.types";
+import type { FunilRow, FunilColunaRow, FunilCardRow, Profile, AutomationFlowRow, PapelColunaFunil } from "@/lib/database.types";
 import { criarRunDoFluxo } from "@/lib/flow/flow-engine";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { contatosDoLead } from "@/lib/contatos";
+import { PAPEIS_PRE_RESPOSTA, pararCadencias } from "@/lib/funil-automacao";
 
 // CRUD do Funil (Kanban) — visão de pipeline sobre leads já extraídos.
 // Mesma disciplina de IDOR dos outros módulos *-db.ts do projeto: toda
@@ -26,13 +29,20 @@ export async function funilPertenceAoUsuario(sb: SupabaseClient, funilId: string
 }
 
 /** Cria o funil já com as colunas padrão (o usuário renomeia/reorganiza depois). */
-export async function criarFunil(sb: SupabaseClient, userId: string, nome: string): Promise<string | undefined> {
+export interface ColunaNova {
+  nome: string;
+  papel?: PapelColunaFunil | null;
+}
+
+/** Sem `colunas`, cria as padrão (funil manual, sem automação). Com `colunas`, usa as etapas e papéis informados. */
+export async function criarFunil(sb: SupabaseClient, userId: string, nome: string, colunas?: ColunaNova[]): Promise<string | undefined> {
   const { data } = await sb.from("funis").insert({ user_id: userId, nome }).select("id").single();
   const funilId = data?.id as string | undefined;
   if (!funilId) return undefined;
 
+  const lista: ColunaNova[] = colunas?.length ? colunas : COLUNAS_PADRAO.map((n) => ({ nome: n }));
   await sb.from("funil_colunas").insert(
-    COLUNAS_PADRAO.map((nomeColuna, i) => ({ funil_id: funilId, nome: nomeColuna, ordem: i })),
+    lista.map((c, i) => ({ funil_id: funilId, nome: c.nome, ordem: i, papel: c.papel ?? null })),
   );
   return funilId;
 }
@@ -121,6 +131,7 @@ export async function adicionarLeadsAoFunil(
     user_id: userId,
     lead_id: (lead.id as string) || null,
     lead_snapshot: lead,
+    contatos: contatosDoLead(lead),
     ordem: ordem++,
   }));
 
@@ -155,7 +166,18 @@ export async function moverCard(
 
   if (!colunaMudou) return { ok: true };
 
-  const colunaDestino = await obterColuna(sb, novaColunaId);
+  const [colunaOrigem, colunaDestino] = await Promise.all([obterColuna(sb, card.coluna_id), obterColuna(sb, novaColunaId)]);
+
+  // Arrastar pra frente num funil automático = "já falei com esse lead"
+  // (resposta por e-mail, ligação, conversa fora da plataforma): tira ele
+  // da cadência em todos os canais, igual a uma resposta detectada.
+  const saiuDaCadencia =
+    colunaOrigem?.papel && PAPEIS_PRE_RESPOSTA.includes(colunaOrigem.papel) &&
+    colunaDestino?.papel && !PAPEIS_PRE_RESPOSTA.includes(colunaDestino.papel);
+  if (saiuDaCadencia && card.contatos?.length) {
+    await pararCadencias(createAdminClient(), card.user_id, card.contatos).catch(() => 0);
+  }
+
   if (!colunaDestino?.fluxo_id) return { ok: true };
 
   const { data: flowRow } = await sb.from("automation_flows").select("*").eq("id", colunaDestino.fluxo_id).eq("ativo", true).maybeSingle();

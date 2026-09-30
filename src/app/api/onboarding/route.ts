@@ -37,7 +37,7 @@ export async function PUT(request: Request) {
   const admin = createAdminClient();
   const atual = await obterOnboarding(admin, user.id);
   if (atual?.status === "gerando") {
-    return NextResponse.json({ error: "Seus planos estão sendo montados agora — aguarde terminar pra editar as respostas." }, { status: 409 });
+    return NextResponse.json({ error: "Suas sugestões estão sendo montadas agora — aguarde terminar pra editar as respostas." }, { status: 409 });
   }
 
   const { error } = await admin.from("onboarding").upsert(

@@ -1,9 +1,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { criarFunil, listarColunas } from "@/lib/funil-db";
+import { criarFunil, listarColunas, type ColunaNova } from "@/lib/funil-db";
 import { statusConexoes, type ConexaoId } from "@/lib/conexoes";
 import type { AutomationFlowRow, Json, Profile } from "@/lib/database.types";
 import { CENARIOS, type CanalDisparo } from "./cenarios";
-import type { LetraPlano, PlanoOnboarding } from "./ia";
+import { etapasDoFunil, ETAPAS_AUTOMATICAS, type LetraPlano, type PlanoOnboarding } from "./ia";
 
 // Aplicar = transformar um plano em coisas reais na conta: funil, campanhas
 // em rascunho já com as mensagens escritas pela IA e o fluxo PAUSADO.
@@ -24,6 +24,21 @@ export interface AplicacaoRow {
   status: "aguardando_conexoes" | "ativo" | "pausado";
   criado_em: string;
   ativado_em: string | null;
+  /** Cópia da sugestão no momento em que foi usada (nulo em aplicações antigas). */
+  plano: PlanoOnboarding | null;
+  /** resultado.geradoEm da geração de onde a sugestão veio. */
+  geracao: string | null;
+}
+
+/** Etapas do funil com papel: automáticas → negócio (penúltima = ganho, última = perda). */
+function colunasDoFunil(plano: PlanoOnboarding): ColunaNova[] {
+  const etapas = etapasDoFunil(plano);
+  const papeisAuto = ["entrada", "cadencia", "respondeu"] as const;
+  return etapas.map((nome, i) => {
+    if (i < ETAPAS_AUTOMATICAS.length) return { nome, papel: papeisAuto[i] };
+    const doFim = etapas.length - 1 - i;
+    return { nome, papel: doFim === 0 ? "perdido" : doFim === 1 ? "ganho" : null };
+  });
 }
 
 const TABELA_CAMPANHA: Record<CanalDisparo, string> = {
@@ -83,20 +98,23 @@ async function desfazer(sb: SupabaseClient, criado: { flowId?: string; funilId?:
   if (criado.funilId) await sb.from("funis").delete().eq("id", criado.funilId);
 }
 
-export async function aplicarPlano(sb: SupabaseClient, userId: string, plano: PlanoOnboarding): Promise<AplicacaoRow> {
-  const { data: existente } = await sb.from("onboarding_aplicacoes").select("*").eq("user_id", userId).eq("letra", plano.letra).maybeSingle();
+export async function aplicarPlano(sb: SupabaseClient, userId: string, plano: PlanoOnboarding, geracao: string): Promise<AplicacaoRow> {
+  const { data: existente } = await sb
+    .from("onboarding_aplicacoes").select("*")
+    .eq("user_id", userId).eq("letra", plano.letra).eq("geracao", geracao)
+    .maybeSingle();
   if (existente) return existente as AplicacaoRow;
 
   const cenario = CENARIOS[plano.cenarioId];
-  const nomeBase = `Plano ${plano.letra} — ${plano.titulo}`.slice(0, 120);
+  const nomeBase = `Sugestão ${plano.letra} — ${plano.titulo}`.slice(0, 120);
   const criado: { flowId?: string; funilId?: string; campanhas: Partial<Record<CanalDisparo, string>> } = { campanhas: {} };
 
   try {
-    const funilId = await criarFunil(sb, userId, nomeBase);
-    if (!funilId) throw new Error("Não foi possível criar o funil do plano.");
+    const funilId = await criarFunil(sb, userId, nomeBase, colunasDoFunil(plano));
+    if (!funilId) throw new Error("Não foi possível criar o funil da sugestão.");
     criado.funilId = funilId;
     const [primeiraColuna] = await listarColunas(sb, funilId);
-    if (!primeiraColuna) throw new Error("O funil do plano ficou sem colunas.");
+    if (!primeiraColuna) throw new Error("O funil da sugestão ficou sem colunas.");
 
     criado.campanhas = await criarCampanhas(sb, userId, plano, nomeBase);
 
@@ -106,18 +124,18 @@ export async function aplicarPlano(sb: SupabaseClient, userId: string, plano: Pl
       .insert({ user_id: userId, nome: nomeBase, ativo: false, nodes: grafo.nodes as unknown as Json, edges: grafo.edges as unknown as Json })
       .select("id")
       .single();
-    if (!flow?.id) throw new Error("Não foi possível criar o fluxo do plano.");
+    if (!flow?.id) throw new Error("Não foi possível criar o fluxo da sugestão.");
     criado.flowId = flow.id;
 
     const { data: aplicacao, error } = await sb
       .from("onboarding_aplicacoes")
       .insert({
         user_id: userId, letra: plano.letra, cenario_id: plano.cenarioId, titulo: plano.titulo,
-        flow_id: flow.id, funil_id: funilId, campanhas: criado.campanhas,
+        flow_id: flow.id, funil_id: funilId, campanhas: criado.campanhas, plano, geracao,
       })
       .select("*")
       .single();
-    if (error || !aplicacao) throw new Error("Não foi possível registrar o plano aplicado.");
+    if (error || !aplicacao) throw new Error("Não foi possível registrar a sugestão aplicada.");
     return aplicacao as AplicacaoRow;
   } catch (e) {
     await desfazer(sb, criado);
@@ -151,12 +169,12 @@ const PASSO_CONEXAO: Record<ConexaoId, { titulo: string; descricao: string; acao
   },
   linkedin: {
     titulo: "Conecte sua conta do LinkedIn",
-    descricao: "Faça login pela janela segura — os convites saem da sua conta, no ritmo seguro do plano.",
+    descricao: "Faça login pela janela segura — os convites saem da sua conta, num ritmo seguro.",
     acao: "Conectar LinkedIn",
   },
   sheets: {
     titulo: "Conecte o Google Sheets",
-    descricao: "É de lá que o plano lê a sua base de contatos.",
+    descricao: "É de lá que a automação lê a sua base de contatos.",
     acao: "Conectar Google",
   },
   openai: {
@@ -260,12 +278,12 @@ const COLUNA_VINCULO: Record<CanalDisparo, string> = { whatsapp: "instance_id", 
 export async function ativarPlano(sb: SupabaseClient, profile: Profile, plano: PlanoOnboarding, aplicacao: AplicacaoRow): Promise<void> {
   const pendentes = (await checklistDoPlano(sb, profile, plano, aplicacao)).filter((p) => p.obrigatorio && !p.feito);
   if (pendentes.length) throw new Error(`Falta concluir: ${pendentes.map((p) => p.titulo.toLowerCase()).join("; ")}.`);
-  if (!aplicacao.flow_id) throw new Error("O fluxo deste plano foi removido. Aplique o plano de novo.");
+  if (!aplicacao.flow_id) throw new Error("O fluxo desta sugestão foi removido. Use a sugestão de novo.");
 
   for (const [canal, campaignId] of Object.entries(aplicacao.campanhas) as [CanalDisparo, string][]) {
     const { data } = await sb.from(TABELA_CAMPANHA[canal]).select("*").eq("id", campaignId).maybeSingle();
     const campanha = data as Record<string, unknown> | null;
-    if (!campanha) throw new Error(`A campanha de ${canal} deste plano foi removida.`);
+    if (!campanha) throw new Error(`A campanha de ${canal} desta sugestão foi removida.`);
     const campos: Record<string, unknown> = { status: "ativa" };
     if (!campanha[COLUNA_VINCULO[canal]]) {
       const recurso = await primeiroRecursoConectado(sb, profile.id, canal);

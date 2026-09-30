@@ -13,9 +13,9 @@ import { cn } from "@/lib/utils";
 const ETAPAS = [
   { titulo: "Entendendo o seu negócio e o seu cliente ideal", segundos: 0 },
   { titulo: "Escolhendo os caminhos de prospecção que fazem sentido", segundos: 15 },
-  { titulo: "Calculando volume e custo com o seu plano", segundos: 40 },
-  { titulo: "Uma segunda IA avaliando cada plano", segundos: 60 },
-  { titulo: "Ajustando os planos e escrevendo as mensagens", segundos: 95 },
+  { titulo: "Calculando volume e custo com a sua assinatura", segundos: 40 },
+  { titulo: "Uma segunda IA avaliando cada sugestão", segundos: 60 },
+  { titulo: "Ajustando as sugestões e escrevendo as mensagens", segundos: 95 },
 ];
 
 export function GerandoPlanos({ erroInicial, onEditar }: { erroInicial: string | null; onEditar: () => void }) {
@@ -32,7 +32,7 @@ export function GerandoPlanos({ erroInicial, onEditar }: { erroInicial: string |
       if (!resp?.ok) return;
       const data = await resp.json();
       if (data.status === "pronto") router.refresh();
-      else if (data.status === "erro") setErro(data.erro || "Não foi possível montar os planos.");
+      else if (data.status === "erro") setErro(data.erro || "Não foi possível montar as sugestões.");
     }, 5000);
     return () => {
       clearInterval(relogio);
@@ -60,7 +60,7 @@ export function GerandoPlanos({ erroInicial, onEditar }: { erroInicial: string |
           <AlertTriangle className="h-7 w-7" />
         </div>
         <div className="flex flex-col gap-1.5">
-          <h2 className="text-lg font-semibold text-foreground">Não conseguimos montar seus planos agora</h2>
+          <h2 className="text-lg font-semibold text-foreground">Não conseguimos montar suas sugestões agora</h2>
           <p className="text-sm text-muted-foreground">Suas respostas estão salvas. Tente de novo em instantes ou revise o que respondeu.</p>
         </div>
         <Alert variant="destructive" className="text-left"><AlertDescription>{erro}</AlertDescription></Alert>
@@ -85,9 +85,9 @@ export function GerandoPlanos({ erroInicial, onEditar }: { erroInicial: string |
         </span>
       </div>
       <div className="flex flex-col gap-1.5">
-        <h2 className="text-xl font-semibold tracking-tight text-foreground">Montando seus planos de prospecção</h2>
+        <h2 className="text-xl font-semibold tracking-tight text-foreground">Montando suas sugestões de prospecção</h2>
         <p className="text-sm text-muted-foreground">
-          Costuma levar de 1 a 3 minutos. Pode sair desta tela — os planos ficam salvos aqui quando estiverem prontos.
+          Costuma levar de 1 a 3 minutos. Pode sair desta tela — as sugestões ficam salvas aqui quando estiverem prontos.
         </p>
       </div>
       <ol className="flex w-full flex-col gap-2.5 text-left" aria-live="polite">

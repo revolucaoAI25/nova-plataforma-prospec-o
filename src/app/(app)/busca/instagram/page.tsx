@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getProfile, custosVisiveis } from "@/lib/credits";
 import { InstagramSearchForm } from "@/components/search/instagram-search-form";
 import { PageHeader } from "@/components/layout/page-header";
+import { sugestoesDaBusca } from "@/lib/onboarding/publicos";
 
 export const metadata = { title: "Busca por Instagram" };
 
@@ -16,6 +17,7 @@ export default async function BuscaInstagramPage() {
   if (!profile?.instagram_visible) redirect("/");
   const custos = await custosVisiveis(supabase, ["instagram"]);
 
+  const sugestoes = await sugestoesDaBusca(user.id, "instagram");
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
@@ -23,7 +25,7 @@ export default async function BuscaInstagramPage() {
         title="Busca por Instagram"
         description="Extrai seguidores ou seguindo de um perfil público."
       />
-      <InstagramSearchForm custoPorResultado={custos.instagram} />
+      <InstagramSearchForm custoPorResultado={custos.instagram} publicos={sugestoes.publicos} temPerfil={sugestoes.temPerfil} precisaAtualizar={sugestoes.precisaAtualizar} />
     </div>
   );
 }

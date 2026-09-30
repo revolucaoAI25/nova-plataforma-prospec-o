@@ -1115,7 +1115,7 @@ mas nada é processado — é só fila).
     formato. Roda no worker (`worker/onboarding-tick.ts`) com lease e
     heartbeat, até 3 tentativas. Chave: `openai_api_key_plataforma` (Chaves
     da plataforma) ou `OPENAI_API_KEY`; modelo: `onboarding_modelo_ia` ou
-    `ONBOARDING_MODELO_IA` (padrão `gpt-5`). Os textos pro cliente não
+    `ONBOARDING_MODELO_IA` (padrão `gpt-5.6-luna`). Os textos pro cliente não
     citam fornecedores.
   - *Usar o plano → passo a passo → play* (`aplicar.ts`): "Usar este plano"
     cria funil, campanhas (rascunho, com a cadência escrita pela IA) e o

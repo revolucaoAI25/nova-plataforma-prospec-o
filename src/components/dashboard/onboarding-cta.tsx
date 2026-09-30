@@ -5,19 +5,19 @@ import type { AplicacaoRow } from "@/lib/onboarding/aplicar";
 
 /**
  * Chamada pro onboarding na visão geral. Muda conforme onde o cliente
- * parou; some quando já existe um plano rodando.
+ * parou; some quando já existe uma sugestão rodando.
  */
 export function OnboardingCta({ status, aplicacoes }: { status: OnboardingStatus | null; aplicacoes: AplicacaoRow[] }) {
   if (aplicacoes.some((a) => a.status === "ativo")) return null;
 
   const emConfiguracao = aplicacoes.find((a) => a.status === "aguardando_conexoes");
   const conteudo = emConfiguracao
-    ? { icon: Rocket, titulo: `Continue configurando o Plano ${emConfiguracao.letra}`, texto: "Faltam só as conexões. Siga o passo a passo e dê play.", acao: "Continuar" }
+    ? { icon: Rocket, titulo: `Continue configurando a Sugestão ${emConfiguracao.letra}`, texto: "Faltam só as conexões. Siga o passo a passo e dê play.", acao: "Continuar" }
     : status === "gerando"
-      ? { icon: Loader2, titulo: "Seus planos estão sendo montados", texto: "A IA está escolhendo os caminhos e escrevendo as mensagens. Leva 1 a 3 minutos.", acao: "Acompanhar" }
+      ? { icon: Loader2, titulo: "Suas sugestões estão sendo montadas", texto: "A IA está escolhendo os caminhos e escrevendo as mensagens. Leva 1 a 3 minutos.", acao: "Acompanhar" }
       : status === "pronto"
-        ? { icon: Sparkles, titulo: "Seus planos de prospecção estão prontos", texto: "Compare os planos A, B, C e D, veja as mensagens e escolha um pra começar.", acao: "Ver planos" }
-        : { icon: Compass, titulo: "Monte seu plano de prospecção em 5 minutos", texto: "Responda algumas perguntas sobre o seu negócio. A IA monta planos sob medida — extração, mensagens e automação — prontos pra dar play.", acao: "Começar" };
+        ? { icon: Sparkles, titulo: "Suas sugestões de prospecção estão prontas", texto: "Compare as sugestões A, B, C e D, veja as mensagens e escolha por onde começar.", acao: "Ver sugestões" }
+        : { icon: Compass, titulo: "Monte sua estratégia de prospecção em 5 minutos", texto: "Responda algumas perguntas sobre o seu negócio. A IA monta sugestões sob medida — extração, mensagens e automação — prontas pra dar play.", acao: "Começar" };
   const Icone = conteudo.icon;
 
   return (

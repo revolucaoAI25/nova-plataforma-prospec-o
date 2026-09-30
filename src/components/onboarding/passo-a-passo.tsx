@@ -93,7 +93,7 @@ export function PassoAPasso({
         {erro && <Alert variant="destructive"><AlertDescription>{erro}</AlertDescription></Alert>}
         <Button onClick={() => executar("aplicar")} disabled={acao !== null} className="self-start">
           {acao === "aplicar" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
-          Usar este plano
+          Usar esta sugestão
         </Button>
       </div>
     );
@@ -107,7 +107,7 @@ export function PassoAPasso({
   return (
     <div className="flex flex-col gap-4 rounded-2xl border border-border bg-card p-5">
       <div className="flex items-center justify-between gap-2">
-        <p className="text-sm font-semibold text-foreground">{ativo ? "Plano rodando" : "Passo a passo"}</p>
+        <p className="text-sm font-semibold text-foreground">{ativo ? "Rodando" : "Passo a passo"}</p>
         <Button variant="ghost" size="icon" onClick={conferir} disabled={acao !== null} aria-label="Conferir de novo">
           <RefreshCw className={cn("h-4 w-4", acao === "atualizar" && "animate-spin")} />
         </Button>

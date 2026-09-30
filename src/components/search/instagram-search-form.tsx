@@ -17,8 +17,20 @@ import { InstagramResultsTable } from "@/components/search/instagram-results-tab
 import { EmptyState } from "@/components/ui/empty-state";
 import { ResultsSummary, buildInstagramMetrics } from "@/components/search/results-summary";
 import type { InstagramTipo, Lead } from "@/lib/types";
+import { SugestoesPublico } from "@/components/search/sugestoes-publico";
+import type { PublicoSugerido } from "@/lib/onboarding/ia";
 
-export function InstagramSearchForm({ custoPorResultado }: { custoPorResultado: number }) {
+export function InstagramSearchForm({
+  custoPorResultado,
+  publicos = [],
+  temPerfil = false,
+  precisaAtualizar = false,
+}: {
+  custoPorResultado: number;
+  publicos?: PublicoSugerido[];
+  temPerfil?: boolean;
+  precisaAtualizar?: boolean;
+}) {
   const [tipo, setTipo] = useState<InstagramTipo>("seguidores");
   const [alvo, setAlvo] = useState("");
   const [limite, setLimite] = useState(200);
@@ -70,8 +82,14 @@ export function InstagramSearchForm({ custoPorResultado }: { custoPorResultado: 
     }
   }
 
+  function aplicarPublico({ parametros: f }: PublicoSugerido) {
+    setTipo("seguidores");
+    setAlvo(f.perfilInstagram ?? "");
+  }
+
   return (
     <div className="flex flex-col gap-6">
+      <SugestoesPublico publicos={publicos} temPerfil={temPerfil} precisaAtualizar={precisaAtualizar} onAplicar={aplicarPublico} />
       <form onSubmit={handleSubmit} className="flex flex-col gap-6">
         <Card>
           <CardHeader>

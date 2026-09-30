@@ -40,7 +40,7 @@ export async function tickOnboarding(sb: SupabaseClient, log: (msg: string) => v
         .from("onboarding")
         .update({ status: "pronto", resultado, erro: null, gerado_em: fim, processando_desde: null, atualizado_em: fim })
         .eq("user_id", row.user_id);
-      log(`${row.user_id}: ${resultado.planos.length} plano(s) gerado(s)`);
+      log(`${row.user_id}: ${resultado.planos.length} sugestão(ões) gerada(s)`);
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       const tentativas = (row.tentativas ?? 0) + 1;

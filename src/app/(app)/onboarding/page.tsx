@@ -7,7 +7,7 @@ import { listarAplicacoes, obterOnboarding } from "@/lib/onboarding/db";
 import { LISTA_CENARIOS } from "@/lib/onboarding/cenarios";
 import { respostasSchema } from "@/lib/onboarding/questionario";
 
-export const metadata = { title: "Seu plano de prospecção" };
+export const metadata = { title: "Estratégia de prospecção" };
 
 export default async function OnboardingPage() {
   const supabase = await createClient();
@@ -23,11 +23,11 @@ export default async function OnboardingPage() {
     <div className="flex flex-col gap-6">
       <PageHeader
         eyebrow="Comece aqui"
-        title="Seu plano de prospecção"
+        title="Sua estratégia de prospecção"
         description={
           status === "pronto"
-            ? "Planos montados pra você — escolha um, siga o passo a passo e dê play."
-            : "Responda algumas perguntas sobre o seu negócio. A IA monta planos de prospecção sob medida, com automações e mensagens prontas."
+            ? "Sugestões montadas pra você. Escolha uma (ou mais), siga o passo a passo e dê play."
+            : "Responda algumas perguntas sobre o seu negócio. A IA monta sugestões de prospecção sob medida, com automações e mensagens prontas."
         }
       />
       <OnboardingShell
@@ -35,7 +35,7 @@ export default async function OnboardingPage() {
         respostas={respostasSchema.safeParse(onboarding?.respostas ?? {}).data ?? {}}
         resultado={onboarding?.resultado ?? null}
         erro={onboarding?.erro ?? null}
-        aplicacoes={aplicacoes}
+        aplicacoes={aplicacoes.filter((a) => a.geracao === onboarding?.resultado?.geradoEm)}
         metaCenarios={metaCenarios}
       />
     </div>

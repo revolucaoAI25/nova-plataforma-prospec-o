@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getProfile, custosVisiveis } from "@/lib/credits";
 import { LinkedInSearchForm } from "@/components/search/linkedin-search-form";
 import { PageHeader } from "@/components/layout/page-header";
+import { sugestoesDaBusca } from "@/lib/onboarding/publicos";
 
 export const metadata = { title: "Busca por LinkedIn" };
 
@@ -16,6 +17,7 @@ export default async function BuscaLinkedInPage() {
   if (!profile?.linkedin_visible) redirect("/");
   const custos = await custosVisiveis(supabase, ["linkedin"]);
 
+  const sugestoes = await sugestoesDaBusca(user.id, "linkedin");
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
@@ -23,7 +25,7 @@ export default async function BuscaLinkedInPage() {
         title="Busca por LinkedIn"
         description="Encontra pessoas e decisores por cargo e localização."
       />
-      <LinkedInSearchForm custoPorResultado={custos.linkedin} />
+      <LinkedInSearchForm custoPorResultado={custos.linkedin} publicos={sugestoes.publicos} temPerfil={sugestoes.temPerfil} precisaAtualizar={sugestoes.precisaAtualizar} />
     </div>
   );
 }

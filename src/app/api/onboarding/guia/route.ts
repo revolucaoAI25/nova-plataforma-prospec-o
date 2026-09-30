@@ -19,7 +19,7 @@ export async function GET() {
   if (!emConfiguracao) return NextResponse.json({ guia: null });
 
   const [profile, onboarding] = await Promise.all([getProfile(admin, user.id), obterOnboarding(admin, user.id)]);
-  const plano = onboarding?.resultado?.planos.find((p) => p.letra === emConfiguracao.letra);
+  const plano = emConfiguracao.plano ?? onboarding?.resultado?.planos.find((p) => p.letra === emConfiguracao.letra);
   if (!profile || !plano) return NextResponse.json({ guia: null });
 
   const passos = await checklistDoPlano(admin, profile, plano, emConfiguracao);

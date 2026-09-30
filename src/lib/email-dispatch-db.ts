@@ -1,6 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { validarEmail, extrairDominio } from "@/lib/email";
 import { getProfile } from "@/lib/credits";
+import { chaveEmail } from "@/lib/contatos";
+import { primeiroContatoDaCampanha } from "@/lib/funil-automacao";
 import { buscarLeadsFiltro } from "@/lib/dispatch-db";
 import { criarDominioResend, listarDominiosResend, obterDominioResend, verificarDominioResend, deletarDominioResend } from "@/lib/integrations/resend";
 import type {
@@ -509,17 +511,20 @@ export async function marcarEnviadoEmail(
       status: "pendente", current_step_id: step.id,
       proxima_etapa_em: new Date(agora.getTime() + atraso).toISOString(),
       atualizado_em: agora.toISOString(),
-    }).eq("id", target.id);
+    }).eq("id", target.id).eq("status", "enviando");
   } else {
     await sb.from("email_targets").update({
       status: "concluido", current_step_id: step.id, atualizado_em: agora.toISOString(),
-    }).eq("id", target.id);
+    }).eq("id", target.id).eq("status", "enviando");
   }
 
   await sb.from("email_messages_log").insert({
     target_id: target.id, campaign_id: campaignId, step_id: step.id,
     status: "sucesso", provider_message_id: providerMessageId, assunto_enviado: assuntoEnviado, corpo_enviado: corpoEnviado,
   });
+
+  // Primeira mensagem desse lead: card do funil automático vai pra "Em cadência".
+  if (!target.current_step_id) await primeiroContatoDaCampanha(sb, "email_campaigns", campaignId, [chaveEmail(target.email)]);
 }
 
 export async function marcarFalhaEmail(

@@ -19,6 +19,8 @@ import { ResultsTable } from "@/components/search/results-table";
 import { ResultsSummary, buildGeneralMetrics } from "@/components/search/results-summary";
 import { EmptyState } from "@/components/ui/empty-state";
 import { CNAES } from "@/lib/data/cnaes";
+import { SugestoesPublico } from "@/components/search/sugestoes-publico";
+import type { PublicoSugerido } from "@/lib/onboarding/ia";
 import { ESTADOS } from "@/lib/data/estados";
 import type { CnaeTipo, Lead } from "@/lib/types";
 
@@ -41,12 +43,27 @@ const PORTE_OPTIONS: MultiSelectOption[] = [
 
 type MapsModo = "nao_usar" | "enriquecer" | "filtrar" | "filtrar_enriquecer";
 
+const CODIGOS_CATALOGO = new Set(CNAES.map((c) => c.codigo));
+
+function dataRelativa(opcoes: { dias?: number; anos?: number }): string {
+  const d = new Date();
+  if (opcoes.dias) d.setDate(d.getDate() - opcoes.dias);
+  if (opcoes.anos) d.setFullYear(d.getFullYear() - opcoes.anos);
+  return d.toISOString().slice(0, 10);
+}
+
 export function CnpjSearchForm({
   bigdatacorpDisponivel,
   custos,
+  publicos = [],
+  temPerfil = false,
+  precisaAtualizar = false,
 }: {
   bigdatacorpDisponivel: boolean;
   custos: Record<string, number>;
+  publicos?: PublicoSugerido[];
+  temPerfil?: boolean;
+  precisaAtualizar?: boolean;
 }) {
   const [cnaes, setCnaes] = useState<string[]>([]);
   const [cnaeManual, setCnaeManual] = useState("");
@@ -155,8 +172,25 @@ export function CnpjSearchForm({
     }
   }
 
+  function aplicarPublico({ parametros: f }: PublicoSugerido) {
+    setRecuperacaoJudicial(false);
+    setCnaes(f.cnaes.filter((c) => CODIGOS_CATALOGO.has(c)));
+    setCnaeManual(f.cnaes.filter((c) => !CODIGOS_CATALOGO.has(c)).join(", "));
+    setCnaeTipo("principal");
+    setUf(f.ufs);
+    setMunicipio(f.cidades.join(", "));
+    setPorte(f.portes);
+    setSimples(f.simples);
+    setMei(f.mei);
+    setCapMin(f.capitalMinimo ? String(f.capitalMinimo) : "");
+    setCapMax(f.capitalMaximo ? String(f.capitalMaximo) : "");
+    setDtIni(f.aberturaUltimosDias ? dataRelativa({ dias: f.aberturaUltimosDias }) : "");
+    setDtFim(f.idadeMinimaAnos && !f.aberturaUltimosDias ? dataRelativa({ anos: f.idadeMinimaAnos }) : "");
+  }
+
   return (
     <div className="flex flex-col gap-6">
+      <SugestoesPublico publicos={publicos} temPerfil={temPerfil} precisaAtualizar={precisaAtualizar} onAplicar={aplicarPublico} />
       <form onSubmit={handleSubmit} className="flex flex-col gap-6">
         <Card>
           <CardContent className="pt-6">

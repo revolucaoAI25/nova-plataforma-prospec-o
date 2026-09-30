@@ -33,6 +33,7 @@ const TARGET_STATUS_LABEL: Record<string, { label: string; variant: BadgeProps["
   concluido: { label: "Concluído", variant: "success" },
   falhou: { label: "Falhou", variant: "destructive" },
   removido: { label: "Removido", variant: "outline" },
+  respondeu: { label: "Respondeu", variant: "success" },
 };
 
 /** Aceita URL completa ("…/spreadsheets/d/ID/edit") ou o ID direto. */

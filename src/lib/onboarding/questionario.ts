@@ -78,6 +78,8 @@ export const respostasSchema = z.object({
   tamanhoBase: texto,
   baseTemCnpj: texto,
 
+  remetenteNome: texto,
+  remetenteCargo: texto,
   tomVoz: texto,
   ofertaEntrada: texto,
   cta: texto,
@@ -273,7 +275,7 @@ export const ETAPAS_QUESTIONARIO: EtapaQuestionario[] = [
       {
         id: "temChaveOpenai", label: "Tem uma conta na OpenAI (ChatGPT API)?", tipo: "opcao",
         opcoes: [...SIM_NAO, { valor: "nao_sei", label: "Não sei o que é" }],
-        ajuda: "Só é usada nos planos com pesquisa e personalização por IA — o custo vai direto na sua conta OpenAI.",
+        ajuda: "Só é usada nas sugestões com pesquisa e personalização por IA — o custo vai direto na sua conta OpenAI.",
       },
     ],
   },
@@ -345,8 +347,14 @@ export const ETAPAS_QUESTIONARIO: EtapaQuestionario[] = [
   {
     id: "mensagem",
     titulo: "Sua mensagem",
-    descricao: "A IA escreve as mensagens de cada plano com base nisso — você revisa antes de dar play.",
+    descricao: "A IA escreve as mensagens de cada sugestão com base nisso — você revisa antes de dar play.",
     perguntas: [
+      {
+        id: "remetenteNome", label: "Quem assina as mensagens?", tipo: "texto", obrigatoria: true,
+        placeholder: "Ex.: Rafael",
+        ajuda: "Mensagem de uma pessoa de verdade responde muito mais do que mensagem \"da empresa\".",
+      },
+      { id: "remetenteCargo", label: "Cargo ou função de quem assina", tipo: "texto", placeholder: "Ex.: consultor comercial, sócio" },
       {
         id: "tomVoz", label: "Tom de voz", tipo: "opcao",
         opcoes: [

@@ -1,6 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { validarLinkedInUrl } from "@/lib/linkedin-url";
 import { getProfile } from "@/lib/credits";
+import { chaveLinkedin } from "@/lib/contatos";
+import { primeiroContatoDaCampanha } from "@/lib/funil-automacao";
 import { buscarLeadsFiltro } from "@/lib/dispatch-db";
 import type {
   LinkedinAccountRow, LinkedinCampaignRow, LinkedinTemplateRow, LinkedinCadenceStepRow, LinkedinTargetRow,
@@ -411,12 +413,15 @@ export async function marcarAguardandoAceite(
 ) {
   await sb.from("linkedin_targets").update({
     status: "aguardando_aceite", current_step_id: step.id, atualizado_em: new Date().toISOString(),
-  }).eq("id", target.id);
+  }).eq("id", target.id).eq("status", "enviando");
 
   await sb.from("linkedin_messages_log").insert({
     target_id: target.id, campaign_id: campaignId, step_id: step.id,
     status: "sucesso", tipo_acao: "convite", provider_ref: providerRef, corpo_enviado: step.nota || "",
   });
+
+  // Primeira mensagem desse lead: card do funil automático vai pra "Em cadência".
+  if (!target.current_step_id) await primeiroContatoDaCampanha(sb, "linkedin_campaigns", campaignId, [chaveLinkedin(target.linkedin_url)]);
 }
 
 /** Mensagem enviada com sucesso — avança a cadência normalmente (mirror de marcarEnviadoEmail). */
@@ -437,17 +442,20 @@ export async function marcarEnviadoLinkedin(
       status: "pendente", current_step_id: step.id,
       proxima_etapa_em: new Date(agora.getTime() + atraso).toISOString(),
       atualizado_em: agora.toISOString(),
-    }).eq("id", target.id);
+    }).eq("id", target.id).eq("status", "enviando");
   } else {
     await sb.from("linkedin_targets").update({
       status: "concluido", current_step_id: step.id, atualizado_em: agora.toISOString(),
-    }).eq("id", target.id);
+    }).eq("id", target.id).eq("status", "enviando");
   }
 
   await sb.from("linkedin_messages_log").insert({
     target_id: target.id, campaign_id: campaignId, step_id: step.id,
     status: "sucesso", tipo_acao: "mensagem", provider_ref: providerRef, corpo_enviado: corpoEnviado,
   });
+
+  // Primeira mensagem desse lead: card do funil automático vai pra "Em cadência".
+  if (!target.current_step_id) await primeiroContatoDaCampanha(sb, "linkedin_campaigns", campaignId, [chaveLinkedin(target.linkedin_url)]);
 }
 
 export async function marcarFalhaLinkedin(

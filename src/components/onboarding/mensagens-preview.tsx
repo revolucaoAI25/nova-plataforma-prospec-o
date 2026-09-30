@@ -36,7 +36,7 @@ function Rotulo({ icon: Icon, children }: { icon: typeof Mail; children: React.R
 
 export function MensagensPreview({ mensagens }: { mensagens: MensagensPlano }) {
   const temAlgo = mensagens.whatsapp.length || mensagens.email.length || mensagens.linkedinNota || mensagens.linkedinMensagens.length || mensagens.roteiroDm;
-  if (!temAlgo) return <p className="text-sm text-muted-foreground">Este plano não envia mensagens automáticas.</p>;
+  if (!temAlgo) return <p className="text-sm text-muted-foreground">Esta sugestão não envia mensagens automáticas.</p>;
 
   return (
     <div className="flex flex-col gap-6">
@@ -98,7 +98,7 @@ export function MensagensPreview({ mensagens }: { mensagens: MensagensPlano }) {
         </div>
       )}
       <p className="text-xs text-muted-2">
-        Trechos em <span className="rounded bg-info-soft px-1 font-mono text-info">azul</span> são trocados pelos dados de cada lead. Você edita tudo na campanha depois de usar o plano.
+        Trechos em <span className="rounded bg-info-soft px-1 font-mono text-info">azul</span> são trocados pelos dados de cada lead. Você edita tudo na campanha depois de usar a sugestão.
       </p>
     </div>
   );

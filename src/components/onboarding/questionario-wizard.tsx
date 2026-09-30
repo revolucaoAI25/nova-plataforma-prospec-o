@@ -14,13 +14,13 @@ import {
   ETAPAS_QUESTIONARIO, perguntaVisivel, type Pergunta, type RespostasOnboarding,
 } from "@/lib/onboarding/questionario";
 
-type Valor = string | string[] | undefined;
+export type Valor = string | string[] | undefined;
 
-function respondida(v: Valor): boolean {
+export function respondida(v: Valor): boolean {
   return Array.isArray(v) ? v.length > 0 : typeof v === "string" && v.trim().length > 0;
 }
 
-function CampoPergunta({
+export function CampoPergunta({
   p, valor, erro, onChange,
 }: {
   p: Pergunta;
@@ -195,7 +195,7 @@ export function QuestionarioWizard({
     const data = await resp.json().catch(() => ({}));
     setGerando(false);
     if (!resp.ok) {
-      setErro(data.error || "Não foi possível iniciar a montagem dos planos.");
+      setErro(data.error || "Não foi possível iniciar a montagem das sugestões.");
       return;
     }
     onGerando();
@@ -268,7 +268,7 @@ export function QuestionarioWizard({
           </Button>
           <Button type="button" onClick={avancar} disabled={gerando} size={ultima ? "lg" : "default"}>
             {gerando ? <Loader2 className="h-4 w-4 animate-spin" /> : ultima ? <Sparkles className="h-4 w-4" /> : null}
-            {ultima ? "Montar meus planos" : "Continuar"}
+            {ultima ? "Ver minhas sugestões" : "Continuar"}
             {!ultima && <ArrowRight className="h-4 w-4" />}
           </Button>
         </div>

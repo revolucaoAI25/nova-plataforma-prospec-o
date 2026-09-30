@@ -17,6 +17,8 @@ import { LimiteSlider } from "@/components/search/limite-slider";
 import { CreditoEstimado } from "@/components/search/credito-estimado";
 import { LINKEDIN_INDUSTRIES } from "@/lib/data/linkedin-industries";
 import type { Lead } from "@/lib/types";
+import { SugestoesPublico } from "@/components/search/sugestoes-publico";
+import type { PublicoSugerido } from "@/lib/onboarding/ia";
 
 function TagInput({
   label,
@@ -73,7 +75,17 @@ function TagInput({
   );
 }
 
-export function LinkedInSearchForm({ custoPorResultado }: { custoPorResultado: number }) {
+export function LinkedInSearchForm({
+  custoPorResultado,
+  publicos = [],
+  temPerfil = false,
+  precisaAtualizar = false,
+}: {
+  custoPorResultado: number;
+  publicos?: PublicoSugerido[];
+  temPerfil?: boolean;
+  precisaAtualizar?: boolean;
+}) {
   const [cargos, setCargos] = useState<string[]>([]);
   const [localizacoes, setLocalizacoes] = useState<string[]>([]);
   const [industrias, setIndustrias] = useState<string[]>([]);
@@ -124,8 +136,16 @@ export function LinkedInSearchForm({ custoPorResultado }: { custoPorResultado: n
     }
   }
 
+  function aplicarPublico({ parametros: f }: PublicoSugerido) {
+    setCargos(f.cargosLinkedin);
+    setLocalizacoes(f.localizacoesLinkedin);
+    setIndustrias(f.industriasLinkedin);
+    setPalavraChave(f.palavraChaveLinkedin ?? "");
+  }
+
   return (
     <div className="flex flex-col gap-6">
+      <SugestoesPublico publicos={publicos} temPerfil={temPerfil} precisaAtualizar={precisaAtualizar} onAplicar={aplicarPublico} />
       <form onSubmit={handleSubmit} className="flex flex-col gap-6">
         <Card>
           <CardHeader>

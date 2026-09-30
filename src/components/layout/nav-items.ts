@@ -20,6 +20,7 @@ import {
   Kanban,
   Coins,
   Compass,
+  UserRound,
 } from "lucide-react";
 
 export interface NavLeaf {
@@ -82,7 +83,7 @@ export function buildNavSections({
     {
       items: [
         { type: "link", href: "/", label: "Visão geral", icon: LayoutDashboard },
-        { type: "link", href: "/onboarding", label: "Plano de prospecção", icon: Compass },
+        { type: "link", href: "/onboarding", label: "Estratégia de prospecção", icon: Compass },
       ],
     },
     {
@@ -126,6 +127,7 @@ export function buildNavSections({
   sections.push({
     label: "Conta",
     items: [
+      { type: "link", href: "/perfil", label: "Meu perfil", icon: UserRound },
       { type: "link", href: "/creditos", label: "Créditos", icon: Coins },
       { type: "link", href: "/conexoes", label: "Conexões", icon: Plug },
     ],

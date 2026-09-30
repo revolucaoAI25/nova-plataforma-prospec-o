@@ -13,6 +13,7 @@ import { useConfirm } from "@/components/ui/confirm-provider";
 import { cn } from "@/lib/utils";
 import type { AvaliacaoPlano, PlanoOnboarding, ResultadoOnboarding } from "@/lib/onboarding/ia";
 import type { AplicacaoRow } from "@/lib/onboarding/aplicar";
+import { ETAPAS_AUTOMATICAS, etapasDoFunil } from "@/lib/onboarding/funil";
 import { MensagensPreview } from "./mensagens-preview";
 import { PassoAPasso } from "./passo-a-passo";
 
@@ -76,7 +77,7 @@ function DetalhePlano({
           <p className="text-sm text-muted-foreground">{meta.nome}</p>
         </header>
 
-        <Secao titulo="Por que este plano">
+        <Secao titulo="Por que esta sugestão">
           <p className="whitespace-pre-line text-[15px] leading-relaxed text-foreground">{plano.porQue}</p>
         </Secao>
 
@@ -92,8 +93,35 @@ function DetalhePlano({
           <p className="whitespace-pre-line text-sm leading-relaxed text-muted-foreground">{plano.comoFunciona}</p>
         </Secao>
 
+        <Secao titulo="Funil que vai ser criado">
+          <ol className="flex flex-wrap items-center gap-1.5" aria-label="Etapas do funil">
+            {etapasDoFunil(plano).map((etapa, i, todas) => (
+              <li key={etapa} className="flex items-center gap-1.5">
+                <span className={cn(
+                  "rounded-full border px-3 py-1 text-xs font-medium",
+                  i < ETAPAS_AUTOMATICAS.length ? "border-dashed border-border text-muted-foreground" : "border-border bg-card text-foreground",
+                )}>{etapa}</span>
+                {i < todas.length - 1 && <ChevronRight className="h-3.5 w-3.5 text-muted-2" aria-hidden />}
+              </li>
+            ))}
+          </ol>
+          <p className="text-xs text-muted-foreground">
+            As etapas tracejadas andam sozinhas: quem responde no WhatsApp ou LinkedIn sai da cadência e vai pra &quot;Respondeu&quot;. Daí em diante é conversa de gente, e você move o card.
+          </p>
+        </Secao>
+
         <Secao titulo="Mensagens">
           <MensagensPreview mensagens={plano.mensagens} />
+          {(plano.problemasCopy ?? []).length > 0 && (
+            <div className="flex flex-col gap-1.5 rounded-xl border border-amber/40 bg-amber-soft/40 p-3">
+              <p className="text-xs font-semibold text-foreground">Vale ajustar no texto antes de dar play</p>
+              <ul className="flex flex-col gap-1">
+                {plano.problemasCopy!.map((p, i) => (
+                  <li key={i} className="text-xs text-muted-foreground"><span className="font-medium text-foreground">{p.onde}:</span> {p.problema}</li>
+                ))}
+              </ul>
+            </div>
+          )}
         </Secao>
 
         <div className="grid gap-4 sm:grid-cols-2">
@@ -102,7 +130,7 @@ function DetalhePlano({
             <p className="text-sm text-muted-foreground">{plano.metricaSucesso}</p>
           </div>
           <div className="flex flex-col gap-1.5 rounded-xl border border-border p-4">
-            <p className="flex items-center gap-1.5 text-sm font-semibold text-foreground"><RotateCcw className="h-4 w-4 text-primary" /> Quando testar outro plano</p>
+            <p className="flex items-center gap-1.5 text-sm font-semibold text-foreground"><RotateCcw className="h-4 w-4 text-primary" /> Quando testar outra sugestão</p>
             <p className="text-sm text-muted-foreground">{plano.quandoTrocar}</p>
           </div>
         </div>
@@ -185,8 +213,8 @@ export function PlanosView({
 
   async function gerarDeNovo() {
     if (!(await confirmar({
-      title: "Montar novos planos?",
-      description: "A IA monta planos novos a partir das suas respostas atuais. Os planos que você já usou continuam na sua conta.",
+      title: "Montar novas sugestões?",
+      description: "A IA monta sugestões novas a partir das suas respostas atuais. As que você já usou continuam na sua conta.",
     }))) return;
     setRegerando(true);
     setErro(null);
@@ -211,7 +239,7 @@ export function PlanosView({
           <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-accent-foreground"><BadgeCheck className="h-3.5 w-3.5" /> Recomendação</p>
           <p className="text-[15px] leading-relaxed text-foreground">{resultado.parecer}</p>
           <button type="button" onClick={() => setSelecionada(resultado.planoPrincipal)} className="mt-1 inline-flex w-fit cursor-pointer items-center gap-1 text-sm font-semibold text-primary hover:underline">
-            Ver o Plano {resultado.planoPrincipal} <ArrowRight className="h-3.5 w-3.5" />
+            Ver a Sugestão {resultado.planoPrincipal} <ArrowRight className="h-3.5 w-3.5" />
           </button>
         </div>
       </div>
@@ -219,7 +247,7 @@ export function PlanosView({
       <div className="flex flex-col gap-3">
         <div className="flex flex-wrap items-end justify-between gap-2">
           <div>
-            <h2 className="text-lg font-semibold text-foreground">Seus planos</h2>
+            <h2 className="text-lg font-semibold text-foreground">Suas sugestões</h2>
             <p className="text-sm text-muted-foreground">Caminhos diferentes pra testar. Ordem sugerida: {resultado.ordemSugerida.join(" → ")}.</p>
           </div>
           <div className="flex gap-2">
@@ -231,7 +259,7 @@ export function PlanosView({
         </div>
         {erro && <Alert variant="destructive"><AlertDescription>{erro}</AlertDescription></Alert>}
 
-        <div role="tablist" aria-label="Planos" className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <div role="tablist" aria-label="Sugestões" className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           {resultado.planos.map((p) => {
             const ativo = p.letra === plano.letra;
             const apl = aplicacaoDe(p.letra);

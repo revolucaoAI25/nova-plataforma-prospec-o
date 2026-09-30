@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Plus, Settings2, Trash2, Zap, UserPlus } from "lucide-react";
+import { Plus, Settings2, Trash2, Zap, UserPlus, Bot } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
@@ -9,7 +9,14 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useConfirm } from "@/components/ui/confirm-provider";
 import { FunilCardView } from "@/components/funil/funil-card";
 import { AdicionarLeadsDialog } from "@/components/funil/adicionar-leads-dialog";
-import type { FunilColunaRow, FunilCardRow, AutomationFlowRow } from "@/lib/database.types";
+import type { FunilColunaRow, FunilCardRow, AutomationFlowRow, PapelColunaFunil } from "@/lib/database.types";
+
+// Colunas que a plataforma movimenta sozinha (funis criados pelas sugestões).
+const DICA_PAPEL: Partial<Record<PapelColunaFunil, string>> = {
+  entrada: "Automático: leads novos entram aqui.",
+  cadencia: "Automático: o lead vem pra cá quando a primeira mensagem sai.",
+  respondeu: "Automático: quem responde no WhatsApp ou LinkedIn vem pra cá e sai da cadência. Arrastar um card pra cá (ou além) também para as mensagens.",
+};
 
 const SEM_FLUXO = "nenhum";
 
@@ -66,7 +73,7 @@ export function FunilBoard({ funilId, colunasIniciais, cardsIniciais, flows }: P
     });
     const data = await resp.json();
     if (!resp.ok) return mostrarAviso(data.error || "Não foi possível criar a coluna.");
-    setColunas((prev) => [...prev, { id: data.id, funil_id: funilId, nome: novaColuna.trim(), ordem: prev.length, cor: null, fluxo_id: null, criado_em: new Date().toISOString() }]);
+    setColunas((prev) => [...prev, { id: data.id, funil_id: funilId, nome: novaColuna.trim(), ordem: prev.length, cor: null, fluxo_id: null, papel: null, criado_em: new Date().toISOString() }]);
     setNovaColuna("");
   }
 
@@ -165,6 +172,11 @@ export function FunilBoard({ funilId, colunasIniciais, cardsIniciais, flows }: P
                 <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: cor }} aria-hidden />
                 <span className="truncate text-sm font-semibold text-foreground">{coluna.nome}</span>
                 {coluna.fluxo_id && <Zap className="h-3.5 w-3.5 shrink-0 text-primary" />}
+                {coluna.papel && DICA_PAPEL[coluna.papel] && (
+                  <span title={DICA_PAPEL[coluna.papel]} aria-label={DICA_PAPEL[coluna.papel]} className="shrink-0">
+                    <Bot className="h-3.5 w-3.5 text-muted-2" />
+                  </span>
+                )}
               </div>
               <div className="flex items-center gap-1">
                 <span className="rounded-full bg-secondary px-2 py-0.5 text-xs text-muted-foreground">

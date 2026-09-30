@@ -19,7 +19,7 @@ export async function POST() {
   if (atual.status === "gerando") return NextResponse.json({ ok: true, status: "gerando" });
 
   if (atual.solicitado_em && Date.now() - new Date(atual.solicitado_em).getTime() < INTERVALO_MIN_MS) {
-    return NextResponse.json({ error: "Você acabou de gerar seus planos. Aguarde alguns minutos pra gerar de novo." }, { status: 429 });
+    return NextResponse.json({ error: "Você acabou de gerar suas sugestões. Aguarde alguns minutos pra gerar de novo." }, { status: 429 });
   }
 
   const respostas = respostasSchema.parse(atual.respostas ?? {});

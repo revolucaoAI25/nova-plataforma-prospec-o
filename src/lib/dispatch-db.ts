@@ -1,6 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { normalizarE164 } from "@/lib/phone";
 import { getProfile } from "@/lib/credits";
+import { chaveTelefone } from "@/lib/contatos";
+import { primeiroContatoDaCampanha } from "@/lib/funil-automacao";
 import type {
   WhatsappInstanceRow, DispatchCampaignRow, CadenceStepRow, DispatchTargetRow,
   MessageTemplateRow, OficialConnectionRequestRow, SheetWatcherRow, InstanceCanal, CampaignOrigem, Profile,
@@ -495,17 +497,20 @@ export async function marcarEnviado(
       status: "pendente", current_step_id: step.id,
       proxima_etapa_em: new Date(agora.getTime() + atraso).toISOString(),
       atualizado_em: agora.toISOString(),
-    }).eq("id", target.id);
+    }).eq("id", target.id).eq("status", "enviando");
   } else {
     await sb.from("dispatch_targets").update({
       status: "concluido", current_step_id: step.id, atualizado_em: agora.toISOString(),
-    }).eq("id", target.id);
+    }).eq("id", target.id).eq("status", "enviando");
   }
 
   await sb.from("dispatch_messages_log").insert({
     target_id: target.id, campaign_id: campaignId, step_id: step.id,
     status: "sucesso", evolution_message_id: evolutionMessageId, corpo_enviado: corpoEnviado,
   });
+
+  // Primeira mensagem desse lead: card do funil automático vai pra "Em cadência".
+  if (!target.current_step_id) await primeiroContatoDaCampanha(sb, "dispatch_campaigns", campaignId, [chaveTelefone(target.telefone)]);
 }
 
 export async function marcarFalha(

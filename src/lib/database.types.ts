@@ -216,6 +216,7 @@ export type PlatformSettingKey =
   | "google_client_secret"
   | "evolution_api_url"
   | "evolution_api_key"
+  | "webhook_segredo"
   | "datafy_api_base_url";
 
 export interface PlatformSettingRow {
@@ -422,6 +423,8 @@ export interface WhatsappInstanceRow {
   token_oficial: string | null;
   phone_number_id: string | null;
   waba_id: string | null;
+  /** Quando o webhook de mensagens recebidas foi registrado na Evolution (detecção de resposta). */
+  webhook_configurado_em: string | null;
   criado_em: string;
 }
 
@@ -457,7 +460,7 @@ export interface CadenceStepRow {
   criado_em: string;
 }
 
-export type TargetStatus = "pendente" | "enviando" | "enviado" | "concluido" | "falhou" | "removido";
+export type TargetStatus = "pendente" | "enviando" | "enviado" | "concluido" | "falhou" | "removido" | "respondeu";
 
 export interface DispatchTargetRow {
   id: string;
@@ -691,7 +694,7 @@ export interface LinkedinCadenceStepRow {
   criado_em: string;
 }
 
-export type LinkedinTargetStatus = "pendente" | "enviando" | "aguardando_aceite" | "enviado" | "concluido" | "falhou" | "removido";
+export type LinkedinTargetStatus = "pendente" | "enviando" | "aguardando_aceite" | "enviado" | "concluido" | "falhou" | "removido" | "respondeu";
 
 export interface LinkedinTargetRow {
   id: string;
@@ -829,8 +832,12 @@ export interface FunilColunaRow {
   ordem: number;
   cor: string | null;
   fluxo_id: string | null;
+  /** Coluna que a plataforma move sozinha (funis das sugestões). Nulo em funis manuais. */
+  papel: PapelColunaFunil | null;
   criado_em: string;
 }
+
+export type PapelColunaFunil = "entrada" | "cadencia" | "respondeu" | "ganho" | "perdido";
 
 export interface FunilCardRow {
   id: string;
@@ -839,6 +846,8 @@ export interface FunilCardRow {
   user_id: string;
   lead_id: string | null;
   lead_snapshot: Record<string, unknown>;
+  /** Chaves normalizadas (tel:, email:, li:) — ver src/lib/contatos.ts. */
+  contatos: string[];
   ordem: number;
   criado_em: string;
   atualizado_em: string;

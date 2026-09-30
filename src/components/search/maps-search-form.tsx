@@ -20,6 +20,8 @@ import { ResultsSummary, buildGeneralMetrics } from "@/components/search/results
 import { NICHOS, NOMES_NICHOS } from "@/lib/data/nichos";
 import { ESTADOS } from "@/lib/data/estados";
 import type { Lead } from "@/lib/types";
+import { SugestoesPublico } from "@/components/search/sugestoes-publico";
+import type { PublicoSugerido } from "@/lib/onboarding/ia";
 
 const OUTRO = "Outro / Personalizado";
 
@@ -28,7 +30,17 @@ const UF_OPTIONS: MultiSelectOption[] = Object.entries(ESTADOS).map(([sigla, nom
   label: `${sigla} — ${nome}`,
 }));
 
-export function MapsSearchForm({ custoPorResultado }: { custoPorResultado: number }) {
+export function MapsSearchForm({
+  custoPorResultado,
+  publicos = [],
+  temPerfil = false,
+  precisaAtualizar = false,
+}: {
+  custoPorResultado: number;
+  publicos?: PublicoSugerido[];
+  temPerfil?: boolean;
+  precisaAtualizar?: boolean;
+}) {
   const [nicho, setNicho] = useState(NOMES_NICHOS[0]);
   const [queryCustom, setQueryCustom] = useState("");
   const [subnicho, setSubnicho] = useState("");
@@ -114,8 +126,23 @@ export function MapsSearchForm({ custoPorResultado }: { custoPorResultado: numbe
     }
   }
 
+  function aplicarPublico({ parametros: f }: PublicoSugerido) {
+    if (f.nichoMaps && f.nichoMaps in NICHOS) {
+      setNicho(f.nichoMaps);
+      setQueryCustom("");
+    } else {
+      setNicho(OUTRO);
+      setQueryCustom(f.termoMaps ?? "");
+    }
+    setSubnicho("");
+    setEstados(f.ufs);
+    // A busca só aceita cidades com exatamente um estado.
+    setCidades(f.ufs.length === 1 ? f.cidades : []);
+  }
+
   return (
     <div className="flex flex-col gap-6">
+      <SugestoesPublico publicos={publicos} temPerfil={temPerfil} precisaAtualizar={precisaAtualizar} onAplicar={aplicarPublico} />
       <form onSubmit={handleSubmit} className="flex flex-col gap-6">
         <Card>
           <CardHeader>

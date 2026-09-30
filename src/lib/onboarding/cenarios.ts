@@ -49,6 +49,8 @@ export const parametrosCenarioSchema = z.object({
   mei: z.enum(["indiferente", "apenas", "excluir"]),
   aberturaUltimosDias: z.number().nullable(),
   capitalMinimo: z.number().nullable(),
+  capitalMaximo: z.number().nullable(),
+  idadeMinimaAnos: z.number().nullable(),
   nichoMaps: z.string().nullable(),
   termoMaps: z.string().nullable(),
   minAvaliacoes: z.number().nullable(),
@@ -123,6 +125,12 @@ const planilha = (): Passo => ({
   config: { sheetId: "", abaNome: "", colunaTelefone: "telefone", colunaNome: "nome" },
 });
 
+function dataHaAnos(anos: number): string {
+  const d = new Date();
+  d.setFullYear(d.getFullYear() - anos);
+  return d.toISOString().slice(0, 10);
+}
+
 function cnpj(p: ParametrosCenario, extra: Record<string, unknown> = {}): Passo {
   const doCatalogo = p.cnaes.filter((c) => c in CODIGO_PARA_DESC);
   const manuais = p.cnaes.filter((c) => !(c in CODIGO_PARA_DESC));
@@ -139,10 +147,11 @@ function cnpj(p: ParametrosCenario, extra: Record<string, unknown> = {}): Passo 
       simplesOptante: p.simples,
       meiOptante: p.mei,
       dataAberturaInicio: "",
-      dataAberturaFim: "",
+      // "Empresa com N+ anos": abertas até a data de hoje menos N anos.
+      dataAberturaFim: p.idadeMinimaAnos && !p.aberturaUltimosDias ? dataHaAnos(p.idadeMinimaAnos) : "",
       aberturaUltimosDias: p.aberturaUltimosDias,
       capitalMin: p.capitalMinimo,
-      capitalMax: null,
+      capitalMax: p.capitalMaximo,
       comTelefone: true,
       comEmail: false,
       tipoTelefone: "celular",
@@ -613,6 +622,14 @@ function limpar(lista: string[], max: number): string[] {
  * o nó aceita. Nunca inventa segmentação — só descarta o inválido.
  */
 export function normalizarParametros(p: ParametrosCenario, cenario: Cenario): ParametrosCenario {
+  return {
+    ...normalizarFiltros(p),
+    leadsPorExecucao: Math.max(1, Math.min(Math.round(p.leadsPorExecucao) || 20, cenario.tetoPorExecucao)),
+  };
+}
+
+/** Só a parte de segmentação/agenda — também usada nos públicos sugeridos pras buscas avulsas. */
+export function normalizarFiltros(p: ParametrosCenario): ParametrosCenario {
   const cnaes = limpar(p.cnaes.map((c) => c.replace(/\D/g, "")), 30).filter((c) => /^\d{7}$/.test(c));
   const ufs = limpar(p.ufs.map((u) => u.toUpperCase()), 27).filter((u) => UFS_VALIDAS.has(u));
   const diasSemana = Array.from(new Set(p.diasSemana.filter((d) => Number.isInteger(d) && d >= 0 && d <= 6))).sort();
@@ -627,6 +644,8 @@ export function normalizarParametros(p: ParametrosCenario, cenario: Cenario): Pa
     portes: Array.from(new Set(p.portes)),
     aberturaUltimosDias: p.aberturaUltimosDias && p.aberturaUltimosDias > 0 ? Math.min(Math.round(p.aberturaUltimosDias), 365) : null,
     capitalMinimo: p.capitalMinimo && p.capitalMinimo > 0 ? p.capitalMinimo : null,
+    capitalMaximo: p.capitalMaximo && p.capitalMaximo > 0 && (!p.capitalMinimo || p.capitalMaximo > p.capitalMinimo) ? p.capitalMaximo : null,
+    idadeMinimaAnos: p.idadeMinimaAnos && p.idadeMinimaAnos > 0 ? Math.min(Math.round(p.idadeMinimaAnos), 50) : null,
     nichoMaps: p.nichoMaps && p.nichoMaps in NICHOS ? p.nichoMaps : null,
     termoMaps: p.termoMaps?.trim() || null,
     minAvaliacoes: p.minAvaliacoes && p.minAvaliacoes > 0 ? Math.round(p.minAvaliacoes) : null,
@@ -636,7 +655,7 @@ export function normalizarParametros(p: ParametrosCenario, cenario: Cenario): Pa
     palavraChaveLinkedin: p.palavraChaveLinkedin?.trim() || null,
     perfilInstagram: perfil,
     camposIa: limpar(p.camposIa, 5),
-    leadsPorExecucao: Math.max(1, Math.min(Math.round(p.leadsPorExecucao) || 20, cenario.tetoPorExecucao)),
+    leadsPorExecucao: Math.max(1, Math.round(p.leadsPorExecucao) || 20),
     diasSemana: diasSemana.length ? diasSemana : [1, 2, 3, 4, 5],
     horario,
   };

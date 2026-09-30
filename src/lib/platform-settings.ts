@@ -54,7 +54,7 @@ export const PLATFORM_SETTINGS_META: Record<
   google_maps_api_key: { grupo: "Google Maps (verificação de CNPJ)", label: "API Key", envFallback: "GOOGLE_MAPS_API_KEY", secreto: true },
   apify_api_key: { grupo: "Apify (Maps, Instagram, LinkedIn)", label: "API Token", envFallback: "APIFY_API_KEY", secreto: true },
   openai_api_key_plataforma: { grupo: "IA do onboarding (OpenAI)", label: "API Key da plataforma", envFallback: "OPENAI_API_KEY", secreto: true },
-  onboarding_modelo_ia: { grupo: "IA do onboarding (OpenAI)", label: "Modelo (padrão gpt-5)", envFallback: "ONBOARDING_MODELO_IA", secreto: false },
+  onboarding_modelo_ia: { grupo: "IA do onboarding (OpenAI)", label: "Modelo (padrão gpt-5.6-luna)", envFallback: "ONBOARDING_MODELO_IA", secreto: false },
   creditos_conta_teste: { grupo: "Conta de teste", label: "Créditos concedidos a cada nova conta de teste", envFallback: "CREDITOS_CONTA_TESTE", secreto: false },
   resend_api_key: { grupo: "Resend (e-mail)", label: "API Key", envFallback: "RESEND_API_KEY", secreto: true },
   unipile_dsn: { grupo: "Unipile (LinkedIn)", label: "DSN (URL do tenant)", envFallback: "UNIPILE_DSN", secreto: false },
@@ -68,5 +68,6 @@ export const PLATFORM_SETTINGS_META: Record<
   google_client_secret: { grupo: "Google Sheets (OAuth)", label: "Client Secret", envFallback: "GOOGLE_CLIENT_SECRET", secreto: true },
   evolution_api_url: { grupo: "Evolution API (WhatsApp)", label: "URL base", envFallback: "EVOLUTION_API_URL", secreto: false },
   evolution_api_key: { grupo: "Evolution API (WhatsApp)", label: "API Key", envFallback: "EVOLUTION_API_KEY", secreto: true },
+  webhook_segredo: { grupo: "Evolution API (WhatsApp)", label: "Segredo do webhook de respostas (opcional)", envFallback: "WEBHOOK_SECRET", secreto: true },
   datafy_api_base_url: { grupo: "Datafy (WhatsApp — canal oficial)", label: "URL base", envFallback: "DATAFY_API_BASE_URL", secreto: false },
 };
