@@ -914,6 +914,35 @@ mas nada é processado — é só fila).
   manualmente pelo admin em `/admin/disparo` por conexão (mesmo padrão
   documentado em `.env.example`), então não fazem sentido num campo
   único de "chave de API".
+- **Tabela de preços final** (migration `0023_pricing_table_final.sql`),
+  alinhada com o usuário, substituindo os valores de placeholder dos
+  planos (0018) e pacotes avulsos (0017):
+  - **Planos**: Starter R$127/mês · 6.000 créditos, Pro R$347/mês · 30.000
+    créditos, Business R$897/mês · 100.000 créditos. Os três liberam os
+    mesmos recursos "base" (busca CNPJ/Maps/Instagram/LinkedIn,
+    BigDataCorp, Enriquecimento via IA — BYOK, WhatsApp via Evolution sem
+    cota, e-mail via Resend). Só o disparo por LinkedIn (Unipile) é
+    exclusivo do Business — Starter/Pro tratam como add-on à parte
+    (R$150-200/mês, cobrado manualmente pelo admin, que já pode conceder
+    o flag pra um usuário específico em `AdminUsersTable` sem esperar um
+    mecanismo de cobrança de add-on — isso ainda não existe como fluxo
+    self-service, fica pra quando o checkout de add-ons for construído).
+    O canal oficial de WhatsApp (Datafy) já é 100% aprovação manual do
+    admin (`/disparo/solicitar-oficial`) independente do plano — "add-on
+    só no Starter" nesse caso é uma decisão na hora de aprovar a
+    solicitação, não precisa de coluna nova.
+  - **Pacotes avulsos**: P (2.000 créditos, R$47 — R$0,0235/crédito), M
+    (10.000, R$197 — R$0,0197/crédito), G (50.000, R$797 —
+    R$0,0159/crédito) — preço por crédito deliberadamente um pouco acima
+    do que já vem incluso no plano (incentivo a migrar de plano em vez de
+    só comprar avulso, sem ser punitivo), com desconto por volume no
+    pacote maior.
+  - Fora de escopo desta migration (dados, não código): cota mensal de
+    e-mail diferenciada por plano (hoje o limite é só por remetente,
+    `email_senders.limite_diario_envios`, não por plano) e um mecanismo
+    de compra self-service dos add-ons (LinkedIn/oficial) — ambos ficam
+    como próxima decisão de produto quando o checkout de add-ons entrar
+    em pauta.
 
 ## Estrutura
 
