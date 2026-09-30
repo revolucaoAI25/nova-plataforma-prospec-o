@@ -72,16 +72,18 @@ export function CreateUserForm() {
               <Label htmlFor="new-password">Senha inicial</Label>
               <Input id="new-password" type="text" required minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} className="w-48" />
             </div>
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="new-credits">Créditos iniciais</Label>
-              <Input id="new-credits" type="number" min={0} value={creditos} onChange={(e) => setCreditos(Number(e.target.value))} className="w-36" />
-            </div>
+            {!contaTeste && (
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="new-credits">Créditos iniciais</Label>
+                <Input id="new-credits" type="number" min={0} value={creditos} onChange={(e) => setCreditos(Number(e.target.value))} className="w-36" />
+              </div>
+            )}
           </div>
 
           <FieldGroup className="max-w-md">
             <FieldRow
               label="Conta de teste"
-              description="Créditos pré-carregados, prazo de validade, usa a chave Maps compartilhada da plataforma (nunca chave própria)."
+              description="Recebe a quantidade global de créditos de teste e acesso a tudo, menos disparo por LinkedIn e canal oficial. Não pode comprar. Bloqueia ao expirar."
               control={<Switch checked={contaTeste} onCheckedChange={setContaTeste} />}
             />
           </FieldGroup>

@@ -3,6 +3,7 @@ import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/require-admin";
+import { camposAtivacaoContaTeste } from "@/lib/conta-teste";
 
 export async function GET() {
   const supabase = await createClient();
@@ -13,7 +14,7 @@ export async function GET() {
     return NextResponse.json({ error: "Acesso restrito ao admin." }, { status: 403 });
   }
 
-  const { data, error } = await supabase.from("user_stats").select("*").order("created_at", { ascending: false });
+  const { data, error } = await createAdminClient().from("user_stats").select("*").order("created_at", { ascending: false });
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ users: data });
 }
@@ -51,11 +52,15 @@ export async function POST(request: Request) {
   }
 
   // O trigger handle_new_user já cria o perfil — garante que o role pedido
-  // e os campos de conta de teste (se houver) sejam aplicados.
-  const patch: Record<string, unknown> = { role: parsed.data.role, creditos: parsed.data.creditos };
+  // e os campos de conta de teste (se houver) sejam aplicados. Conta de
+  // teste ignora o saldo informado: recebe a quantidade global configurada.
+  let patch: Record<string, unknown> = { role: parsed.data.role, creditos: parsed.data.creditos };
   if (parsed.data.contaTeste) {
-    patch.conta_teste = true;
-    patch.teste_expira_em = parsed.data.testeExpiraEm ? new Date(parsed.data.testeExpiraEm).toISOString() : null;
+    patch = {
+      ...patch,
+      ...(await camposAtivacaoContaTeste()),
+      teste_expira_em: parsed.data.testeExpiraEm ? new Date(parsed.data.testeExpiraEm).toISOString() : null,
+    };
   }
   await admin.from("profiles").update(patch).eq("id", data.user.id);
 

@@ -21,6 +21,11 @@ export async function POST(request: Request) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Não autenticado." }, { status: 401 });
 
+  const { data: perfil } = await supabase.from("profiles").select("conta_teste").eq("id", user.id).maybeSingle();
+  if (perfil?.conta_teste) {
+    return NextResponse.json({ error: "O canal oficial não está disponível em contas de teste." }, { status: 403 });
+  }
+
   const parsed = bodySchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "Dados inválidos." }, { status: 400 });
 

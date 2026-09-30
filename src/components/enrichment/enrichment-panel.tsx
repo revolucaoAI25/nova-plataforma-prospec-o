@@ -121,7 +121,7 @@ export function EnrichmentPanel({ openaiKeyConfigurada }: { openaiKeyConfigurada
         <Alert>
           <AlertDescription>
             Você precisa cadastrar sua própria chave de API da OpenAI antes de usar esse recurso — vá em
-            Configurações → OpenAI. O custo das buscas é cobrado na sua conta OpenAI, não consome créditos da
+            Conexões → OpenAI. O custo das buscas é cobrado na sua conta OpenAI, não consome créditos da
             plataforma.
           </AlertDescription>
         </Alert>

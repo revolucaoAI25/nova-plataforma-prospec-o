@@ -254,7 +254,7 @@ export interface BuscarLinkedInParams {
 
 export async function buscarLinkedIn(p: BuscarLinkedInParams): Promise<Lead[]> {
   if (!p.apifyApiKey) {
-    throw new Error("Chave Apify não configurada. Acesse Configurações → Instagram (a mesma chave vale para LinkedIn).");
+    throw new Error("Busca no LinkedIn indisponível no momento (chave da plataforma não configurada).");
   }
   if (!p.cargos.length && !p.localizacoes.length && !p.industrias?.length && !p.palavraChave?.trim()) {
     throw new Error("Informe ao menos um cargo, localização, tipo de empresa ou palavra-chave.");

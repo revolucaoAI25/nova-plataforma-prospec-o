@@ -48,6 +48,12 @@ No [painel do Supabase](https://supabase.com/dashboard), crie um projeto novo
 10. `supabase/migrations/0010_email_domains.sql` (verificação de domínio por usuário, disparo por e-mail)
 11. `supabase/migrations/0011_email_domains_global_unique.sql` (corrige falha de segurança multi-tenant — ver "Decisões de arquitetura")
 12. `supabase/migrations/0012_bigdatacorp_enrichment.sql` (enriquecimento de leads por CNPJ via BigDataCorp)
+13. Em seguida, `0013` a `0029`, sempre em ordem numérica. Destaques:
+    `0028_seguranca_profiles.sql` (fecha escalonamento de privilégio — ver
+    "Decisões de arquitetura") e `0029_limpeza_legado.sql` (remove colunas e
+    tabelas antigas e conserta `platform_settings`). Rode a `0029` **depois**
+    do deploy do código desta versão: o código antigo ainda lia as colunas
+    que ela apaga.
 
 Em **Authentication → Providers**, deixe E-mail/senha habilitado (é o único método
 usado no login). Contas são criadas pelo admin — não há cadastro público.
@@ -97,15 +103,16 @@ requisição HTTP da busca), então também depende do worker estar rodando
 
 Busca por LinkedIn também fica desativada por padrão (mesmo padrão do
 Enriquecimento via IA — admin libera por usuário em `/admin`) e reaproveita a
-mesma chave/pool Apify já usada pelo Instagram; não precisa de credencial
+mesma chave Apify já usada pelo Instagram; não precisa de credencial
 própria. Usa o ator `harvestapi/linkedin-profile-search` em modo `Full`
 (sem busca de e-mail, que custa 2.5x mais e não é garantida) — schema de
 input/output conferido direto no Apify Console, ver comentário no topo de
 `src/lib/integrations/linkedin.ts`.
 
-Cada uma dessas chaves "padrão da plataforma" pode ser sobreposta por usuário
-(chave própria em Configurações, ou administrada individualmente em `/admin/[userId]`)
-— a ordem de prioridade está comentada em `src/lib/maps-key.ts` e `src/lib/apify-key.ts`.
+Essas chaves de fornecedor (Casa dos Dados, Google Maps, Apify) são sempre da
+plataforma: cadastradas em `/admin` → Chaves da plataforma, com a variável de
+ambiente como fallback (`src/lib/platform-keys.ts`). O usuário final só
+configura a chave da OpenAI, em Conexões.
 
 ### 3. Crie o primeiro usuário admin
 
@@ -173,9 +180,8 @@ mas nada é processado — é só fila).
 - **Construtor de fluxos (`/automacoes` → "Fluxos")**: canvas visual estilo
   N8N/Make (`@xyflow/react`) pra combinar livremente módulos de gatilho,
   extração, enriquecimento, disparo e destino — sem combinações pré-definidas,
-  o usuário monta o grafo que quiser. Não substitui as "Automações antigas"
-  (mantidas intocadas, seção separada na mesma página): é um sistema novo,
-  em paralelo, pra tudo que for criado daqui pra frente. Arquitetura: grafo
+  o usuário monta o grafo que quiser. As "Automações antigas" (busca agendada)
+  que conviviam com ele foram removidas depois — os fluxos cobrem o mesmo caso. Arquitetura: grafo
   (`nodes`/`edges`) guardado como JSONB em `automation_flows`, executado nó a
   nó por `worker/flow-tick.ts` (novo 5º tick do worker, 20s) via
   `src/lib/flow/flow-engine.ts` — que só orquestra, reaproveitando sem
@@ -1033,6 +1039,47 @@ mas nada é processado — é só fila).
      falhou e o id do evento. `cancelarAssinatura` também passou a
      tratar 404 do Asaas (assinatura já removida por lá) como sucesso,
      em vez de deixar o usuário travado sem conseguir cancelar localmente.
+
+- **Limpeza geral + segurança (Fase 0 do onboarding com presets)**:
+  - *Chaves só da plataforma*: Casa dos Dados, Google Maps e Apify saíram
+    do perfil do usuário (chave própria, "administrada" e pools com
+    rodízio). Resolução única em `src/lib/platform-keys.ts`: valor do
+    `/admin` → Chaves da plataforma, com a env var como fallback. A página
+    Configurações virou **Conexões** (`/conexoes`): status real de
+    WhatsApp, e-mail, LinkedIn, Google Sheets e OpenAI (`src/lib/conexoes.ts`,
+    calculado das tabelas, nunca de marcação manual) — é a mesma fonte que
+    o passo a passo do onboarding vai usar. A única chave que o usuário
+    traz é a da OpenAI.
+  - *Toda ação debita crédito*: os flags `*_credits_enabled` (Maps,
+    Instagram, LinkedIn) permitiam uma busca de graça se alguém os
+    desligasse; saíram. A busca CNPJ e o nó de fluxo equivalente passaram a
+    pré-checar o saldo somando a verificação no Maps (55 créditos/lead —
+    antes só o CNPJ era checado e o débito satura em zero, então saldo
+    pequeno liberava centenas de chamadas pagas ao Google). O nó de
+    extração Maps e o de enriquecimento Maps ganharam a pré-checagem que
+    não tinham.
+  - *Escalonamento de privilégio fechado* (`0028_seguranca_profiles.sql`):
+    a policy de update em `profiles` não restringia colunas e a chave anon
+    é pública — qualquer usuário logado podia se tornar admin ou se dar
+    créditos via REST. Trigger agora só deixa o próprio usuário mudar
+    `openai_api_key`/`google_sheets_creds`; campos de assinatura/Asaas
+    passaram a ser gravados com o cliente admin. Funções que creditam
+    saldo não são mais executáveis por `authenticated`, e
+    `decrement_creditos` só debita a própria conta. A view `user_stats`
+    (e-mail, papel e saldo de todos) também era legível por qualquer
+    usuário — agora só o servidor lê.
+  - *`platform_settings` nunca funcionou*: 0002 já criava uma tabela com
+    esse nome (linha única), então a chave/valor de 0019 não era criada e
+    o painel de chaves do admin não gravava nada. `0029_limpeza_legado.sql`
+    substitui a tabela e copia pra ela as chaves que existiam por usuário.
+  - *Conta de teste*: recebe a quantidade global de créditos
+    (`creditos_conta_teste`, em Chaves da plataforma; padrão 1000) e acesso
+    a tudo, menos disparo por LinkedIn e canal oficial de WhatsApp; não
+    compra créditos, planos nem extras (`src/lib/conta-teste.ts`).
+  - *Removidos*: automações antigas (busca agendada — substituídas pelos
+    fluxos), painel de disparo automático do admin, galeria de templates de
+    fluxo (vai ser substituída pelos presets gerados no onboarding). Admin
+    reorganizado em abas: Usuários · Planos e preços · Chaves da plataforma.
 
 ## Estrutura
 

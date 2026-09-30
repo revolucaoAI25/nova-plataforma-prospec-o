@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Save, KeyRound } from "lucide-react";
+import { Save, UserCog } from "lucide-react";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -16,10 +16,7 @@ function UserRow({ user, isSelf }: { user: UserStatsRow; isSelf: boolean }) {
   const router = useRouter();
   const [creditos, setCreditos] = useState(user.creditos);
   const [monthlyCreditos, setMonthlyCreditos] = useState(user.monthly_creditos);
-  const [mapsEnabled, setMapsEnabled] = useState(user.maps_credits_enabled);
-  const [instagramCreditsEnabled, setInstagramCreditsEnabled] = useState(user.instagram_credits_enabled);
   const [instagramVisible, setInstagramVisible] = useState(user.instagram_visible);
-  const [linkedinCreditsEnabled, setLinkedinCreditsEnabled] = useState(user.linkedin_credits_enabled);
   const [linkedinVisible, setLinkedinVisible] = useState(user.linkedin_visible);
   const [disparoHabilitado, setDisparoHabilitado] = useState(user.disparo_habilitado);
   const [emailDisparoHabilitado, setEmailDisparoHabilitado] = useState(user.email_disparo_habilitado);
@@ -45,10 +42,7 @@ function UserRow({ user, isSelf }: { user: UserStatsRow; isSelf: boolean }) {
       body: JSON.stringify({
         creditos,
         monthly_creditos: monthlyCreditos,
-        maps_credits_enabled: mapsEnabled,
-        instagram_credits_enabled: instagramCreditsEnabled,
         instagram_visible: instagramVisible,
-        linkedin_credits_enabled: linkedinCreditsEnabled,
         linkedin_visible: linkedinVisible,
         disparo_habilitado: disparoHabilitado,
         email_disparo_habilitado: emailDisparoHabilitado,
@@ -87,16 +81,7 @@ function UserRow({ user, isSelf }: { user: UserStatsRow; isSelf: boolean }) {
         <Input type="number" className="h-8 w-24" value={monthlyCreditos} onChange={(e) => markDirty(setMonthlyCreditos)(Number(e.target.value))} />
       </TableCell>
       <TableCell>
-        <Switch checked={mapsEnabled} onCheckedChange={markDirty(setMapsEnabled)} />
-      </TableCell>
-      <TableCell>
-        <Switch checked={instagramCreditsEnabled} onCheckedChange={markDirty(setInstagramCreditsEnabled)} />
-      </TableCell>
-      <TableCell>
         <Switch checked={instagramVisible} onCheckedChange={markDirty(setInstagramVisible)} />
-      </TableCell>
-      <TableCell>
-        <Switch checked={linkedinCreditsEnabled} onCheckedChange={markDirty(setLinkedinCreditsEnabled)} />
       </TableCell>
       <TableCell>
         <Switch checked={linkedinVisible} onCheckedChange={markDirty(setLinkedinVisible)} />
@@ -108,7 +93,7 @@ function UserRow({ user, isSelf }: { user: UserStatsRow; isSelf: boolean }) {
         <Switch checked={emailDisparoHabilitado} onCheckedChange={markDirty(setEmailDisparoHabilitado)} />
       </TableCell>
       <TableCell>
-        <Switch checked={linkedinDisparoHabilitado} onCheckedChange={markDirty(setLinkedinDisparoHabilitado)} />
+        <Switch checked={linkedinDisparoHabilitado} onCheckedChange={markDirty(setLinkedinDisparoHabilitado)} disabled={user.conta_teste} />
       </TableCell>
       <TableCell>
         <Switch checked={enriquecimentoIa} onCheckedChange={markDirty(setEnriquecimentoIa)} />
@@ -124,9 +109,9 @@ function UserRow({ user, isSelf }: { user: UserStatsRow; isSelf: boolean }) {
       </TableCell>
       <TableCell className="text-right">
         <div className="flex justify-end gap-1">
-          <Button asChild size="sm" variant="ghost" title="Chaves administradas">
+          <Button asChild size="sm" variant="ghost" title="Conta de teste">
             <Link href={`/admin/${user.id}`}>
-              <KeyRound className="h-4 w-4" />
+              <UserCog className="h-4 w-4" />
             </Link>
           </Button>
           <Button size="sm" variant={dirty ? "default" : "ghost"} disabled={!dirty || saving} onClick={salvar}>
@@ -147,10 +132,7 @@ export function AdminUsersTable({ users, currentUserId }: { users: UserStatsRow[
           <TableHead>Papel</TableHead>
           <TableHead>Créditos</TableHead>
           <TableHead>Renovação mensal</TableHead>
-          <TableHead>Debita Maps?</TableHead>
-          <TableHead>Debita Instagram?</TableHead>
           <TableHead>Instagram</TableHead>
-          <TableHead>Debita LinkedIn?</TableHead>
           <TableHead>LinkedIn</TableHead>
           <TableHead>Disparo</TableHead>
           <TableHead>Disparo E-mail</TableHead>

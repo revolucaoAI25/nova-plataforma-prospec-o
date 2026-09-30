@@ -30,7 +30,7 @@ export async function assinarPlano(
   cpfCnpj: string | null,
   ciclo: AssinaturaCiclo = "mensal",
 ): Promise<{ invoiceUrl: string }> {
-  const customerId = await obterOuCriarClienteAsaas(sb, profile, cpfCnpj || profile.cpf_cnpj || "");
+  const customerId = await obterOuCriarClienteAsaas(profile, cpfCnpj || profile.cpf_cnpj || "");
 
   const valorCentavos = ciclo === "anual" ? (plano.preco_anual_centavos ?? plano.preco_centavos * 12) : plano.preco_centavos;
 
@@ -42,7 +42,9 @@ export async function assinarPlano(
     cycle: ciclo === "anual" ? "YEARLY" : "MONTHLY",
   });
 
-  await sb
+  // Cliente admin: campos de assinatura são protegidos contra escrita pelo
+  // próprio usuário (0028_seguranca_profiles.sql) — só o servidor altera.
+  await createAdminClient()
     .from("profiles")
     .update({ plano_id: plano.id, asaas_subscription_id: assinatura.id, assinatura_status: "pendente", assinatura_ciclo: ciclo })
     .eq("id", profile.id);
@@ -53,10 +55,10 @@ export async function assinarPlano(
 }
 
 /** Cancela no Asaas e limpa o vínculo — mantém `plano_id` como referência histórica ("seu último plano"), mas `asaas_subscription_id` some pra permitir assinar de novo depois sem colidir. */
-export async function cancelarPlano(sb: SupabaseClient, profile: Profile): Promise<void> {
+export async function cancelarPlano(profile: Profile): Promise<void> {
   if (!profile.asaas_subscription_id) return;
   await cancelarAssinatura(profile.asaas_subscription_id);
-  await sb
+  await createAdminClient()
     .from("profiles")
     .update({ asaas_subscription_id: null, assinatura_status: "cancelada" })
     .eq("id", profile.id);

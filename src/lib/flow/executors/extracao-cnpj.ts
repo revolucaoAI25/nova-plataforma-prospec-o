@@ -1,5 +1,5 @@
 import { getProfile, debitarCreditos, custoAcao } from "@/lib/credits";
-import { resolverChaveMaps, resolverChaveMapsOverflow, registrarUsoChaveMaps } from "@/lib/maps-key";
+import { chaveCasaDosDados, chaveGoogleMaps } from "@/lib/platform-keys";
 import { buscarCnpj, removerDuplicadosLote, CasaDosDadosError, type BuscaTextual } from "@/lib/integrations/casa-dos-dados";
 import { enriquecerComMaps, QuotaExceededError, MapsAccessError } from "@/lib/integrations/google-maps";
 import { salvarPesquisa, salvarLeads, buscarIdentificadoresExistentes } from "@/lib/db";
@@ -32,11 +32,12 @@ export async function executarExtracaoCnpj(ctx: FlowExecutorContext): Promise<Fl
 
   const profile = await getProfile(sb, userId);
   if (!profile) return { status: "erro", erro: "Perfil não encontrado." };
-  const custoCnpj = await custoAcao(sb, "cnpj");
+  // Soma a verificação no Maps quando ela vai rodar — ver o mesmo cálculo em /api/search/cnpj.
+  const custoCnpj = (await custoAcao(sb, "cnpj")) + (mapsModo !== "nao_usar" ? await custoAcao(sb, "cnpj_maps_extra") : 0);
   if (profile.creditos < custoCnpj) return { status: "erro", erro: "Créditos insuficientes." };
 
-  const cddApiKey = profile.cdd_api_key || profile.cdd_api_key_admin || process.env.CDD_API_KEY || "";
-  if (!cddApiKey) return { status: "erro", erro: "Nenhuma chave da Casa dos Dados configurada." };
+  const cddApiKey = await chaveCasaDosDados();
+  if (!cddApiKey) return { status: "erro", erro: "Busca por CNPJ indisponível no momento (chave da plataforma não configurada)." };
 
   let buscaTextual: BuscaTextual[] | null = null;
   let situacoesCadastrais: string[] | null = null;
@@ -97,18 +98,14 @@ export async function executarExtracaoCnpj(ctx: FlowExecutorContext): Promise<Fl
 
   let mapsVerificados = 0;
   if (mapsModo !== "nao_usar" && resultados.length > 0) {
-    let resolucao = await resolverChaveMaps(profile);
-    if (resolucao.bloqueado || !resolucao.key) {
-      const overflow = await resolverChaveMapsOverflow(profile);
-      if (overflow.key) resolucao = overflow;
-    }
-    if (resolucao.key && !resolucao.bloqueado) {
+    const mapsApiKey = await chaveGoogleMaps();
+    if (mapsApiKey) {
       const filtrar = mapsModo === "filtrar" || mapsModo === "filtrar_enriquecer";
       const enriquecer = mapsModo === "enriquecer" || mapsModo === "filtrar_enriquecer";
       const nVerificados = resultados.length;
       const stats = { text_search_calls: 0, contact_data_calls: 0 };
       try {
-        resultados = await enriquecerComMaps({ resultados, apiKey: resolucao.key, showPhone: enriquecer, filtrar, minAvaliacoes, stats });
+        resultados = await enriquecerComMaps({ resultados, apiKey: mapsApiKey, showPhone: enriquecer, filtrar, minAvaliacoes, stats });
         mapsVerificados = nVerificados;
       } catch (e) {
         if (e instanceof QuotaExceededError) {
@@ -119,7 +116,6 @@ export async function executarExtracaoCnpj(ctx: FlowExecutorContext): Promise<Fl
           throw e;
         }
       }
-      await registrarUsoChaveMaps(sb, userId, profile, resolucao, stats.contact_data_calls, stats.text_search_calls);
       resultados = removerDuplicadosLote(
         resultados,
         apenasNovos ? new Set(excludeCnpjs) : new Set<string>(),
@@ -143,7 +139,7 @@ export async function executarExtracaoCnpj(ctx: FlowExecutorContext): Promise<Fl
   if (searchId && total) await salvarLeads(sb, userId, searchId, resultados);
 
   await debitarCreditos(sb, userId, "cnpj", total);
-  if (mapsVerificados > 0 && profile.maps_credits_enabled) {
+  if (mapsVerificados > 0) {
     await debitarCreditos(sb, userId, "cnpj_maps_extra", mapsVerificados);
   }
 

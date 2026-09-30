@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { getProfile } from "@/lib/credits";
+import { MSG_CONTA_TESTE_SEM_COMPRA } from "@/lib/conta-teste";
 import { asaasConfigurado } from "@/lib/integrations/asaas";
 import { listarPlanosAtivos, assinarPlano, cancelarPlano } from "@/lib/subscriptions-db";
 
@@ -37,6 +38,8 @@ export async function POST(request: Request) {
 
   const profile = await getProfile(supabase, user.id);
   if (!profile) return NextResponse.json({ error: "Perfil não encontrado." }, { status: 404 });
+
+  if (profile.conta_teste) return NextResponse.json({ error: MSG_CONTA_TESTE_SEM_COMPRA }, { status: 403 });
 
   if (profile.assinatura_status === "ativa" || profile.assinatura_status === "pendente" || profile.assinatura_status === "inadimplente") {
     // Inclui "inadimplente" de propósito: `assinarPlano` sobrescreve
@@ -78,7 +81,7 @@ export async function DELETE() {
   if (!profile) return NextResponse.json({ error: "Perfil não encontrado." }, { status: 404 });
 
   try {
-    await cancelarPlano(supabase, profile);
+    await cancelarPlano(profile);
     return NextResponse.json({ ok: true });
   } catch (err) {
     console.error("[assinatura DELETE]", err);

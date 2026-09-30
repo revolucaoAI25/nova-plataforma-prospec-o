@@ -18,7 +18,8 @@ import type {
 export async function perfilComLinkedinDisparoHabilitado(sb: SupabaseClient, userId: string): Promise<Profile | null> {
   const profile = await getProfile(sb, userId);
   if (!profile) return null;
-  if (!profile.linkedin_disparo_habilitado && profile.role !== "admin") return null;
+  if (profile.role === "admin") return profile;
+  if (!profile.linkedin_disparo_habilitado || profile.conta_teste) return null;
   return profile;
 }
 

@@ -21,7 +21,7 @@ export async function GET(request: Request) {
   const cookieStore = await cookies();
   const expectedState = cookieStore.get("gs_oauth_state")?.value;
 
-  const settingsUrl = new URL("/configuracoes", process.env.NEXT_PUBLIC_APP_URL);
+  const settingsUrl = new URL("/conexoes", process.env.NEXT_PUBLIC_APP_URL);
 
   if (!code || !state || !expectedState || state !== expectedState) {
     settingsUrl.searchParams.set("sheets", "erro");

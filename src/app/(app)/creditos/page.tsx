@@ -6,6 +6,8 @@ import { listarPlanosAtivos } from "@/lib/subscriptions-db";
 import { listarAddonsAtivos, listarAssinaturasAddonsDoUsuario } from "@/lib/addons-db";
 import { PageHeader } from "@/components/layout/page-header";
 import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { MSG_CONTA_TESTE_SEM_COMPRA } from "@/lib/conta-teste";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { PacotesGrid } from "@/components/creditos/pacotes-grid";
 import { HistoricoCompras } from "@/components/creditos/historico-compras";
@@ -32,6 +34,7 @@ export default async function CreditosPage() {
     listarAssinaturasAddonsDoUsuario(supabase, user.id),
     asaasConfigurado(),
   ]);
+  const podeComprar = configurado && !profile.conta_teste;
 
   return (
     <div className="flex flex-col gap-6">
@@ -46,6 +49,12 @@ export default async function CreditosPage() {
         }
       />
 
+      {profile.conta_teste && (
+        <Alert variant="info">
+          <AlertDescription>{MSG_CONTA_TESTE_SEM_COMPRA}</AlertDescription>
+        </Alert>
+      )}
+
       <Tabs defaultValue="planos">
         <TabsList>
           <TabsTrigger value="planos"><Crown className="h-3.5 w-3.5" /> Planos</TabsTrigger>
@@ -59,11 +68,11 @@ export default async function CreditosPage() {
             statusAtual={profile.assinatura_status}
             cicloAtual={profile.assinatura_ciclo}
             temCpfCnpj={Boolean(profile.cpf_cnpj)}
-            configurado={configurado}
+            configurado={podeComprar}
           />
         </TabsContent>
         <TabsContent value="avulso" className="flex flex-col gap-6">
-          <PacotesGrid pacotes={pacotes} temCpfCnpj={Boolean(profile.cpf_cnpj)} configurado={configurado} />
+          <PacotesGrid pacotes={pacotes} temCpfCnpj={Boolean(profile.cpf_cnpj)} configurado={podeComprar} />
           <HistoricoCompras comprasIniciais={compras} />
         </TabsContent>
         {addons.length > 0 && (
@@ -72,7 +81,7 @@ export default async function CreditosPage() {
               addons={addons}
               assinaturasIniciais={assinaturasAddons}
               temCpfCnpj={Boolean(profile.cpf_cnpj)}
-              configurado={configurado}
+              configurado={podeComprar}
             />
           </TabsContent>
         )}

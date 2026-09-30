@@ -1,5 +1,5 @@
-import { getProfile, debitarCreditos } from "@/lib/credits";
-import { resolverChaveMaps, resolverChaveMapsOverflow, registrarUsoChaveMaps } from "@/lib/maps-key";
+import { getProfile, debitarCreditos, custoAcao } from "@/lib/credits";
+import { chaveGoogleMaps } from "@/lib/platform-keys";
 import { enriquecerComMaps, QuotaExceededError, MapsAccessError } from "@/lib/integrations/google-maps";
 import type { Lead } from "@/lib/types";
 import type { FlowExecutorContext, FlowExecutorOutcome } from "../executor-types";
@@ -24,21 +24,20 @@ export async function executarEnriquecimentoMaps(ctx: FlowExecutorContext): Prom
   const profile = await getProfile(sb, userId);
   if (!profile) return { status: "erro", erro: "Perfil não encontrado." };
 
-  let resolucao = await resolverChaveMaps(profile);
-  if (resolucao.bloqueado || !resolucao.key) {
-    const overflow = await resolverChaveMapsOverflow(profile);
-    if (overflow.key) resolucao = overflow;
+  const custoTotal = lote.length * (await custoAcao(sb, "cnpj_maps_extra"));
+  if (profile.creditos < custoTotal) {
+    return { status: "erro", erro: `Créditos insuficientes: verificar ${lote.length} leads no Maps custa ${custoTotal} créditos e o saldo é ${profile.creditos}.` };
   }
-  if (!resolucao.key || resolucao.bloqueado) {
-    return { status: "erro", erro: "Nenhuma chave Google Maps disponível (limite mensal atingido ou não configurada)." };
-  }
+
+  const apiKey = await chaveGoogleMaps();
+  if (!apiKey) return { status: "erro", erro: "Verificação no Google Maps indisponível no momento (chave da plataforma não configurada)." };
 
   const stats = { text_search_calls: 0, contact_data_calls: 0 };
   let resultados: Lead[];
   try {
     resultados = await enriquecerComMaps({
       resultados: lote as unknown as Lead[],
-      apiKey: resolucao.key,
+      apiKey,
       showPhone,
       filtrar,
       minAvaliacoes,
@@ -48,14 +47,8 @@ export async function executarEnriquecimentoMaps(ctx: FlowExecutorContext): Prom
     if (e instanceof QuotaExceededError || e instanceof MapsAccessError) return { status: "erro", erro: e.message };
     return { status: "erro", erro: (e as Error).message };
   }
-  await registrarUsoChaveMaps(sb, userId, profile, resolucao, stats.contact_data_calls, stats.text_search_calls);
 
-  // Mesma cobrança que extracao-cnpj.ts faz pro mesmo enriquecimento via
-  // Maps embutido (mapsModo) — faltava aqui, deixando esse nó de fluxo
-  // rodar de graça contra o pool de chaves compartilhado da plataforma.
-  if (profile.maps_credits_enabled) {
-    await debitarCreditos(sb, userId, "cnpj_maps_extra", lote.length);
-  }
+  await debitarCreditos(sb, userId, "cnpj_maps_extra", lote.length);
 
   return {
     status: "concluido",

@@ -15,7 +15,7 @@ export async function GET() {
   if (!user) return NextResponse.redirect(new URL("/login", process.env.NEXT_PUBLIC_APP_URL));
 
   if (!(await oauthDisponivel())) {
-    const settingsUrl = new URL("/configuracoes", process.env.NEXT_PUBLIC_APP_URL);
+    const settingsUrl = new URL("/conexoes", process.env.NEXT_PUBLIC_APP_URL);
     settingsUrl.searchParams.set("sheets", "nao_configurado");
     return NextResponse.redirect(settingsUrl);
   }

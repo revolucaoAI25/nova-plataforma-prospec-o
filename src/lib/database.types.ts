@@ -12,16 +12,6 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[];
 
-export interface ApiKeyPoolEntry {
-  key: string;
-  nickname?: string;
-  limit: number;
-  usage: number;
-  text_search_usage?: number;
-  month: string; // "YYYY-MM"
-}
-export type MapsKeyPoolEntry = ApiKeyPoolEntry;
-
 export interface SheetConfig {
   id: string;
   nome: string;
@@ -47,25 +37,8 @@ export interface Profile {
   id: string;
   email: string;
   role: "user" | "admin";
-  cdd_credits: number;
-  monthly_cdd_credits: number;
-  maps_credits: number;
-  monthly_maps_credits: number;
-  maps_credits_enabled: boolean;
   credits_renewed_at: string | null;
-  cdd_api_key: string | null;
-  google_maps_api_key: string | null;
-  cdd_api_key_admin: string | null;
-  maps_api_key_admin: string | null;
-  maps_keys_pool: MapsKeyPoolEntry[];
-  maps_pausar_ao_esgotar: boolean;
 
-  apify_api_key: string | null;
-  apify_api_key_admin: string | null;
-  apify_keys_pool: ApiKeyPoolEntry[];
-  instagram_credits: number;
-  monthly_instagram_credits: number;
-  instagram_credits_enabled: boolean;
   instagram_visible: boolean;
   disparo_habilitado: boolean;
   conta_teste: boolean;
@@ -74,9 +47,6 @@ export interface Profile {
   enriquecimento_ia_habilitado: boolean;
   openai_api_key: string | null;
 
-  linkedin_credits: number;
-  monthly_linkedin_credits: number;
-  linkedin_credits_enabled: boolean;
   linkedin_visible: boolean;
 
   email_disparo_habilitado: boolean;
@@ -84,8 +54,6 @@ export interface Profile {
 
   bigdatacorp_enrichment_habilitado: boolean;
 
-  google_client_id: string | null;
-  google_client_secret: string | null;
   google_sheets_creds: GoogleSheetsCreds | null;
 
   creditos: number;
@@ -230,6 +198,10 @@ export interface AddonPaymentRow {
 
 /** Chave de configuração de plataforma administrável — ver src/lib/platform-settings.ts. */
 export type PlatformSettingKey =
+  | "cdd_api_key"
+  | "google_maps_api_key"
+  | "apify_api_key"
+  | "creditos_conta_teste"
   | "resend_api_key"
   | "unipile_dsn"
   | "unipile_api_key"
@@ -316,27 +288,16 @@ export interface UserStatsRow {
   id: string;
   email: string;
   role: "user" | "admin";
-  cdd_credits: number;
-  monthly_cdd_credits: number;
-  maps_credits: number;
-  monthly_maps_credits: number;
-  maps_credits_enabled: boolean;
   credits_renewed_at: string | null;
   created_at: string;
   total_searches: number;
   total_leads: number;
   last_search_at: string | null;
-  instagram_credits: number;
-  monthly_instagram_credits: number;
-  instagram_credits_enabled: boolean;
   instagram_visible: boolean;
   disparo_habilitado: boolean;
   conta_teste: boolean;
   teste_expira_em: string | null;
   enriquecimento_ia_habilitado: boolean;
-  linkedin_credits: number;
-  monthly_linkedin_credits: number;
-  linkedin_credits_enabled: boolean;
   linkedin_visible: boolean;
   email_disparo_habilitado: boolean;
   linkedin_disparo_habilitado: boolean;
@@ -768,36 +729,6 @@ export interface LinkedinSheetWatcherRow {
   coluna_nome: string | null;
   ultima_linha_processada: number;
   criado_em: string;
-}
-
-export type AutomationTipo = "maps" | "cnpj";
-
-export interface AutomationRow {
-  id: string;
-  user_id: string;
-  nome: string;
-  tipo: AutomationTipo;
-  filtros: Json;
-  sheet_id: string | null;
-  sheet_aba: string | null;
-  dias_semana: number[];
-  horario: string;
-  ativa: boolean;
-  ultima_execucao: string | null;
-  proxima_execucao: string | null;
-  dispatch_campaign_id: string | null;
-  created_at: string;
-}
-
-export interface AutomationRunRow {
-  id: string;
-  automation_id: string;
-  user_id: string;
-  iniciada_em: string;
-  concluida_em: string | null;
-  leads_encontrados: number;
-  status: "running" | "success" | "error" | "sem_creditos" | "sem_sheets";
-  erro: string | null;
 }
 
 // ── Fluxos (construtor de automações estilo N8N/Make) ────────────

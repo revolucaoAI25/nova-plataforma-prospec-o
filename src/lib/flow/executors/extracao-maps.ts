@@ -1,5 +1,5 @@
-import { getProfile, debitarCreditos } from "@/lib/credits";
-import { resolverChaveApify, registrarUsoChaveApify } from "@/lib/apify-key";
+import { getProfile, debitarCreditos, custoAcao } from "@/lib/credits";
+import { chaveApify } from "@/lib/platform-keys";
 import { buscarApifyMaps } from "@/lib/integrations/apify-maps";
 import { salvarPesquisa, salvarLeads, buscarIdentificadoresExistentes } from "@/lib/db";
 import { NICHOS } from "@/lib/data/nichos";
@@ -37,11 +37,15 @@ export async function executarExtracaoMaps(ctx: FlowExecutorContext): Promise<Fl
 
   const profile = await getProfile(sb, userId);
   if (!profile) return { status: "erro", erro: "Perfil não encontrado." };
+  const custo = await custoAcao(sb, "maps");
+  if (profile.creditos < limite * custo) {
+    return { status: "erro", erro: `Créditos insuficientes (${profile.creditos} disponíveis, até ${limite * custo} necessários).` };
+  }
 
   const { telefones } = apenasNovos ? await buscarIdentificadoresExistentes(sb, userId) : { telefones: new Set<string>() };
 
-  const resolucaoApify = resolverChaveApify(profile);
-  if (!resolucaoApify.key) return { status: "erro", erro: "Nenhuma chave Apify configurada." };
+  const apiKey = await chaveApify();
+  if (!apiKey) return { status: "erro", erro: "Extração indisponível no momento (chave da plataforma não configurada)." };
 
   const params = {
     queryBase, localidade: localidades, limite,
@@ -51,12 +55,9 @@ export async function executarExtracaoMaps(ctx: FlowExecutorContext): Promise<Fl
 
   let resultados: Lead[];
   try {
-    resultados = await buscarApifyMaps({ ...params, apiKey: resolucaoApify.key });
+    resultados = await buscarApifyMaps({ ...params, apiKey });
   } catch (e) {
     return { status: "erro", erro: (e as Error).message };
-  }
-  if (resolucaoApify.source === "pool") {
-    await registrarUsoChaveApify(sb, userId, profile, resolucaoApify, resultados.length);
   }
 
   const total = resultados.length;
@@ -72,7 +73,7 @@ export async function executarExtracaoMaps(ctx: FlowExecutorContext): Promise<Fl
     filtros: config as Json,
   });
   if (searchId && total) await salvarLeads(sb, userId, searchId, resultados);
-  if (profile.maps_credits_enabled && total > 0) {
+  if (total > 0) {
     await debitarCreditos(sb, userId, "maps", total);
   }
 

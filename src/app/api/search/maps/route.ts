@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { getProfile, debitarCreditos, custoAcao } from "@/lib/credits";
-import { resolverChaveApify, registrarUsoChaveApify } from "@/lib/apify-key";
+import { chaveApify } from "@/lib/platform-keys";
 import { buscarApifyMaps } from "@/lib/integrations/apify-maps";
 import { NICHOS } from "@/lib/data/nichos";
 import { salvarPesquisa, salvarLeads, buscarIdentificadoresExistentes } from "@/lib/db";
@@ -45,20 +45,18 @@ export async function POST(request: Request) {
   // Maps bloqueia de vez quando o saldo é insuficiente — mesmo comportamento
   // do produto atual (app.py, `_maps_err` antes do `buscar_btn`).
   const limite = filtros.limite;
-  if (profile.maps_credits_enabled) {
-    const custo = await custoAcao(supabase, "maps");
-    const saldo = profile.creditos;
-    if (saldo < limite * custo) {
-      return NextResponse.json(
-        { error: `Créditos insuficientes. Você tem ${saldo} créditos e essa busca pode custar até ${limite * custo}. Solicite mais créditos ao administrador.` },
-        { status: 402 },
-      );
-    }
+  const custo = await custoAcao(supabase, "maps");
+  const saldo = profile.creditos;
+  if (saldo < limite * custo) {
+    return NextResponse.json(
+      { error: `Créditos insuficientes. Você tem ${saldo} créditos e essa busca pode custar até ${limite * custo}. Reduza o limite ou adquira mais créditos.` },
+      { status: 402 },
+    );
   }
 
-  const apifyResolucao = resolverChaveApify(profile);
-  if (!apifyResolucao.key) {
-    return NextResponse.json({ error: "Nenhuma chave configurada. Acesse Configurações → Instagram e LinkedIn (a mesma chave vale para Maps)." }, { status: 400 });
+  const apiKey = await chaveApify();
+  if (!apiKey) {
+    return NextResponse.json({ error: "A busca no Google Maps está temporariamente indisponível. Tente novamente mais tarde." }, { status: 503 });
   }
 
   let excludeTels = new Set<string>();
@@ -73,7 +71,7 @@ export async function POST(request: Request) {
       queryBase,
       localidade: filtros.localidades,
       limite,
-      apiKey: apifyResolucao.key,
+      apiKey,
       nicho: filtros.nicho || queryBase,
       subnicho: filtros.subnicho,
       excludePhones: excludeTels,
@@ -82,10 +80,6 @@ export async function POST(request: Request) {
     });
   } catch (e) {
     return NextResponse.json({ error: (e as Error).message }, { status: 502 });
-  }
-
-  if (apifyResolucao.source === "pool") {
-    await registrarUsoChaveApify(supabase, user.id, profile, apifyResolucao, resultados.length);
   }
 
   const localidade = filtros.localidades.join(", ");
@@ -107,9 +101,7 @@ export async function POST(request: Request) {
     avisoHistorico = "Os resultados foram encontrados, mas não foi possível salvá-los no Histórico. Exporte agora antes de sair desta tela.";
   }
 
-  if (profile.maps_credits_enabled) {
-    await debitarCreditos(supabase, user.id, "maps", resultados.length);
-  }
+  await debitarCreditos(supabase, user.id, "maps", resultados.length);
 
   const avisoSheets = await autoExportarSheetsSeConfigurado(supabase, user.id, searchId);
 

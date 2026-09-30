@@ -3,29 +3,13 @@ import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/require-admin";
-
-const poolEntrySchema = z.object({
-  key: z.string(),
-  nickname: z.string().optional(),
-  limit: z.number(),
-  usage: z.number(),
-  text_search_usage: z.number().optional(),
-  month: z.string(),
-});
+import { camposAtivacaoContaTeste } from "@/lib/conta-teste";
 
 const patchSchema = z.object({
   role: z.enum(["user", "admin"]).optional(),
   creditos: z.number().int().min(0).optional(),
   monthly_creditos: z.number().int().min(0).optional(),
-  maps_credits_enabled: z.boolean().optional(),
-  cdd_api_key_admin: z.string().nullable().optional(),
-  maps_api_key_admin: z.string().nullable().optional(),
-  maps_keys_pool: z.array(poolEntrySchema).optional(),
-  apify_api_key_admin: z.string().nullable().optional(),
-  apify_keys_pool: z.array(poolEntrySchema).optional(),
-  instagram_credits_enabled: z.boolean().optional(),
   instagram_visible: z.boolean().optional(),
-  linkedin_credits_enabled: z.boolean().optional(),
   linkedin_visible: z.boolean().optional(),
   disparo_habilitado: z.boolean().optional(),
   email_disparo_habilitado: z.boolean().optional(),
@@ -53,7 +37,18 @@ export async function PATCH(
   if (!parsed.success) return NextResponse.json({ error: "Dados inválidos.", detalhes: parsed.error.flatten() }, { status: 400 });
 
   const admin = createAdminClient();
-  const { error } = await admin.from("profiles").update(parsed.data).eq("id", userId);
+  const { data: atual } = await admin.from("profiles").select("conta_teste").eq("id", userId).maybeSingle();
+  if (!atual) return NextResponse.json({ error: "Usuário não encontrado." }, { status: 404 });
+
+  let campos: Record<string, unknown> = { ...parsed.data };
+  const ficaTeste = parsed.data.conta_teste ?? atual.conta_teste;
+  if (parsed.data.conta_teste === true && !atual.conta_teste) {
+    campos = { ...campos, ...(await camposAtivacaoContaTeste()) };
+  }
+  // Conta de teste nunca tem o canal LinkedIn, mesmo que o admin tente ligar.
+  if (ficaTeste) campos.linkedin_disparo_habilitado = false;
+
+  const { error } = await admin.from("profiles").update(campos).eq("id", userId);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ ok: true });
 }

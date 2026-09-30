@@ -96,11 +96,7 @@ export default async function DashboardPage() {
             <CardContent>
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">
-                  {profile?.maps_credits_enabled ? (
-                    <>Saldo: <strong className="text-foreground">{profile.creditos}</strong> créditos</>
-                  ) : (
-                    "Sem cobrança de créditos"
-                  )}
+                  Saldo: <strong className="text-foreground">{profile?.creditos ?? 0}</strong> créditos
                 </span>
                 <ArrowRight className="h-4 w-4 text-primary transition-transform group-hover:translate-x-1" />
               </div>

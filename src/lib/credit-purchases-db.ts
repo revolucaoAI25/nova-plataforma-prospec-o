@@ -27,7 +27,7 @@ export async function listarComprasDoUsuario(sb: SupabaseClient, userId: string)
 }
 
 /** Reusa `profiles.asaas_customer_id` se já existir; senão cria o cliente no Asaas e persiste o id (evita duplicar cliente a cada compra). Exportada pra reuso em subscriptions-db.ts — o cliente Asaas é o mesmo pra compra avulsa e assinatura. */
-export async function obterOuCriarClienteAsaas(sb: SupabaseClient, profile: Profile, cpfCnpj: string): Promise<string> {
+export async function obterOuCriarClienteAsaas(profile: Profile, cpfCnpj: string): Promise<string> {
   if (profile.asaas_customer_id) return profile.asaas_customer_id;
 
   const customerId = await criarClienteAsaas({
@@ -36,7 +36,8 @@ export async function obterOuCriarClienteAsaas(sb: SupabaseClient, profile: Prof
     email: profile.email,
     externalReference: profile.id,
   });
-  await sb.from("profiles").update({ asaas_customer_id: customerId, cpf_cnpj: cpfCnpj }).eq("id", profile.id);
+  // Cliente admin: campos protegidos contra escrita direta pelo usuário (0028_seguranca_profiles.sql).
+  await createAdminClient().from("profiles").update({ asaas_customer_id: customerId, cpf_cnpj: cpfCnpj }).eq("id", profile.id);
   return customerId;
 }
 
@@ -52,7 +53,7 @@ export async function criarCompra(
   pacote: CreditPackageRow,
   cpfCnpj: string | null,
 ): Promise<{ invoiceUrl: string }> {
-  const customerId = await obterOuCriarClienteAsaas(sb, profile, cpfCnpj || profile.cpf_cnpj || "");
+  const customerId = await obterOuCriarClienteAsaas(profile, cpfCnpj || profile.cpf_cnpj || "");
 
   const { data: compra, error } = await sb
     .from("credit_purchases")

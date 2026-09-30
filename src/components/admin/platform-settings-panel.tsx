@@ -130,7 +130,7 @@ export function PlatformSettingsPanel({ itensIniciais }: { itensIniciais: Platfo
         <CardDescription>
           Usadas por toda a plataforma (não por usuário individual). Uma chave cadastrada aqui tem prioridade sobre a variável de ambiente
           equivalente no Railway — deixar em branco volta a usar a do Railway, se existir. A chave OpenAI do Enriquecimento por IA não entra
-          aqui: cada usuário cadastra a própria em Configurações.
+          aqui: cada usuário cadastra a própria em Conexões.
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-5">

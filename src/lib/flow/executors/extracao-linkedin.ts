@@ -1,5 +1,5 @@
 import { getProfile, debitarCreditos, custoAcao } from "@/lib/credits";
-import { resolverChaveApify, registrarUsoChaveApify } from "@/lib/apify-key";
+import { chaveApify } from "@/lib/platform-keys";
 import { buscarLinkedIn } from "@/lib/integrations/linkedin";
 import { salvarPesquisa, salvarLeads, buscarLinkedInUrlsExistentes } from "@/lib/db";
 import type { Json } from "@/lib/database.types";
@@ -19,22 +19,20 @@ export async function executarExtracaoLinkedin(ctx: FlowExecutorContext): Promis
   const profile = await getProfile(sb, userId);
   if (!profile) return { status: "erro", erro: "Perfil não encontrado." };
   if (!profile.linkedin_visible) return { status: "erro", erro: "A busca por LinkedIn não está habilitada para sua conta." };
-  if (profile.linkedin_credits_enabled) {
-    const custo = await custoAcao(sb, "linkedin");
-    if (profile.creditos < limite * custo) {
-      return { status: "erro", erro: `Créditos insuficientes (${profile.creditos} disponíveis, até ${limite * custo} necessários).` };
-    }
+  const custo = await custoAcao(sb, "linkedin");
+  if (profile.creditos < limite * custo) {
+    return { status: "erro", erro: `Créditos insuficientes (${profile.creditos} disponíveis, até ${limite * custo} necessários).` };
   }
 
-  const resolucao = resolverChaveApify(profile);
-  if (!resolucao.key) return { status: "erro", erro: "Nenhuma chave Apify configurada." };
+  const apifyApiKey = await chaveApify();
+  if (!apifyApiKey) return { status: "erro", erro: "Extração indisponível no momento (chave da plataforma não configurada)." };
 
   const excludeUrls = apenasNovos ? await buscarLinkedInUrlsExistentes(sb, userId) : undefined;
 
   let resultados;
   try {
     resultados = await buscarLinkedIn({
-      apifyApiKey: resolucao.key,
+      apifyApiKey,
       cargos,
       localizacoes,
       industrias,
@@ -59,8 +57,7 @@ export async function executarExtracaoLinkedin(ctx: FlowExecutorContext): Promis
     filtros: config as Json,
   });
   if (searchId && total) await salvarLeads(sb, userId, searchId, resultados);
-  if (profile.linkedin_credits_enabled) await debitarCreditos(sb, userId, "linkedin", total);
-  if (resolucao.source === "pool") await registrarUsoChaveApify(sb, userId, profile, resolucao, total);
+  await debitarCreditos(sb, userId, "linkedin", total);
 
   return {
     status: "concluido",

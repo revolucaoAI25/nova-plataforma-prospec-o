@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { getProfile, debitarCreditos, custoAcao } from "@/lib/credits";
-import { resolverChaveApify, registrarUsoChaveApify } from "@/lib/apify-key";
+import { chaveApify } from "@/lib/platform-keys";
 import { buscarInstagram } from "@/lib/integrations/instagram";
 import { salvarPesquisa, salvarLeads, buscarInstagramIdsExistentes } from "@/lib/db";
 import { autoExportarSheetsSeConfigurado } from "@/lib/auto-export";
@@ -34,20 +34,18 @@ export async function POST(request: Request) {
   }
 
   const limite = filtros.limite;
-  if (profile.instagram_credits_enabled) {
-    const custo = await custoAcao(supabase, "instagram");
-    const saldo = profile.creditos;
-    if (saldo < limite * custo) {
-      return NextResponse.json(
-        { error: `Créditos insuficientes. Você tem ${saldo} créditos e essa busca pode custar até ${limite * custo}. Reduza o limite ou solicite mais créditos ao administrador.` },
-        { status: 402 },
-      );
-    }
+  const custo = await custoAcao(supabase, "instagram");
+  const saldo = profile.creditos;
+  if (saldo < limite * custo) {
+    return NextResponse.json(
+      { error: `Créditos insuficientes. Você tem ${saldo} créditos e essa busca pode custar até ${limite * custo}. Reduza o limite ou adquira mais créditos.` },
+      { status: 402 },
+    );
   }
 
-  const resolucao = resolverChaveApify(profile);
-  if (!resolucao.key) {
-    return NextResponse.json({ error: "Nenhuma chave configurada. Acesse Configurações → Instagram e LinkedIn." }, { status: 400 });
+  const apifyApiKey = await chaveApify();
+  if (!apifyApiKey) {
+    return NextResponse.json({ error: "Essa busca está temporariamente indisponível. Tente novamente mais tarde." }, { status: 503 });
   }
 
   let excludeIds = new Set<string>();
@@ -58,7 +56,7 @@ export async function POST(request: Request) {
   let resultados;
   try {
     resultados = await buscarInstagram({
-      apifyApiKey: resolucao.key,
+      apifyApiKey,
       tipo: filtros.tipo,
       alvo: filtros.alvo,
       limite,
@@ -86,15 +84,7 @@ export async function POST(request: Request) {
     avisoHistorico = "Os resultados foram encontrados, mas não foi possível salvá-los no Histórico. Exporte agora antes de sair desta tela.";
   }
 
-  if (profile.instagram_credits_enabled) {
-    await debitarCreditos(supabase, user.id, "instagram", resultados.length);
-  }
-  // Registra uso no pool Apify quando a chave usada veio do pool — sem
-  // isso o rodízio nunca detectava uma chave como esgotada (mesma lógica
-  // de app.py, aba Instagram: `if _apify_pool_idx >= 0: registrar_uso_apify(...)`).
-  if (resolucao.source === "pool") {
-    await registrarUsoChaveApify(supabase, user.id, profile, resolucao, resultados.length);
-  }
+  await debitarCreditos(supabase, user.id, "instagram", resultados.length);
 
   const avisoSheets = await autoExportarSheetsSeConfigurado(supabase, user.id, searchId);
 

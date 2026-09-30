@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { Send } from "lucide-react";
+import { Send, Users, Crown, KeyRound } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getProfile } from "@/lib/credits";
@@ -14,6 +14,7 @@ import { PlansPanel } from "@/components/admin/plans-panel";
 import { AddonsPanel } from "@/components/admin/addons-panel";
 import { PlatformSettingsPanel } from "@/components/admin/platform-settings-panel";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { PageHeader } from "@/components/layout/page-header";
 
 export const metadata = { title: "Administração" };
@@ -28,7 +29,8 @@ export default async function AdminPage() {
   const profile = await getProfile(supabase, user.id);
   if (!profile || profile.role !== "admin") redirect("/");
 
-  const { data } = await supabase.from("user_stats").select("*").order("created_at", { ascending: false });
+  const admin = createAdminClient();
+  const { data } = await admin.from("user_stats").select("*").order("created_at", { ascending: false });
   const users = (data as UserStatsRow[]) ?? [];
   const { data: custosData } = await supabase.from("credit_costs").select("*").order("acao");
   const custos = (custosData as CreditCostRow[]) ?? [];
@@ -39,7 +41,6 @@ export default async function AdminPage() {
   const { data: addonsData } = await supabase.from("addons").select("*").order("ordem");
   const addons = (addonsData as AddonRow[]) ?? [];
 
-  const admin = createAdminClient();
   const { data: settingsData } = await admin.from("platform_settings").select("chave, valor, atualizado_em");
   const settingsPorChave = new Map((settingsData ?? []).map((r) => [r.chave as PlatformSettingKey, r]));
   const platformSettings = (Object.keys(PLATFORM_SETTINGS_META) as PlatformSettingKey[]).map((chave) => {
@@ -63,8 +64,8 @@ export default async function AdminPage() {
     <div className="flex flex-col gap-6">
       <PageHeader
         eyebrow="Administração"
-        title="Usuários"
-        description="Usuários, créditos e chaves administradas."
+        title="Administração"
+        description="Usuários, planos e preços, e as chaves de fornecedor que a plataforma usa."
         actions={
           <Button asChild variant="outline" size="sm">
             <Link href="/admin/disparo">
@@ -73,13 +74,26 @@ export default async function AdminPage() {
           </Button>
         }
       />
-      <CreateUserForm />
-      <PlatformSettingsPanel itensIniciais={platformSettings} />
-      <CreditCostsPanel custos={custos} />
-      <PlansPanel planosIniciais={planos} />
-      <AddonsPanel addonsIniciais={addons} />
-      <CreditPackagesPanel pacotesIniciais={pacotes} />
-      <AdminUsersTable users={users} currentUserId={user.id} />
+      <Tabs defaultValue="usuarios">
+        <TabsList>
+          <TabsTrigger value="usuarios"><Users className="h-3.5 w-3.5" /> Usuários</TabsTrigger>
+          <TabsTrigger value="precos"><Crown className="h-3.5 w-3.5" /> Planos e preços</TabsTrigger>
+          <TabsTrigger value="chaves"><KeyRound className="h-3.5 w-3.5" /> Chaves da plataforma</TabsTrigger>
+        </TabsList>
+        <TabsContent value="usuarios" className="flex flex-col gap-6">
+          <CreateUserForm />
+          <AdminUsersTable users={users} currentUserId={user.id} />
+        </TabsContent>
+        <TabsContent value="precos" className="flex flex-col gap-6">
+          <PlansPanel planosIniciais={planos} />
+          <AddonsPanel addonsIniciais={addons} />
+          <CreditPackagesPanel pacotesIniciais={pacotes} />
+          <CreditCostsPanel custos={custos} />
+        </TabsContent>
+        <TabsContent value="chaves">
+          <PlatformSettingsPanel itensIniciais={platformSettings} />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

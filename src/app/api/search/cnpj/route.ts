@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { getProfile, debitarCreditos, custoAcao } from "@/lib/credits";
-import { resolverChaveMaps, resolverChaveMapsOverflow, registrarUsoChaveMaps } from "@/lib/maps-key";
+import { chaveCasaDosDados, chaveGoogleMaps } from "@/lib/platform-keys";
 import {
   buscarCnpj,
   removerDuplicadosLote,
@@ -70,10 +70,15 @@ export async function POST(request: Request) {
   const profile = await getProfile(supabase, user.id);
   if (!profile) return NextResponse.json({ error: "Perfil não encontrado." }, { status: 404 });
 
-  const custoCnpj = await custoAcao(supabase, "cnpj");
+  // A verificação no Maps custa por lead verificado e o débito satura em 0 —
+  // sem somar ela aqui, um saldo pequeno liberava centenas de chamadas pagas
+  // ao Google sem cobrir o custo.
+  const custoCnpj =
+    (await custoAcao(supabase, "cnpj")) +
+    (filtros.mapsModo !== "nao_usar" ? await custoAcao(supabase, "cnpj_maps_extra") : 0);
   const saldo = profile.creditos;
   if (saldo < custoCnpj) {
-    return NextResponse.json({ error: "Você não tem créditos suficientes. Solicite mais ao administrador." }, { status: 402 });
+    return NextResponse.json({ error: "Você não tem créditos suficientes. Adquira mais créditos pra continuar." }, { status: 402 });
   }
 
   let avisoSaldo: string | null = null;
@@ -84,7 +89,7 @@ export async function POST(request: Request) {
     limite = limiteViaSaldo;
   }
 
-  const cddApiKey = profile.cdd_api_key || profile.cdd_api_key_admin || process.env.CDD_API_KEY || "";
+  const cddApiKey = await chaveCasaDosDados();
   if (!cddApiKey) {
     return NextResponse.json({ error: "Busca por CNPJ não configurada nesta plataforma." }, { status: 400 });
   }
@@ -153,19 +158,9 @@ export async function POST(request: Request) {
   const usarMaps = filtros.mapsModo !== "nao_usar" && resultados.length > 0;
 
   if (usarMaps) {
-    let resolucao = await resolverChaveMaps(profile);
-    // Enriquecimento de CNPJ não tem fallback Apify (só a busca direta de
-    // Maps tem) — quando o pool esgota, tenta estourar o limite direto,
-    // igual ao produto atual (app.py, enriquecimento embutido na busca CNPJ).
-    if (resolucao.bloqueado || !resolucao.key) {
-      const overflow = await resolverChaveMapsOverflow(profile);
-      if (overflow.key) resolucao = overflow;
-    }
-    if (resolucao.bloqueado) {
-      avisoMaps =
-        "Todas as chaves Google Maps atingiram o limite mensal. Você optou por pausar a busca nesse caso — mude isso em Configurações se quiser continuar além da cota. Os leads de CNPJ já buscados foram mantidos, só a etapa do Maps não rodou.";
-    } else if (!resolucao.key) {
-      avisoMaps = "Nenhuma chave Google Maps configurada — a etapa de enriquecimento/filtro não rodou.";
+    const mapsApiKey = await chaveGoogleMaps();
+    if (!mapsApiKey) {
+      avisoMaps = "A verificação no Google Maps está temporariamente indisponível — os leads de CNPJ foram mantidos, só essa etapa não rodou.";
     } else {
       const filtrar = filtros.mapsModo === "filtrar" || filtros.mapsModo === "filtrar_enriquecer";
       const enriquecer = filtros.mapsModo === "enriquecer" || filtros.mapsModo === "filtrar_enriquecer";
@@ -175,7 +170,7 @@ export async function POST(request: Request) {
       try {
         resultados = await enriquecerComMaps({
           resultados,
-          apiKey: resolucao.key,
+          apiKey: mapsApiKey,
           showPhone: enriquecer,
           filtrar,
           minAvaliacoes: filtros.minAvaliacoes,
@@ -196,8 +191,6 @@ export async function POST(request: Request) {
           throw e;
         }
       }
-
-      await registrarUsoChaveMaps(supabase, user.id, profile, resolucao, stats.contact_data_calls, stats.text_search_calls);
 
       // Remove duplicados que só ficaram visíveis DEPOIS do enriquecimento
       // (o Maps pode preencher um telefone que bate com outro lead salvo).
@@ -229,7 +222,7 @@ export async function POST(request: Request) {
   }
 
   await debitarCreditos(supabase, user.id, "cnpj", resultados.length);
-  if (mapsVerificados > 0 && profile.maps_credits_enabled) {
+  if (mapsVerificados > 0) {
     await debitarCreditos(supabase, user.id, "cnpj_maps_extra", mapsVerificados);
   }
 

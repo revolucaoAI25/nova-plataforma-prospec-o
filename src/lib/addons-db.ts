@@ -34,7 +34,7 @@ export async function assinarAddon(
   addon: AddonRow,
   cpfCnpj: string | null,
 ): Promise<{ invoiceUrl: string }> {
-  const customerId = await obterOuCriarClienteAsaas(sb, profile, cpfCnpj || profile.cpf_cnpj || "");
+  const customerId = await obterOuCriarClienteAsaas(profile, cpfCnpj || profile.cpf_cnpj || "");
 
   const assinatura = await criarAssinatura({
     customerId,

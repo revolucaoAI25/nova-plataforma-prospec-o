@@ -11,7 +11,7 @@ import {
   BadgeCheck,
   CalendarClock,
   History,
-  Settings,
+  Plug,
   Users,
   Radio,
   BrainCircuit,
@@ -123,7 +123,7 @@ export function buildNavSections({
     label: "Conta",
     items: [
       { type: "link", href: "/creditos", label: "Créditos", icon: Coins },
-      { type: "link", href: "/configuracoes", label: "Configurações", icon: Settings },
+      { type: "link", href: "/conexoes", label: "Conexões", icon: Plug },
     ],
   });
 

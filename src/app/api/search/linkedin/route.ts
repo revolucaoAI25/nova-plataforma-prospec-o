@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { getProfile, debitarCreditos, custoAcao } from "@/lib/credits";
-import { resolverChaveApify, registrarUsoChaveApify } from "@/lib/apify-key";
+import { chaveApify } from "@/lib/platform-keys";
 import { buscarLinkedIn } from "@/lib/integrations/linkedin";
 import { salvarPesquisa, salvarLeads, buscarLinkedInUrlsExistentes } from "@/lib/db";
 import { autoExportarSheetsSeConfigurado } from "@/lib/auto-export";
@@ -37,20 +37,18 @@ export async function POST(request: Request) {
   }
 
   const limite = filtros.limite;
-  if (profile.linkedin_credits_enabled) {
-    const custo = await custoAcao(supabase, "linkedin");
-    const saldo = profile.creditos;
-    if (saldo < limite * custo) {
-      return NextResponse.json(
-        { error: `Créditos insuficientes. Você tem ${saldo} créditos e essa busca pode custar até ${limite * custo} (busca LinkedIn é a mais cara por resultado). Reduza o limite ou solicite mais créditos ao administrador.` },
-        { status: 402 },
-      );
-    }
+  const custo = await custoAcao(supabase, "linkedin");
+  const saldo = profile.creditos;
+  if (saldo < limite * custo) {
+    return NextResponse.json(
+      { error: `Créditos insuficientes. Você tem ${saldo} créditos e essa busca pode custar até ${limite * custo} (busca LinkedIn é a mais cara por resultado). Reduza o limite ou adquira mais créditos.` },
+      { status: 402 },
+    );
   }
 
-  const resolucao = resolverChaveApify(profile);
-  if (!resolucao.key) {
-    return NextResponse.json({ error: "Nenhuma chave configurada. Acesse Configurações → Instagram e LinkedIn (a mesma chave vale para os dois)." }, { status: 400 });
+  const apifyApiKey = await chaveApify();
+  if (!apifyApiKey) {
+    return NextResponse.json({ error: "Essa busca está temporariamente indisponível. Tente novamente mais tarde." }, { status: 503 });
   }
 
   let excludeUrls = new Set<string>();
@@ -61,7 +59,7 @@ export async function POST(request: Request) {
   let resultados;
   try {
     resultados = await buscarLinkedIn({
-      apifyApiKey: resolucao.key,
+      apifyApiKey,
       cargos: filtros.cargos,
       localizacoes: filtros.localizacoes,
       industrias: filtros.industrias,
@@ -92,12 +90,7 @@ export async function POST(request: Request) {
     avisoHistorico = "Os resultados foram encontrados, mas não foi possível salvá-los no Histórico. Exporte agora antes de sair desta tela.";
   }
 
-  if (profile.linkedin_credits_enabled) {
-    await debitarCreditos(supabase, user.id, "linkedin", resultados.length);
-  }
-  if (resolucao.source === "pool") {
-    await registrarUsoChaveApify(supabase, user.id, profile, resolucao, resultados.length);
-  }
+  await debitarCreditos(supabase, user.id, "linkedin", resultados.length);
 
   const avisoSheets = await autoExportarSheetsSeConfigurado(supabase, user.id, searchId);
 

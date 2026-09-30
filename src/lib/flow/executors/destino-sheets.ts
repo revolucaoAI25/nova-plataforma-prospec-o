@@ -54,7 +54,7 @@ export async function executarDestinoSheets(ctx: FlowExecutorContext): Promise<F
 
   const profile = await getProfile(sb, userId);
   const creds = (profile?.google_sheets_creds as GoogleSheetsCreds | null)?.oauth;
-  if (!creds) return { status: "erro", erro: "Google Sheets não está conectado (Configurações)." };
+  if (!creds) return { status: "erro", erro: "Google Sheets não está conectado (Conexões)." };
 
   const colunas = colunasParaLote(lote);
   const resultado = await exportarGenerico(lote, colunas, creds, sheetId, aba, modo);

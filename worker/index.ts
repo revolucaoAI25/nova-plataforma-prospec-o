@@ -1,13 +1,9 @@
 /**
  * Worker de background — processo Node separado do app Next.js, deployado
  * como um segundo serviço Railway apontando pro mesmo repositório (comando
- * de start diferente: `npm run worker`). Roda os dois schedulers do
- * produto atual (modules/scheduler.py e modules/dispatch_scheduler.py):
- * automações agendadas e a fila de disparo WhatsApp — e também o
- * processamento em background do Enriquecimento de Leads via IA (feature
- * nova do produto atual, portada com uma melhoria: lá roda síncrono na
- * mesma requisição HTTP; aqui roda em background e fica persistido, ver
- * worker/enrichment-tick.ts).
+ * de start diferente: `npm run worker`). Roda os fluxos de automação, as
+ * filas de disparo (WhatsApp, e-mail, LinkedIn) e os enriquecimentos em
+ * background (IA e BigDataCorp).
  *
  * Não depende de nada do Next.js — só do cliente Supabase service-role e
  * dos módulos de integração em src/lib, que são puro TypeScript.
@@ -20,7 +16,6 @@ config({ path: ".env.local" });
 config();
 
 import { createAdminClient } from "../src/lib/supabase/admin";
-import { tickAutomations } from "./automation-tick";
 import { tickDispatch, tickSheetWatchAndAutoTrigger } from "./dispatch-tick";
 import { tickEnrichment } from "./enrichment-tick";
 import { tickFlows } from "./flow-tick";
@@ -28,7 +23,6 @@ import { tickEmailDispatch, tickEmailSheetWatchAndAutoTrigger } from "./email-di
 import { tickLinkedInDispatch, tickLinkedInSheetWatchAndAutoTrigger, tickLinkedInRelationsPoll } from "./linkedin-dispatch-tick";
 import { tickBigDataCorpEnrichment } from "./bigdatacorp-enrichment-tick";
 
-const AUTOMATION_TICK_MS = 60_000;
 const DISPATCH_TICK_MS = 15_000;
 const SHEET_WATCH_TICK_MS = 120_000;
 // Disparo por e-mail envia em LOTE (até 20 alvos por campanha por tick,
@@ -46,9 +40,8 @@ const LINKEDIN_SHEET_WATCH_TICK_MS = 120_000;
 // new_relation) — bem espaçado de propósito, seguindo a recomendação da
 // própria doc da Unipile de checar isso só algumas vezes por dia.
 const LINKEDIN_RELATIONS_POLL_MS = 7_200_000;
-// Mais frequente que as outras: ao contrário de automações (rodam sem
-// ninguém olhando), quem dispara um enriquecimento costuma estar com a
-// tela aberta esperando o progresso.
+// Mais frequente que as outras: quem dispara um enriquecimento costuma
+// estar com a tela aberta esperando o progresso.
 const ENRICHMENT_TICK_MS = 10_000;
 // Mesmo raciocínio do enriquecimento via IA — quem dispara costuma estar
 // acompanhando o progresso na tela.
@@ -73,7 +66,7 @@ async function main() {
   const sb = createAdminClient();
   log(
     "worker",
-    "Iniciado — automações a cada 60s, disparo a cada 15s, sheet-watch/auto-trigger a cada 120s, " +
+    "Iniciado — disparo a cada 15s, sheet-watch/auto-trigger a cada 120s, " +
       "enriquecimento IA a cada 10s, fluxos a cada 20s, disparo e-mail a cada 20s, " +
       "sheet-watch/auto-trigger e-mail a cada 120s, disparo LinkedIn a cada 30s, " +
       "sheet-watch/auto-trigger LinkedIn a cada 120s, poll de aceite de convite a cada 2h, " +
@@ -83,10 +76,6 @@ async function main() {
   // Aguarda um pouco no início, mesma cautela do produto atual (deixa o
   // resto da infra terminar de subir antes do primeiro tick).
   await new Promise((r) => setTimeout(r, 5_000));
-
-  setInterval(() => {
-    tickAutomations(sb, (m) => log("automations", m)).catch((e) => log("automations", `tick error: ${e.message}`));
-  }, AUTOMATION_TICK_MS);
 
   setInterval(() => {
     tickDispatch(sb, (m) => log("dispatch", m)).catch((e) => log("dispatch", `tick error: ${e.message}`));

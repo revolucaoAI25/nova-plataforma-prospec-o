@@ -35,7 +35,7 @@ export async function POST(request: Request) {
   }
   if (!profile.openai_api_key) {
     return NextResponse.json(
-      { error: "Você precisa cadastrar sua própria chave da OpenAI antes de usar esse recurso — vá em Configurações." },
+      { error: "Você precisa cadastrar sua própria chave da OpenAI antes de usar esse recurso — vá em Conexões." },
       { status: 400 },
     );
   }
