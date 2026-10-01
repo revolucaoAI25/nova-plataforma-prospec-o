@@ -11,6 +11,8 @@ import { registrarOptOutEmail } from "@/lib/email-dispatch-db";
 // RESEND_WEBHOOK_SECRET (ou no admin, chave resend_webhook_secret).
 //
 // - delivered/opened/clicked → entregue_em/lido_em/clicado_em no log.
+// - failed → o envio vira erro no log (a Resend aceitou mas não mandou).
+// - suppressed (endereço já bloqueado na Resend) conta como devolvido.
 // - bounced (permanente) e complained (marcou como spam) → devolvido_em /
 //   reclamacao_em, e o endereço entra no descadastro do dono: insistir em
 //   endereço que não existe ou em quem marcou spam derruba a reputação do
@@ -50,6 +52,8 @@ const COLUNA: Record<string, string> = {
   "email.clicked": "clicado_em",
   "email.bounced": "devolvido_em",
   "email.complained": "reclamacao_em",
+  // Endereço já está na lista de bloqueio da Resend (devolveu ou reclamou antes): nem sai.
+  "email.suppressed": "devolvido_em",
 };
 
 export async function POST(request: Request) {
@@ -65,6 +69,13 @@ export async function POST(request: Request) {
   const tipo = String(evento.type || "");
   const coluna = COLUNA[tipo];
   const emailId = evento.data?.email_id;
+  if (tipo === "email.failed" && emailId) {
+    // A Resend aceitou o envio mas não conseguiu mandar: o log não pode ficar como sucesso.
+    const sb = createAdminClient();
+    const motivo = (evento.data as { failed?: { reason?: string } } | undefined)?.failed?.reason || "Falha no envio informada pelo provedor de e-mail.";
+    await sb.from("email_messages_log").update({ status: "erro", erro_msg: String(motivo).slice(0, 500) }).eq("provider_message_id", emailId);
+    return NextResponse.json({ ok: true });
+  }
   if (!coluna || !emailId) return NextResponse.json({ ok: true });
 
   // Devolução temporária (caixa cheia, servidor fora) não é motivo pra descadastrar.
@@ -93,8 +104,12 @@ export async function POST(request: Request) {
     if (Object.keys(atualizar).length) await sb.from("email_messages_log").update(atualizar).eq("id", l.id);
   }
 
-  if (tipo === "email.bounced" || tipo === "email.complained") {
-    const motivo = tipo === "email.bounced" ? `E-mail devolvido${evento.data?.bounce?.message ? `: ${evento.data.bounce.message}` : ""}` : "Marcou o e-mail como spam";
+  if (tipo === "email.bounced" || tipo === "email.complained" || tipo === "email.suppressed") {
+    const motivo = tipo === "email.complained"
+      ? "Marcou o e-mail como spam"
+      : tipo === "email.suppressed"
+        ? "Endereço bloqueado pelo provedor (devolveu ou reclamou antes)"
+        : `E-mail devolvido${evento.data?.bounce?.message ? `: ${evento.data.bounce.message}` : ""}`;
     for (const l of linhas) {
       const { data: alvo } = await sb
         .from("email_targets")
