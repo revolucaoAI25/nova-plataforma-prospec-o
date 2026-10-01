@@ -76,7 +76,13 @@ const REGRAS_FONTES = `
 - Google Maps: negócios com ponto físico, com o telefone comercial que eles mesmos publicam e sinais de atividade (avaliações, site). Ótimo pra negócio local, mas não filtra porte/idade/capital, não traz CNPJ (não dá pra achar o sócio) e o volume por região é limitado.
 - LinkedIn: pessoas por cargo, pra empresa média/grande. Volume baixo por limite de convites.
 - Quando o cliente vende pra empresas ou profissionais com CNPJ, considere seriamente a base de CNPJ em pelo menos uma sugestão (é o caminho natural pra versão "qualificada", com sócio e contato validado, e muitas vezes pra de volume também). Não é obrigatório: se não cabe (ex.: o público é um cargo em empresa grande, ou o sinal de compra só aparece no Google), diga por quê no diagnóstico. No porQue de cada sugestão, compare a fonte escolhida com a alternativa (por que Maps e não CNPJ, ou o contrário).
-- Equilíbrio: a base de CNPJ é UMA opção forte, não a resposta padrão. Não faça todas (nem quase todas) as sugestões com CNPJ só porque ela é barata. Escolha a fonte de cada sugestão pelo que funciona pra ESSE público (negócio local com sinal de reputação → Maps; cargo em empresa maior → LinkedIn; público com gatilho cadastral, como empresa recém-aberta → CNPJ) e varie as fontes entre as sugestões sempre que mais de uma fizer sentido. Repetir a mesma fonte em várias sugestões só vale quando o que muda entre elas é relevante (público, gatilho ou nível de qualificação), e isso precisa estar explicado.`;
+- Equilíbrio: a base de CNPJ é UMA opção forte, não a resposta padrão. Não faça todas (nem quase todas) as sugestões com a mesma fonte só porque ela é barata. Escolha a fonte de cada sugestão raciocinando sobre o caso concreto, cruzando os critérios abaixo (nenhum decide sozinho):
+  - Onde esse público é encontrável e com qual cobertura na região dele (formalizado na Receita? publica perfil no Google? está no LinkedIn com cargo?).
+  - Qual dado cada fonte entrega que importa pra abordagem: filtros firmográficos (porte, idade, capital, CNAE), contato de quem decide, sinal de reputação ou atividade, nome da pessoa.
+  - Qual sinal de compra existe e em que fonte ele aparece (momento cadastral, avaliações, cargo, crescimento, etc.).
+  - Canal e decisor: a fonte entrega um contato que funciona no canal escolhido?
+  - Custo por resultado e volume disponível, não só custo por lead.
+  Combinações e nuances são esperadas (ex.: CNPJ filtrado + validação de presença no Google, Maps pra um nicho e CNPJ pra outro, LinkedIn pra contas maiores e CNPJ pras menores). Varie as fontes entre as sugestões quando mais de uma fizer sentido; repetir a mesma fonte só vale quando o que muda entre elas é relevante (público, gatilho ou nível de qualificação), e isso precisa estar explicado.`;
 
 const REGRAS_MENSAGEM = `
 ## Como escrever as mensagens (copy de gente, não de IA)

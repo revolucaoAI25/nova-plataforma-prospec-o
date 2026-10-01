@@ -232,7 +232,7 @@ function ajustesObrigatorios(planos: PlanoOnboarding[], ctx: ContextoCliente, re
   const fontes = planos.map((p) => CENARIOS[p.cenarioId].fonte);
   const outrasFontes = new Set(ctx.cenariosDisponiveis.map((c) => c.fonte).filter((f) => f !== "cnpj" && f !== "base_propria"));
   if (planos.length >= 3 && fontes.every((f) => f === "cnpj") && outrasFontes.size > 0) {
-    ajustes.push("Todas as sugestões usam a base de CNPJ. Reavalie se pelo menos uma não ficaria melhor com outra fonte (Google Maps pra negócio local com sinal de reputação, LinkedIn pra cargo em empresa maior); se CNPJ for mesmo o melhor caminho em todas, explique no diagnóstico o que muda entre elas.");
+    ajustes.push("Todas as sugestões usam a base de CNPJ. Reavalie, pelos critérios de escolha de fonte, se pelo menos uma não ficaria melhor com outra fonte disponível; se CNPJ for mesmo o melhor caminho em todas, explique no diagnóstico o que muda entre elas.");
   }
   const perfis = new Set(planos.map((p) => p.estimativa.perfil));
   if (planos.length >= 3 && !perfis.has("qualificada") && ctx.cenariosDisponiveis.some((c) => c.acoesPorLead.includes("bigdatacorp") || c.usaOpenai)) {
