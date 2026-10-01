@@ -227,6 +227,13 @@ function ajustesObrigatorios(planos: PlanoOnboarding[], ctx: ContextoCliente, re
   if (publicoComCnpj && temCnpjDisponivel && !planos.some((p) => CENARIOS[p.cenarioId].fonte === "cnpj")) {
     ajustes.push("Nenhuma sugestão usa a base de CNPJ, e o público tem CNPJ. Reavalie: troque a sugestão mais fraca por uma com base de CNPJ (de volume, como cnpj_whatsapp, ou qualificada, como cnpj_decisor_whatsapp), OU mantenha as atuais e explique no diagnóstico por que a base de CNPJ não serve pra esse cliente.");
   }
+  // O outro lado da mesma moeda: não deixar a recomendação de CNPJ virar
+  // "tudo CNPJ" quando outra fonte disponível serviria melhor pra parte delas.
+  const fontes = planos.map((p) => CENARIOS[p.cenarioId].fonte);
+  const outrasFontes = new Set(ctx.cenariosDisponiveis.map((c) => c.fonte).filter((f) => f !== "cnpj" && f !== "base_propria"));
+  if (planos.length >= 3 && fontes.every((f) => f === "cnpj") && outrasFontes.size > 0) {
+    ajustes.push("Todas as sugestões usam a base de CNPJ. Reavalie se pelo menos uma não ficaria melhor com outra fonte (Google Maps pra negócio local com sinal de reputação, LinkedIn pra cargo em empresa maior); se CNPJ for mesmo o melhor caminho em todas, explique no diagnóstico o que muda entre elas.");
+  }
   const perfis = new Set(planos.map((p) => p.estimativa.perfil));
   if (planos.length >= 3 && !perfis.has("qualificada") && ctx.cenariosDisponiveis.some((c) => c.acoesPorLead.includes("bigdatacorp") || c.usaOpenai)) {
     ajustes.push("Todas as sugestões são de volume. Se o ticket comportar, troque uma por uma versão qualificada (menos leads, sócio/decisor e contato validados ou pesquisa por IA) pra ele comparar volume x precisão; se não comportar, explique no diagnóstico.");
