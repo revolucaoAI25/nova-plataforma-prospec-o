@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils";
 const ETAPAS = [
   { titulo: "Entendendo o seu negócio e o seu cliente ideal", segundos: 0 },
   { titulo: "Escolhendo os caminhos de prospecção que fazem sentido", segundos: 15 },
-  { titulo: "Calculando volume e custo com a sua assinatura", segundos: 40 },
+  { titulo: "Calculando volume pela sua meta e o custo de cada caminho", segundos: 40 },
   { titulo: "Uma segunda IA avaliando cada sugestão", segundos: 60 },
   { titulo: "Ajustando as sugestões e escrevendo as mensagens", segundos: 95 },
 ];
@@ -87,7 +87,7 @@ export function GerandoPlanos({ erroInicial, onEditar }: { erroInicial: string |
       <div className="flex flex-col gap-1.5">
         <h2 className="text-xl font-semibold tracking-tight text-foreground">Montando suas sugestões de prospecção</h2>
         <p className="text-sm text-muted-foreground">
-          Costuma levar de 1 a 3 minutos. Pode sair desta tela — as sugestões ficam salvas aqui quando estiverem prontos.
+          Costuma levar de 1 a 3 minutos. Pode sair desta tela — as sugestões ficam salvas aqui quando estiverem prontas.
         </p>
       </div>
       <ol className="flex w-full flex-col gap-2.5 text-left" aria-live="polite">

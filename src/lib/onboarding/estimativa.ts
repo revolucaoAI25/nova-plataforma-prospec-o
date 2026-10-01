@@ -1,4 +1,4 @@
-import type { AcaoCredito } from "@/lib/database.types";
+import type { AcaoCredito, PlanFeatureFlags } from "@/lib/database.types";
 import type { CanalDisparo, Cenario, ParametrosCenario } from "./cenarios";
 
 // Estimativa determinística de volume e custo de um plano — calculada pelo
@@ -6,6 +6,14 @@ import type { CanalDisparo, Cenario, ParametrosCenario } from "./cenarios";
 // e a avaliadora usa pra julgar viabilidade).
 
 export type Tolerancia = "conservador" | "equilibrado" | "agressivo";
+
+/** Plano de assinatura ativo à venda — usado pra recomendar o plano que comporta cada sugestão. */
+export interface PlanoVenda {
+  nome: string;
+  creditosMes: number;
+  precoCentavos: number;
+  recursos: PlanFeatureFlags;
+}
 
 export interface ContextoOrcamento {
   /** Créditos disponíveis por mês: os do plano assinado, ou o saldo atual se não houver plano. */
@@ -17,6 +25,9 @@ export interface ContextoOrcamento {
   /** Tamanho estimado da base própria (cenários de planilha). */
   tamanhoBase: number;
   custos: Record<AcaoCredito, number>;
+  /** Contatos novos por mês que o cliente quer abordar (resposta do questionário), quando informado. */
+  volumeAlvoMes: number | null;
+  planosVenda: PlanoVenda[];
 }
 
 export interface Estimativa {
@@ -29,6 +40,8 @@ export interface Estimativa {
   percentualOrcamento: number;
   gargalo: "nenhum" | "canal" | "creditos";
   usaOpenai: boolean;
+  /** Menor plano à venda que comporta o volume e libera os recursos da sugestão (null = nenhum comporta). Ausente em resultados antigos. */
+  planoRecomendado?: string | null;
 }
 
 const DIAS_UTEIS_MES = 22;
@@ -44,6 +57,29 @@ function capacidadeCanal(canal: CanalDisparo, ctx: ContextoOrcamento): number {
   if (canal === "whatsapp") return WHATSAPP_POR_DIA[ctx.tolerancia] * DIAS_UTEIS_MES;
   if (canal === "linkedin") return LINKEDIN_POR_DIA[ctx.tolerancia] * DIAS_UTEIS_MES;
   return (ctx.emailLimiteDiario || 200) * DIAS_UTEIS_MES;
+}
+
+const ALVO_POR_FAIXA: Record<string, number> = {
+  ate_300: 250, "300_1000": 650, "1000_3000": 2000, "3000_10000": 6000, acima_10000: 12000,
+};
+
+/** Faixa do questionário ("1000_3000") → volume mensal de referência (meio da faixa). */
+export function volumeAlvoDe(faixa: string | undefined): number | null {
+  return faixa ? ALVO_POR_FAIXA[faixa] ?? null : null;
+}
+
+/** Conta de trás pra frente: quantos leads/mês o canal precisa pra bater a meta de reuniões. */
+export function leadsParaMeta(metaReunioes: number, canal: CanalDisparo): number {
+  // resposta × (resposta → reunião), referências conservadoras de outbound no Brasil.
+  const taxa: Record<CanalDisparo, number> = { whatsapp: 0.12 * 0.3, email: 0.03 * 0.3, linkedin: 0.1 * 0.3 };
+  return Math.ceil(metaReunioes / taxa[canal]);
+}
+
+export function planoQueComporta(creditosMes: number, recursos: (keyof PlanFeatureFlags)[], planos: PlanoVenda[]): string | null {
+  const ok = planos
+    .filter((p) => p.creditosMes * TETO_ORCAMENTO_POR_PLANO >= creditosMes && recursos.every((r) => p.recursos[r]))
+    .sort((a, b) => a.creditosMes - b.creditosMes);
+  return ok[0]?.nome ?? null;
 }
 
 export function custoPorLead(cenario: Cenario, custos: Record<AcaoCredito, number>): number {
@@ -79,14 +115,16 @@ export function estimar(cenario: Cenario, p: ParametrosCenario, ctx: ContextoOrc
     percentualOrcamento,
     gargalo,
     usaOpenai: cenario.usaOpenai,
+    planoRecomendado: planoQueComporta(creditosMes, cenario.recursos, ctx.planosVenda),
   };
 }
 
 /**
- * Reduz o volume por execução pra (1) não extrair mais do que o canal
- * consegue abordar — o excedente só acumularia na fila e gastaria crédito à
- * toa — e (2) caber em TETO_ORCAMENTO_POR_PLANO dos créditos do mês. Nunca
- * aumenta volume: se a IA pediu pouco, respeita.
+ * Ajusta o volume por execução: (1) sugestão barata bem abaixo da meta do
+ * cliente sobe até a meta; (2) nunca extrai mais do que o canal consegue
+ * abordar — o excedente só acumularia na fila gastando crédito; (3) nunca
+ * passa do que o maior plano à venda comporta. O saldo atual NÃO limita:
+ * a estimativa mostra quantos créditos a sugestão pede e qual plano comporta.
  */
 export function ajustarAoOrcamento(
   cenario: Cenario,
@@ -107,22 +145,37 @@ export function ajustarAoOrcamento(
   const ajustes: string[] = [];
   const execucoesMes = Math.max(1, p.diasSemana.length) * SEMANAS_MES;
   let porExecucao = p.leadsPorExecucao;
+  const custo = custoPorLead(cenario, ctx.custos);
 
   const capacidades = cenario.canais.map((c) => capacidadeCanal(c, ctx));
-  if (capacidades.length) {
-    const maxPeloCanal = Math.max(1, Math.floor(Math.min(...capacidades) / execucoesMes));
-    if (porExecucao > maxPeloCanal) {
-      ajustes.push(`Volume reduzido de ${porExecucao} para ${maxPeloCanal} leads por execução — é o que o canal consegue abordar com segurança.`);
-      porExecucao = maxPeloCanal;
+  const maxPeloCanal = capacidades.length ? Math.max(1, Math.floor(Math.min(...capacidades) / execucoesMes)) : Infinity;
+
+  // Volume pela meta do cliente, não pelo saldo de hoje: sugestão barata
+  // (até 10 créditos/lead, sem pesquisa por IA) que ficou bem abaixo do que
+  // ele quer abordar sobe até a meta, dentro do que o canal aguenta. Antes o
+  // volume era cortado pro saldo atual e saía 130 leads/mês pra quem pediu
+  // 1.000 a 3.000. Sugestão cara/personalizada mantém o volume que a IA
+  // escolheu (pode ser de propósito um teste menor).
+  if (ctx.volumeAlvoMes && custo <= 10 && !cenario.usaOpenai && cenario.fonte !== "linkedin") {
+    const alvoPorExecucao = Math.min(Math.ceil(ctx.volumeAlvoMes / execucoesMes), maxPeloCanal, cenario.tetoPorExecucao);
+    if (porExecucao * execucoesMes < ctx.volumeAlvoMes * 0.7 && alvoPorExecucao > porExecucao) {
+      ajustes.push(`Volume ajustado de ${porExecucao} para ${alvoPorExecucao} leads por execução pra chegar perto dos ${ctx.volumeAlvoMes.toLocaleString("pt-BR")} contatos/mês que você quer abordar.`);
+      porExecucao = alvoPorExecucao;
     }
   }
 
-  const custo = custoPorLead(cenario, ctx.custos);
-  if (custo > 0 && ctx.creditosMes > 0) {
-    const maxPeloOrcamento = Math.max(1, Math.floor((ctx.creditosMes * TETO_ORCAMENTO_POR_PLANO) / custo / execucoesMes));
-    if (porExecucao > maxPeloOrcamento) {
-      ajustes.push(`Volume reduzido de ${porExecucao} para ${maxPeloOrcamento} leads por execução para caber nos créditos do mês.`);
-      porExecucao = maxPeloOrcamento;
+  if (porExecucao > maxPeloCanal) {
+    ajustes.push(`Volume reduzido de ${porExecucao} para ${maxPeloCanal} leads por execução — é o que o canal consegue abordar com segurança.`);
+    porExecucao = maxPeloCanal;
+  }
+
+  // Teto: o maior plano à venda. Acima disso não há como pagar o volume.
+  const maiorPlano = Math.max(0, ...ctx.planosVenda.map((pl) => pl.creditosMes), ctx.creditosMes);
+  if (custo > 0 && maiorPlano > 0) {
+    const maxPeloMaiorPlano = Math.max(1, Math.floor((maiorPlano * TETO_ORCAMENTO_POR_PLANO) / custo / execucoesMes));
+    if (porExecucao > maxPeloMaiorPlano) {
+      ajustes.push(`Volume reduzido de ${porExecucao} para ${maxPeloMaiorPlano} leads por execução — acima disso nenhum plano comporta o custo desta sugestão.`);
+      porExecucao = maxPeloMaiorPlano;
     }
   }
 

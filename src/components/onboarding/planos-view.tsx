@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   AlertTriangle, ArrowRight, BadgeCheck, ChevronRight, Coins, Gauge, Lightbulb, Loader2, PencilLine, RotateCcw,
   Sparkles, Star, Target, ThumbsUp, TrendingUp, Users,
@@ -158,13 +159,20 @@ function DetalhePlano({
         </div>
         <div className="flex flex-col gap-1.5 rounded-xl border border-border p-3">
           <div className="flex items-center justify-between text-xs">
-            <span className="text-muted-foreground">Uso dos seus créditos do mês</span>
+            <span className="text-muted-foreground">Dos seus créditos de hoje</span>
             <span className={cn("font-semibold tabular-nums", pct > 100 ? "text-destructive" : pct > 80 ? "text-amber" : "text-foreground")}>{pct}%</span>
           </div>
           <div className="h-2 overflow-hidden rounded-full bg-secondary">
             <div className={cn("h-full rounded-full", pct > 100 ? "bg-destructive" : pct > 80 ? "bg-amber" : "bg-primary")} style={{ width: `${Math.min(100, pct)}%` }} />
           </div>
           {e.usaOpenai && <p className="text-xs text-muted-2">+ consumo na sua conta OpenAI (pesquisa por IA).</p>}
+          {pct > 80 && e.planoRecomendado !== undefined && (
+            <p className="text-xs text-muted-foreground">
+              {e.planoRecomendado
+                ? <>Pra rodar no volume sugerido, o plano <Link href="/creditos" className="font-semibold text-primary hover:underline">{e.planoRecomendado}</Link> comporta. Com o saldo de hoje, dá pra começar menor e subir depois.</>
+                : <>Esse volume passa do maior plano. Dá pra combinar plano + pacotes de créditos, ou reduzir o volume na automação.</>}
+            </p>
+          )}
         </div>
 
         {av && (

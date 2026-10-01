@@ -11,6 +11,8 @@ export interface ContextoCliente {
   cenariosDisponiveis: Cenario[];
   temChaveOpenai: boolean;
   conexoesProntas: string[];
+  /** Volume desejado, conta de trás pra frente da meta e planos à venda, já calculados pelo servidor. */
+  referenciasVolume: string;
 }
 
 function descreverCenario(c: Cenario, custos: Record<AcaoCredito, number>): string {
@@ -53,7 +55,7 @@ const METODOLOGIA = `
    - Firmográfica: CNAE principal (não secundário), porte, capital social, idade da empresa, região.
    - Momento (gatilho): o que faz a empresa precisar AGORA — recém-aberta (montando fornecedores), em recuperação judicial (renegociando), bem avaliada no Google mas sem site, nota baixa no Google (dor de reputação), expansão. Público com gatilho responde várias vezes mais que lista fria.
    - Pessoa: quem decide e quem influencia. Em PME quase sempre é o dono ou sócio; em empresa média/grande é um cargo.
-   Lista menor e precisa vence lista grande e genérica. Prefira excluir (MEI quando o ticket não cabe no bolso de MEI, empresas muito novas quando ele precisa de quem já fatura, capital baixo demais pra ticket alto).
+   Recorte preciso E volume suficiente: precisão serve pra tirar quem não compra, não pra encolher a lista. Exclua o que não serve (MEI quando o ticket não cabe no bolso de MEI, empresas muito novas quando ele precisa de quem já fatura, capital baixo demais pra ticket alto) e dimensione o volume pela meta, fazendo a conta de trás pra frente (meta de reuniões ÷ taxa de reunião ÷ taxa de resposta = leads por mês). Prospecção com 100 leads por mês não gera resultado que dê pra medir.
 2. Oferta de entrada de baixo atrito. O primeiro contato NÃO vende o produto: oferece algo pequeno e útil (diagnóstico rápido, amostra, comparação, um dado sobre o negócio dele, uma condição de teste). Reunião longa só como CTA inicial quando o ticket é alto e o decisor é corporativo.
 3. Canal pelo perfil do decisor no Brasil:
    - WhatsApp: PME, comércio, serviços locais, dono atendendo. Maior taxa de resposta, mas é o canal mais sensível — curto, sem link no primeiro toque, horário comercial, número dedicado.
@@ -64,6 +66,16 @@ const METODOLOGIA = `
 5. Quem respondeu sai da automação e vira conversa humana: qualifique com perguntas abertas sobre a situação atual, a dor, a urgência e quem decide. O funil tem etapas pra isso.
 6. Respeito e LGPD: B2B com interesse legítimo, identificação clara de quem fala e de onde, saída fácil ("se não fizer sentido, me avisa que eu não te chamo mais"), nada de insistência depois de um não.
 7. Métrica honesta: resposta positiva, conversas e reuniões/vendas — não quantidade enviada. Referências de mercado (variam muito por nicho): WhatsApp frio pra PME 8% a 20% de resposta; e-mail frio 1% a 5%; LinkedIn 20% a 40% de aceite e 5% a 15% de resposta depois do aceite.`;
+
+// Raciocínio de fonte: a IA tendia a ir só pro Google Maps quando o público
+// "tem presença no Google", e nenhuma sugestão usava a base de CNPJ — que é
+// a maior cobertura, a mais barata e a única que permite achar o sócio.
+const REGRAS_FONTES = `
+## De onde vêm os leads (compare as fontes antes de escolher)
+- Base pública de CNPJ: todas as empresas formais do Brasil, com filtro por CNAE, porte, capital, idade e região. A mais barata (1 crédito/lead) e a de maior volume. O telefone e o e-mail são os do cadastro da empresa: em micro e pequenas empresas, muitas vezes é o celular do próprio dono (às vezes o do contador, por isso existe o enriquecimento). Combinada com o enriquecimento de sócios e contatos, traz o nome do sócio e telefone/e-mail validados, e a mensagem chama o decisor pelo nome.
+- Google Maps: negócios com ponto físico, com o telefone comercial que eles mesmos publicam e sinais de atividade (avaliações, site). Ótimo pra negócio local, mas não filtra porte/idade/capital, não traz CNPJ (não dá pra achar o sócio) e o volume por região é limitado.
+- LinkedIn: pessoas por cargo, pra empresa média/grande. Volume baixo por limite de convites.
+- Regra: quando o cliente vende pra empresas ou profissionais com CNPJ (tudo, menos pessoa física), pelo menos UMA sugestão usa a base de CNPJ, e se o ticket for médio ou alto, considere uma com sócio e contato validado. Se ainda assim achar que não serve, diga por quê no diagnóstico. No porQue de cada sugestão, compare a fonte escolhida com a alternativa (por que Maps e não CNPJ, ou o contrário).`;
 
 const REGRAS_MENSAGEM = `
 ## Como escrever as mensagens (copy de gente, não de IA)
@@ -112,9 +124,10 @@ ${METODOLOGIA}
   - Pesquisa por IA não gasta créditos, mas gasta a conta OpenAI do cliente e é lenta: personalização pra ticket alto e volume baixo. ${ctx.temChaveOpenai ? "O cliente tem chave OpenAI." : "O cliente NÃO tem chave OpenAI: se usar cenário com IA, avise em riscos."}
   - O gargalo costuma ser o canal e o time, não a extração: WhatsApp aguenta ~40-150 envios/dia por número (conforme a tolerância a risco), LinkedIn ~15-25 convites/dia, e-mail o limite diário da assinatura. E não adianta gerar mais conversa do que o time responde (veja capacidade de respostas nas respostas).
 - Nos textos pro cliente (diagnóstico, porQue, comoFunciona, riscos), nunca cite fornecedores ou APIs por nome (BigDataCorp, Casa dos Dados, Apify, Unipile, Resend, Evolution etc.). Fale da função: "base pública de CNPJ", "enriquecimento de sócios e contatos", "busca no Google Maps", "pesquisa por IA". E chame de "sugestão", nunca de "plano" (plano, pra ele, é a assinatura).
-- Orçamento: o cliente tem ${orc.creditosMes} créditos/mês (${orc.origemCreditos === "plano" ? `assinatura ${orc.nomePlano}` : "saldo atual, sem assinatura mensal"}). Cada sugestão sozinha deve caber em até 80% disso; o servidor recalcula e reduz o volume se passar.
+- Volume e orçamento: dimensione cada sugestão pelo volume que o cliente quer abordar e pela meta dele, NÃO pelo saldo de hoje. Hoje ele tem ${orc.creditosMes.toLocaleString("pt-BR")} créditos/mês (${orc.origemCreditos === "plano" ? `assinatura ${orc.nomePlano}` : "saldo atual, sem assinatura"}); o servidor calcula quantos créditos cada sugestão pede e mostra qual plano comporta. Prefira o caminho com menor custo por resultado, mas não corte volume só pra caber no saldo.
+${ctx.referenciasVolume}
 - Parâmetros:
-  - leadsPorExecucao: volume mensal desejado ÷ (dias por semana × 4,3), limitado pelo canal e pela capacidade do time. LinkedIn: 15 a 20.
+  - leadsPorExecucao: volume mensal ÷ (dias por semana × 4,3), limitado pelo que o canal aguenta e pelo que o time responde. Sugestões baratas devem chegar perto do volume que ele pediu. Uma sugestão cara/personalizada pode ter volume menor de propósito, explicado no porQue. LinkedIn: 15 a 20.
   - diasSemana: 0=domingo … 6=sábado. Padrão dias úteis [1,2,3,4,5]. Recém-abertas: todo dia útil. Instagram e recuperação judicial: 1 ou 2 vezes por semana.
   - horario: "HH:MM". WhatsApp e LinkedIn: entre 08:30 e 10:30 (evite segunda antes das 10h). E-mail: 07:30 a 09:00.
   - ufs: siglas. Atendimento local → estado + cidades. Nacional → [] (Brasil todo).
@@ -125,6 +138,7 @@ ${METODOLOGIA}
   - aberturaUltimosDias: só pra recém-abertas (ex.: 30).
   - camposIa: só em cenários com IA: o que pesquisar sobre cada lead pra personalizar (ex.: "um detalhe recente e específico do negócio pra citar na primeira mensagem").
   - Campos que o cenário não usa: [] ou null.
+${REGRAS_FONTES}
 ${REGRAS_MENSAGEM}
 ${REGRAS_FUNIL}
 ${REGRAS_PUBLICOS}
@@ -154,13 +168,16 @@ ${METODOLOGIA}
 Para cada sugestão, avalie:
 1. Público: o recorte (CNAE, porte, capital, idade, região, cargo, gatilho) é preciso pro cliente ideal e o decisor descritos? Há exclusões óbvias faltando?
 2. Canal e oferta: o canal combina com o decisor? A oferta de entrada é de baixo atrito e proporcional ao ticket?
-3. Custo-benefício: custo por lead e volume fazem sentido pro ticket e pro orçamento (${orc.creditosMes} créditos/mês)? Existe cenário mais barato com o mesmo resultado? O time dá conta das respostas?
+3. Volume e custo-benefício: o volume chega perto do que o cliente quer abordar e da conta de trás pra frente da meta? Volume baixo demais pra gerar resultado medível é defeito. O custo por lead faz sentido pro ticket? Existe cenário mais barato com o mesmo resultado? O time dá conta das respostas? (Hoje ele tem ${orc.creditosMes.toLocaleString("pt-BR")} créditos/mês, mas o volume não deve ser cortado pelo saldo: a plataforma recomenda o plano.)
 4. Viabilidade: o canal comporta o volume? Faltam parâmetros? Depende de algo que o cliente não tem (chave OpenAI, domínio, LinkedIn, base)?
 5. Copy: soa como uma pessoa de verdade escrevendo, curta, específica, uma pergunta, com ângulo novo em cada toque? Tem qualquer marca de texto de IA ou de robô? Todo item de problemasDeCopy é defeito obrigatório de corrigir.
 6. Cadência e funil: número de toques e espaçamento certos pro canal? As etapas do funil fazem sentido pro processo de venda dele?
-7. Diversidade: as sugestões são alternativas realmente diferentes?
+7. Diversidade: as sugestões são alternativas realmente diferentes? Se o público é empresa/profissional com CNPJ, alguma usa a base de CNPJ (com ou sem sócio validado)? Se nenhuma usa, isso é ponto de atenção obrigatório.
 
 Nota de 0 a 10 e veredito: "recomendado" (8+, faria agora), "viavel" (6-7), "arriscado" (4-5, precisa ajuste) ou "inviavel" (0-3). Sugestão com problemasDeCopy não passa de "arriscado". Seja específico nos pontos de atenção: cada um diz O QUE mudar. Em ajustes, a correção concreta (reescreva a frase problemática, se for copy), ou null. Escolha o planoPrincipal (a sugestão por onde ele deve começar) e escreva um parecer final de 3-5 frases, dirigido ao cliente. Tudo o que você escreve é lido pelo cliente: chame de "sugestão", nunca "plano", e nunca cite fornecedores ou APIs por nome (BigDataCorp, Casa dos Dados, Apify, Unipile etc.): fale da função ("base pública de CNPJ", "enriquecimento de sócios e contatos").
+
+## Referências de volume
+${ctx.referenciasVolume}
 
 ## Respostas do cliente
 ${ctx.respostasTexto}`;

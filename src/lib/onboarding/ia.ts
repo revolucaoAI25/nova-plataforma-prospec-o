@@ -4,12 +4,15 @@ import { z } from "zod";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { configPlataforma } from "@/lib/platform-settings";
 import { statusConexoes } from "@/lib/conexoes";
-import type { AcaoCredito, PlanRow, Profile } from "@/lib/database.types";
+import { PLAN_FEATURE_FLAG_KEYS, type AcaoCredito, type PlanFeatureFlags, type PlanRow, type Profile } from "@/lib/database.types";
 import {
   CENARIO_IDS, CENARIOS, LISTA_CENARIOS, lacunasDoCenario, normalizarFiltros, normalizarParametros, parametrosCenarioSchema,
   type Cenario, type CenarioId, type ParametrosCenario,
 } from "./cenarios";
-import { ajustarAoOrcamento, estimar, tamanhoBaseEstimado, toleranciaDe, type ContextoOrcamento, type Estimativa } from "./estimativa";
+import {
+  ajustarAoOrcamento, estimar, leadsParaMeta, tamanhoBaseEstimado, toleranciaDe, volumeAlvoDe,
+  type ContextoOrcamento, type Estimativa, type PlanoVenda,
+} from "./estimativa";
 import { respostasLegiveis, type RespostasOnboarding } from "./questionario";
 import { promptAvaliador, promptGerador, promptRevisao, type ContextoCliente } from "./prompt";
 import { normalizarMensagens, revisarCopy, type ProblemaCopy } from "./copy";
@@ -141,11 +144,18 @@ export { ETAPAS_AUTOMATICAS, etapasDoFunil } from "./funil";
 // ── Contexto ──────────────────────────────────────────────────────
 
 async function montarContexto(sb: SupabaseClient, profile: Profile, respostas: RespostasOnboarding) {
-  const [{ data: custosData }, { data: planoData }, conexoes] = await Promise.all([
+  const [{ data: custosData }, { data: planoData }, { data: planosAtivos }, conexoes] = await Promise.all([
     sb.from("credit_costs").select("acao, custo"),
     profile.plano_id ? sb.from("plans").select("*").eq("id", profile.plano_id).maybeSingle() : Promise.resolve({ data: null }),
+    sb.from("plans").select("*").eq("ativo", true).order("creditos_mensais"),
     statusConexoes(sb, profile),
   ]);
+  const planosVenda: PlanoVenda[] = ((planosAtivos ?? []) as PlanRow[]).map((pl) => ({
+    nome: pl.nome,
+    creditosMes: pl.creditos_mensais,
+    precoCentavos: pl.preco_centavos,
+    recursos: Object.fromEntries(PLAN_FEATURE_FLAG_KEYS.map((k) => [k, Boolean(pl[k])])) as unknown as PlanFeatureFlags,
+  }));
   const custos = Object.fromEntries((custosData ?? []).map((c) => [c.acao, c.custo])) as Record<AcaoCredito, number>;
   const plano = planoData as PlanRow | null;
   const planoAtivo = plano && profile.assinatura_status === "ativa" ? plano : null;
@@ -158,6 +168,8 @@ async function montarContexto(sb: SupabaseClient, profile: Profile, respostas: R
     tolerancia: toleranciaDe(respostas.toleranciaRisco),
     tamanhoBase: tamanhoBaseEstimado(respostas.tamanhoBase),
     custos,
+    volumeAlvoMes: volumeAlvoDe(respostas.volumeMensal as string | undefined),
+    planosVenda,
   };
 
   const admin = profile.role === "admin";
@@ -170,6 +182,7 @@ async function montarContexto(sb: SupabaseClient, profile: Profile, respostas: R
   });
 
   const ctx: ContextoCliente = {
+    referenciasVolume: referenciasVolume(respostas, orcamento),
     respostasTexto: respostasLegiveis(respostas),
     orcamento,
     cenariosDisponiveis,
@@ -177,6 +190,50 @@ async function montarContexto(sb: SupabaseClient, profile: Profile, respostas: R
     conexoesProntas: conexoes.filter((c) => c.disponivel && c.conectado).map((c) => c.label),
   };
   return ctx;
+}
+
+const fmt = (n: number) => n.toLocaleString("pt-BR");
+
+/** Números que a IA usa pra dimensionar o volume — calculados aqui, nunca estimados por ela. */
+function referenciasVolume(respostas: RespostasOnboarding, orc: ContextoOrcamento): string {
+  const linhas: string[] = [];
+  if (orc.volumeAlvoMes) linhas.push(`- Volume que o cliente quer abordar: ~${fmt(orc.volumeAlvoMes)} contatos novos/mês (meio da faixa que ele marcou).`);
+  const meta = Number(String(respostas.metaReunioes ?? "").replace(/\D/g, ""));
+  if (meta > 0) {
+    linhas.push(`- Meta de ${fmt(meta)} reuniões/vendas por mês. Conta de trás pra frente (resposta × conversa que vira reunião, referências conservadoras): WhatsApp ~${fmt(leadsParaMeta(meta, "whatsapp"))} leads/mês, e-mail ~${fmt(leadsParaMeta(meta, "email"))}, LinkedIn ~${fmt(leadsParaMeta(meta, "linkedin"))}.`);
+  }
+  const conversasDia: Record<string, number> = { ate_10: 10, "10_30": 20, "30_100": 60, acima_100: 150 };
+  const capacidade = conversasDia[String(respostas.capacidadeRespostas ?? "")];
+  if (capacidade) {
+    // ~12% de resposta no WhatsApp frio: conversas/dia × 22 dias ÷ 0,12.
+    linhas.push(`- O time atende ~${capacidade} conversas novas/dia: no WhatsApp isso comporta até ~${fmt(Math.round((capacidade * 22) / 0.12))} leads/mês antes de faltar gente pra responder.`);
+  }
+  if (orc.planosVenda.length) {
+    linhas.push(`- Planos à venda (créditos/mês): ${orc.planosVenda.map((p) => `${p.nome} ${fmt(p.creditosMes)}`).join(", ")}.`);
+  }
+  return linhas.join("\n");
+}
+
+/**
+ * Checagens determinísticas que forçam revisão mesmo se a avaliadora deixar
+ * passar: público com CNPJ sem nenhuma sugestão na base de CNPJ, e sugestão
+ * barata muito abaixo do volume que o cliente pediu.
+ */
+function ajustesObrigatorios(planos: PlanoOnboarding[], ctx: ContextoCliente, respostas: RespostasOnboarding): string[] {
+  const ajustes: string[] = [];
+  const publicoComCnpj = respostas.tipoCliente !== "pessoas_fisicas";
+  const temCnpjDisponivel = ctx.cenariosDisponiveis.some((c) => c.fonte === "cnpj");
+  if (publicoComCnpj && temCnpjDisponivel && !planos.some((p) => CENARIOS[p.cenarioId].fonte === "cnpj")) {
+    ajustes.push("Nenhuma sugestão usa a base de CNPJ, e o público tem CNPJ. Troque a sugestão mais fraca por uma com base de CNPJ (cnpj_whatsapp, cnpj_decisor_whatsapp, cnpj_recem_abertas ou outra que faça sentido), comparando com o Google Maps no porQue.");
+  }
+  const alvo = ctx.orcamento.volumeAlvoMes;
+  if (alvo) {
+    const baixas = planos.filter((p) => p.estimativa.custoPorLead <= 10 && !p.estimativa.usaOpenai && p.estimativa.leadsAbordadosMes < alvo * 0.4 && CENARIOS[p.cenarioId].fonte !== "linkedin");
+    if (baixas.length) {
+      ajustes.push(`As sugestões ${baixas.map((p) => p.letra).join(", ")} abordam bem menos do que os ~${fmt(alvo)} contatos/mês que o cliente quer. Aumente leadsPorExecucao (ou os dias da semana) até perto da meta, dentro do que o canal aguenta.`);
+    }
+  }
+  return ajustes;
 }
 
 // ── Chamadas ──────────────────────────────────────────────────────
@@ -326,9 +383,11 @@ export async function gerarPlanosOnboarding(
 
   // Revisa se a avaliadora reprovou algo OU se o revisor de copy achou
   // marca de texto robótico — isso nunca deve chegar no cliente.
+  const obrigatorios = ajustesObrigatorios(planos, ctx, respostas);
   const precisaRevisar =
     avaliacao.avaliacoes.some((a) => a.veredito === "inviavel" || a.veredito === "arriscado") ||
-    planos.some((p) => (p.problemasCopy ?? []).length > 0);
+    planos.some((p) => (p.problemasCopy ?? []).length > 0) ||
+    obrigatorios.length > 0;
   if (precisaRevisar) {
     log("revisando planos com o parecer do avaliador");
     const entradaRevisao = [
@@ -337,6 +396,7 @@ export async function gerarPlanosOnboarding(
       resumoParaAvaliacao(planos),
       "# Avaliação",
       JSON.stringify(avaliacao, null, 1),
+      ...(obrigatorios.length ? ["# Ajustes obrigatórios (checados pelo servidor)", obrigatorios.map((a) => `- ${a}`).join("\n")] : []),
       promptRevisao(),
     ].join("\n\n");
     geracao = await chamar(ia, instrucoesGerador, entradaRevisao, geracaoSchema, "planos_prospeccao");
