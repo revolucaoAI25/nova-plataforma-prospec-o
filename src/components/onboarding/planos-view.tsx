@@ -151,10 +151,25 @@ function DetalhePlano({
       </div>
 
       <aside className="flex flex-col gap-4 lg:sticky lg:top-20 lg:self-start">
-        <PassoAPasso key={plano.letra} letra={plano.letra} aplicacaoInicial={aplicacao} onAplicacao={onAplicacao} />
+        <PassoAPasso
+          key={plano.letra}
+          letra={plano.letra}
+          aplicacaoInicial={aplicacao}
+          onAplicacao={onAplicacao}
+          volume={e.leadsComportaHojeMes !== undefined
+            ? { sugeridoMes: e.leadsAbordadosMes, hojeMes: e.leadsComportaHojeMes, planoRecomendado: e.planoRecomendado ?? null }
+            : null}
+        />
 
         <div className="grid grid-cols-2 gap-2">
-          <Metrica icon={Users} rotulo="Leads por mês" valor={numero(e.leadsAbordadosMes)} detalhe={e.capacidadeCanalMes && e.leadsExtraidosMes > e.leadsAbordadosMes ? `${numero(e.leadsExtraidosMes)} encontrados` : undefined} />
+          <Metrica
+            icon={Users}
+            rotulo="Leads por mês (sugerido)"
+            valor={numero(e.leadsAbordadosMes)}
+            detalhe={e.leadsComportaHojeMes !== undefined && e.leadsComportaHojeMes < e.leadsAbordadosMes
+              ? `Cabem hoje: ${numero(e.leadsComportaHojeMes)}`
+              : e.capacidadeCanalMes && e.leadsExtraidosMes > e.leadsAbordadosMes ? `${numero(e.leadsExtraidosMes)} encontrados` : "Cabe nos seus créditos"}
+          />
           <Metrica icon={Coins} rotulo="Créditos por mês" valor={numero(e.creditosMes)} detalhe={`${numero(e.custoPorLead)} por lead`} />
         </div>
         <div className="flex flex-col gap-1.5 rounded-xl border border-border p-3">
@@ -290,6 +305,14 @@ export function PlanosView({
                     {p.avaliacao && <span className="text-xs font-semibold tabular-nums text-muted-foreground">{p.avaliacao.nota.toFixed(1).replace(".", ",")}</span>}
                   </div>
                 </div>
+                {p.estimativa.perfil && (
+                  <span className={cn(
+                    "w-fit rounded-full px-2 py-0.5 text-[11px] font-medium",
+                    p.estimativa.perfil === "qualificada" ? "bg-info-soft text-info" : p.estimativa.perfil === "base" ? "bg-amber-soft text-amber" : "bg-accent text-accent-foreground",
+                  )}>
+                    {p.estimativa.perfil === "qualificada" ? "Mais qualificada" : p.estimativa.perfil === "base" ? "Sua base" : "Mais volume"}
+                  </span>
+                )}
                 <p className="line-clamp-2 text-sm font-semibold text-foreground">{p.titulo}</p>
                 <div className="mt-auto flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
                   <span className="inline-flex items-center gap-1"><TrendingUp className="h-3 w-3" /> {numero(p.estimativa.leadsAbordadosMes)}/mês</span>

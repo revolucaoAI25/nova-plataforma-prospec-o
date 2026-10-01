@@ -20,7 +20,7 @@ function descreverCenario(c: Cenario, custos: Record<AcaoCredito, number>): stri
     `### ${c.id} — ${c.nome}`,
     `${c.resumo}`,
     `- Fonte: ${c.fonte} · Canais: ${c.canais.length ? c.canais.join(" + ") : "nenhum disparo automático"}`,
-    `- Custo: ${custoPorLead(c, custos)} créditos por lead${c.usaOpenai ? " + consumo na conta OpenAI do cliente" : ""}`,
+    `- Custo: ${custoPorLead(c, custos)} créditos por lead${c.usaOpenai ? " + consumo na conta OpenAI do cliente" : ""} · Perfil: ${c.fonte === "base_propria" ? "base própria" : custoPorLead(c, custos) <= 10 && !c.usaOpenai ? "mais volume" : "mais qualificada (menos leads, decisor/contato validado ou personalização)"}`,
     `- Etapas: ${c.etapas.join(" → ")}`,
     `- Ideal para: ${c.idealPara.join("; ")}`,
     `- Evitar quando: ${c.evitarQuando.join("; ")}`,
@@ -75,7 +75,7 @@ const REGRAS_FONTES = `
 - Base pública de CNPJ: todas as empresas formais do Brasil, com filtro por CNAE, porte, capital, idade e região. A mais barata (1 crédito/lead) e a de maior volume. O telefone e o e-mail são os do cadastro da empresa: em micro e pequenas empresas, muitas vezes é o celular do próprio dono (às vezes o do contador, por isso existe o enriquecimento). Combinada com o enriquecimento de sócios e contatos, traz o nome do sócio e telefone/e-mail validados, e a mensagem chama o decisor pelo nome.
 - Google Maps: negócios com ponto físico, com o telefone comercial que eles mesmos publicam e sinais de atividade (avaliações, site). Ótimo pra negócio local, mas não filtra porte/idade/capital, não traz CNPJ (não dá pra achar o sócio) e o volume por região é limitado.
 - LinkedIn: pessoas por cargo, pra empresa média/grande. Volume baixo por limite de convites.
-- Regra: quando o cliente vende pra empresas ou profissionais com CNPJ (tudo, menos pessoa física), pelo menos UMA sugestão usa a base de CNPJ, e se o ticket for médio ou alto, considere uma com sócio e contato validado. Se ainda assim achar que não serve, diga por quê no diagnóstico. No porQue de cada sugestão, compare a fonte escolhida com a alternativa (por que Maps e não CNPJ, ou o contrário).`;
+- Quando o cliente vende pra empresas ou profissionais com CNPJ, considere seriamente a base de CNPJ em pelo menos uma sugestão (é o caminho natural pra versão "qualificada", com sócio e contato validado, e muitas vezes pra de volume também). Não é obrigatório: se não cabe (ex.: o público é um cargo em empresa grande, ou o sinal de compra só aparece no Google), diga por quê no diagnóstico. No porQue de cada sugestão, compare a fonte escolhida com a alternativa (por que Maps e não CNPJ, ou o contrário).`;
 
 const REGRAS_MENSAGEM = `
 ## Como escrever as mensagens (copy de gente, não de IA)
@@ -116,7 +116,8 @@ ${METODOLOGIA}
 ## Regras das sugestões
 - Cada sugestão usa exatamente UM cenário do catálogo abaixo (campo cenarioId). Você não inventa fluxos: escolhe o cenário e preenche os parâmetros, as mensagens e as etapas do funil.
 - As sugestões precisam ser alternativas DE VERDADE (público, gatilho, canal ou nível de investimento diferentes), não a mesma coisa com volume diferente. O cliente escolhe e testa, então cada uma tem que ensinar algo diferente sobre o mercado dele.
-- A sugestão A é o ponto de partida: melhor custo-benefício pro caso dele. Inclua pelo menos uma sugestão barata (poucos créditos por lead) e, se o ticket justificar, uma mais qualificada (sócio/decisor validado, personalização por IA). Se ele tem base própria parada, uma sugestão de reativação quase sempre vale (custo zero de extração).
+- Monte o conjunto como um portfólio pra ele comparar na prática: em geral, uma sugestão de VOLUME (barata por lead, perto da meta, muitos contatos) e uma QUALIFICADA (menos leads, mas com sócio/decisor e contato validados ou personalização por IA, gastando mais crédito por lead pra acertar quem decide), e as outras variando público, gatilho ou canal. Explique no porQue o trade-off (volume x precisão) e o que cada uma deve ensinar. Se o ticket é baixo demais pra pagar a qualificada, diga isso em vez de forçar.
+- A sugestão A é o ponto de partida: melhor custo-benefício pro caso dele. Se ele tem base própria parada, uma sugestão de reativação quase sempre vale (custo zero de extração).
 - Respeite a preferência de canal. Pode propor outro canal em UMA sugestão se houver motivo forte, explicado no porQue.
 - Custo-benefício:
   - Enriquecer com sócio e contato validado (ação de crédito "bigdatacorp", ~40 créditos/lead) vale quando o ticket é médio/alto e o decisor é o dono/sócio, ou quando o telefone da base pública de CNPJ costuma estar desatualizado pro segmento.

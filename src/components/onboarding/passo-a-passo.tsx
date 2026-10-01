@@ -11,16 +11,29 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
 import type { AplicacaoRow, PassoChecklist } from "@/lib/onboarding/aplicar";
 
+export interface VolumeOpcoes {
+  sugeridoMes: number;
+  hojeMes: number;
+  planoRecomendado: string | null;
+}
+
+const fmt = (n: number) => n.toLocaleString("pt-BR");
+
 export function PassoAPasso({
   letra,
   aplicacaoInicial,
   onAplicacao,
+  volume,
 }: {
   letra: string;
   aplicacaoInicial: AplicacaoRow | null;
   onAplicacao: (a: AplicacaoRow) => void;
+  /** Quando os créditos de hoje não pagam o volume sugerido, o cliente escolhe com qual começar. */
+  volume?: VolumeOpcoes | null;
 }) {
   const [aplicacao, setAplicacao] = useState(aplicacaoInicial);
+  const escolhaVolume = volume && volume.hojeMes < volume.sugeridoMes * 0.9 ? volume : null;
+  const [volumeInicial, setVolumeInicial] = useState<"atual" | "sugerido">(escolhaVolume ? "atual" : "sugerido");
   const [passos, setPassos] = useState<PassoChecklist[] | null>(null);
   const [acao, setAcao] = useState<"aplicar" | "ativar" | "pausar" | "atualizar" | null>(null);
   const [erro, setErro] = useState<string | null>(null);
@@ -66,7 +79,7 @@ export function PassoAPasso({
     const resp = await fetch(`/api/onboarding/planos/${letra}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ acao: tipo }),
+      body: JSON.stringify(tipo === "aplicar" ? { acao: tipo, volume: volumeInicial } : { acao: tipo }),
     });
     const data = await resp.json().catch(() => ({}));
     setAcao(null);
@@ -90,6 +103,32 @@ export function PassoAPasso({
         <p className="text-sm text-muted-foreground">
           Criamos na sua conta o funil, a campanha com estas mensagens e a automação — tudo pausado. Depois é só seguir o passo a passo e dar play.
         </p>
+        {escolhaVolume && (
+          <fieldset className="flex flex-col gap-2">
+            <legend className="mb-1 text-xs font-semibold text-foreground">Com qual volume começar?</legend>
+            {([
+              ["atual", `Com o que cabe hoje: ~${fmt(escolhaVolume.hojeMes)} leads/mês`, "Usa os créditos que você já tem. Dá pra aumentar depois na automação."],
+              ["sugerido", `Volume sugerido: ~${fmt(escolhaVolume.sugeridoMes)} leads/mês`, escolhaVolume.planoRecomendado ? `Pede o plano ${escolhaVolume.planoRecomendado} (ou créditos avulsos).` : "Pede mais créditos do que você tem hoje."],
+            ] as const).map(([valor, titulo, ajuda]) => (
+              <label
+                key={valor}
+                className={cn(
+                  "flex cursor-pointer gap-2.5 rounded-xl border bg-card px-3 py-2.5 transition-colors",
+                  volumeInicial === valor ? "border-primary" : "border-border hover:border-primary/40",
+                )}
+              >
+                <input
+                  type="radio" name={`volume-${letra}`} value={valor} checked={volumeInicial === valor}
+                  onChange={() => setVolumeInicial(valor)} className="mt-1 accent-[var(--primary)]"
+                />
+                <span className="flex flex-col gap-0.5">
+                  <span className="text-sm font-medium text-foreground">{titulo}</span>
+                  <span className="text-xs text-muted-foreground">{ajuda}</span>
+                </span>
+              </label>
+            ))}
+          </fieldset>
+        )}
         {erro && <Alert variant="destructive"><AlertDescription>{erro}</AlertDescription></Alert>}
         <Button onClick={() => executar("aplicar")} disabled={acao !== null} className="self-start">
           {acao === "aplicar" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}

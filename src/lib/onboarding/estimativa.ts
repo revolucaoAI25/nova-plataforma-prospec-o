@@ -42,6 +42,11 @@ export interface Estimativa {
   usaOpenai: boolean;
   /** Menor plano à venda que comporta o volume e libera os recursos da sugestão (null = nenhum comporta). Ausente em resultados antigos. */
   planoRecomendado?: string | null;
+  /** O que os créditos de hoje (plano ou saldo) pagam por mês, sem passar do sugerido. Ausente em resultados antigos. */
+  leadsComportaHojeMes?: number;
+  leadsPorExecucaoHoje?: number;
+  /** Volume (barata por lead, perto da meta), qualificada (enriquecimento/IA, menos leads) ou base própria. */
+  perfil?: "volume" | "qualificada" | "base";
 }
 
 const DIAS_UTEIS_MES = 22;
@@ -101,6 +106,13 @@ export function estimar(cenario: Cenario, p: ParametrosCenario, ctx: ContextoOrc
   const creditosMes = Math.round(leadsExtraidosMes * custo);
   const percentualOrcamento = ctx.creditosMes > 0 ? creditosMes / ctx.creditosMes : creditosMes > 0 ? Infinity : 0;
 
+  // Quanto dá pra rodar só com os créditos de hoje (mesma margem de 80%).
+  const porExecucaoHoje = basePropria || custo <= 0 || ctx.creditosMes <= 0
+    ? p.leadsPorExecucao
+    : Math.max(1, Math.min(p.leadsPorExecucao, Math.floor((ctx.creditosMes * TETO_ORCAMENTO_POR_PLANO) / custo / execucoesMes)));
+  const extraidosHoje = basePropria ? leadsExtraidosMes : Math.round(porExecucaoHoje * execucoesMes);
+  const leadsComportaHojeMes = capacidadeCanalMes === null ? extraidosHoje : Math.min(extraidosHoje, capacidadeCanalMes);
+
   let gargalo: Estimativa["gargalo"] = "nenhum";
   if (percentualOrcamento > 1) gargalo = "creditos";
   else if (capacidadeCanalMes !== null && leadsExtraidosMes > capacidadeCanalMes * 1.1) gargalo = "canal";
@@ -116,6 +128,9 @@ export function estimar(cenario: Cenario, p: ParametrosCenario, ctx: ContextoOrc
     gargalo,
     usaOpenai: cenario.usaOpenai,
     planoRecomendado: planoQueComporta(creditosMes, cenario.recursos, ctx.planosVenda),
+    leadsComportaHojeMes,
+    leadsPorExecucaoHoje: porExecucaoHoje,
+    perfil: basePropria ? "base" : custo <= 10 && !cenario.usaOpenai ? "volume" : "qualificada",
   };
 }
 
@@ -150,16 +165,29 @@ export function ajustarAoOrcamento(
   const capacidades = cenario.canais.map((c) => capacidadeCanal(c, ctx));
   const maxPeloCanal = capacidades.length ? Math.max(1, Math.floor(Math.min(...capacidades) / execucoesMes)) : Infinity;
 
+  // Teto: no máximo um degrau acima do que a conta tem hoje (o próximo
+  // plano com mais créditos). Sugerir algo que exija três planos acima não
+  // ajuda ninguém — fica longe demais da realidade do cliente.
+  const planosAcima = ctx.planosVenda.filter((pl) => pl.creditosMes > ctx.creditosMes).sort((a, b) => a.creditosMes - b.creditosMes);
+  const degrau = planosAcima[0] ?? null;
+  const tetoCreditos = degrau ? degrau.creditosMes : Math.max(ctx.creditosMes, ...ctx.planosVenda.map((pl) => pl.creditosMes));
+  const maxPeloTeto = custo > 0 && tetoCreditos > 0
+    ? Math.max(1, Math.floor((tetoCreditos * TETO_ORCAMENTO_POR_PLANO) / custo / execucoesMes))
+    : Infinity;
+  const motivoTeto = degrau ? `o que cabe no plano ${degrau.nome}, o próximo acima do que você tem hoje` : "o máximo que os planos comportam";
+  const limitadoTeto = degrau ? `limitado ao plano ${degrau.nome}, o próximo acima do que você tem hoje` : "limitado ao que os planos comportam";
+
   // Volume pela meta do cliente, não pelo saldo de hoje: sugestão barata
   // (até 10 créditos/lead, sem pesquisa por IA) que ficou bem abaixo do que
-  // ele quer abordar sobe até a meta, dentro do que o canal aguenta. Antes o
-  // volume era cortado pro saldo atual e saía 130 leads/mês pra quem pediu
-  // 1.000 a 3.000. Sugestão cara/personalizada mantém o volume que a IA
-  // escolheu (pode ser de propósito um teste menor).
+  // ele quer abordar sobe até a meta, dentro do canal e do teto. Sugestão
+  // cara/personalizada mantém o volume que a IA escolheu (pode ser de
+  // propósito um teste menor).
   if (ctx.volumeAlvoMes && custo <= 10 && !cenario.usaOpenai && cenario.fonte !== "linkedin") {
-    const alvoPorExecucao = Math.min(Math.ceil(ctx.volumeAlvoMes / execucoesMes), maxPeloCanal, cenario.tetoPorExecucao);
+    const pelaMeta = Math.ceil(ctx.volumeAlvoMes / execucoesMes);
+    const alvoPorExecucao = Math.min(pelaMeta, maxPeloCanal, maxPeloTeto, cenario.tetoPorExecucao);
     if (porExecucao * execucoesMes < ctx.volumeAlvoMes * 0.7 && alvoPorExecucao > porExecucao) {
-      ajustes.push(`Volume ajustado de ${porExecucao} para ${alvoPorExecucao} leads por execução pra chegar perto dos ${ctx.volumeAlvoMes.toLocaleString("pt-BR")} contatos/mês que você quer abordar.`);
+      const limite = alvoPorExecucao >= pelaMeta ? "" : alvoPorExecucao === maxPeloTeto ? ` (${limitadoTeto})` : " (limitado ao que o canal aborda com segurança)";
+      ajustes.push(`Volume ajustado de ${porExecucao} para ${alvoPorExecucao} leads por execução pra chegar perto dos ${ctx.volumeAlvoMes.toLocaleString("pt-BR")} contatos/mês que você quer abordar${limite}.`);
       porExecucao = alvoPorExecucao;
     }
   }
@@ -168,15 +196,9 @@ export function ajustarAoOrcamento(
     ajustes.push(`Volume reduzido de ${porExecucao} para ${maxPeloCanal} leads por execução — é o que o canal consegue abordar com segurança.`);
     porExecucao = maxPeloCanal;
   }
-
-  // Teto: o maior plano à venda. Acima disso não há como pagar o volume.
-  const maiorPlano = Math.max(0, ...ctx.planosVenda.map((pl) => pl.creditosMes), ctx.creditosMes);
-  if (custo > 0 && maiorPlano > 0) {
-    const maxPeloMaiorPlano = Math.max(1, Math.floor((maiorPlano * TETO_ORCAMENTO_POR_PLANO) / custo / execucoesMes));
-    if (porExecucao > maxPeloMaiorPlano) {
-      ajustes.push(`Volume reduzido de ${porExecucao} para ${maxPeloMaiorPlano} leads por execução — acima disso nenhum plano comporta o custo desta sugestão.`);
-      porExecucao = maxPeloMaiorPlano;
-    }
+  if (porExecucao > maxPeloTeto) {
+    ajustes.push(`Volume reduzido de ${porExecucao} para ${maxPeloTeto} leads por execução: é ${motivoTeto}.`);
+    porExecucao = maxPeloTeto;
   }
 
   return { parametros: { ...p, leadsPorExecucao: porExecucao }, ajustes };

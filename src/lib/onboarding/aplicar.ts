@@ -115,7 +115,30 @@ async function desfazer(sb: SupabaseClient, criado: { flowId?: string; funilId?:
   if (criado.funilId) await sb.from("funis").delete().eq("id", criado.funilId);
 }
 
-export async function aplicarPlano(sb: SupabaseClient, userId: string, plano: PlanoOnboarding, geracao: string): Promise<AplicacaoRow> {
+/**
+ * "atual" = começa com o volume que os créditos de hoje pagam (sem passar do
+ * sugerido); "sugerido" = o volume da sugestão. Dá pra subir depois no nó de
+ * extração ou no ritmo da campanha.
+ */
+export type VolumeInicial = "sugerido" | "atual";
+
+function comVolume(plano: PlanoOnboarding, volume: VolumeInicial): PlanoOnboarding {
+  const hoje = plano.estimativa.leadsPorExecucaoHoje;
+  if (volume !== "atual" || !hoje || hoje >= plano.parametros.leadsPorExecucao) return plano;
+  return {
+    ...plano,
+    parametros: { ...plano.parametros, leadsPorExecucao: hoje },
+    ajustesAutomaticos: [
+      ...plano.ajustesAutomaticos,
+      `Começou com ${hoje} leads por execução (o que seus créditos de hoje comportam) em vez de ${plano.parametros.leadsPorExecucao}. Dá pra aumentar na automação quando tiver mais créditos.`,
+    ],
+  };
+}
+
+export async function aplicarPlano(
+  sb: SupabaseClient, userId: string, planoOriginal: PlanoOnboarding, geracao: string, volume: VolumeInicial = "sugerido",
+): Promise<AplicacaoRow> {
+  const plano = comVolume(planoOriginal, volume);
   const { data: existente } = await sb
     .from("onboarding_aplicacoes").select("*")
     .eq("user_id", userId).eq("letra", plano.letra).eq("geracao", geracao)

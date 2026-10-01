@@ -33,7 +33,10 @@ export async function GET(_request: Request, { params }: { params: Promise<{ let
   return NextResponse.json({ aplicacao: ctx.aplicacao, passos });
 }
 
-const bodySchema = z.object({ acao: z.enum(["aplicar", "ativar", "pausar"]) });
+const bodySchema = z.object({
+  acao: z.enum(["aplicar", "ativar", "pausar"]),
+  volume: z.enum(["sugerido", "atual"]).optional(),
+});
 
 export async function POST(request: Request, { params }: { params: Promise<{ letra: string }> }) {
   const { letra } = await params;
@@ -49,8 +52,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ let
       const cenario = CENARIOS[plano.cenarioId];
       const liberado = profile.role === "admin" || cenario.recursos.every((r) => profile[r] && !(profile.conta_teste && r === "linkedin_disparo_habilitado"));
       if (!liberado) return NextResponse.json({ error: "Sua assinatura atual não inclui todos os recursos desta sugestão." }, { status: 403 });
-      const aplicacao = await aplicarPlano(admin, profile.id, plano, ctx.geracao);
-      return NextResponse.json({ aplicacao, passos: await checklistDoPlano(admin, profile, plano, aplicacao) });
+      const aplicacao = await aplicarPlano(admin, profile.id, plano, ctx.geracao, parsed.data.volume ?? "sugerido");
+      // O checklist usa a cópia gravada (com o volume escolhido), não a sugestão original.
+      return NextResponse.json({ aplicacao, passos: await checklistDoPlano(admin, profile, aplicacao.plano ?? plano, aplicacao) });
     }
     if (!ctx.aplicacao) return NextResponse.json({ error: "Use esta sugestão antes de ativá-la." }, { status: 400 });
     if (parsed.data.acao === "ativar") await ativarPlano(admin, profile, plano, ctx.aplicacao);
