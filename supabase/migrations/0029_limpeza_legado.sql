@@ -27,44 +27,65 @@
 --    pelos fluxos.
 -- ============================================================
 
+-- Bancos diferentes chegaram aqui com conjuntos diferentes de colunas
+-- antigas (ex.: sem maps_api_key_admin, de 0004). Por isso cada chave é
+-- copiada só das colunas que existem de fato — nunca referencia coluna
+-- ausente.
+create or replace function pg_temp.coluna_existe(p_tabela text, p_coluna text) returns boolean
+language sql stable as $f$
+    select exists (
+        select 1 from information_schema.columns
+        where table_schema = 'public' and table_name = p_tabela and column_name = p_coluna
+    );
+$f$;
+
+-- Primeira chave não vazia entre as expressões cujas colunas existem.
+create or replace function pg_temp.primeira_chave(p_candidatos text[][]) returns text
+language plpgsql as $f$
+declare
+    i int;
+    expressoes text[] := '{}';
+    v text;
+begin
+    for i in 1 .. coalesce(array_length(p_candidatos, 1), 0) loop
+        if pg_temp.coluna_existe('profiles', p_candidatos[i][1]) then
+            expressoes := expressoes || format('nullif(trim(%s), %L)', p_candidatos[i][2], '');
+        end if;
+    end loop;
+    if array_length(expressoes, 1) is null then
+        return null;
+    end if;
+    execute format(
+        'select coalesce(%1$s) from profiles where coalesce(%1$s) is not null limit 1',
+        array_to_string(expressoes, ', ')
+    ) into v;
+    return v;
+end;
+$f$;
+
 do $$
 declare
     v_cdd   text;
     v_maps  text;
     v_apify text;
     tem_singleton boolean;
-    tem_colunas_antigas boolean;
 begin
-    select exists (
-        select 1 from information_schema.columns
-        where table_schema = 'public' and table_name = 'platform_settings' and column_name = 'maps_pool_teste'
-    ) into tem_singleton;
+    tem_singleton := pg_temp.coluna_existe('platform_settings', 'maps_pool_teste');
 
-    select exists (
-        select 1 from information_schema.columns
-        where table_schema = 'public' and table_name = 'profiles' and column_name = 'maps_keys_pool'
-    ) into tem_colunas_antigas;
-
-    if tem_colunas_antigas then
-        execute $q$
-            select coalesce(nullif(cdd_api_key_admin, ''), nullif(cdd_api_key, ''))
-            from profiles
-            where coalesce(nullif(cdd_api_key_admin, ''), nullif(cdd_api_key, '')) is not null
-            limit 1
-        $q$ into v_cdd;
-        execute $q$
-            select coalesce(nullif(maps_keys_pool->0->>'key', ''), nullif(maps_api_key_admin, ''))
-            from profiles
-            where coalesce(nullif(maps_keys_pool->0->>'key', ''), nullif(maps_api_key_admin, '')) is not null
-            limit 1
-        $q$ into v_maps;
-        execute $q$
-            select coalesce(nullif(apify_keys_pool->0->>'key', ''), nullif(apify_api_key_admin, ''))
-            from profiles
-            where coalesce(nullif(apify_keys_pool->0->>'key', ''), nullif(apify_api_key_admin, '')) is not null
-            limit 1
-        $q$ into v_apify;
-    end if;
+    v_cdd := pg_temp.primeira_chave(array[
+        ['cdd_api_key_admin', 'cdd_api_key_admin'],
+        ['cdd_api_key',       'cdd_api_key']
+    ]);
+    v_maps := pg_temp.primeira_chave(array[
+        ['maps_keys_pool',     $e$maps_keys_pool->0->>'key'$e$],
+        ['maps_api_key_admin', 'maps_api_key_admin'],
+        ['google_maps_api_key', 'google_maps_api_key']
+    ]);
+    v_apify := pg_temp.primeira_chave(array[
+        ['apify_keys_pool',     $e$apify_keys_pool->0->>'key'$e$],
+        ['apify_api_key_admin', 'apify_api_key_admin'],
+        ['apify_api_key',       'apify_api_key']
+    ]);
 
     if tem_singleton then
         if v_maps is null then
