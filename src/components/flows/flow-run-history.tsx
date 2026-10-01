@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { CheckCircle2, XCircle, Loader2, Clock, RotateCw } from "lucide-react";
+import { CheckCircle2, XCircle, Loader2, Clock, RotateCw, MinusCircle } from "lucide-react";
 import { Collapsible } from "@/components/ui/collapsible";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -21,6 +21,7 @@ function StatusIcon({ status }: { status: FlowRunRow["status"] | FlowRunStepRow[
   if (status === "concluido") return <CheckCircle2 className="h-4 w-4 text-success" />;
   if (status === "erro") return <XCircle className="h-4 w-4 text-destructive" />;
   if (status === "pendente") return <Clock className="h-4 w-4 text-muted-foreground" />;
+  if (status === "pulado") return <MinusCircle className="h-4 w-4 text-muted-foreground" />;
   if (status === "aguardando_retry") return <RotateCw className="h-4 w-4 text-amber-400" />;
   return <Loader2 className="h-4 w-4 animate-spin text-amber-400" />;
 }
@@ -136,7 +137,8 @@ export function FlowRunHistory({
                 <div key={step.id} className="flex items-center gap-2 text-xs">
                   <StatusIcon status={step.status} />
                   <span className="text-foreground">{FLOW_NODE_TYPES[step.tipo as FlowNodeTipo]?.label ?? step.tipo}</span>
-                  {step.leads_saida !== null && <span className="text-muted-foreground">· {step.leads_saida} lead(s)</span>}
+                  {step.status === "pulado" ? <span className="text-muted-foreground">· pulado, nenhum lead novo</span>
+                    : step.leads_saida !== null && <span className="text-muted-foreground">· {step.leads_saida} lead(s)</span>}
                   {step.erro && <span className="text-destructive">· {step.erro}</span>}
                 </div>
               ))}

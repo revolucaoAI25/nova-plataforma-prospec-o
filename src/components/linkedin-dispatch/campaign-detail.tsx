@@ -1,5 +1,6 @@
 "use client";
 
+import { DicaVariaveis } from "@/components/dispatch/dica-variaveis";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Trash2, Play, Pause, UserPlus, Sheet as SheetIcon, Activity, ListOrdered, Users, FileText } from "lucide-react";
@@ -396,10 +397,7 @@ export function CampaignDetail({
                 />
               </div>
             )}
-            <p className="text-xs text-muted-foreground">
-              Campos comuns: {"{{nome}}"}, {"{{cargo}}"}, {"{{empresa_atual}}"}, {"{{municipio}}"} — e, se os leads
-              vierem de um fluxo com um nó de enriquecimento antes do disparo, também {"{{enriquecimento_empresa}}"}, {"{{enriquecimento_cargo}}"} etc.
-            </p>
+            <DicaVariaveis extras={["cargo", "enriquecimento_resumo"]} />
 
             <Button type="submit" disabled={addingStep} className="self-start">
               <Plus className="h-4 w-4" /> {addingStep ? "Adicionando…" : "Adicionar etapa"}

@@ -4,6 +4,7 @@ import { buscarLeadsFiltro } from "@/lib/dispatch-db";
 import { getProfile } from "@/lib/credits";
 import { lerValores } from "@/lib/integrations/google-sheets";
 import { FLOW_NODE_EXECUTORS } from "./executors";
+import { FLOW_NODE_TYPES } from "./node-types";
 import { interpolarConfig } from "./interpolation";
 import type { VariavelEntrada } from "./node-types";
 import type { FlowContexto } from "./executor-types";
@@ -249,7 +250,7 @@ async function upsertStep(
     detalhe: extra.detalhe ?? null,
     erro: extra.erro ?? null,
   };
-  if (status === "concluido" || status === "erro") payload.concluido_em = new Date().toISOString();
+  if (status === "concluido" || status === "erro" || status === "pulado") payload.concluido_em = new Date().toISOString();
 
   if (existente) {
     await sb.from("flow_run_steps").update(payload).eq("id", existente.id);
@@ -304,9 +305,26 @@ async function avancarRun(sb: SupabaseClient, run: FlowRunRow, log: (m: string) 
   const executor = FLOW_NODE_EXECUTORS[node.tipo];
   if (!executor) return tratarErro(sb, run, `Tipo de nó sem executor: ${node.tipo}`);
 
-  await upsertStep(sb, run.id, node, "executando");
-
   const contexto = (run.contexto || {}) as FlowContexto;
+
+  // Nó que trabalha em cima do lote (enriquecimento, filtro, espera,
+  // disparo, destino) recebendo lote vazio — normal num fluxo agendado com
+  // "só leads novos" num dia sem novidade — é pulado em vez de dar erro.
+  // Antes, o enriquecimento acusava "nenhum lead com CNPJ", a run entrava
+  // em retry 3 vezes e terminava como erro sem nada de errado ter acontecido.
+  const consomeLote = ["enriquecimento", "controle", "disparo", "destino"].includes(FLOW_NODE_TYPES[node.tipo]?.categoria ?? "");
+  if (consomeLote && !contexto.lote?.length) {
+    await upsertStep(sb, run.id, node, "pulado", { leadsEntrada: 0, leadsSaida: 0, detalhe: { motivo: "Nenhum lead chegou neste passo." } });
+    const proximoId = proximoNo(flow, node.id);
+    await sb.from("flow_runs").update(
+      proximoId
+        ? { status: "executando", no_atual_id: proximoId }
+        : { status: "concluido", concluido_em: new Date().toISOString() },
+    ).eq("id", run.id);
+    return;
+  }
+
+  await upsertStep(sb, run.id, node, "executando");
   // Interpola {{variaveis.x}}/{{lead.campo}} na config ANTES de passar pro
   // executor — nenhum executor precisa saber que isso existe, eles sempre
   // recebem valores já resolvidos.

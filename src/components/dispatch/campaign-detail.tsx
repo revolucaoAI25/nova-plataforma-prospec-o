@@ -1,5 +1,6 @@
 "use client";
 
+import { DicaVariaveis } from "@/components/dispatch/dica-variaveis";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Trash2, Play, Pause, UserPlus, Sheet as SheetIcon, Activity, ListOrdered, Users } from "lucide-react";
@@ -412,13 +413,10 @@ export function CampaignDetail({
                 <Textarea
                   value={corpoMensagem}
                   onChange={(e) => setCorpoMensagem(e.target.value)}
-                  placeholder="Corpo da mensagem — use {{nome}} para inserir o nome do lead"
+                  placeholder="Ex.: Oi {{primeiro_nome}}, tudo bem? Vi que a {{empresa|sua empresa}}…"
                   rows={3}
                 />
-                <p className="text-xs text-muted-foreground">
-                  Campos comuns: {"{{nome}}"}, {"{{telefone}}"}, {"{{email}}"}, {"{{municipio}}"}, {"{{uf}}"}, {"{{cnpj}}"} — e, se os leads
-                  vierem de um fluxo com um nó de enriquecimento antes do disparo, também {"{{enriquecimento_empresa}}"}, {"{{enriquecimento_cargo}}"} etc.
-                </p>
+                <DicaVariaveis extras={["uf", "cnpj", "enriquecimento_resumo"]} />
                 <Label htmlFor="midia-url" className="mt-1 text-xs text-muted-foreground">
                   Mídia (opcional) — URL pública de imagem, vídeo ou documento
                 </Label>

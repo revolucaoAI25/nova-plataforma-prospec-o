@@ -38,6 +38,9 @@ function SeloExecucao({ execucao }: { execucao: ExecucaoDoNo }) {
     );
   }
   if (execucao.status === "pendente") return null;
+  if (execucao.status === "pulado") {
+    return <span className="text-[11px] font-medium text-muted-foreground">Pulado: nenhum lead novo</span>;
+  }
   return (
     <span className="flex items-center gap-1 text-[11px] font-medium text-amber">
       <Loader2 className="h-3 w-3 animate-spin" /> rodando

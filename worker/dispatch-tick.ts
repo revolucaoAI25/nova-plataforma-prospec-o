@@ -12,15 +12,9 @@ import {
 import { enviarTemplate as oficialEnviarTemplate } from "../src/lib/integrations/whatsapp-oficial";
 import { lerValores } from "../src/lib/integrations/google-sheets";
 import { getProfile } from "../src/lib/credits";
+import { renderizarMensagem } from "../src/lib/mensagem";
 import type { CadenceStepRow, DispatchCampaignRow, DispatchTargetRow, WhatsappInstanceRow, GoogleSheetsCreds } from "../src/lib/database.types";
 
-function renderizarMensagem(corpo: string, leadSnapshot: Record<string, unknown> | null): string {
-  let texto = corpo || "";
-  for (const [chave, valor] of Object.entries(leadSnapshot || {})) {
-    texto = texto.split(`{{${chave}}}`).join(String(valor ?? ""));
-  }
-  return texto;
-}
 
 function instanciaLiberada(instance: WhatsappInstanceRow): boolean {
   if (!instance.proximo_envio_liberado_em) return true;

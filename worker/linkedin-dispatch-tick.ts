@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { renderizarMensagem } from "../src/lib/mensagem";
 import {
   requeueTravadosLinkedin, listarContasConectadas, claimLinkedInTarget, obterCampanhaLinkedin,
   listarEtapasLinkedin, proximaEtapaLinkedin, marcarAguardandoAceite, marcarEnviadoLinkedin, marcarFalhaLinkedin,
@@ -82,12 +83,15 @@ async function processarConta(sb: SupabaseClient, conta: LinkedinAccountRow, log
       await atualizarTargetLinkedin(sb, target.id, { provider_id: providerId });
     }
 
+    const lead = (target.lead_snapshot as Record<string, unknown>) || {};
     if (step.tipo === "convite") {
-      const resp = await enviarConvite(conta.unipile_account_id, providerId, step.nota || undefined);
+      // Nota de convite do LinkedIn aceita no máximo 300 caracteres.
+      const nota = renderizarMensagem(step.nota || "", lead).slice(0, 300);
+      const resp = await enviarConvite(conta.unipile_account_id, providerId, nota || undefined);
       await marcarAguardandoAceite(sb, target, target.campaign_id, step, resp.id || "");
       await liberarProximaAcaoConta(sb, conta.id, "convite", campanha.intervalo_min_seg, campanha.intervalo_max_seg);
     } else {
-      const corpo = step.corpo || "";
+      const corpo = renderizarMensagem(step.corpo || "", lead);
       let chatId = target.chat_id;
       let providerRef = "";
       if (!chatId) {

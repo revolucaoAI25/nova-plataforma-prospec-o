@@ -1,4 +1,5 @@
 import type { MensagensPlano } from "./ia";
+import { VARIAVEIS_DERIVADAS } from "@/lib/mensagem";
 
 // Revisor determinístico das mensagens geradas: pega o que denuncia texto de
 // IA ou de robô antes do cliente ver. O que dá pra consertar sem mudar o
@@ -81,7 +82,9 @@ function checarTexto(onde: string, texto: string, variaveisPermitidas: Set<strin
 
   // Base própria: qualquer coluna da planilha vira variável — não dá pra conferir aqui.
   if (variaveisPermitidas.has("<qualquer coluna da planilha>")) return;
-  for (const [, nome] of texto.matchAll(/\{\{\s*([^}]+?)\s*\}\}/g)) {
+  for (const [, bruto] of texto.matchAll(/\{\{\s*([^}|]+?)\s*(?:\|[^}]*)?\}\}/g)) {
+    const nome = bruto.trim();
+    if ((VARIAVEIS_DERIVADAS as readonly string[]).includes(nome)) continue;
     const base = nome.startsWith("enriquecimento_extra_") ? "enriquecimento_extra_<campo>" : nome;
     if (!variaveisPermitidas.has(base)) problemas.push({ onde, problema: `Variável {{${nome}}} não existe nesse caminho — vai sair em branco.` });
   }

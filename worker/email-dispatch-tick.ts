@@ -9,17 +9,11 @@ import {
 import { enviarLoteEmails, textoParaHtml, type EmailEnvio } from "../src/lib/integrations/resend";
 import { lerValores } from "../src/lib/integrations/google-sheets";
 import { getProfile } from "../src/lib/credits";
+import { renderizarMensagem as renderizarMensagemEmail } from "../src/lib/mensagem";
 import type { EmailCampaignRow, EmailSenderRow, EmailTargetRow, EmailCadenceStepRow, GoogleSheetsCreds } from "../src/lib/database.types";
 
 const EMAIL_BATCH_SIZE = 20;
 
-function renderizarMensagemEmail(texto: string, leadSnapshot: Record<string, unknown> | null): string {
-  let out = texto || "";
-  for (const [chave, valor] of Object.entries(leadSnapshot || {})) {
-    out = out.split(`{{${chave}}}`).join(String(valor ?? ""));
-  }
-  return out;
-}
 
 function senderLiberado(sender: EmailSenderRow): boolean {
   if (!sender.proximo_envio_liberado_em) return true;

@@ -1,5 +1,6 @@
 "use client";
 
+import { DicaVariaveis } from "@/components/dispatch/dica-variaveis";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Trash2, Play, Pause, UserPlus, Sheet as SheetIcon, Activity, ListOrdered, Users, FileText } from "lucide-react";
@@ -367,13 +368,10 @@ export function CampaignDetail({
                 id="corpo"
                 value={corpo}
                 onChange={(e) => setCorpo(e.target.value)}
-                placeholder="Corpo do e-mail — use {{nome}} para inserir o nome do lead"
+                placeholder="Ex.: Oi {{primeiro_nome}}, tudo bem? Vi que a {{empresa|sua empresa}}…"
                 rows={4}
               />
-              <p className="text-xs text-muted-foreground">
-                Campos comuns: {"{{nome}}"}, {"{{email}}"}, {"{{municipio}}"}, {"{{uf}}"}, {"{{cnpj}}"} — e, se os leads
-                vierem de um fluxo com um nó de enriquecimento antes do disparo, também {"{{enriquecimento_empresa}}"}, {"{{enriquecimento_cargo}}"} etc.
-              </p>
+              <DicaVariaveis extras={["uf", "cnpj", "enriquecimento_resumo"]} />
             </div>
 
             <Button type="submit" disabled={addingStep} className="self-start">

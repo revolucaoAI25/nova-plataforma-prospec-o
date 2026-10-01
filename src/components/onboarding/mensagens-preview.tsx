@@ -17,7 +17,9 @@ function ComVariaveis({ texto }: { texto: string }) {
     <>
       {partes.map((parte, i) =>
         /^\{\{[^}]+\}\}$/.test(parte) ? (
-          <span key={i} className="rounded bg-info-soft px-1 font-mono text-[0.8em] text-info">{parte.slice(2, -2)}</span>
+          <span key={i} className="rounded bg-info-soft px-1 font-mono text-[0.8em] text-info" title={parte.includes("|") ? `Se vier vazio: "${parte.slice(2, -2).split("|")[1]}"` : undefined}>
+            {parte.slice(2, -2).split("|")[0]}
+          </span>
         ) : (
           <span key={i}>{parte}</span>
         ),

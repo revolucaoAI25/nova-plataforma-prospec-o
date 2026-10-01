@@ -249,10 +249,13 @@ const linkedinDisparo = (a: AlvosMontagem): Passo => ({
   config: { campaignId: a.campanhas.linkedin ?? null, accountId: null },
 });
 
-const VARS_CNPJ = ["nome", "municipio", "uf", "socio_principal", "porte"];
-const VARS_SOCIOS = [...VARS_CNPJ, "bigdatacorp_socio_nome", "bigdatacorp_razao_social"];
-const VARS_MAPS = ["nome", "municipio", "uf", "avaliacao", "site"];
-const VARS_LINKEDIN = ["nome", "cargo", "empresa_atual", "municipio"];
+// {{empresa}}, {{primeiro_nome}} e {{cidade}} são calculadas na hora do envio
+// (src/lib/mensagem.ts): nome sem LTDA/caixa alta, primeiro nome do sócio ou
+// da pessoa, município formatado. São as que a IA deve preferir.
+const VARS_CNPJ = ["empresa", "cidade", "primeiro_nome", "uf", "porte", "socio_principal"];
+const VARS_SOCIOS = [...VARS_CNPJ, "bigdatacorp_socio_nome"];
+const VARS_MAPS = ["empresa", "cidade", "uf", "avaliacao", "site"];
+const VARS_LINKEDIN = ["primeiro_nome", "empresa", "cargo", "cidade"];
 const VARS_IA = ["enriquecimento_resumo", "enriquecimento_empresa", "enriquecimento_extra_<campo>"];
 
 // ── Catálogo ───────────────────────────────────────────────────────
