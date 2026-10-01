@@ -42,16 +42,15 @@ export function limparTracos(texto: string): string {
 }
 
 /**
- * Atrasos em múltiplos de 24h: a 1ª mensagem sai no horário comercial em
- * que a automação roda, e os follow-ups caem no mesmo horário dias depois,
- * nunca de madrugada. Também garante ordem crescente.
+ * Atrasos (espera desde a mensagem anterior) em múltiplos de 24h: a 1ª
+ * mensagem sai no horário em que a automação roda e os follow-ups caem no
+ * mesmo horário dias depois, nunca de madrugada. Follow-up com pelo menos
+ * 1 dia e no máximo 14 de espera.
  */
 function normalizarAtrasos<T extends { atrasoHoras: number }>(etapas: T[]): T[] {
-  let anterior = -1;
   return etapas.map((e, i) => {
-    let horas = i === 0 ? Math.max(0, Math.round(e.atrasoHoras / 24) * 24) : Math.max(24, Math.round(e.atrasoHoras / 24) * 24);
-    if (horas <= anterior) horas = anterior + 24;
-    anterior = horas;
+    const dias = Math.round(Math.max(0, e.atrasoHoras) / 24);
+    const horas = i === 0 ? dias * 24 : Math.min(14, Math.max(1, dias)) * 24;
     return { ...e, atrasoHoras: horas };
   });
 }
@@ -143,7 +142,7 @@ export function revisarCopy(m: MensagensPlano, canais: string[], variaveis: stri
   const problemas: ProblemaCopy[] = [];
 
   if (canais.includes("whatsapp")) {
-    if (m.whatsapp.length < 2 || m.whatsapp.length > 4) problemas.push({ onde: "WhatsApp", problema: `Cadência com ${m.whatsapp.length} mensagens — use 3 (mínimo 2, máximo 4).` });
+    if (m.whatsapp.length < 4 || m.whatsapp.length > 6) problemas.push({ onde: "WhatsApp", problema: `Cadência com ${m.whatsapp.length} mensagens — use 5 (mínimo 4, máximo 6).` });
     m.whatsapp.forEach((e, i) => {
       const onde = `WhatsApp ${i + 1}`;
       checarTexto(onde, e.texto, permitidas, problemas);
@@ -157,7 +156,7 @@ export function revisarCopy(m: MensagensPlano, canais: string[], variaveis: stri
   }
 
   if (canais.includes("email")) {
-    if (m.email.length < 3 || m.email.length > 5) problemas.push({ onde: "E-mail", problema: `Cadência com ${m.email.length} e-mails — use 4 (mínimo 3, máximo 5).` });
+    if (m.email.length < 5 || m.email.length > 7) problemas.push({ onde: "E-mail", problema: `Cadência com ${m.email.length} e-mails — use 6 (mínimo 5, máximo 7).` });
     m.email.forEach((e, i) => {
       const onde = `E-mail ${i + 1}`;
       checarTexto(`${onde} (assunto)`, e.assunto, permitidas, problemas);
@@ -175,8 +174,8 @@ export function revisarCopy(m: MensagensPlano, canais: string[], variaveis: stri
       if (m.linkedinNota.length > 200) problemas.push({ onde: "LinkedIn (nota)", problema: `${m.linkedinNota.length} caracteres — nota de convite até 200, sem vender.` });
       if (URL.test(m.linkedinNota)) problemas.push({ onde: "LinkedIn (nota)", problema: "Link na nota do convite." });
     }
-    if (m.linkedinMensagens.length < 2 || m.linkedinMensagens.length > 3) {
-      problemas.push({ onde: "LinkedIn", problema: `${m.linkedinMensagens.length} mensagens depois do aceite — use 2 ou 3.` });
+    if (m.linkedinMensagens.length < 3 || m.linkedinMensagens.length > 5) {
+      problemas.push({ onde: "LinkedIn", problema: `${m.linkedinMensagens.length} mensagens depois do aceite — use 4 (mínimo 3, máximo 5).` });
     }
     m.linkedinMensagens.forEach((e, i) => {
       checarTexto(`LinkedIn ${i + 1}`, e.texto, permitidas, problemas);

@@ -86,7 +86,10 @@ async function criarCampanhas(
     if (canal === "email" && m.email.length) {
       await sb.from("email_cadence_steps").insert(
         m.email.map((e, i) => ({
-          campaign_id: campaignId, ordem: i + 1, atraso_horas: Math.max(0, e.atrasoHoras), assunto: e.assunto, corpo: e.corpo,
+          campaign_id: campaignId, ordem: i + 1,
+          // Multicanal: o 1º e-mail sai pelo menos 1 dia depois do 1º WhatsApp.
+          atraso_horas: i === 0 && cenario.canais.includes("whatsapp") ? Math.max(24, e.atrasoHoras) : Math.max(0, e.atrasoHoras),
+          assunto: e.assunto, corpo: e.corpo,
           assunto_b: i === 0 ? ab?.emailAssunto || null : null,
         })),
       );

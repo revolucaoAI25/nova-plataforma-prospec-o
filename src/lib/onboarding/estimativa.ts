@@ -47,6 +47,10 @@ export interface Estimativa {
   leadsPorExecucaoHoje?: number;
   /** Volume (barata por lead, perto da meta), qualificada (enriquecimento/IA, menos leads) ou base própria. */
   perfil?: "volume" | "qualificada" | "base";
+  /** Faixa de reuniões/conversas qualificadas por mês esperada no volume sugerido (null = sem disparo). */
+  reunioesMes?: { min: number; max: number } | null;
+  /** Créditos por reunião na faixa acima (custo por resultado, não por lead). */
+  creditosPorReuniao?: { min: number; max: number } | null;
 }
 
 const DIAS_UTEIS_MES = 22;
@@ -55,13 +59,18 @@ const SEMANAS_MES = 4.33;
 // de um plano, pra buscas avulsas e pra variação do volume real.
 export const TETO_ORCAMENTO_POR_PLANO = 0.8;
 
-const WHATSAPP_POR_DIA: Record<Tolerancia, number> = { conservador: 40, equilibrado: 80, agressivo: 150 };
+// Mensagens por dia que um número aguenta com segurança, CONTANDO follow-ups.
+const WHATSAPP_POR_DIA: Record<Tolerancia, number> = { conservador: 60, equilibrado: 120, agressivo: 200 };
+// Convites por dia (as mensagens depois do aceite têm limite próprio).
 const LINKEDIN_POR_DIA: Record<Tolerancia, number> = { conservador: 15, equilibrado: 20, agressivo: 25 };
+// Mensagens que um lead recebe em média na cadência (quem responde para antes).
+const TOQUES_MEDIOS: Record<CanalDisparo, number> = { whatsapp: 4.5, email: 5.5, linkedin: 1 };
 
+/** Leads NOVOS por mês que o canal comporta, já descontando os follow-ups da cadência. */
 function capacidadeCanal(canal: CanalDisparo, ctx: ContextoOrcamento): number {
-  if (canal === "whatsapp") return WHATSAPP_POR_DIA[ctx.tolerancia] * DIAS_UTEIS_MES;
+  if (canal === "whatsapp") return Math.floor((WHATSAPP_POR_DIA[ctx.tolerancia] * DIAS_UTEIS_MES) / TOQUES_MEDIOS.whatsapp);
   if (canal === "linkedin") return LINKEDIN_POR_DIA[ctx.tolerancia] * DIAS_UTEIS_MES;
-  return (ctx.emailLimiteDiario || 200) * DIAS_UTEIS_MES;
+  return Math.floor(((ctx.emailLimiteDiario || 200) * DIAS_UTEIS_MES) / TOQUES_MEDIOS.email);
 }
 
 const ALVO_POR_FAIXA: Record<string, number> = {
@@ -78,6 +87,22 @@ export function leadsParaMeta(metaReunioes: number, canal: CanalDisparo): number
   // resposta × (resposta → reunião), referências conservadoras de outbound no Brasil.
   const taxa: Record<CanalDisparo, number> = { whatsapp: 0.12 * 0.3, email: 0.03 * 0.3, linkedin: 0.1 * 0.3 };
   return Math.ceil(metaReunioes / taxa[canal]);
+}
+
+// Faixas conservadoras de outbound no Brasil: resposta por canal × conversa
+// que vira reunião/venda. Contato validado do decisor responde mais.
+const RESPOSTA: Record<CanalDisparo, [number, number]> = { whatsapp: [0.08, 0.2], email: [0.01, 0.05], linkedin: [0.02, 0.06] };
+const RESPOSTA_PARA_REUNIAO: [number, number] = [0.2, 0.35];
+
+function faixaReunioes(cenario: Cenario, leadsMes: number, qualificada: boolean): { min: number; max: number } | null {
+  if (!cenario.canais.length) return null;
+  // Multicanal: vale a melhor taxa entre os canais, com um pequeno ganho por tocar duas vezes.
+  const melhor = cenario.canais.reduce<[number, number]>((acc, c) => [Math.max(acc[0], RESPOSTA[c][0]), Math.max(acc[1], RESPOSTA[c][1])], [0, 0]);
+  const bonus = (qualificada ? 1.25 : 1) * (cenario.canais.length > 1 ? 1.15 : 1);
+  return {
+    min: Math.floor(leadsMes * melhor[0] * bonus * RESPOSTA_PARA_REUNIAO[0]),
+    max: Math.ceil(leadsMes * Math.min(0.35, melhor[1] * bonus) * RESPOSTA_PARA_REUNIAO[1]),
+  };
 }
 
 export function planoQueComporta(creditosMes: number, recursos: (keyof PlanFeatureFlags)[], planos: PlanoVenda[]): string | null {
@@ -131,6 +156,12 @@ export function estimar(cenario: Cenario, p: ParametrosCenario, ctx: ContextoOrc
     leadsComportaHojeMes,
     leadsPorExecucaoHoje: porExecucaoHoje,
     perfil: basePropria ? "base" : custo <= 10 && !cenario.usaOpenai ? "volume" : "qualificada",
+    reunioesMes: faixaReunioes(cenario, leadsAbordadosMes, custo > 10 || cenario.usaOpenai),
+    creditosPorReuniao: (() => {
+      const r = faixaReunioes(cenario, leadsAbordadosMes, custo > 10 || cenario.usaOpenai);
+      if (!r || !creditosMes) return null;
+      return { min: Math.round(creditosMes / Math.max(1, r.max)), max: Math.round(creditosMes / Math.max(1, r.min)) };
+    })(),
   };
 }
 
@@ -186,14 +217,14 @@ export function ajustarAoOrcamento(
     const pelaMeta = Math.ceil(ctx.volumeAlvoMes / execucoesMes);
     const alvoPorExecucao = Math.min(pelaMeta, maxPeloCanal, maxPeloTeto, cenario.tetoPorExecucao);
     if (porExecucao * execucoesMes < ctx.volumeAlvoMes * 0.7 && alvoPorExecucao > porExecucao) {
-      const limite = alvoPorExecucao >= pelaMeta ? "" : alvoPorExecucao === maxPeloTeto ? ` (${limitadoTeto})` : " (limitado ao que o canal aborda com segurança)";
+      const limite = alvoPorExecucao >= pelaMeta ? "" : alvoPorExecucao === maxPeloTeto ? ` (${limitadoTeto})` : (cenario.canais.includes("whatsapp") ? " (limitado ao que um número de WhatsApp aborda com segurança, contando os follow-ups; com outro número dá pra dobrar)" : " (limitado ao que o canal aborda com segurança, contando os follow-ups)");
       ajustes.push(`Volume ajustado de ${porExecucao} para ${alvoPorExecucao} leads por execução pra chegar perto dos ${ctx.volumeAlvoMes.toLocaleString("pt-BR")} contatos/mês que você quer abordar${limite}.`);
       porExecucao = alvoPorExecucao;
     }
   }
 
   if (porExecucao > maxPeloCanal) {
-    ajustes.push(`Volume reduzido de ${porExecucao} para ${maxPeloCanal} leads por execução — é o que o canal consegue abordar com segurança.`);
+    ajustes.push(`Volume reduzido de ${porExecucao} para ${maxPeloCanal} leads por execução — é o que o canal consegue abordar com segurança contando os follow-ups da cadência${cenario.canais.includes("whatsapp") ? " (um número de WhatsApp; pra mais volume, rode a mesma sugestão com outro número)" : ""}.`);
     porExecucao = maxPeloCanal;
   }
   if (porExecucao > maxPeloTeto) {

@@ -1191,6 +1191,18 @@ mas nada é processado — é só fila).
     automática: arrastar o card pra frente faz o mesmo. Casamento por
     chave normalizada (telefone por DDD + 8 últimos dígitos, porque o
     WhatsApp às vezes omite o 9º dígito).
+  - *Volume, custo e resultado* (`estimativa.ts`): o volume sai da meta do
+    cliente (faixa marcada, conta de trás pra frente das reuniões,
+    capacidade do time), não do saldo; cada sugestão mostra o volume
+    sugerido, o que cabe nos créditos de hoje (o cliente escolhe com qual
+    começar), o plano que comporta (no máximo um acima do atual) e a faixa
+    de reuniões/mês com o custo por reunião. A capacidade do WhatsApp conta
+    os follow-ups (~4,5 mensagens por lead), então um número aborda ~600
+    leads novos/mês no perfil equilibrado. Cadências: WhatsApp 5 toques em
+    ~2 semanas, e-mail 6 em ~4, LinkedIn nota + 4; cada sugestão traz
+    respostas prontas pra quando o lead responde. A IA monta um portfólio
+    (volume x qualificada) e escolhe a fonte por critérios, sem viés fixo
+    pra CNPJ ou Maps.
   - *Gerar de novo sem travar*: cada uso de sugestão guarda cópia da
     sugestão e a geração de origem — a nova "Sugestão A" pode ser usada
     mesmo que a A antiga já esteja rodando.

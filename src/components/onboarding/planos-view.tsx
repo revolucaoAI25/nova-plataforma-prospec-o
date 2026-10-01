@@ -4,8 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
-  AlertTriangle, ArrowRight, BadgeCheck, ChevronRight, Coins, Gauge, Lightbulb, Loader2, PencilLine, RotateCcw,
-  Sparkles, Star, Target, ThumbsUp, TrendingUp, Users,
+  AlertTriangle, ArrowRight, BadgeCheck, CalendarCheck, Check, ChevronRight, Coins, Copy, Gauge, Lightbulb, Loader2,
+  MessageSquareReply, PencilLine, RotateCcw, Sparkles, Star, Target, ThumbsUp, TrendingUp, Users,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -40,6 +40,19 @@ function Metrica({ icon: Icon, rotulo, valor, detalhe }: { icon: typeof Coins; r
       <span className="text-lg font-semibold tabular-nums text-foreground">{valor}</span>
       {detalhe && <span className="text-xs text-muted-2">{detalhe}</span>}
     </div>
+  );
+}
+
+function CopiarTexto({ texto }: { texto: string }) {
+  const [copiado, setCopiado] = useState(false);
+  return (
+    <button
+      type="button"
+      onClick={() => navigator.clipboard?.writeText(texto).then(() => { setCopiado(true); setTimeout(() => setCopiado(false), 1500); }).catch(() => {})}
+      className="inline-flex min-h-8 w-fit cursor-pointer items-center gap-1 text-xs font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+    >
+      {copiado ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />} {copiado ? "Copiado" : "Copiar"}
+    </button>
   );
 }
 
@@ -125,6 +138,21 @@ function DetalhePlano({
           )}
         </Secao>
 
+        {(plano.respostasProntas ?? []).length > 0 && (
+          <Secao titulo="Quando o lead responder">
+            <p className="text-xs text-muted-foreground">Respostas prontas pra quem atende. É aqui que a prospecção vira reunião: responda rápido, de preferência no mesmo dia.</p>
+            <ul className="grid gap-2 sm:grid-cols-2">
+              {plano.respostasProntas!.map((r) => (
+                <li key={r.situacao} className="flex flex-col gap-1.5 rounded-xl border border-border bg-card p-3">
+                  <span className="flex items-center gap-1.5 text-xs font-semibold text-foreground"><MessageSquareReply className="h-3.5 w-3.5 text-primary" /> {r.situacao}</span>
+                  <p className="whitespace-pre-line text-sm leading-relaxed text-muted-foreground">{r.resposta}</p>
+                  <CopiarTexto texto={r.resposta} />
+                </li>
+              ))}
+            </ul>
+          </Secao>
+        )}
+
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="flex flex-col gap-1.5 rounded-xl border border-border p-4">
             <p className="flex items-center gap-1.5 text-sm font-semibold text-foreground"><Target className="h-4 w-4 text-primary" /> Como saber se está funcionando</p>
@@ -171,7 +199,18 @@ function DetalhePlano({
               : e.capacidadeCanalMes && e.leadsExtraidosMes > e.leadsAbordadosMes ? `${numero(e.leadsExtraidosMes)} encontrados` : "Cabe nos seus créditos"}
           />
           <Metrica icon={Coins} rotulo="Créditos por mês" valor={numero(e.creditosMes)} detalhe={`${numero(e.custoPorLead)} por lead`} />
+          {e.reunioesMes && (
+            <Metrica
+              icon={CalendarCheck}
+              rotulo="Reuniões por mês (estimativa)"
+              valor={e.reunioesMes.min === e.reunioesMes.max ? numero(e.reunioesMes.min) : `${numero(e.reunioesMes.min)} a ${numero(e.reunioesMes.max)}`}
+              detalhe={e.creditosPorReuniao ? `~${numero(e.creditosPorReuniao.min)} a ${numero(e.creditosPorReuniao.max)} créditos por reunião` : undefined}
+            />
+          )}
         </div>
+        {e.reunioesMes && (
+          <p className="-mt-2 text-[11px] text-muted-2">Faixa de mercado (resposta × conversa que vira reunião) no volume sugerido. Depende muito da oferta e da velocidade de resposta do time.</p>
+        )}
         <div className="flex flex-col gap-1.5 rounded-xl border border-border p-3">
           <div className="flex items-center justify-between text-xs">
             <span className="text-muted-foreground">Dos seus créditos de hoje</span>

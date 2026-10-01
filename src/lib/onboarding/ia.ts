@@ -15,7 +15,7 @@ import {
 } from "./estimativa";
 import { respostasLegiveis, type RespostasOnboarding } from "./questionario";
 import { promptAvaliador, promptGerador, promptRevisao, type ContextoCliente } from "./prompt";
-import { normalizarMensagens, revisarCopy, type ProblemaCopy } from "./copy";
+import { limparTracos, normalizarMensagens, revisarCopy, revisarMensagem, type ProblemaCopy } from "./copy";
 import { ETAPAS_AUTOMATICAS, etapasDoFunil } from "./funil";
 
 // ── Formatos de saída da IA (structured output) ───────────────────
@@ -54,6 +54,8 @@ const planoGeradoSchema = z.object({
   quandoTrocar: z.string(),
   riscos: z.array(z.string()),
   etapasFunil: z.array(z.string()),
+  // Onde o resultado acontece de verdade: o que responder quando o lead responde.
+  respostasProntas: z.array(z.object({ situacao: z.string(), resposta: z.string() })),
 });
 type PlanoGerado = z.infer<typeof planoGeradoSchema>;
 
@@ -114,6 +116,8 @@ export interface PlanoOnboarding {
   etapasFunil?: string[];
   /** O que o revisor automático de copy ainda aponta na versão final. */
   problemasCopy?: ProblemaCopy[];
+  /** Respostas pra quando o lead responder. Ausente em resultados antigos. */
+  respostasProntas?: { situacao: string; resposta: string }[];
 }
 
 /** Público pronto pra aplicar nas buscas avulsas (toggle "Sugestões" nos formulários). */
@@ -208,6 +212,9 @@ function referenciasVolume(respostas: RespostasOnboarding, orc: ContextoOrcament
     // ~12% de resposta no WhatsApp frio: conversas/dia × 22 dias ÷ 0,12.
     linhas.push(`- O time atende ~${capacidade} conversas novas/dia: no WhatsApp isso comporta até ~${fmt(Math.round((capacidade * 22) / 0.12))} leads/mês antes de faltar gente pra responder.`);
   }
+  const porNumero: Record<string, number> = { conservador: 60, equilibrado: 120, agressivo: 200 };
+  const msgsDia = porNumero[orc.tolerancia] ?? 120;
+  linhas.push(`- Um número de WhatsApp, na tolerância dele, envia ~${msgsDia} mensagens/dia contando follow-ups: com 5 toques, ~${fmt(Math.floor((msgsDia * 22) / 4.5))} leads novos/mês por número.`);
   if (orc.planosVenda.length) {
     linhas.push(`- Planos à venda (créditos/mês): ${orc.planosVenda.map((p) => `${p.nome} ${fmt(p.creditosMes)}`).join(", ")}.`);
   }
@@ -303,6 +310,10 @@ function processarPlanos(geracao: Geracao, ctx: ContextoCliente): PlanoOnboardin
     const normalizados = normalizarParametros(p.parametros, cenario);
     const { parametros, ajustes } = ajustarAoOrcamento(cenario, normalizados, ctx.orcamento);
     const mensagens = normalizarMensagens(p.mensagens);
+    const respostasProntas = (p.respostasProntas ?? [])
+      .map((r) => ({ situacao: limparTracos(r.situacao.trim()), resposta: limparTracos(r.resposta.trim()) }))
+      .filter((r) => r.situacao && r.resposta)
+      .slice(0, 6);
     return {
       ...p,
       letra: LETRAS[i],
@@ -313,7 +324,11 @@ function processarPlanos(geracao: Geracao, ctx: ContextoCliente): PlanoOnboardin
       lacunas: lacunasDoCenario(parametros, cenario),
       avaliacao: null,
       etapasFunil: etapasDoFunil(p).slice(ETAPAS_AUTOMATICAS.length),
-      problemasCopy: revisarCopy(mensagens, cenario.canais, cenario.variaveis),
+      problemasCopy: [
+        ...revisarCopy(mensagens, cenario.canais, cenario.variaveis),
+        ...respostasProntas.flatMap((r, j) => revisarMensagem("whatsapp", r.resposta, 1).map((problema) => ({ onde: `Resposta pronta ${j + 1}`, problema }))),
+      ],
+      respostasProntas,
     };
   });
 }
@@ -354,6 +369,8 @@ function resumoParaAvaliacao(planos: PlanoOnboarding[]): string {
       lacunas: p.lacunas,
       etapasFunil: etapasDoFunil(p),
       problemasDeCopy: p.problemasCopy ?? [],
+      respostasProntas: p.respostasProntas ?? [],
+      reunioesEstimadasMes: p.estimativa.reunioesMes ?? null,
     })),
     null,
     1,
