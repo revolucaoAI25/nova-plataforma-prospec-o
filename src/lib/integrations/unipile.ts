@@ -16,6 +16,7 @@
 // são documentados como `multipart/form-data`; os demais endpoints não
 // especificam content-type explicitamente, então usamos JSON (padrão REST)
 // pra eles.
+import { timingSafeEqual } from "node:crypto";
 import { configPlataforma } from "@/lib/platform-settings";
 
 async function baseUrl(): Promise<string> {
@@ -151,6 +152,8 @@ export async function webhookSegredoValido(request: Request): Promise<boolean> {
     console.warn("[unipile webhook] UNIPILE_WEBHOOK_SECRET não configurado — endpoint aceitando requisições sem verificação de origem.");
     return true;
   }
-  const url = new URL(request.url);
-  return url.searchParams.get("secret") === esperado;
+  // Aceita na URL (?secret=…) ou num cabeçalho customizado do webhook
+  // (x-webhook-secret), pra quando o painel não deixa pôr parâmetro na URL.
+  const recebido = new URL(request.url).searchParams.get("secret") || request.headers.get("x-webhook-secret") || "";
+  return recebido.length === esperado.length && timingSafeEqual(Buffer.from(recebido), Buffer.from(esperado));
 }
