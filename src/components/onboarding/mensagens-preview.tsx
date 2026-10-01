@@ -1,6 +1,6 @@
 "use client";
 
-import { Clock, Mail, MessageCircle, Contact, MessagesSquare } from "lucide-react";
+import { Clock, Mail, MessageCircle, Contact, MessagesSquare, FlaskConical } from "lucide-react";
 import type { MensagensPlano } from "@/lib/onboarding/ia";
 
 function atraso(horas: number): string {
@@ -39,6 +39,8 @@ function Rotulo({ icon: Icon, children }: { icon: typeof Mail; children: React.R
 export function MensagensPreview({ mensagens }: { mensagens: MensagensPlano }) {
   const temAlgo = mensagens.whatsapp.length || mensagens.email.length || mensagens.linkedinNota || mensagens.linkedinMensagens.length || mensagens.roteiroDm;
   if (!temAlgo) return <p className="text-sm text-muted-foreground">Esta sugestão não envia mensagens automáticas.</p>;
+  // Sugestões geradas antes do teste A/B não têm o campo.
+  const ab = mensagens.testeAB ?? null;
 
   return (
     <div className="flex flex-col gap-6">
@@ -52,6 +54,14 @@ export function MensagensPreview({ mensagens }: { mensagens: MensagensPlano }) {
                 <div className="max-w-[92%] whitespace-pre-line rounded-2xl rounded-tr-sm bg-primary/15 px-3.5 py-2.5 text-sm leading-relaxed text-foreground">
                   <ComVariaveis texto={m.texto} />
                 </div>
+                {i === 0 && ab?.whatsappAbertura && (
+                  <div className="mt-1 flex max-w-[92%] flex-col items-end gap-1">
+                    <span className="flex items-center gap-1 text-[11px] font-medium text-primary"><FlaskConical className="h-3 w-3" /> Versão B (metade dos leads)</span>
+                    <div className="whitespace-pre-line rounded-2xl rounded-tr-sm border border-dashed border-primary/40 px-3.5 py-2.5 text-sm leading-relaxed text-foreground">
+                      <ComVariaveis texto={ab.whatsappAbertura} />
+                    </div>
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -64,7 +74,12 @@ export function MensagensPreview({ mensagens }: { mensagens: MensagensPlano }) {
           {mensagens.email.map((m, i) => (
             <div key={i} className="overflow-hidden rounded-xl border border-border">
               <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border bg-secondary/40 px-4 py-2">
-                <span className="text-sm font-semibold text-foreground"><ComVariaveis texto={m.assunto} /></span>
+                <span className="flex flex-col text-sm font-semibold text-foreground">
+                  <ComVariaveis texto={m.assunto} />
+                  {i === 0 && ab?.emailAssunto && (
+                    <span className="flex items-center gap-1 text-xs font-medium text-primary"><FlaskConical className="h-3 w-3" /> Assunto B: <ComVariaveis texto={ab.emailAssunto} /></span>
+                  )}
+                </span>
                 <span className="flex items-center gap-1 text-[11px] text-muted-2"><Clock className="h-3 w-3" /> {atraso(m.atrasoHoras)}</span>
               </div>
               <p className="whitespace-pre-line px-4 py-3 text-sm leading-relaxed text-foreground"><ComVariaveis texto={m.corpo} /></p>
@@ -80,6 +95,12 @@ export function MensagensPreview({ mensagens }: { mensagens: MensagensPlano }) {
             <div className="rounded-xl border border-dashed border-border px-4 py-3">
               <p className="mb-1 text-[11px] font-medium text-muted-2">Nota do convite</p>
               <p className="text-sm text-foreground"><ComVariaveis texto={mensagens.linkedinNota} /></p>
+              {ab?.linkedinNota && (
+                <p className="mt-2 border-t border-dashed border-border pt-2 text-sm text-foreground">
+                  <span className="mb-0.5 flex items-center gap-1 text-[11px] font-medium text-primary"><FlaskConical className="h-3 w-3" /> Nota B (metade dos convites)</span>
+                  <ComVariaveis texto={ab.linkedinNota} />
+                </p>
+              )}
             </div>
           )}
           {mensagens.linkedinMensagens.map((m, i) => (

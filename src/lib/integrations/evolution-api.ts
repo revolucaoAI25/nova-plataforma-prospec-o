@@ -6,8 +6,8 @@
 // evolution_api_url, evolution_api_key) ou, na ausência,
 // EVOLUTION_API_URL/EVOLUTION_API_KEY do ambiente — ver
 // src/lib/platform-settings.ts.
-import { createHmac, timingSafeEqual } from "node:crypto";
 import { configPlataforma } from "@/lib/platform-settings";
+import { tokenWebhook, tokenWebhookConfere, urlBaseApp } from "@/lib/webhook-token";
 
 async function baseUrl(): Promise<string> {
   const url = await configPlataforma("evolution_api_url", process.env.EVOLUTION_API_URL);
@@ -123,31 +123,22 @@ export async function enviarMidia(nomeInstancia: string, numeroE164: string, med
 }
 
 // ── Webhook de mensagens recebidas (detecção de resposta) ──────────
-// Cada instância registra na Evolution um webhook MESSAGES_UPSERT
-// apontando pra /api/webhooks/evolution. A autenticação é um token por
+// Cada instância registra na Evolution um webhook MESSAGES_UPSERT (resposta)
+// e MESSAGES_UPDATE (entregue/lida) apontando pra /api/webhooks/evolution. A autenticação é um token por
 // instância (HMAC do nome com um segredo do servidor) mandado num header
 // customizado — a rota recalcula e compara, sem guardar token no banco.
 
-async function segredoWebhook(): Promise<string> {
-  const proprio = await configPlataforma("webhook_segredo", process.env.WEBHOOK_SECRET);
-  return proprio || process.env.SUPABASE_SERVICE_ROLE_KEY || "";
-}
-
 export async function tokenWebhookEvolution(nomeInstancia: string): Promise<string> {
-  const segredo = await segredoWebhook();
-  if (!segredo) return "";
-  return createHmac("sha256", segredo).update(`evolution:${nomeInstancia}`).digest("hex");
+  return tokenWebhook(`evolution:${nomeInstancia}`);
 }
 
 export async function tokenWebhookValido(nomeInstancia: string, recebido: string | null): Promise<boolean> {
-  const esperado = await tokenWebhookEvolution(nomeInstancia);
-  if (!esperado || !recebido || recebido.length !== esperado.length) return false;
-  return timingSafeEqual(Buffer.from(esperado), Buffer.from(recebido));
+  return tokenWebhookConfere(`evolution:${nomeInstancia}`, recebido);
 }
 
 export function urlWebhookEvolution(): string | null {
-  const base = (process.env.NEXT_PUBLIC_APP_URL || "").replace(/\/$/, "");
-  return base.startsWith("http") ? `${base}/api/webhooks/evolution` : null;
+  const base = urlBaseApp();
+  return base ? `${base}/api/webhooks/evolution` : null;
 }
 
 /** Registra (ou re-registra) o webhook de mensagens recebidas na instância. Retorna false se não deu. */
@@ -164,7 +155,8 @@ export async function configurarWebhookMensagens(nomeInstancia: string): Promise
         byEvents: false,
         base64: false,
         headers: { "x-webhook-token": token },
-        events: ["MESSAGES_UPSERT"],
+        // UPSERT = mensagem recebida (resposta); UPDATE = status das enviadas (entregue/lida).
+        events: ["MESSAGES_UPSERT", "MESSAGES_UPDATE"],
       },
     }),
   });

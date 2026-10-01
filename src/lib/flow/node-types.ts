@@ -24,6 +24,7 @@ export type LucideIconName =
   | "BrainCircuit"
   | "SlidersHorizontal"
   | "Hourglass"
+  | "ListFilter"
   | "Send"
   | "Mail"
   | "Database"
@@ -170,6 +171,14 @@ const filtroLeadsConfigSchema = z.object({
 });
 export type FiltroOperador = (typeof FILTRO_OPERADORES)[number];
 export { FILTRO_OPERADORES };
+
+const limitarLoteConfigSchema = z.object({
+  maximo: z.number().int().min(1).max(100_000).default(50),
+  // primeiros = ordem em que chegaram; aleatorio = sorteio; ordenar = pelo campo escolhido.
+  modo: z.enum(["primeiros", "aleatorio", "ordenar"]).default("primeiros"),
+  campo: z.string().default(""),
+  ordem: z.enum(["desc", "asc"]).default("desc"),
+});
 
 const esperaConfigSchema = z.object({
   minutos: z.number().int().min(1).max(43_200).default(60),
@@ -333,6 +342,15 @@ export const FLOW_NODE_TYPES: Record<FlowNodeTipo, FlowNodeTypeMeta> = {
     descricao: "Mantém no fluxo só os leads que batem uma condição (útil depois de um enriquecimento, por exemplo).",
     icon: "SlidersHorizontal",
     configSchema: filtroLeadsConfigSchema,
+    disponivel: true,
+  },
+  limitar_lote: {
+    tipo: "limitar_lote",
+    categoria: "controle",
+    label: "Limitar lote",
+    descricao: "Deixa seguir no máximo N leads por execução (os primeiros, sorteados ou os melhores por um campo).",
+    icon: "ListFilter",
+    configSchema: limitarLoteConfigSchema,
     disponivel: true,
   },
   espera: {

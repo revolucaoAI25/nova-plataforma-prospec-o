@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
+import { MetricasCampanhaPanel } from "@/components/dispatch/metricas-campanha";
 import { StatCard } from "@/components/dashboard/stat-card";
 import type { BadgeProps } from "@/components/ui/badge";
 import type { EmailCampaignRow, EmailTargetRow } from "@/lib/database.types";
@@ -91,6 +92,8 @@ export function ReportsPanel({ campanhasIniciais }: { campanhasIniciais: EmailCa
             <StatCard label="Falharam" value={stats.falhou ?? 0} icon={XCircle} tone="destructive" />
           </div>
         )}
+
+        {campaignId && <MetricasCampanhaPanel url={`/api/email-dispatch/campaigns/${campaignId}/metricas`} canal="email" />}
 
         {loading && <p className="text-sm text-muted-foreground">Carregando…</p>}
 

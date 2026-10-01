@@ -63,6 +63,14 @@ export function normalizarMensagens(m: MensagensPlano): MensagensPlano {
     linkedinNota: m.linkedinNota ? limparTracos(m.linkedinNota.trim()) : null,
     linkedinMensagens: normalizarAtrasos(m.linkedinMensagens.map((e) => ({ ...e, texto: limparTracos(e.texto.trim()) }))),
     roteiroDm: m.roteiroDm ? limparTracos(m.roteiroDm.trim()) : null,
+    // Planos gerados antes do teste A/B não têm o campo.
+    testeAB: m.testeAB
+      ? {
+        whatsappAbertura: m.testeAB.whatsappAbertura?.trim() ? limparTracos(m.testeAB.whatsappAbertura.trim()) : null,
+        emailAssunto: m.testeAB.emailAssunto?.trim() ? limparTracos(m.testeAB.emailAssunto.trim()) : null,
+        linkedinNota: m.testeAB.linkedinNota?.trim() ? limparTracos(m.testeAB.linkedinNota.trim()) : null,
+      }
+      : null,
   };
 }
 
@@ -88,6 +96,40 @@ function checarTexto(onde: string, texto: string, variaveisPermitidas: Set<strin
     const base = nome.startsWith("enriquecimento_extra_") ? "enriquecimento_extra_<campo>" : nome;
     if (!variaveisPermitidas.has(base)) problemas.push({ onde, problema: `Variável {{${nome}}} não existe nesse caminho — vai sair em branco.` });
   }
+}
+
+/**
+ * Revisão de uma mensagem solta (editores de cadência): mesmas regras do
+ * revisor das sugestões, sem conferir variáveis — ali o lead pode vir de
+ * qualquer fonte, e variável que falta já some sozinha no envio.
+ */
+export function revisarMensagem(
+  canal: "whatsapp" | "email" | "linkedin_nota" | "linkedin", texto: string, indice = 0, assunto?: string,
+): string[] {
+  const problemas: ProblemaCopy[] = [];
+  const livre = new Set(["<qualquer coluna da planilha>"]);
+  checarTexto("", texto, livre, problemas);
+  if (canal === "whatsapp") {
+    const limite = indice === 0 ? 420 : 280;
+    if (texto.length > limite) problemas.push({ onde: "", problema: `${texto.length} caracteres — no WhatsApp, até ${limite}.` });
+    if (indice === 0 && URL.test(texto)) problemas.push({ onde: "", problema: "Link na primeira mensagem derruba entrega e resposta." });
+    const semCumprimento = texto.replace(/tudo (bem|certo|bom|joia|jóia)\s*\?/gi, "");
+    if ((semCumprimento.match(/\?/g)?.length ?? 0) > 1) problemas.push({ onde: "", problema: "Mais de uma pergunta — faça uma só." });
+  }
+  if (canal === "email") {
+    if (assunto !== undefined) {
+      checarTexto("", assunto, livre, problemas);
+      if (assunto.length > 50) problemas.push({ onde: "", problema: `Assunto com ${assunto.length} caracteres — até 50.` });
+    }
+    const palavras = texto.split(/\s+/).filter(Boolean).length;
+    if (palavras > 130) problemas.push({ onde: "", problema: `${palavras} palavras — e-mail frio que é lido tem de 50 a 120.` });
+  }
+  if (canal === "linkedin_nota") {
+    if (texto.length > 200) problemas.push({ onde: "", problema: `${texto.length} caracteres — nota de convite até 200, sem vender.` });
+    if (URL.test(texto)) problemas.push({ onde: "", problema: "Link na nota do convite." });
+  }
+  if (canal === "linkedin" && texto.length > 500) problemas.push({ onde: "", problema: `${texto.length} caracteres — até 500.` });
+  return problemas.map((p) => p.problema);
 }
 
 /**
@@ -143,5 +185,20 @@ export function revisarCopy(m: MensagensPlano, canais: string[], variaveis: stri
   }
 
   if (m.roteiroDm) checarTexto("Roteiro", m.roteiroDm, permitidas, problemas);
+
+  const ab = m.testeAB;
+  if (ab?.whatsappAbertura && canais.includes("whatsapp")) {
+    checarTexto("WhatsApp 1 (versão B)", ab.whatsappAbertura, permitidas, problemas);
+    if (ab.whatsappAbertura.length > 420) problemas.push({ onde: "WhatsApp 1 (versão B)", problema: `${ab.whatsappAbertura.length} caracteres — até 420.` });
+    if (URL.test(ab.whatsappAbertura)) problemas.push({ onde: "WhatsApp 1 (versão B)", problema: "Link na primeira mensagem." });
+  }
+  if (ab?.emailAssunto && canais.includes("email")) {
+    checarTexto("E-mail 1 (assunto B)", ab.emailAssunto, permitidas, problemas);
+    if (ab.emailAssunto.length > 50) problemas.push({ onde: "E-mail 1 (assunto B)", problema: `Assunto com ${ab.emailAssunto.length} caracteres — até 50.` });
+  }
+  if (ab?.linkedinNota && canais.includes("linkedin")) {
+    checarTexto("LinkedIn (nota B)", ab.linkedinNota, permitidas, problemas);
+    if (ab.linkedinNota.length > 200) problemas.push({ onde: "LinkedIn (nota B)", problema: `${ab.linkedinNota.length} caracteres — nota de convite até 200.` });
+  }
   return problemas;
 }

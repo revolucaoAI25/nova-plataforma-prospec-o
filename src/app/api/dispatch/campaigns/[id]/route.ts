@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
+import { ritmoPatchSchema, ritmoParaColunas } from "@/lib/ritmo";
 import { obterCampanha, atualizarCampanha, deletarCampanha, listarEtapas, statsCampanha } from "@/lib/dispatch-db";
 
 export async function GET(
@@ -22,8 +23,9 @@ export async function GET(
 const patchSchema = z.object({
   status: z.enum(["rascunho", "ativa", "pausada", "concluida"]).optional(),
   nome: z.string().min(1).optional(),
-  intervaloMinSeg: z.number().int().min(5).optional(),
-  intervaloMaxSeg: z.number().int().min(5).optional(),
+  intervaloMinSeg: z.number().int().min(5).max(86_400).optional(),
+  intervaloMaxSeg: z.number().int().min(5).max(86_400).optional(),
+  ...ritmoPatchSchema,
 });
 
 export async function PATCH(
@@ -38,11 +40,11 @@ export async function PATCH(
   const parsed = patchSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "Dados inválidos." }, { status: 400 });
 
-  const campos: Record<string, unknown> = {};
+  const { colunas, erro } = ritmoParaColunas(parsed.data);
+  if (erro) return NextResponse.json({ error: erro }, { status: 400 });
+  const campos: Record<string, unknown> = { ...colunas };
   if (parsed.data.status) campos.status = parsed.data.status;
   if (parsed.data.nome) campos.nome = parsed.data.nome;
-  if (parsed.data.intervaloMinSeg) campos.intervalo_min_seg = parsed.data.intervaloMinSeg;
-  if (parsed.data.intervaloMaxSeg) campos.intervalo_max_seg = parsed.data.intervaloMaxSeg;
 
   const ok = await atualizarCampanha(supabase, id, campos);
   if (!ok) return NextResponse.json({ error: "Não foi possível atualizar a campanha." }, { status: 500 });

@@ -47,6 +47,8 @@ const TABELA_CAMPANHA: Record<CanalDisparo, string> = {
   linkedin: "linkedin_campaigns",
 };
 
+const LIMITE_NOVOS_PADRAO: Record<CanalDisparo, number> = { whatsapp: 30, email: 40, linkedin: 15 };
+
 async function criarCampanhas(
   sb: SupabaseClient,
   userId: string,
@@ -57,10 +59,16 @@ async function criarCampanhas(
   const cenario = CENARIOS[plano.cenarioId];
   const m = plano.mensagens;
 
+  const ab = m.testeAB ?? null;
   for (const canal of cenario.canais) {
     const { data } = await sb
       .from(TABELA_CAMPANHA[canal])
-      .insert({ user_id: userId, nome: `${nomeBase} (${canal})`, status: "rascunho", tipo_origem: "manual" })
+      .insert({
+        user_id: userId, nome: `${nomeBase} (${canal})`, status: "rascunho", tipo_origem: "manual",
+        // Ritmo inicial conservador (dá pra mudar na campanha): leads novos
+        // por dia, em dias úteis das 8h às 19h (padrão da coluna).
+        limite_novos_por_dia: LIMITE_NOVOS_PADRAO[canal],
+      })
       .select("id")
       .single();
     const campaignId = data?.id as string | undefined;
@@ -69,17 +77,26 @@ async function criarCampanhas(
 
     if (canal === "whatsapp" && m.whatsapp.length) {
       await sb.from("dispatch_cadence_steps").insert(
-        m.whatsapp.map((e, i) => ({ campaign_id: campaignId, ordem: i + 1, atraso_horas: Math.max(0, e.atrasoHoras), corpo_mensagem: e.texto })),
+        m.whatsapp.map((e, i) => ({
+          campaign_id: campaignId, ordem: i + 1, atraso_horas: Math.max(0, e.atrasoHoras), corpo_mensagem: e.texto,
+          corpo_mensagem_b: i === 0 ? ab?.whatsappAbertura || null : null,
+        })),
       );
     }
     if (canal === "email" && m.email.length) {
       await sb.from("email_cadence_steps").insert(
-        m.email.map((e, i) => ({ campaign_id: campaignId, ordem: i + 1, atraso_horas: Math.max(0, e.atrasoHoras), assunto: e.assunto, corpo: e.corpo })),
+        m.email.map((e, i) => ({
+          campaign_id: campaignId, ordem: i + 1, atraso_horas: Math.max(0, e.atrasoHoras), assunto: e.assunto, corpo: e.corpo,
+          assunto_b: i === 0 ? ab?.emailAssunto || null : null,
+        })),
       );
     }
     if (canal === "linkedin") {
       const etapas = [
-        { campaign_id: campaignId, ordem: 1, atraso_horas: 0, tipo: "convite", nota: m.linkedinNota?.slice(0, 300) || null, corpo: null },
+        {
+          campaign_id: campaignId, ordem: 1, atraso_horas: 0, tipo: "convite", nota: m.linkedinNota?.slice(0, 300) || null, corpo: null,
+          nota_b: m.linkedinNota ? ab?.linkedinNota?.slice(0, 300) || null : null,
+        },
         ...m.linkedinMensagens.map((e, i) => ({
           campaign_id: campaignId, ordem: i + 2, atraso_horas: Math.max(0, e.atrasoHoras), tipo: "mensagem", nota: null, corpo: e.texto,
         })),

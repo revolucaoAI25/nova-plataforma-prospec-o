@@ -541,6 +541,46 @@ function CamposFiltroLeads({ config, set }: CamposProps) {
   );
 }
 
+function CamposLimitarLote({ config, set }: CamposProps) {
+  const modo = String(config.modo || "primeiros");
+  return (
+    <>
+      <Campo label="Máximo de leads que seguem">
+        <Input type="number" min={1} max={100000} value={Number(config.maximo ?? 50)} onChange={(e) => set({ maximo: Number(e.target.value) })} />
+      </Campo>
+      <Campo label="Quais leads seguem">
+        <Select value={modo} onValueChange={(v) => set({ modo: v })}>
+          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="primeiros">Os primeiros, na ordem em que chegaram</SelectItem>
+            <SelectItem value="aleatorio">Sorteados</SelectItem>
+            <SelectItem value="ordenar">Os melhores por um campo</SelectItem>
+          </SelectContent>
+        </Select>
+      </Campo>
+      {modo === "ordenar" && (
+        <>
+          <Campo label="Campo">
+            <Input value={String(config.campo || "")} onChange={(e) => set({ campo: e.target.value })} placeholder="avaliacao, total_avaliacoes, capital_social…" />
+          </Campo>
+          <Campo label="Ordem">
+            <Select value={String(config.ordem || "desc")} onValueChange={(v) => set({ ordem: v })}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="desc">Maior primeiro</SelectItem>
+                <SelectItem value="asc">Menor primeiro</SelectItem>
+              </SelectContent>
+            </Select>
+          </Campo>
+        </>
+      )}
+      <p className="text-xs text-muted-foreground">
+        O resto do lote para aqui nesta execução. Antes de um disparo, use junto com o limite de novos por dia da campanha: o fluxo não inscreve mais do que a campanha dá conta.
+      </p>
+    </>
+  );
+}
+
 function CamposEspera({ config, set }: CamposProps) {
   return (
     <Campo label="Esperar (minutos)">
@@ -733,6 +773,7 @@ function CamposDoNo({ node, config, set }: { node: FlowNode } & CamposProps) {
     case "enriquecimento_ia": return <CamposEnriquecimentoIa config={config} set={set} />;
     case "enriquecimento_maps": return <CamposEnriquecimentoMaps config={config} set={set} />;
     case "filtro_leads": return <CamposFiltroLeads config={config} set={set} />;
+    case "limitar_lote": return <CamposLimitarLote config={config} set={set} />;
     case "espera": return <CamposEspera config={config} set={set} />;
     case "disparo_whatsapp": return <CamposDisparoWhatsapp config={config} set={set} />;
     case "disparo_email": return <CamposDisparoEmail config={config} set={set} />;

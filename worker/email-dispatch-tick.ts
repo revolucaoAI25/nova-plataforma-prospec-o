@@ -10,7 +10,8 @@ import { enviarLoteEmails, textoParaHtml, type EmailEnvio } from "../src/lib/int
 import { lerValores } from "../src/lib/integrations/google-sheets";
 import { getProfile } from "../src/lib/credits";
 import { renderizarMensagem as renderizarMensagemEmail } from "../src/lib/mensagem";
-import type { EmailCampaignRow, EmailSenderRow, EmailTargetRow, EmailCadenceStepRow, GoogleSheetsCreds } from "../src/lib/database.types";
+import { escolherVariante } from "../src/lib/ritmo";
+import type { EmailCampaignRow, EmailSenderRow, EmailTargetRow, EmailCadenceStepRow, GoogleSheetsCreds, Variante } from "../src/lib/database.types";
 
 const EMAIL_BATCH_SIZE = 20;
 
@@ -34,18 +35,22 @@ async function processarCampanha(sb: SupabaseClient, campanha: EmailCampaignRow,
   // usuário — reconfirma a cada tick, não só na inscrição.
   if (!(await perfilComEmailDisparoHabilitado(sb, campanha.user_id))) return;
 
+  let tamanhoLote = EMAIL_BATCH_SIZE;
   if (sender.limite_diario_envios) {
     const enviosHoje = await contarEnviosHojeSender(sb, sender.id);
     if (enviosHoje >= sender.limite_diario_envios) return;
+    // Não reivindica mais do que cabe no limite do dia (antes um lote de 20
+    // podia estourar o limite em até 19 envios).
+    tamanhoLote = Math.min(tamanhoLote, sender.limite_diario_envios - enviosHoje);
   }
 
-  const targets = await claimEmailTargets(sb, campanha.id, EMAIL_BATCH_SIZE);
+  const targets = await claimEmailTargets(sb, campanha.id, tamanhoLote);
   if (!targets.length) return;
 
   const etapas = await listarEtapasEmail(sb, campanha.id);
   const from = `${sender.from_name} <${sender.from_email}>`;
 
-  const envios: Array<{ target: EmailTargetRow; step: EmailCadenceStepRow; envio: EmailEnvio }> = [];
+  const envios: Array<{ target: EmailTargetRow; step: EmailCadenceStepRow; envio: EmailEnvio; variante: Variante }> = [];
   for (const target of targets) {
     // Descadastro pode acontecer no meio de uma cadência — reconfirma em
     // tempo de envio, defesa extra além da checagem já feita no enroll.
@@ -62,10 +67,15 @@ async function processarCampanha(sb: SupabaseClient, campanha: EmailCampaignRow,
     }
 
     const leadSnapshot = target.lead_snapshot as Record<string, unknown>;
-    const assunto = renderizarMensagemEmail(step.assunto, leadSnapshot);
-    const corpo = renderizarMensagemEmail(step.corpo, leadSnapshot);
+    // Teste A/B: assunto e corpo B valem só pra quem caiu em B (cada um cai
+    // pro A se a etapa não tiver a versão B daquele campo).
+    const escAssunto = escolherVariante(target.variante, step.assunto, step.assunto_b);
+    const escCorpo = escolherVariante(target.variante, step.corpo, step.corpo_b);
+    const variante: Variante = escAssunto.variante === "B" || escCorpo.variante === "B" ? "B" : "A";
+    const assunto = renderizarMensagemEmail(escAssunto.texto, leadSnapshot);
+    const corpo = renderizarMensagemEmail(escCorpo.texto, leadSnapshot);
     envios.push({
-      target, step,
+      target, step, variante,
       envio: { from, to: target.email, replyTo: sender.reply_to || undefined, subject: assunto, text: corpo, html: textoParaHtml(corpo) },
     });
   }
@@ -75,7 +85,7 @@ async function processarCampanha(sb: SupabaseClient, campanha: EmailCampaignRow,
   try {
     const resultados = await enviarLoteEmails(envios.map((e) => e.envio));
     for (let i = 0; i < envios.length; i++) {
-      const { target, step, envio } = envios[i];
+      const { target, step, envio, variante } = envios[i];
       const providerMessageId = resultados[i]?.id;
       if (!providerMessageId) {
         // A chamada em lote respondeu 2xx, mas esse item específico não
@@ -84,7 +94,7 @@ async function processarCampanha(sb: SupabaseClient, campanha: EmailCampaignRow,
         await marcarFalhaEmail(sb, target, campanha.id, step, "Item não confirmado na resposta do envio em lote.", envio.subject, envio.text);
         continue;
       }
-      await marcarEnviadoEmail(sb, target, campanha.id, step, etapas, providerMessageId, envio.subject, envio.text);
+      await marcarEnviadoEmail(sb, target, campanha.id, step, etapas, providerMessageId, envio.subject, envio.text, variante);
     }
   } catch (e) {
     log(`Falha ao enviar lote (campanha=${campanha.id}, ${envios.length} alvo(s)): ${(e as Error).message}`);

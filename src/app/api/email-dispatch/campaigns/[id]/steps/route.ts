@@ -22,6 +22,8 @@ const bodySchema = z.object({
   assunto: z.string().min(1),
   corpo: z.string().min(1),
   templateId: z.string().uuid().optional(),
+  assuntoB: z.string().max(300).nullable().optional(),
+  corpoB: z.string().max(20000).nullable().optional(),
 });
 
 export async function POST(

@@ -83,6 +83,13 @@ export function resumoDoNo(tipo: FlowNodeTipo, config: unknown): string | null {
       return "Sócio, telefone e e-mail pelo CNPJ";
     case "filtro_leads":
       return texto(c.campo) ? `${texto(c.campo)} ${String(c.operador ?? "").replace("_", " ")}${texto(c.valor) ? ` "${texto(c.valor)}"` : ""}` : null;
+    case "limitar_lote": {
+      const max = num(c.maximo);
+      if (!max) return null;
+      if (c.modo === "aleatorio") return `Até ${max} leads, sorteados`;
+      if (c.modo === "ordenar" && texto(c.campo)) return `Os ${max} com ${c.ordem === "asc" ? "menor" : "maior"} ${texto(c.campo)}`;
+      return `Até ${max} leads por execução`;
+    }
     case "espera": {
       const m = num(c.minutos);
       if (!m) return null;

@@ -22,6 +22,7 @@ const bodySchema = z.object({
   corpoMensagem: z.string().min(1),
   midiaUrl: z.string().optional(),
   templateId: z.string().uuid().optional(),
+  corpoMensagemB: z.string().max(4000).nullable().optional(),
   parametrosTemplate: z.array(z.string()).optional(),
 });
 

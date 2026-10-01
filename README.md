@@ -48,7 +48,7 @@ No [painel do Supabase](https://supabase.com/dashboard), crie um projeto novo
 10. `supabase/migrations/0010_email_domains.sql` (verificação de domínio por usuário, disparo por e-mail)
 11. `supabase/migrations/0011_email_domains_global_unique.sql` (corrige falha de segurança multi-tenant — ver "Decisões de arquitetura")
 12. `supabase/migrations/0012_bigdatacorp_enrichment.sql` (enriquecimento de leads por CNPJ via BigDataCorp)
-13. Em seguida, `0013` a `0031`, sempre em ordem numérica. Destaques:
+13. Em seguida, `0013` a `0032`, sempre em ordem numérica. Destaques:
     `0028_seguranca_profiles.sql` (fecha escalonamento de privilégio — ver
     "Decisões de arquitetura") e `0029_limpeza_legado.sql` (remove colunas e
     tabelas antigas e conserta `platform_settings`). Rode a `0029` **depois**
@@ -56,6 +56,10 @@ No [painel do Supabase](https://supabase.com/dashboard), crie um projeto novo
     que ela apaga. `0030_onboarding.sql` cria as tabelas do onboarding com
     presets; `0031_funil_automatico.sql` adiciona papéis às colunas do funil,
     chaves de contato nos cards e o status "respondeu" nos alvos de disparo.
+    `0032_ritmo_ab_status.sql` traz ritmo de envio (limite de leads novos
+    por dia, janela de horário e dias), teste A/B por etapa e as colunas de
+    entregue/lido/clicado/devolvido nos logs. Todas podem ser rodadas de
+    novo sem erro (usam `if not exists` / `create or replace`).
 
 Em **Authentication → Providers**, deixe E-mail/senha habilitado (é o único método
 usado no login). Contas são criadas pelo admin — não há cadastro público.
@@ -1197,6 +1201,49 @@ mas nada é processado — é só fila).
   - *Correção*: o proxy redirecionava pro /login o link de descadastro do
     rodapé dos e-mails e os webhooks do LinkedIn (rotas públicas fora de
     /api/webhooks) — nenhum dos dois funcionava.
+
+- **Ritmo de envio, teste A/B e status de entrega/leitura** (`0032`):
+  - *Ritmo* (`ritmo.ts`, card "Ritmo de envio" em cada campanha): limite
+    de leads NOVOS por dia (o 1º toque; follow-up de quem já está na
+    cadência não conta), janela de horário e dias da semana no fuso de São
+    Paulo e intervalo entre envios. As regras ficam dentro das funções de
+    claim no banco — o worker simplesmente não recebe alvo fora da janela
+    ou além do limite, então nenhum caminho de envio escapa. Dá pra jogar
+    500 leads numa campanha e ela "pinga" 30 por dia. Campanhas criadas
+    pelas sugestões já nascem com 30 (WhatsApp), 40 (e-mail) e 15
+    (LinkedIn) por dia, dias úteis das 8h às 19h. Os limites diários por
+    número/remetente/conta passaram a virar o dia à meia-noite de Brasília
+    (antes viravam às 21h, no fuso do servidor), e o lote de e-mail não
+    passa mais do que cabe no limite diário do remetente.
+  - *Nó "Limitar lote"* nos fluxos: deixa seguir no máximo N leads por
+    execução (os primeiros, sorteados, ou os melhores por um campo, tipo
+    avaliação). É o freio entre uma extração grande e um disparo.
+  - *Escrever a cadência inteira* (`cadencia-texto.ts`): um texto só com
+    todas as mensagens separadas por `--- 2 dias`, com linha do tempo
+    (Dia 0, Dia 2, Dia 5…) e o mesmo revisor de copy das sugestões
+    apontando o que soa robótico enquanto se escreve. Editar uma cadência
+    existente atualiza as etapas no lugar (quem está no meio segue de onde
+    parou); etapa que já foi enviada não pode ser apagada, e a tela agora
+    diz isso em vez de fingir que apagou.
+  - *Teste A/B*: cada etapa pode ter uma versão B (texto; no e-mail
+    também o assunto; no LinkedIn a nota do convite). O alvo sorteia A ou
+    B ao entrar e recebe sempre a mesma; o log guarda a versão que de fato
+    saiu (etapa sem B conta como A). As sugestões da IA já vêm com uma
+    versão B do 1º toque. O relatório compara resposta (e aceite, no
+    LinkedIn) com um teste de duas proporções e só declara vencedor com
+    ~30 leads por versão e 80%+ de confiança.
+  - *Entregue/lido*: WhatsApp não-oficial pelo evento MESSAGES_UPDATE da
+    Evolution (as instâncias re-registram o webhook sozinhas depois da
+    0032); canal oficial por `/api/webhooks/whatsapp-oficial` (formato da
+    Cloud API da Meta, que a Datafy espelha — URL e token de verificação
+    em /admin/disparo); LinkedIn pelos eventos `message_read` /
+    `message_delivered` do webhook "messaging" da Unipile; e-mail por
+    `/api/webhooks/resend` (assinatura Svix), com devolução permanente e
+    marcação de spam indo direto pro descadastro. Resposta "sair",
+    "parar", "não quero receber" no WhatsApp também descadastra o número.
+    Quem desliga a confirmação de leitura no WhatsApp nunca aparece como
+    lido, e abertura de e-mail é aproximada — por isso o relatório põe a
+    resposta em destaque, não a leitura.
 
 ## Estrutura
 

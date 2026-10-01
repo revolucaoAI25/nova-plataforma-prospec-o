@@ -3,10 +3,11 @@ import { validarLinkedInUrl } from "@/lib/linkedin-url";
 import { getProfile } from "@/lib/credits";
 import { chaveLinkedin } from "@/lib/contatos";
 import { primeiroContatoDaCampanha } from "@/lib/funil-automacao";
+import { inicioDoDiaSP, sortearVariante } from "@/lib/ritmo";
 import { buscarLeadsFiltro } from "@/lib/dispatch-db";
 import type {
   LinkedinAccountRow, LinkedinCampaignRow, LinkedinTemplateRow, LinkedinCadenceStepRow, LinkedinTargetRow,
-  LinkedinSheetWatcherRow, LinkedinStepTipo, CampaignOrigem, Profile,
+  LinkedinSheetWatcherRow, LinkedinStepTipo, CampaignOrigem, Profile, Variante,
 } from "@/lib/database.types";
 
 // CRUD do disparo por LinkedIn — espelha src/lib/email-dispatch-db.ts
@@ -80,8 +81,7 @@ async function contarAcoesHojeConta(sb: SupabaseClient, accountId: string, tipoA
   const idsCampanhas = (campanhas || []).map((c) => c.id as string);
   if (!idsCampanhas.length) return 0;
 
-  const inicioDoDia = new Date();
-  inicioDoDia.setHours(0, 0, 0, 0);
+  const inicioDoDia = inicioDoDiaSP();
 
   const { count } = await sb
     .from("linkedin_messages_log")
@@ -235,13 +235,17 @@ export async function deletarTemplateLinkedin(sb: SupabaseClient, templateId: st
 export async function criarEtapaLinkedin(
   sb: SupabaseClient,
   campaignId: string,
-  params: { ordem: number; atrasoHoras: number; tipo: LinkedinStepTipo; nota?: string; corpo?: string; templateId?: string },
+  params: {
+    ordem: number; atrasoHoras: number; tipo: LinkedinStepTipo; nota?: string; corpo?: string; templateId?: string;
+    notaB?: string | null; corpoB?: string | null;
+  },
 ) {
   const { data } = await sb
     .from("linkedin_cadence_steps")
     .insert({
       campaign_id: campaignId, ordem: params.ordem, atraso_horas: params.atrasoHoras, tipo: params.tipo,
       nota: params.nota || null, corpo: params.corpo || null, template_id: params.templateId || null,
+      nota_b: params.notaB?.trim() || null, corpo_b: params.corpoB?.trim() || null,
     })
     .select("id")
     .single();
@@ -251,6 +255,22 @@ export async function criarEtapaLinkedin(
 export async function listarEtapasLinkedin(sb: SupabaseClient, campaignId: string): Promise<LinkedinCadenceStepRow[]> {
   const { data } = await sb.from("linkedin_cadence_steps").select("*").eq("campaign_id", campaignId).order("ordem");
   return (data as LinkedinCadenceStepRow[]) || [];
+}
+
+/** Edita texto/atraso de uma etapa (inclusive a variante B). Campo B vazio desliga o teste daquele campo. */
+export async function atualizarEtapaLinkedin(
+  sb: SupabaseClient, stepId: string,
+  params: { atrasoHoras?: number; nota?: string | null; corpo?: string | null; notaB?: string | null; corpoB?: string | null },
+) {
+  const campos: Record<string, unknown> = {};
+  if (params.atrasoHoras !== undefined) campos.atraso_horas = params.atrasoHoras;
+  if (params.nota !== undefined) campos.nota = params.nota?.trim() || null;
+  if (params.corpo !== undefined) campos.corpo = params.corpo?.trim() || null;
+  if (params.notaB !== undefined) campos.nota_b = params.notaB?.trim() || null;
+  if (params.corpoB !== undefined) campos.corpo_b = params.corpoB?.trim() || null;
+  if (!Object.keys(campos).length) return true;
+  const { data, error } = await sb.from("linkedin_cadence_steps").update(campos).eq("id", stepId).select("id");
+  return !error && Boolean(data?.length);
 }
 
 export async function deletarEtapaLinkedin(sb: SupabaseClient, stepId: string) {
@@ -356,6 +376,7 @@ export async function enrollLinkedInTargets(sb: SupabaseClient, campaignId: stri
       status: "pendente",
       current_step_id: null,
       proxima_etapa_em: proximaEm,
+      variante: sortearVariante(),
     });
   }
 
@@ -410,14 +431,17 @@ export async function claimLinkedInTarget(sb: SupabaseClient, accountId: string)
  */
 export async function marcarAguardandoAceite(
   sb: SupabaseClient, target: LinkedinTargetRow, campaignId: string, step: LinkedinCadenceStepRow, providerRef: string,
+  notaEnviada = "", variante: Variante = "A",
 ) {
+  const agora = new Date().toISOString();
   await sb.from("linkedin_targets").update({
-    status: "aguardando_aceite", current_step_id: step.id, atualizado_em: new Date().toISOString(),
+    status: "aguardando_aceite", current_step_id: step.id, atualizado_em: agora,
+    ...(target.current_step_id ? {} : { primeiro_envio_em: agora }),
   }).eq("id", target.id).eq("status", "enviando");
 
   await sb.from("linkedin_messages_log").insert({
-    target_id: target.id, campaign_id: campaignId, step_id: step.id,
-    status: "sucesso", tipo_acao: "convite", provider_ref: providerRef, corpo_enviado: step.nota || "",
+    target_id: target.id, campaign_id: campaignId, step_id: step.id, variante,
+    status: "sucesso", tipo_acao: "convite", provider_ref: providerRef, corpo_enviado: notaEnviada,
   });
 
   // Primeira mensagem desse lead: card do funil automático vai pra "Em cadência".
@@ -433,24 +457,26 @@ export async function marcarEnviadoLinkedin(
   etapas: LinkedinCadenceStepRow[],
   providerRef: string,
   corpoEnviado: string,
+  variante: Variante = "A",
 ) {
   const prox = proximaEtapaLinkedin(etapas, step.ordem);
   const agora = new Date();
+  const primeiroToque = target.current_step_id ? {} : { primeiro_envio_em: agora.toISOString() };
   if (prox) {
     const atraso = Number(prox.atraso_horas || 0) * 3_600_000;
     await sb.from("linkedin_targets").update({
-      status: "pendente", current_step_id: step.id,
+      status: "pendente", current_step_id: step.id, ...primeiroToque,
       proxima_etapa_em: new Date(agora.getTime() + atraso).toISOString(),
       atualizado_em: agora.toISOString(),
     }).eq("id", target.id).eq("status", "enviando");
   } else {
     await sb.from("linkedin_targets").update({
-      status: "concluido", current_step_id: step.id, atualizado_em: agora.toISOString(),
+      status: "concluido", current_step_id: step.id, ...primeiroToque, atualizado_em: agora.toISOString(),
     }).eq("id", target.id).eq("status", "enviando");
   }
 
   await sb.from("linkedin_messages_log").insert({
-    target_id: target.id, campaign_id: campaignId, step_id: step.id,
+    target_id: target.id, campaign_id: campaignId, step_id: step.id, variante,
     status: "sucesso", tipo_acao: "mensagem", provider_ref: providerRef, corpo_enviado: corpoEnviado,
   });
 

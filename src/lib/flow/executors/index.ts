@@ -10,6 +10,7 @@ import { executarEnriquecimentoMaps } from "./enriquecimento-maps";
 import { executarEnriquecimentoBigDataCorp } from "./enriquecimento-bigdatacorp";
 import { executarFiltroLeads } from "./filtro-leads";
 import { executarEspera } from "./espera";
+import { executarLimitarLote } from "./limitar-lote";
 import { executarDisparoWhatsapp } from "./disparo-whatsapp";
 import { executarDisparoEmail } from "./disparo-email";
 import { executarDisparoLinkedin } from "./disparo-linkedin";
@@ -33,6 +34,7 @@ export const FLOW_NODE_EXECUTORS: Partial<Record<FlowNodeTipo, FlowNodeExecutor>
   enriquecimento_maps: executarEnriquecimentoMaps,
   enriquecimento_bigdatacorp: executarEnriquecimentoBigDataCorp,
   filtro_leads: executarFiltroLeads,
+  limitar_lote: executarLimitarLote,
   espera: executarEspera,
   disparo_whatsapp: executarDisparoWhatsapp,
   disparo_email: executarDisparoEmail,

@@ -3,11 +3,12 @@ import { validarEmail, extrairDominio } from "@/lib/email";
 import { getProfile } from "@/lib/credits";
 import { chaveEmail } from "@/lib/contatos";
 import { primeiroContatoDaCampanha } from "@/lib/funil-automacao";
+import { inicioDoDiaSP, sortearVariante } from "@/lib/ritmo";
 import { buscarLeadsFiltro } from "@/lib/dispatch-db";
 import { criarDominioResend, listarDominiosResend, obterDominioResend, verificarDominioResend, deletarDominioResend } from "@/lib/integrations/resend";
 import type {
   EmailSenderRow, EmailCampaignRow, EmailTemplateRow, EmailCadenceStepRow, EmailTargetRow,
-  EmailSheetWatcherRow, EmailDomainRow, EmailDomainStatus, CampaignOrigem, Profile,
+  EmailSheetWatcherRow, EmailDomainRow, EmailDomainStatus, CampaignOrigem, Profile, Variante,
 } from "@/lib/database.types";
 
 // CRUD do disparo por e-mail — espelha src/lib/dispatch-db.ts (disparo
@@ -186,8 +187,7 @@ export async function contarEnviosHojeSender(sb: SupabaseClient, senderId: strin
   const idsCampanhas = (campanhas || []).map((c) => c.id as string);
   if (!idsCampanhas.length) return 0;
 
-  const inicioDoDia = new Date();
-  inicioDoDia.setHours(0, 0, 0, 0);
+  const inicioDoDia = inicioDoDiaSP();
 
   const { count } = await sb
     .from("email_messages_log")
@@ -332,13 +332,17 @@ export async function deletarTemplateEmail(sb: SupabaseClient, templateId: strin
 export async function criarEtapaEmail(
   sb: SupabaseClient,
   campaignId: string,
-  params: { ordem: number; atrasoHoras: number; assunto: string; corpo: string; templateId?: string },
+  params: {
+    ordem: number; atrasoHoras: number; assunto: string; corpo: string; templateId?: string;
+    assuntoB?: string | null; corpoB?: string | null;
+  },
 ) {
   const { data } = await sb
     .from("email_cadence_steps")
     .insert({
       campaign_id: campaignId, ordem: params.ordem, atraso_horas: params.atrasoHoras,
       assunto: params.assunto, corpo: params.corpo, template_id: params.templateId || null,
+      assunto_b: params.assuntoB?.trim() || null, corpo_b: params.corpoB?.trim() || null,
     })
     .select("id")
     .single();
@@ -348,6 +352,22 @@ export async function criarEtapaEmail(
 export async function listarEtapasEmail(sb: SupabaseClient, campaignId: string): Promise<EmailCadenceStepRow[]> {
   const { data } = await sb.from("email_cadence_steps").select("*").eq("campaign_id", campaignId).order("ordem");
   return (data as EmailCadenceStepRow[]) || [];
+}
+
+/** Edita texto/atraso de uma etapa (inclusive a variante B). Campo B vazio desliga o teste daquele campo. */
+export async function atualizarEtapaEmail(
+  sb: SupabaseClient, stepId: string,
+  params: { atrasoHoras?: number; assunto?: string; corpo?: string; assuntoB?: string | null; corpoB?: string | null },
+) {
+  const campos: Record<string, unknown> = {};
+  if (params.atrasoHoras !== undefined) campos.atraso_horas = params.atrasoHoras;
+  if (params.assunto !== undefined) campos.assunto = params.assunto;
+  if (params.corpo !== undefined) campos.corpo = params.corpo;
+  if (params.assuntoB !== undefined) campos.assunto_b = params.assuntoB?.trim() || null;
+  if (params.corpoB !== undefined) campos.corpo_b = params.corpoB?.trim() || null;
+  if (!Object.keys(campos).length) return true;
+  const { data, error } = await sb.from("email_cadence_steps").update(campos).eq("id", stepId).select("id");
+  return !error && Boolean(data?.length);
 }
 
 export async function deletarEtapaEmail(sb: SupabaseClient, stepId: string) {
@@ -450,6 +470,7 @@ export async function enrollEmailTargets(sb: SupabaseClient, campaignId: string,
       status: "pendente",
       current_step_id: null,
       proxima_etapa_em: proximaEm,
+      variante: sortearVariante(),
     });
   }
 
@@ -502,24 +523,27 @@ export async function marcarEnviadoEmail(
   providerMessageId: string,
   assuntoEnviado: string,
   corpoEnviado: string,
+  variante: Variante = "A",
 ) {
   const prox = proximaEtapaEmail(etapas, step.ordem);
   const agora = new Date();
+  // 1º toque marca primeiro_envio_em: é o que o limite de novos/dia conta.
+  const primeiroToque = target.current_step_id ? {} : { primeiro_envio_em: agora.toISOString() };
   if (prox) {
     const atraso = Number(prox.atraso_horas || 0) * 3_600_000;
     await sb.from("email_targets").update({
-      status: "pendente", current_step_id: step.id,
+      status: "pendente", current_step_id: step.id, ...primeiroToque,
       proxima_etapa_em: new Date(agora.getTime() + atraso).toISOString(),
       atualizado_em: agora.toISOString(),
     }).eq("id", target.id).eq("status", "enviando");
   } else {
     await sb.from("email_targets").update({
-      status: "concluido", current_step_id: step.id, atualizado_em: agora.toISOString(),
+      status: "concluido", current_step_id: step.id, ...primeiroToque, atualizado_em: agora.toISOString(),
     }).eq("id", target.id).eq("status", "enviando");
   }
 
   await sb.from("email_messages_log").insert({
-    target_id: target.id, campaign_id: campaignId, step_id: step.id,
+    target_id: target.id, campaign_id: campaignId, step_id: step.id, variante,
     status: "sucesso", provider_message_id: providerMessageId, assunto_enviado: assuntoEnviado, corpo_enviado: corpoEnviado,
   });
 

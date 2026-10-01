@@ -11,6 +11,21 @@
 // datafy_api_base_url) ou, na ausência, DATAFY_API_BASE_URL do ambiente —
 // ver src/lib/platform-settings.ts.
 import { configPlataforma } from "@/lib/platform-settings";
+import { tokenWebhook, urlBaseApp } from "@/lib/webhook-token";
+
+export const ESCOPO_WEBHOOK_OFICIAL = "whatsapp-oficial";
+
+/**
+ * URL e token de verificação do webhook (entregue/lido/resposta) pra
+ * cadastrar no painel do provedor ou no app da Meta — mostrados em
+ * /admin/disparo. Um webhook só pra plataforma toda: a instância é
+ * identificada pelo phone_number_id que vem no evento.
+ */
+export async function dadosWebhookOficial(): Promise<{ url: string | null; token: string | null }> {
+  const base = urlBaseApp();
+  const token = await tokenWebhook(ESCOPO_WEBHOOK_OFICIAL);
+  return { url: base && token ? `${base}/api/webhooks/whatsapp-oficial?token=${token}` : null, token: token || null };
+}
 
 const BASE_PADRAO = "https://cloud.datafyapi.com.br/v1";
 

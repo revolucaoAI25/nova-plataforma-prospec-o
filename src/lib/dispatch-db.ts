@@ -3,9 +3,10 @@ import { normalizarE164 } from "@/lib/phone";
 import { getProfile } from "@/lib/credits";
 import { chaveTelefone } from "@/lib/contatos";
 import { primeiroContatoDaCampanha } from "@/lib/funil-automacao";
+import { inicioDoDiaSP, sortearVariante } from "@/lib/ritmo";
 import type {
   WhatsappInstanceRow, DispatchCampaignRow, CadenceStepRow, DispatchTargetRow,
-  MessageTemplateRow, OficialConnectionRequestRow, SheetWatcherRow, InstanceCanal, CampaignOrigem, Profile,
+  MessageTemplateRow, OficialConnectionRequestRow, SheetWatcherRow, InstanceCanal, CampaignOrigem, Profile, Variante,
 } from "@/lib/database.types";
 
 // CRUD do disparo WhatsApp — portado de modules/dispatch_db.py. Diferente
@@ -100,8 +101,7 @@ export async function contarEnviosHojeInstancia(sb: SupabaseClient, instanceId: 
   const idsCampanhas = (campanhas || []).map((c) => c.id as string);
   if (!idsCampanhas.length) return 0;
 
-  const inicioDoDia = new Date();
-  inicioDoDia.setHours(0, 0, 0, 0);
+  const inicioDoDia = inicioDoDiaSP();
 
   const { count } = await sb
     .from("dispatch_messages_log")
@@ -317,11 +317,14 @@ export async function deletarTemplateDb(sb: SupabaseClient, templateId: string) 
 export async function criarEtapa(
   sb: SupabaseClient,
   campaignId: string,
-  params: { ordem: number; atrasoHoras: number; corpoMensagem: string; midiaUrl?: string; templateId?: string; parametrosTemplate?: string[] },
+  params: {
+    ordem: number; atrasoHoras: number; corpoMensagem: string; corpoMensagemB?: string | null;
+    midiaUrl?: string; templateId?: string; parametrosTemplate?: string[];
+  },
 ) {
   const payload: Record<string, unknown> = {
     campaign_id: campaignId, ordem: params.ordem, atraso_horas: params.atrasoHoras,
-    corpo_mensagem: params.corpoMensagem, midia_url: params.midiaUrl || null,
+    corpo_mensagem: params.corpoMensagem, corpo_mensagem_b: params.corpoMensagemB?.trim() || null, midia_url: params.midiaUrl || null,
   };
   if (params.templateId) {
     payload.template_id = params.templateId;
@@ -334,6 +337,19 @@ export async function criarEtapa(
 export async function listarEtapas(sb: SupabaseClient, campaignId: string): Promise<CadenceStepRow[]> {
   const { data } = await sb.from("dispatch_cadence_steps").select("*").eq("campaign_id", campaignId).order("ordem");
   return (data as CadenceStepRow[]) || [];
+}
+
+/** Edita texto/atraso de uma etapa (inclusive a variante B do teste A/B). Campo B vazio desliga o teste na etapa. */
+export async function atualizarEtapa(
+  sb: SupabaseClient, stepId: string, params: { atrasoHoras?: number; corpoMensagem?: string; corpoMensagemB?: string | null },
+) {
+  const campos: Record<string, unknown> = {};
+  if (params.atrasoHoras !== undefined) campos.atraso_horas = params.atrasoHoras;
+  if (params.corpoMensagem !== undefined) campos.corpo_mensagem = params.corpoMensagem;
+  if (params.corpoMensagemB !== undefined) campos.corpo_mensagem_b = params.corpoMensagemB?.trim() || null;
+  if (!Object.keys(campos).length) return true;
+  const { data, error } = await sb.from("dispatch_cadence_steps").update(campos).eq("id", stepId).select("id");
+  return !error && Boolean(data?.length);
 }
 
 export async function deletarEtapa(sb: SupabaseClient, stepId: string) {
@@ -436,6 +452,7 @@ export async function enrollTargets(sb: SupabaseClient, campaignId: string, lead
       status: "pendente",
       current_step_id: null,
       proxima_etapa_em: proximaEm,
+      variante: sortearVariante(),
     });
   }
 
@@ -488,24 +505,27 @@ export async function marcarEnviado(
   etapas: CadenceStepRow[],
   evolutionMessageId: string,
   corpoEnviado: string,
+  variante: Variante = "A",
 ) {
   const prox = proximaEtapa(etapas, step.ordem);
   const agora = new Date();
+  // 1º toque marca primeiro_envio_em: é o que o limite de novos/dia conta.
+  const primeiroToque = target.current_step_id ? {} : { primeiro_envio_em: agora.toISOString() };
   if (prox) {
     const atraso = Number(prox.atraso_horas || 0) * 3_600_000;
     await sb.from("dispatch_targets").update({
-      status: "pendente", current_step_id: step.id,
+      status: "pendente", current_step_id: step.id, ...primeiroToque,
       proxima_etapa_em: new Date(agora.getTime() + atraso).toISOString(),
       atualizado_em: agora.toISOString(),
     }).eq("id", target.id).eq("status", "enviando");
   } else {
     await sb.from("dispatch_targets").update({
-      status: "concluido", current_step_id: step.id, atualizado_em: agora.toISOString(),
+      status: "concluido", current_step_id: step.id, ...primeiroToque, atualizado_em: agora.toISOString(),
     }).eq("id", target.id).eq("status", "enviando");
   }
 
   await sb.from("dispatch_messages_log").insert({
-    target_id: target.id, campaign_id: campaignId, step_id: step.id,
+    target_id: target.id, campaign_id: campaignId, step_id: step.id, variante,
     status: "sucesso", evolution_message_id: evolutionMessageId, corpo_enviado: corpoEnviado,
   });
 

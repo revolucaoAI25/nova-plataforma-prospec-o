@@ -88,7 +88,8 @@ export async function enviarConvite(accountId: string, providerId: string, nota?
 }
 
 /** Inicia um chat novo com o usuário (só funciona se já for 1º grau, sem InMail) — retorna o chat_id criado. */
-export async function criarChat(accountId: string, providerId: string, texto: string): Promise<{ chat_id: string }> {
+/** Resposta "ChatStarted": traz o chat e o id da 1ª mensagem (usado pra casar o evento de leitura). */
+export async function criarChat(accountId: string, providerId: string, texto: string): Promise<{ chat_id: string; message_id?: string }> {
   const form = new FormData();
   form.append("account_id", accountId);
   form.append("attendees_ids", providerId);

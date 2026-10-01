@@ -57,6 +57,7 @@ export const PLATFORM_SETTINGS_META: Record<
   onboarding_modelo_ia: { grupo: "IA do onboarding (OpenAI)", label: "Modelo (padrão gpt-5.6-luna)", envFallback: "ONBOARDING_MODELO_IA", secreto: false },
   creditos_conta_teste: { grupo: "Conta de teste", label: "Créditos concedidos a cada nova conta de teste", envFallback: "CREDITOS_CONTA_TESTE", secreto: false },
   resend_api_key: { grupo: "Resend (e-mail)", label: "API Key", envFallback: "RESEND_API_KEY", secreto: true },
+  resend_webhook_secret: { grupo: "Resend (e-mail)", label: "Signing secret do webhook (whsec_…)", envFallback: "RESEND_WEBHOOK_SECRET", secreto: true },
   unipile_dsn: { grupo: "Unipile (LinkedIn)", label: "DSN (URL do tenant)", envFallback: "UNIPILE_DSN", secreto: false },
   unipile_api_key: { grupo: "Unipile (LinkedIn)", label: "API Key", envFallback: "UNIPILE_API_KEY", secreto: true },
   unipile_webhook_secret: { grupo: "Unipile (LinkedIn)", label: "Segredo do webhook", envFallback: "UNIPILE_WEBHOOK_SECRET", secreto: true },
@@ -70,4 +71,5 @@ export const PLATFORM_SETTINGS_META: Record<
   evolution_api_key: { grupo: "Evolution API (WhatsApp)", label: "API Key", envFallback: "EVOLUTION_API_KEY", secreto: true },
   webhook_segredo: { grupo: "Evolution API (WhatsApp)", label: "Segredo do webhook de respostas (opcional)", envFallback: "WEBHOOK_SECRET", secreto: true },
   datafy_api_base_url: { grupo: "Datafy (WhatsApp — canal oficial)", label: "URL base", envFallback: "DATAFY_API_BASE_URL", secreto: false },
+  whatsapp_oficial_app_secret: { grupo: "Datafy (WhatsApp — canal oficial)", label: "App Secret da Meta (só se o webhook vier direto da Meta)", envFallback: "WHATSAPP_OFICIAL_APP_SECRET", secreto: true },
 };

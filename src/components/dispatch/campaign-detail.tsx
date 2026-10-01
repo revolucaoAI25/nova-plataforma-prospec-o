@@ -1,9 +1,10 @@
 "use client";
 
 import { DicaVariaveis } from "@/components/dispatch/dica-variaveis";
+import { RitmoEnvioCard, VarianteBEditor, EscreverCadenciaDialog, aplicarCadenciaEscrita } from "@/components/dispatch/ritmo-cadencia";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Trash2, Play, Pause, UserPlus, Sheet as SheetIcon, Activity, ListOrdered, Users } from "lucide-react";
+import { Plus, Trash2, Play, Pause, UserPlus, Sheet as SheetIcon, Activity, ListOrdered, Users, PenLine } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -185,6 +186,8 @@ export function CampaignDetail({
   const [corpoMensagem, setCorpoMensagem] = useState("");
   const [midiaUrl, setMidiaUrl] = useState("");
   const [addingStep, setAddingStep] = useState(false);
+  const [escrevendo, setEscrevendo] = useState(false);
+  const [erroEtapa, setErroEtapa] = useState<string | null>(null);
 
   const [searchId, setSearchId] = useState("");
   const [manualLista, setManualLista] = useState("");
@@ -250,9 +253,29 @@ export function CampaignDetail({
     }
   }
 
+  async function recarregarEtapas() {
+    const resp = await fetch(`/api/dispatch/campaigns/${campanha.id}`);
+    const data = await resp.json().catch(() => ({}));
+    if (data.etapas) setEtapas(data.etapas);
+  }
+
   async function removerEtapa(stepId: string) {
-    await fetch(`/api/dispatch/campaigns/${campanha.id}/steps/${stepId}`, { method: "DELETE" });
+    setErroEtapa(null);
+    const resp = await fetch(`/api/dispatch/campaigns/${campanha.id}/steps/${stepId}`, { method: "DELETE" });
+    if (!resp.ok) {
+      const data = await resp.json().catch(() => ({}));
+      setErroEtapa(data.error || "Não foi possível remover a etapa.");
+      return;
+    }
     setEtapas((prev) => prev.filter((e) => e.id !== stepId));
+  }
+
+  async function salvarCadenciaEscrita(novas: Parameters<typeof aplicarCadenciaEscrita>[2]) {
+    const erro = await aplicarCadenciaEscrita(`/api/dispatch/campaigns/${campanha.id}/steps`, etapas, novas, (e) => ({
+      atrasoHoras: e.atrasoHoras, corpoMensagem: e.texto, corpoMensagemB: e.textoB,
+    }));
+    await recarregarEtapas();
+    return erro;
   }
 
   async function inscrever() {
@@ -328,10 +351,26 @@ export function CampaignDetail({
         </CardContent>
       </Card>
 
+      <RitmoEnvioCard
+        endpoint={`/api/dispatch/campaigns/${campanha.id}`}
+        campanha={campanha}
+        pisoIntervaloSeg={5}
+        novosNaFila={targets.filter((t) => t.status === "pendente" && !t.current_step_id).length}
+        canalLabel="no mesmo número"
+        sugestaoLimite="Número novo ou aquecendo: 20 a 30. Número com uso diário há meses: até 60 a 80. Vazio = sem limite."
+      />
+
       <Card data-guia="mensagens_whatsapp">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base"><ListOrdered className="h-4 w-4 text-primary" /> Cadência de mensagens</CardTitle>
-          <CardDescription>Cada etapa dispara após o atraso configurado desde a etapa anterior (ou desde a inscrição, na 1ª).</CardDescription>
+        <CardHeader className="flex flex-wrap items-start justify-between gap-2">
+          <div>
+            <CardTitle className="flex items-center gap-2 text-base"><ListOrdered className="h-4 w-4 text-primary" /> Cadência de mensagens</CardTitle>
+            <CardDescription>Cada etapa dispara após o atraso configurado desde a etapa anterior (ou desde a inscrição, na 1ª).</CardDescription>
+          </div>
+          {!canalOficial && (
+            <Button type="button" variant="outline" size="sm" onClick={() => setEscrevendo(true)}>
+              <PenLine className="h-4 w-4" /> {etapas.length ? "Editar como texto" : "Escrever a cadência inteira"}
+            </Button>
+          )}
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
           {etapas.length === 0 && (
@@ -339,17 +378,37 @@ export function CampaignDetail({
           )}
           {etapas.map((e) => (
             <div key={e.id} className="flex items-start justify-between gap-3 rounded-xl border border-border p-3">
-              <div className="min-w-0">
+              <div className="flex min-w-0 flex-1 flex-col gap-1">
                 <p className="text-xs text-muted-foreground">
                   Etapa {e.ordem} · {e.atraso_horas}h de atraso {e.template_id && "· via template"}
                 </p>
                 <p className="whitespace-pre-wrap text-sm">{e.corpo_mensagem}</p>
+                {!e.template_id && (
+                  <VarianteBEditor
+                    endpoint={`/api/dispatch/campaigns/${campanha.id}/steps/${e.id}`}
+                    campos={[{ chave: "corpoMensagemB", rotulo: "Mensagem B", valor: e.corpo_mensagem_b, max: 4000 }]}
+                    canal="whatsapp"
+                    indice={e.ordem - 1}
+                  />
+                )}
               </div>
               <Button variant="ghost" size="icon" onClick={() => removerEtapa(e.id)} className="shrink-0">
                 <Trash2 className="h-4 w-4 text-destructive" />
               </Button>
             </div>
           ))}
+
+          {erroEtapa && (
+            <Alert variant="destructive" role="alert"><AlertDescription>{erroEtapa}</AlertDescription></Alert>
+          )}
+
+          <EscreverCadenciaDialog
+            canal="whatsapp"
+            aberto={escrevendo}
+            onOpenChange={setEscrevendo}
+            etapasExistentes={etapas.map((e) => ({ atrasoHoras: Number(e.atraso_horas), texto: e.corpo_mensagem, textoB: e.corpo_mensagem_b }))}
+            onCriar={salvarCadenciaEscrita}
+          />
 
           <form onSubmit={adicionarEtapa} className="flex flex-col gap-3 rounded-xl border border-dashed border-border p-3">
             <div className="flex flex-wrap items-center gap-2">

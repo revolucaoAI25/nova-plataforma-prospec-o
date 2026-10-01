@@ -23,6 +23,8 @@ const bodySchema = z.object({
   nota: z.string().max(300).optional(),
   corpo: z.string().optional(),
   templateId: z.string().uuid().optional(),
+  notaB: z.string().max(300).nullable().optional(),
+  corpoB: z.string().max(8000).nullable().optional(),
 }).refine((d) => (d.tipo === "convite" ? true : Boolean(d.corpo?.trim())), {
   message: "Etapa de mensagem exige corpo.",
   path: ["corpo"],

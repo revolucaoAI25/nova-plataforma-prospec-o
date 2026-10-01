@@ -205,6 +205,7 @@ export type PlatformSettingKey =
   | "openai_api_key_plataforma"
   | "onboarding_modelo_ia"
   | "resend_api_key"
+  | "resend_webhook_secret"
   | "unipile_dsn"
   | "unipile_api_key"
   | "unipile_webhook_secret"
@@ -217,7 +218,8 @@ export type PlatformSettingKey =
   | "evolution_api_url"
   | "evolution_api_key"
   | "webhook_segredo"
-  | "datafy_api_base_url";
+  | "datafy_api_base_url"
+  | "whatsapp_oficial_app_secret";
 
 export interface PlatformSettingRow {
   chave: PlatformSettingKey;
@@ -428,6 +430,8 @@ export interface WhatsappInstanceRow {
   criado_em: string;
 }
 
+export type Variante = "A" | "B";
+
 export type CampaignStatus = "rascunho" | "ativa" | "pausada" | "concluida";
 export type CampaignOrigem = "busca_existente" | "upload" | "manual" | "auto_trigger" | "sheet_watch";
 
@@ -445,6 +449,12 @@ export interface DispatchCampaignRow {
   ultimo_trigger_em: string | null;
   intervalo_min_seg: number;
   intervalo_max_seg: number;
+  /** Leads novos (1º toque) por dia; null = sem limite. Follow-up não conta. */
+  limite_novos_por_dia: number | null;
+  /** Janela de envio no fuso de São Paulo ("HH:MM:SS") e dias ISO (1 = segunda … 7 = domingo). */
+  janela_inicio: string | null;
+  janela_fim: string | null;
+  janela_dias: number[] | null;
   criado_em: string;
 }
 
@@ -454,6 +464,8 @@ export interface CadenceStepRow {
   ordem: number;
   atraso_horas: number;
   corpo_mensagem: string;
+  /** Texto da variante B (teste A/B); null = etapa sem teste. */
+  corpo_mensagem_b: string | null;
   midia_url: string | null;
   template_id: string | null;
   parametros_template: string[];
@@ -472,6 +484,10 @@ export interface DispatchTargetRow {
   current_step_id: string | null;
   proxima_etapa_em: string;
   reservado_em: string | null;
+  /** Quando recebeu o 1º toque da campanha (conta pro limite de novos/dia). */
+  primeiro_envio_em: string | null;
+  /** Variante do teste A/B sorteada na inscrição. */
+  variante: Variante;
   criado_em: string;
   atualizado_em: string;
 }
@@ -571,6 +587,12 @@ export interface EmailCampaignRow {
   ultimo_trigger_em: string | null;
   intervalo_min_seg: number;
   intervalo_max_seg: number;
+  /** Leads novos (1º toque) por dia; null = sem limite. Follow-up não conta. */
+  limite_novos_por_dia: number | null;
+  /** Janela de envio no fuso de São Paulo ("HH:MM:SS") e dias ISO (1 = segunda … 7 = domingo). */
+  janela_inicio: string | null;
+  janela_fim: string | null;
+  janela_dias: number[] | null;
   criado_em: string;
 }
 
@@ -590,6 +612,8 @@ export interface EmailCadenceStepRow {
   atraso_horas: number;
   assunto: string;
   corpo: string;
+  assunto_b: string | null;
+  corpo_b: string | null;
   template_id: string | null;
   criado_em: string;
 }
@@ -604,6 +628,10 @@ export interface EmailTargetRow {
   current_step_id: string | null;
   proxima_etapa_em: string;
   reservado_em: string | null;
+  /** Quando recebeu o 1º toque da campanha (conta pro limite de novos/dia). */
+  primeiro_envio_em: string | null;
+  /** Variante do teste A/B sorteada na inscrição. */
+  variante: Variante;
   criado_em: string;
   atualizado_em: string;
 }
@@ -619,6 +647,12 @@ export interface EmailMessageLogRow {
   erro_msg: string | null;
   assunto_enviado: string | null;
   corpo_enviado: string | null;
+  variante: Variante | null;
+  entregue_em: string | null;
+  lido_em: string | null;
+  clicado_em: string | null;
+  devolvido_em: string | null;
+  reclamacao_em: string | null;
 }
 
 export interface EmailSheetWatcherRow {
@@ -669,6 +703,12 @@ export interface LinkedinCampaignRow {
   ultimo_trigger_em: string | null;
   intervalo_min_seg: number;
   intervalo_max_seg: number;
+  /** Leads novos (1º toque) por dia; null = sem limite. Follow-up não conta. */
+  limite_novos_por_dia: number | null;
+  /** Janela de envio no fuso de São Paulo ("HH:MM:SS") e dias ISO (1 = segunda … 7 = domingo). */
+  janela_inicio: string | null;
+  janela_fim: string | null;
+  janela_dias: number[] | null;
   criado_em: string;
 }
 
@@ -690,6 +730,8 @@ export interface LinkedinCadenceStepRow {
   tipo: LinkedinStepTipo;
   nota: string | null;
   corpo: string | null;
+  nota_b: string | null;
+  corpo_b: string | null;
   template_id: string | null;
   criado_em: string;
 }
@@ -708,6 +750,10 @@ export interface LinkedinTargetRow {
   current_step_id: string | null;
   proxima_etapa_em: string;
   reservado_em: string | null;
+  /** Quando recebeu o 1º toque da campanha (conta pro limite de novos/dia). */
+  primeiro_envio_em: string | null;
+  /** Variante do teste A/B sorteada na inscrição. */
+  variante: Variante;
   criado_em: string;
   atualizado_em: string;
 }
@@ -723,6 +769,9 @@ export interface LinkedinMessageLogRow {
   provider_ref: string | null;
   erro_msg: string | null;
   corpo_enviado: string | null;
+  variante: Variante | null;
+  entregue_em: string | null;
+  lido_em: string | null;
 }
 
 export interface LinkedinSheetWatcherRow {
@@ -751,6 +800,7 @@ export type FlowNodeTipo =
   | "enriquecimento_maps"
   | "enriquecimento_bigdatacorp"
   | "filtro_leads"
+  | "limitar_lote"
   | "espera"
   | "disparo_whatsapp"
   | "disparo_email"

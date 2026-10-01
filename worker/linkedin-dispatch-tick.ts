@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { renderizarMensagem } from "../src/lib/mensagem";
+import { escolherVariante } from "../src/lib/ritmo";
 import {
   requeueTravadosLinkedin, listarContasConectadas, claimLinkedInTarget, obterCampanhaLinkedin,
   listarEtapasLinkedin, proximaEtapaLinkedin, marcarAguardandoAceite, marcarEnviadoLinkedin, marcarFalhaLinkedin,
@@ -86,23 +87,26 @@ async function processarConta(sb: SupabaseClient, conta: LinkedinAccountRow, log
     const lead = (target.lead_snapshot as Record<string, unknown>) || {};
     if (step.tipo === "convite") {
       // Nota de convite do LinkedIn aceita no máximo 300 caracteres.
-      const nota = renderizarMensagem(step.nota || "", lead).slice(0, 300);
+      const escolha = escolherVariante(target.variante, step.nota || "", step.nota_b);
+      const nota = renderizarMensagem(escolha.texto, lead).slice(0, 300);
       const resp = await enviarConvite(conta.unipile_account_id, providerId, nota || undefined);
-      await marcarAguardandoAceite(sb, target, target.campaign_id, step, resp.id || "");
+      await marcarAguardandoAceite(sb, target, target.campaign_id, step, resp.id || "", nota, escolha.variante);
       await liberarProximaAcaoConta(sb, conta.id, "convite", campanha.intervalo_min_seg, campanha.intervalo_max_seg);
     } else {
-      const corpo = renderizarMensagem(step.corpo || "", lead);
+      const escolha = escolherVariante(target.variante, step.corpo || "", step.corpo_b);
+      const corpo = renderizarMensagem(escolha.texto, lead);
       let chatId = target.chat_id;
       let providerRef = "";
       if (!chatId) {
         const chat = await criarChat(conta.unipile_account_id, providerId, corpo);
         chatId = chat.chat_id;
+        providerRef = chat.message_id || "";
         await atualizarTargetLinkedin(sb, target.id, { chat_id: chatId });
       } else {
         const resp = await enviarMensagemChat(chatId, corpo);
         providerRef = resp.id || "";
       }
-      await marcarEnviadoLinkedin(sb, target, target.campaign_id, step, etapas, providerRef, corpo);
+      await marcarEnviadoLinkedin(sb, target, target.campaign_id, step, etapas, providerRef, corpo, escolha.variante);
       await liberarProximaAcaoConta(sb, conta.id, "mensagem", campanha.intervalo_min_seg, campanha.intervalo_max_seg);
     }
   } catch (e) {

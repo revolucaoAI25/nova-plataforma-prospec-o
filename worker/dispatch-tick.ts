@@ -13,6 +13,7 @@ import { enviarTemplate as oficialEnviarTemplate } from "../src/lib/integrations
 import { lerValores } from "../src/lib/integrations/google-sheets";
 import { getProfile } from "../src/lib/credits";
 import { renderizarMensagem } from "../src/lib/mensagem";
+import { escolherVariante } from "../src/lib/ritmo";
 import type { CadenceStepRow, DispatchCampaignRow, DispatchTargetRow, WhatsappInstanceRow, GoogleSheetsCreds } from "../src/lib/database.types";
 
 
@@ -27,13 +28,15 @@ function etapaAtualOrdem(target: DispatchTargetRow, etapas: CadenceStepRow[]): n
 }
 
 async function enviarEtapaEvolution(instance: WhatsappInstanceRow, target: DispatchTargetRow, step: CadenceStepRow) {
-  const texto = renderizarMensagem(step.corpo_mensagem, target.lead_snapshot as Record<string, unknown>);
+  // Teste A/B: alvo sorteado em B recebe o texto B da etapa, quando houver.
+  const escolha = escolherVariante(target.variante, step.corpo_mensagem, step.corpo_mensagem_b);
+  const texto = renderizarMensagem(escolha.texto, target.lead_snapshot as Record<string, unknown>);
   // midia_url existe no banco desde a migration inicial mas nunca era lida
   // aqui — toda etapa saía como texto puro mesmo com uma mídia configurada.
   const resp = step.midia_url
     ? await evolutionEnviarMidia(instance.evolution_instance_name!, target.telefone, step.midia_url, texto)
     : await evolutionEnviarTexto(instance.evolution_instance_name!, target.telefone, texto);
-  return { msgId: resp?.key?.id || "", corpoLog: texto };
+  return { msgId: resp?.key?.id || "", corpoLog: texto, variante: escolha.variante };
 }
 
 async function enviarEtapaOficial(sb: SupabaseClient, instance: WhatsappInstanceRow, target: DispatchTargetRow, step: CadenceStepRow) {
@@ -51,7 +54,8 @@ async function enviarEtapaOficial(sb: SupabaseClient, instance: WhatsappInstance
     template.nome_meta!, template.idioma || "pt_BR", parametros,
   );
   const msgId = resp?.messages?.[0]?.id || "";
-  return { msgId, corpoLog: parametros.join(" | ") };
+  // Canal oficial envia template aprovado pela Meta: sem variante B.
+  return { msgId, corpoLog: parametros.join(" | "), variante: "A" as const };
 }
 
 async function processarInstancia(sb: SupabaseClient, instance: WhatsappInstanceRow, log: (msg: string) => void) {
@@ -88,10 +92,10 @@ async function processarInstancia(sb: SupabaseClient, instance: WhatsappInstance
   }
 
   try {
-    const { msgId, corpoLog } = instance.canal === "oficial"
+    const { msgId, corpoLog, variante } = instance.canal === "oficial"
       ? await enviarEtapaOficial(sb, instance, target, step)
       : await enviarEtapaEvolution(instance, target, step);
-    await marcarEnviado(sb, target, target.campaign_id, step, etapas, msgId, corpoLog);
+    await marcarEnviado(sb, target, target.campaign_id, step, etapas, msgId, corpoLog, variante);
   } catch (e) {
     log(`Falha ao enviar mensagem (target=${target.id}): ${(e as Error).message}`);
     await marcarFalha(sb, target, target.campaign_id, step, (e as Error).message);

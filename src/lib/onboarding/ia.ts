@@ -29,6 +29,13 @@ export const mensagensSchema = z.object({
   linkedinNota: z.string().nullable(),
   linkedinMensagens: z.array(etapaTextoSchema),
   roteiroDm: z.string().nullable(),
+  // Teste A/B que já nasce ligado: uma 2ª versão do 1º toque de cada canal
+  // (metade dos leads recebe cada uma). Null = sem teste naquele canal.
+  testeAB: z.object({
+    whatsappAbertura: z.string().nullable(),
+    emailAssunto: z.string().nullable(),
+    linkedinNota: z.string().nullable(),
+  }).nullable(),
 });
 export type MensagensPlano = z.infer<typeof mensagensSchema>;
 
