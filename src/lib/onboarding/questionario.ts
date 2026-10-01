@@ -282,7 +282,7 @@ export const ETAPAS_QUESTIONARIO: EtapaQuestionario[] = [
   {
     id: "volume",
     titulo: "Volume e capacidade do time",
-    descricao: "Não adianta gerar mais conversas do que o time consegue atender.",
+    descricao: "O limite do time é de respostas, não de envios: de uma base fria, só uma parte pequena dos contatos responde.",
     perguntas: [
       {
         id: "volumeMensal", label: "Quantos contatos novos por mês você quer abordar?", tipo: "opcao", obrigatoria: true,
@@ -297,6 +297,7 @@ export const ETAPAS_QUESTIONARIO: EtapaQuestionario[] = [
       { id: "vendedores", label: "Quantas pessoas atendem as respostas?", tipo: "numero", placeholder: "1" },
       {
         id: "capacidadeRespostas", label: "Quantas conversas novas o time aguenta por dia?", tipo: "opcao",
+        ajuda: "Conte só quem respondeu e virou conversa, não as mensagens enviadas. Com ~10% de resposta, 20 conversas por dia vêm de uns 200 contatos.",
         opcoes: [
           { valor: "ate_10", label: "Até 10" },
           { valor: "10_30", label: "10 a 30" },

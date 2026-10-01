@@ -209,8 +209,9 @@ function referenciasVolume(respostas: RespostasOnboarding, orc: ContextoOrcament
   const conversasDia: Record<string, number> = { ate_10: 10, "10_30": 20, "30_100": 60, acima_100: 150 };
   const capacidade = conversasDia[String(respostas.capacidadeRespostas ?? "")];
   if (capacidade) {
-    // ~12% de resposta no WhatsApp frio: conversas/dia × 22 dias ÷ 0,12.
-    linhas.push(`- O time atende ~${capacidade} conversas novas/dia: no WhatsApp isso comporta até ~${fmt(Math.round((capacidade * 22) / 0.12))} leads/mês antes de faltar gente pra responder.`);
+    // Base fria: ~10% de resposta. O time limita conversas, então o teto de
+    // CONTATOS é conversas ÷ taxa de resposta — bem maior que as conversas.
+    linhas.push(`- O time atende ~${capacidade} conversas novas/dia. Base fria responde ~10%, então isso comporta ~${fmt(capacidade * 10)} contatos novos/dia (~${fmt(capacidade * 10 * 22)}/mês) antes de faltar gente pra responder. Na prática, quem limita é o canal, não o time.`);
   }
   const porNumero: Record<string, number> = { conservador: 60, equilibrado: 120, agressivo: 200 };
   const msgsDia = porNumero[orc.tolerancia] ?? 120;
