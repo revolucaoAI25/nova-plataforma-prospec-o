@@ -135,7 +135,7 @@ export function Rodape() {
       <div className="mx-auto flex max-w-7xl flex-col items-start justify-between gap-6 px-4 text-sm text-lp-muted sm:flex-row sm:items-center sm:px-6">
         <div className="flex items-center gap-2.5">
           <Image src="/logo.png" alt="" width={26} height={26} className="h-[26px] w-[26px] rounded-full" />
-          <span>Prospecção Ativa · Revolução AI</span>
+          <span>Leadmatic · Revolução AI</span>
         </div>
         <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
           <a href={linkWhatsApp()} target="_blank" rel="noopener noreferrer" className="-my-2 py-2 transition-colors hover:text-lp-text">{whatsappExibicao()}</a>

@@ -76,7 +76,7 @@ export function MobileNav({
             <div className="flex h-16 items-center justify-between border-b border-border px-5">
               <div className="flex items-center gap-2.5">
                 <Logo />
-                <span className="font-bold tracking-tight">Revolução AI</span>
+                <span className="font-bold tracking-tight">Leadmatic</span>
               </div>
               <button
                 type="button"

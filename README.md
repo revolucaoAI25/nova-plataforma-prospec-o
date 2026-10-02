@@ -1,4 +1,4 @@
-# Prospecção Ativa — Nova Plataforma
+# Leadmatic — Nova Plataforma
 
 Reconstrução completa da plataforma de prospecção ativa em Next.js + TypeScript +
 Supabase, substituindo o produto atual em Streamlit (`prospec-o-ativa`). Este

@@ -11,8 +11,8 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: {
-    default: "Prospecção Ativa",
-    template: "%s · Prospecção Ativa",
+    default: "Leadmatic",
+    template: "%s · Leadmatic",
   },
   description: "Plataforma de prospecção ativa multicanal — extração de leads por CNPJ, Google Maps e Instagram.",
 };

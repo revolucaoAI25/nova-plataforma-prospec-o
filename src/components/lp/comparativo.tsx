@@ -6,7 +6,7 @@ import { Revela } from "./revela";
 type Valor = true | false | string;
 
 const COLUNAS = [
-  { nome: "Prospecção Ativa", exemplo: "esta plataforma" },
+  { nome: "Leadmatic", exemplo: "esta plataforma" },
   { nome: "Tráfego pago", exemplo: "Meta Ads, Google Ads" },
   { nome: "SDR contratado", exemplo: "pré-vendas interno" },
   { nome: "Base de dados", exemplo: "listas de CNPJ + planilha" },

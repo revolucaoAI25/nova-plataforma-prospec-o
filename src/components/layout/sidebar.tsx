@@ -76,7 +76,7 @@ export function Sidebar({
         )}
       >
         <Logo />
-        {!collapsed && <span className="truncate font-bold tracking-tight">Revolução AI</span>}
+        {!collapsed && <span className="truncate font-bold tracking-tight">Leadmatic</span>}
       </div>
 
       <SidebarNav sections={sections} collapsed={collapsed} />

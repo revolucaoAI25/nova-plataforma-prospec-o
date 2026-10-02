@@ -9,7 +9,7 @@ import { FONTES_LP } from "../conheca/fontes";
 import "../conheca/lp.css";
 
 export const metadata: Metadata = {
-  title: { absolute: "Teste grátis · Prospecção Ativa" },
+  title: { absolute: "Teste grátis · Leadmatic" },
   description: "Crie a sua conta e extraia empresas do seu público por CNPJ ou Google Maps, sem cartão.",
   robots: { index: false },
 };
@@ -28,7 +28,7 @@ export default async function TesteGratisPage() {
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
           <Link href="/conheca" className="flex items-center gap-2.5" aria-label="Voltar para a página da plataforma">
             <Image src="/logo.png" alt="" width={30} height={30} className="h-[30px] w-[30px] rounded-full" priority />
-            <span className="font-lp-display text-[15px] font-bold tracking-tight">Prospecção Ativa</span>
+            <span className="font-lp-display text-[15px] font-bold tracking-tight">Leadmatic</span>
           </Link>
           {!logado && (
             <Link href="/login" className="text-sm text-lp-muted transition-colors hover:text-lp-text">

@@ -9,7 +9,7 @@ import { BoasVindas } from "@/components/lp/boas-vindas";
 import { FONTES_LP } from "../conheca/fontes";
 import "../conheca/lp.css";
 
-export const metadata: Metadata = { title: { absolute: "Bem-vindo · Prospecção Ativa" }, robots: { index: false } };
+export const metadata: Metadata = { title: { absolute: "Bem-vindo · Leadmatic" }, robots: { index: false } };
 
 /**
  * Para onde a contratação pública (/assinar) leva depois de criar a conta:
@@ -46,7 +46,7 @@ export default async function BemVindoPage() {
       <header className="relative mx-auto flex h-16 w-full max-w-5xl items-center px-4 sm:px-6">
         <span className="flex items-center gap-2.5">
           <Image src="/logo.png" alt="" width={30} height={30} className="h-[30px] w-[30px] rounded-full" priority />
-          <span className="font-lp-display text-[15px] font-bold tracking-tight">Prospecção Ativa</span>
+          <span className="font-lp-display text-[15px] font-bold tracking-tight">Leadmatic</span>
         </span>
       </header>
       <main className="relative mx-auto flex w-full max-w-2xl flex-1 items-center px-4 py-10 sm:px-6">

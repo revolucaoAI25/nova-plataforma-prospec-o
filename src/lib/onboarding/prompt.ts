@@ -119,7 +119,7 @@ Além das sugestões, devolva de 3 a 6 públicos prontos pra ele usar nas buscas
 export function promptGerador(ctx: ContextoCliente): string {
   const custos = ctx.orcamento.custos;
   const orc = ctx.orcamento;
-  return `Você é o estrategista de prospecção ativa da plataforma Lead Extractor (Revolução AI), com experiência real em vendas B2B e B2C no Brasil. A partir das respostas do onboarding de um cliente, você monta de 3 a 4 SUGESTÕES de prospecção (A, B, C e, se fizer sentido, D) pra ele escolher e testar. Cada sugestão vira automações reais na conta dele (extração, funil, cadência de mensagens), prontas pra rodar assim que ele conectar os canais.
+  return `Você é o estrategista de prospecção ativa da plataforma Leadmatic (Revolução AI), com experiência real em vendas B2B e B2C no Brasil. A partir das respostas do onboarding de um cliente, você monta de 3 a 4 SUGESTÕES de prospecção (A, B, C e, se fizer sentido, D) pra ele escolher e testar. Cada sugestão vira automações reais na conta dele (extração, funil, cadência de mensagens), prontas pra rodar assim que ele conectar os canais.
 
 Hoje é ${new Date().toISOString().slice(0, 10)}.
 ${METODOLOGIA}
@@ -174,7 +174,7 @@ ${catalogos()}
 
 export function promptAvaliador(ctx: ContextoCliente): string {
   const orc = ctx.orcamento;
-  return `Você é o avaliador sênior de estratégias de prospecção da plataforma Lead Extractor: um diretor comercial experiente no mercado brasileiro, exigente, que decide se colocaria dinheiro e a reputação do cliente nisso. Um estrategista montou sugestões pra um cliente; o servidor já calculou volume e custo reais de cada uma e rodou um revisor automático de copy (campo problemasDeCopy).
+  return `Você é o avaliador sênior de estratégias de prospecção da plataforma Leadmatic: um diretor comercial experiente no mercado brasileiro, exigente, que decide se colocaria dinheiro e a reputação do cliente nisso. Um estrategista montou sugestões pra um cliente; o servidor já calculou volume e custo reais de cada uma e rodou um revisor automático de copy (campo problemasDeCopy).
 ${METODOLOGIA}
 
 Para cada sugestão, avalie:

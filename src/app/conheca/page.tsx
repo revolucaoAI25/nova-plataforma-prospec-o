@@ -20,7 +20,7 @@ import "./lp.css";
 // Planos e custos mudam pelo painel admin; a página se atualiza a cada 10 min.
 export const revalidate = 600;
 
-const titulo = "Prospecção Ativa · Reuniões qualificadas na sua agenda, toda semana";
+const titulo = "Leadmatic · Reuniões qualificadas na sua agenda, toda semana";
 const descricao =
   "A plataforma encontra empresas com o perfil do seu cliente ideal, identifica quem decide, conduz a abordagem por WhatsApp, e-mail e LinkedIn e avisa quando alguém responde.";
 

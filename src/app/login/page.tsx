@@ -76,7 +76,7 @@ function LoginForm() {
     <Card className="w-full max-w-sm backdrop-blur-sm">
       <CardHeader className="items-center text-center">
         <Logo size="lg" className="mb-2" />
-        <span className="eyebrow">Revolução AI</span>
+        <span className="eyebrow">Leadmatic · Revolução AI</span>
         <CardTitle className="text-2xl">Entrar</CardTitle>
         <CardDescription>Acesse sua conta de prospecção ativa.</CardDescription>
       </CardHeader>
