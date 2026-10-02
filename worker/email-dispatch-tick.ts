@@ -4,7 +4,7 @@ import {
   listarEtapasEmail, proximaEtapaEmail, marcarEnviadoEmail, marcarFalhaEmail, liberarProximoEnvioSender,
   listarCampanhasEmailSheetWatchAtivas, listarCampanhasEmailAutoTriggerAtivas, obterSheetWatcherEmail,
   atualizarSheetWatcherEmail, enrollEmailTargets, buscarLeadsFiltro, atualizarCampanhaEmail,
-  contarEnviosHojeSender, estaOptOutEmail, perfilComEmailDisparoHabilitado,
+  contarEnviosHojeSender, contarEnviosHojeUsuario, cotaEmailDiariaDoPlano, estaOptOutEmail, perfilComEmailDisparoHabilitado,
 } from "../src/lib/email-dispatch-db";
 import { enviarLoteEmails, textoParaHtml, type EmailEnvio } from "../src/lib/integrations/resend";
 import { lerValores } from "../src/lib/integrations/google-sheets";
@@ -42,6 +42,15 @@ async function processarCampanha(sb: SupabaseClient, campanha: EmailCampaignRow,
     // Não reivindica mais do que cabe no limite do dia (antes um lote de 20
     // podia estourar o limite em até 19 envios).
     tamanhoLote = Math.min(tamanhoLote, sender.limite_diario_envios - enviosHoje);
+  }
+
+  // Cota diária do plano, somando todos os remetentes da conta (é o número
+  // anunciado na página de planos).
+  const cotaPlano = await cotaEmailDiariaDoPlano(sb, campanha.user_id);
+  if (cotaPlano) {
+    const enviosHojeConta = await contarEnviosHojeUsuario(sb, campanha.user_id);
+    if (enviosHojeConta >= cotaPlano) return;
+    tamanhoLote = Math.min(tamanhoLote, cotaPlano - enviosHojeConta);
   }
 
   const targets = await claimEmailTargets(sb, campanha.id, tamanhoLote);

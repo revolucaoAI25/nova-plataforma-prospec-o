@@ -205,7 +205,10 @@ export function Checkout({
                     </span>
                     <span>
                       <span className="block font-lp-display text-base font-bold">{p.nome}</span>
-                      <span className="block text-[12px] text-lp-muted">{num(p.creditosMes)} créditos por mês</span>
+                      <span className="block text-[12px] text-lp-muted">
+                        {num(p.creditosMes)} créditos por mês
+                        {p.empresasMes !== null && ` · até ${num(p.empresasMes)} empresas`}
+                      </span>
                     </span>
                   </span>
                   <span className="lp-numero text-right text-sm font-semibold">

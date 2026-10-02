@@ -139,7 +139,8 @@ export function SendersPanel({ sendersIniciais, dominiosVerificados }: { senders
             </div>
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="sender-limite">Limite diário (opcional)</Label>
-              <Input id="sender-limite" type="number" min={1} value={limiteDiarioEnvios} onChange={(e) => setLimiteDiarioEnvios(e.target.value)} placeholder="Sem limite" />
+              <Input id="sender-limite" type="number" min={1} value={limiteDiarioEnvios} onChange={(e) => setLimiteDiarioEnvios(e.target.value)} placeholder="Cota do plano" />
+              <p className="text-xs text-muted-foreground">A cota diária do seu plano vale para a soma de todos os remetentes.</p>
             </div>
           </div>
           <Button type="submit" disabled={creating || dominiosVerificados.length === 0} className="self-start">

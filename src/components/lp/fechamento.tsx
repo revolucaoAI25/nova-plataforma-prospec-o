@@ -35,7 +35,7 @@ export const PERGUNTAS: [string, string][] = [
   ],
   [
     "Como funcionam os créditos?",
-    "Ações com custo operacional, como buscar uma empresa ou localizar o contato do decisor, consomem créditos do seu plano. O saldo é único para todas as funções e, se acabar antes da renovação, você pode adquirir um pacote avulso.",
+    "Ações com custo operacional, como buscar uma empresa ou localizar o contato do decisor, consomem créditos do seu plano. O saldo é único para todas as funções e, se acabar antes da renovação, você pode adquirir um pacote avulso. A busca por CNPJ é a fonte mais econômica; buscas no Google Maps e no LinkedIn consomem mais créditos por empresa.",
   ],
   [
     "Existe fidelidade?",

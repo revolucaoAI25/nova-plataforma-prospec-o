@@ -198,6 +198,33 @@ export async function contarEnviosHojeSender(sb: SupabaseClient, senderId: strin
   return count || 0;
 }
 
+/**
+ * Cota diária de e-mails da conta, vinda do plano (plans.email_limite_diario).
+ * Vale para a soma de todos os remetentes; o limite por remetente continua
+ * existindo por cima. null = sem plano ou plano sem cota definida.
+ */
+export async function cotaEmailDiariaDoPlano(sb: SupabaseClient, userId: string): Promise<number | null> {
+  const { data: perfil } = await sb.from("profiles").select("plano_id").eq("id", userId).maybeSingle();
+  if (!perfil?.plano_id) return null;
+  const { data: plano } = await sb.from("plans").select("email_limite_diario").eq("id", perfil.plano_id).maybeSingle();
+  return plano?.email_limite_diario ?? null;
+}
+
+/** E-mails enviados hoje (horário de Brasília) por todas as campanhas do usuário. */
+export async function contarEnviosHojeUsuario(sb: SupabaseClient, userId: string): Promise<number> {
+  const { data: campanhas } = await sb.from("email_campaigns").select("id").eq("user_id", userId);
+  const idsCampanhas = (campanhas || []).map((c) => c.id as string);
+  if (!idsCampanhas.length) return 0;
+
+  const { count } = await sb
+    .from("email_messages_log")
+    .select("id", { count: "exact", head: true })
+    .in("campaign_id", idsCampanhas)
+    .eq("status", "sucesso")
+    .gte("enviado_em", inicioDoDiaSP().toISOString());
+  return count || 0;
+}
+
 export async function deletarSender(sb: SupabaseClient, senderId: string) {
   const { error } = await sb.from("email_senders").delete().eq("id", senderId);
   return !error;

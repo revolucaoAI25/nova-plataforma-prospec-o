@@ -93,6 +93,12 @@ export function Planos({ planos }: { planos: PlanoLP[] }) {
                     </p>
                     <div className="mt-6 rounded-2xl border border-lp-line bg-lp-bg/50 px-4 py-3">
                       <p className="lp-numero font-lp-display text-lg font-bold text-lp-glow">{num(p.creditosMes)} créditos por mês</p>
+                      {p.empresasMes !== null && (
+                        <p className="mt-0.5 text-[13px] text-lp-muted">
+                          Até <span className="lp-numero font-semibold text-lp-text">{num(p.empresasMes)}</span> empresas extraídas por mês
+                          {p.fonteEmpresas && <span className="text-lp-muted-2"> na {p.fonteEmpresas}</span>}
+                        </p>
+                      )}
                     </div>
                     <ul className="mt-6 flex flex-1 flex-col gap-2.5">
                       {[...SEMPRE, ...p.recursos].map((r) => (
