@@ -95,9 +95,9 @@ indisponível/com erro amigável se faltar, o resto da plataforma funciona norma
 - `UNIPILE_DSN` / `UNIPILE_API_KEY` — disparo por LinkedIn. Além da chave,
   exige registrar dois webhooks manualmente (uma vez, no dashboard da
   Unipile ou via `criarWebhook()`) — ver comentário no `.env.example`.
-  `UNIPILE_WEBHOOK_SECRET` é obrigatório para os webhooks funcionarem:
-  protege esses endpoints públicos com um segredo na própria URL e, sem
-  ele, eles recusam tudo — ver "Decisões de arquitetura".
+  `UNIPILE_WEBHOOK_SECRET` (opcional) protege esses endpoints públicos com
+  um segredo na própria URL; em branco, os webhooks aceitam as chamadas sem
+  essa verificação — ver "Decisões de arquitetura".
 - `BIGDATACORP_TOKEN_ID` / `BIGDATACORP_ACCESS_TOKEN` — enriquecimento de
   leads por CNPJ (sócios/quadro societário + telefone/e-mail registrados),
   disponível em `/enriquecimento` → aba "Sócios e Contato", como extra
