@@ -16,7 +16,7 @@ export const metadata: Metadata = {
 
 export default async function AssinarPage({ searchParams }: { searchParams: Promise<{ plano?: string; ciclo?: string }> }) {
   const { plano, ciclo } = await searchParams;
-  const [{ planos, creditosPorLead }, sessao] = await Promise.all([
+  const [{ planos }, sessao] = await Promise.all([
     carregarPlanosPublicos(),
     createClient().then((sb) => sb.auth.getUser()).catch(() => null),
   ]);
@@ -54,7 +54,7 @@ export default async function AssinarPage({ searchParams }: { searchParams: Prom
             </Link>
           </div>
         ) : planos.length ? (
-          <Checkout planos={planos} creditosPorLead={creditosPorLead} planoInicial={plano ?? null} cicloInicial={ciclo === "anual" ? "anual" : "mensal"} />
+          <Checkout planos={planos} planoInicial={plano ?? null} cicloInicial={ciclo === "mensal" ? "mensal" : "anual"} />
         ) : (
           <div className="mx-auto max-w-lg rounded-[28px] border border-lp-line bg-lp-surface p-8 text-center">
             <h1 className="font-lp-display text-2xl font-bold tracking-tight">Contratação indisponível no momento</h1>

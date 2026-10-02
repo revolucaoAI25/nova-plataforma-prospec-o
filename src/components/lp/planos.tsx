@@ -9,10 +9,11 @@ import { Revela } from "./revela";
 
 const SEMPRE = ["Busca por CNPJ e Google Maps", "Estratégia criada por IA", "Funil, automações e cadências"];
 
-export function Planos({ planos, creditosPorLead }: { planos: PlanoLP[]; creditosPorLead: number }) {
+export function Planos({ planos }: { planos: PlanoLP[] }) {
   const sugerido = usePlanoSugerido();
   const temAnual = planos.some((p) => p.precoAnual);
-  const [ciclo, setCiclo] = useState<"mensal" | "anual">("mensal");
+  // O anual vem marcado por padrão quando algum plano tem preço anual.
+  const [ciclo, setCiclo] = useState<"mensal" | "anual">(temAnual ? "anual" : "mensal");
   // O plano do meio é o recomendado; com dois planos, o de cima.
   const recomendado = planos.length ? planos[Math.floor(planos.length / 2)].id : null;
 
@@ -92,7 +93,6 @@ export function Planos({ planos, creditosPorLead }: { planos: PlanoLP[]; credito
                     </p>
                     <div className="mt-6 rounded-2xl border border-lp-line bg-lp-bg/50 px-4 py-3">
                       <p className="lp-numero font-lp-display text-lg font-bold text-lp-glow">{num(p.creditosMes)} créditos por mês</p>
-                      <p className="text-[13px] text-lp-muted">aproximadamente {num(p.creditosMes / creditosPorLead)} novas empresas por mês</p>
                     </div>
                     <ul className="mt-6 flex flex-1 flex-col gap-2.5">
                       {[...SEMPRE, ...p.recursos].map((r) => (
@@ -105,7 +105,7 @@ export function Planos({ planos, creditosPorLead }: { planos: PlanoLP[]; credito
                     <a
                       href={linkAssinar(p.id, anual ? "anual" : "mensal")}
                       className={cn(
-                        "group mt-8 inline-flex h-12 items-center justify-center gap-2 rounded-full text-[15px] font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-lp-glow",
+                        "group mt-8 inline-flex h-12 shrink-0 items-center justify-center gap-2 rounded-full text-[15px] font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-lp-glow",
                         destaque ? "bg-lp-accent text-[#04140a] hover:bg-lp-glow" : "border border-lp-line-2 text-lp-text hover:border-lp-accent/60 hover:bg-white/[0.03]",
                       )}
                     >

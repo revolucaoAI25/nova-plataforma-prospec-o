@@ -40,10 +40,9 @@ const estiloInput =
   "h-12 w-full rounded-xl border border-lp-line-2 bg-lp-bg/60 px-4 text-[15px] text-lp-text outline-none transition-colors placeholder:text-lp-muted-2 focus:border-lp-accent/70 focus:bg-lp-bg";
 
 export function Checkout({
-  planos, creditosPorLead, planoInicial, cicloInicial,
+  planos, planoInicial, cicloInicial,
 }: {
   planos: PlanoLP[];
-  creditosPorLead: number;
   planoInicial: string | null;
   cicloInicial: "mensal" | "anual";
 }) {
@@ -222,9 +221,6 @@ export function Checkout({
               <span className="text-sm text-lp-muted">{anual ? "Total anual" : "Total mensal"}</span>
               <span className="lp-numero font-lp-display text-2xl font-extrabold">{brl(anual ? (plano.precoAnual as number) : plano.precoMes)}</span>
             </div>
-            <p className="mt-1 text-[12.5px] text-lp-muted-2">
-              Aproximadamente {num(plano.creditosMes / creditosPorLead)} novas empresas por mês.
-            </p>
             <ul className="mt-4 flex flex-col gap-2 border-t border-lp-line pt-4">
               {[...SEMPRE, ...plano.recursos].map((r) => (
                 <li key={r} className="flex items-start gap-2 text-[13.5px] text-lp-text/90">

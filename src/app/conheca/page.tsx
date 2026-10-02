@@ -55,7 +55,7 @@ export default async function ConhecaPage() {
         <Recursos />
         <Comparativo planos={planos} />
         <Clientes />
-        <Planos planos={planos} creditosPorLead={creditosPorLead} />
+        <Planos planos={planos} />
         <Duvidas />
         <ChamadaFinal />
       </main>

@@ -52,8 +52,8 @@ export type CanalLP = keyof typeof CANAIS;
 export const RESPOSTA_PARA_REUNIAO = [0.2, 0.35] as const;
 
 /** Página pública de contratação: cadastro + pagamento do plano escolhido. */
-export function linkAssinar(planoId: string, ciclo: "mensal" | "anual" = "mensal"): string {
+export function linkAssinar(planoId: string, ciclo: "mensal" | "anual" = "anual"): string {
   const q = new URLSearchParams({ plano: planoId });
-  if (ciclo === "anual") q.set("ciclo", "anual");
+  if (ciclo === "mensal") q.set("ciclo", "mensal");
   return `/assinar?${q.toString()}`;
 }

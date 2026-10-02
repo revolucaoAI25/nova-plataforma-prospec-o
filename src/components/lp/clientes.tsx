@@ -32,7 +32,7 @@ export function Clientes() {
       <Revela className="mx-auto max-w-3xl px-4 text-center sm:px-6">
         <p className="font-lp-mono text-[12px] uppercase tracking-[0.18em] text-lp-accent">Quem está por trás</p>
         <h2 id="clientes-titulo" className="mt-4 font-lp-display text-3xl font-extrabold leading-[1.05] tracking-[-0.03em] text-balance sm:text-5xl">
-          Mais de 120 empresas e profissionais{" "}
+          Centenas de empresas e profissionais{" "}
           <span className="font-lp-serif font-normal italic text-lp-glow">já confiaram na Revolução AI.</span>
         </h2>
         <p className="mx-auto mt-5 max-w-2xl text-[16px] leading-relaxed text-lp-muted">
