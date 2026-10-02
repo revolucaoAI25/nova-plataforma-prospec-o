@@ -173,7 +173,7 @@ export function Historia() {
                   ))}
                 </div>
                 <div className="relative min-h-0 flex-1">
-                  <div className="lp-aurora left-1/4 top-1/4 -z-10 h-[60%] w-[60%] opacity-30" aria-hidden="true" />
+                  <div className="lp-aurora left-1/4 top-1/4 -z-10 h-[60%] w-[60%] opacity-30 [--pico:0.25]" aria-hidden="true" />
                   {ATOS.map((a, i) => (
                     <div key={a.rotulo} className="lp-cena absolute inset-0" data-ativa={ativo === i} aria-hidden={ativo !== i}>
                       <a.Cena ativa={ativo === i} />

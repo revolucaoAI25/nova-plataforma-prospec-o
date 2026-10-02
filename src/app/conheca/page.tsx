@@ -13,9 +13,9 @@ import { Enriquecimento } from "@/components/lp/enriquecimento";
 import { Comparativo } from "@/components/lp/comparativo";
 import { Clientes } from "@/components/lp/clientes";
 import { ChamadaFinal, Duvidas, PERGUNTAS, Rodape } from "@/components/lp/fechamento";
+import { PausaForaDaTela } from "@/components/lp/pausa-fora-da-tela";
 import { FONTES_LP } from "./fontes";
 import "./lp.css";
-
 
 // Planos e custos mudam pelo painel admin; a página se atualiza a cada 10 min.
 export const revalidate = 600;
@@ -60,6 +60,7 @@ export default async function ConhecaPage() {
         <ChamadaFinal />
       </main>
       <Rodape />
+      <PausaForaDaTela />
     </div>
   );
 }

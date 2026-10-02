@@ -51,11 +51,11 @@ export function Cabecalho() {
         <Link href="/conheca" className="flex items-center gap-2.5" aria-label="Prospecção Ativa, início">
           <Image src="/logo.png" alt="" width={30} height={30} className="h-[30px] w-[30px] rounded-full" priority />
           <span className="leading-none">
-            <span className="block font-lp-display text-[15px] font-bold tracking-tight">Prospecção Ativa</span>
-            <span className="mt-0.5 block font-lp-mono text-[10px] uppercase tracking-[0.18em] text-lp-muted-2">por Revolução AI</span>
+            <span className="block whitespace-nowrap font-lp-display text-[15px] font-bold tracking-tight">Prospecção Ativa</span>
+            <span className="mt-0.5 block whitespace-nowrap font-lp-mono text-[10px] uppercase tracking-[0.18em] text-lp-muted-2">por Revolução AI</span>
           </span>
         </Link>
-        <nav className="hidden items-center gap-7 text-sm text-lp-muted md:flex" aria-label="Seções">
+        <nav className="hidden items-center gap-7 whitespace-nowrap text-sm text-lp-muted lg:flex" aria-label="Seções">
           {LINKS.map(([href, rotulo]) => (
             <a key={href} href={href} className="transition-colors hover:text-lp-text">{rotulo}</a>
           ))}
@@ -66,10 +66,11 @@ export function Cabecalho() {
           </Link>
           <a
             href="#planos"
-            className="group inline-flex items-center gap-1.5 rounded-full bg-lp-accent px-4 py-2 text-sm font-semibold text-[#04140a] transition-[background-color,box-shadow] hover:bg-lp-glow hover:shadow-[0_0_24px_rgba(0,200,83,0.5)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lp-glow"
+            className="group inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-lp-accent px-4 py-2 text-sm font-semibold text-[#04140a] transition-[background-color,box-shadow] hover:bg-lp-glow hover:shadow-[0_0_24px_rgba(0,200,83,0.5)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lp-glow"
           >
-            Começar agora
-            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+            {/* Em telas bem estreitas (abaixo de 360px) o rótulo encurta pra caber numa linha. */}
+            <span>Começar<span className="hidden min-[360px]:inline"> agora</span></span>
+            <ArrowRight className="hidden h-4 w-4 transition-transform group-hover:translate-x-0.5 min-[360px]:block" />
           </a>
         </div>
       </div>

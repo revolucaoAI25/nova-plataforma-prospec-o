@@ -37,7 +37,7 @@ function Campo({
 }
 
 const estiloInput =
-  "h-12 w-full rounded-xl border border-lp-line-2 bg-lp-bg/60 px-4 text-[15px] text-lp-text outline-none transition-colors placeholder:text-lp-muted-2 focus:border-lp-accent/70 focus:bg-lp-bg";
+  "h-12 w-full rounded-xl border border-lp-line-2 bg-lp-bg/60 px-4 text-base text-lp-text sm:text-[15px] outline-none transition-colors placeholder:text-lp-muted-2 focus:border-lp-accent/70 focus:bg-lp-bg";
 
 export function Checkout({
   planos, planoInicial, cicloInicial,

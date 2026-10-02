@@ -46,7 +46,7 @@ function Deslizante({ valor, min, max, passo, aoMudar, rotulo }: { valor: number
     <input
       type="range" min={min} max={max} step={passo} value={valor} aria-label={rotulo}
       onChange={(e) => aoMudar(Number(e.target.value))}
-      style={{ background: `linear-gradient(to right, #00c853 ${pct}%, rgba(255,255,255,0.08) ${pct}%)` }}
+      style={{ ["--pct" as string]: `${pct}%` }}
     />
   );
 }
@@ -146,7 +146,7 @@ export function Calculadora({ planos, creditosPorLead }: { planos: PlanoLP[]; cr
           </div>
 
           <div className="relative flex flex-col gap-6 overflow-hidden rounded-[28px] border border-lp-accent/30 bg-gradient-to-br from-[#0b2117] via-lp-surface to-lp-surface p-6 sm:p-8">
-            <div className="lp-aurora -right-24 -top-24 h-72 w-72 opacity-40" aria-hidden="true" />
+            <div className="lp-aurora -right-24 -top-24 h-72 w-72 opacity-40 [--pico:0.165]" aria-hidden="true" />
             <div className="relative" aria-live="polite">
               <p className="text-[15px] text-lp-muted">
                 {cliMax === 0 ? "Com esse volume, a estimativa ainda é de" : cliMin === cliMax ? "Com esses números, a estimativa é de cerca de" : cliMin === 0 ? "Com esses números, a estimativa é de até" : "Com esses números, a estimativa é de"}

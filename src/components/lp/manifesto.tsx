@@ -27,6 +27,7 @@ export function Manifesto() {
       return;
     }
     let quadro = 0;
+    const ultimos = palavras.map(() => -1);
     const atualizar = () => {
       quadro = 0;
       const r = el.getBoundingClientRect();
@@ -36,18 +37,37 @@ export function Manifesto() {
       const n = palavras.length;
       palavras.forEach((w, i) => {
         const local = Math.min(1, Math.max(0, p * (n + 6) - i));
+        // Só escreve no DOM quando a palavra muda de fato.
+        if (local === ultimos[i]) return;
+        ultimos[i] = local;
         w.style.opacity = String(0.14 + local * 0.86);
       });
     };
     const aoRolar = () => {
       if (!quadro) quadro = requestAnimationFrame(atualizar);
     };
+    // A rolagem só é acompanhada enquanto a seção está perto da tela.
+    let ouvindo = false;
+    const ligar = (sim: boolean) => {
+      if (sim === ouvindo) return;
+      ouvindo = sim;
+      if (sim) {
+        window.addEventListener("scroll", aoRolar, { passive: true });
+        window.addEventListener("resize", aoRolar);
+        aoRolar();
+      } else {
+        window.removeEventListener("scroll", aoRolar);
+        window.removeEventListener("resize", aoRolar);
+        // Garante o estado final certo (tudo apagado acima, tudo aceso abaixo).
+        atualizar();
+      }
+    };
+    const obs = new IntersectionObserver(([e]) => ligar(e.isIntersecting), { rootMargin: "25% 0px" });
+    obs.observe(el);
     atualizar();
-    window.addEventListener("scroll", aoRolar, { passive: true });
-    window.addEventListener("resize", aoRolar);
     return () => {
-      window.removeEventListener("scroll", aoRolar);
-      window.removeEventListener("resize", aoRolar);
+      obs.disconnect();
+      ligar(false);
       cancelAnimationFrame(quadro);
     };
   }, []);

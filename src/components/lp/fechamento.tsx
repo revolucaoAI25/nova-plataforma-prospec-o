@@ -115,7 +115,7 @@ export function ChamadaFinal() {
         </div>
         <p className="mt-6 text-sm text-lp-muted-2">
           Já é cliente?{" "}
-          <Link href="/login" className="text-lp-muted underline-offset-4 hover:text-lp-text hover:underline">Entrar na plataforma</Link>
+          <Link href="/login" className="-my-2 inline-block py-2 text-lp-muted underline-offset-4 hover:text-lp-text hover:underline">Entrar na plataforma</Link>
         </p>
       </Revela>
     </section>
@@ -131,9 +131,9 @@ export function Rodape() {
           <span>Prospecção Ativa · Revolução AI</span>
         </div>
         <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
-          <a href={linkWhatsApp()} target="_blank" rel="noopener noreferrer" className="transition-colors hover:text-lp-text">{whatsappExibicao()}</a>
-          <a href={`mailto:${EMAIL_CONTATO}`} className="transition-colors hover:text-lp-text">{EMAIL_CONTATO}</a>
-          <a href="https://revolucao-ai.com" target="_blank" rel="noopener noreferrer" className="transition-colors hover:text-lp-text">revolucao-ai.com</a>
+          <a href={linkWhatsApp()} target="_blank" rel="noopener noreferrer" className="-my-2 py-2 transition-colors hover:text-lp-text">{whatsappExibicao()}</a>
+          <a href={`mailto:${EMAIL_CONTATO}`} className="-my-2 py-2 transition-colors hover:text-lp-text">{EMAIL_CONTATO}</a>
+          <a href="https://revolucao-ai.com" target="_blank" rel="noopener noreferrer" className="-my-2 py-2 transition-colors hover:text-lp-text">revolucao-ai.com</a>
         </div>
       </div>
     </footer>

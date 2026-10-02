@@ -33,14 +33,39 @@
   mask-image: radial-gradient(ellipse 80% 60% at 50% 30%, #000 30%, transparent 75%);
 }
 
+/* Brilho verde de fundo. Antes era um círculo com filter: blur(90px), que o
+   navegador recalculava a cada quadro da animação (o maior custo da página).
+   O gradiente abaixo reproduz o perfil daquele desfoque, calculado
+   numericamente (gaussiana de 90px sobre o círculo original), então o visual
+   é o mesmo e a animação passa a ser só um transform na GPU. --pico é a
+   intensidade no centro, que no original dependia do tamanho do círculo
+   (cada instância menor define o seu). */
 .lp-aurora {
   position: absolute;
-  border-radius: 999px;
-  filter: blur(90px);
   opacity: 0.55;
-  background: radial-gradient(circle, rgba(0, 200, 83, 0.55), rgba(0, 200, 83, 0) 70%);
   animation: lp-deriva 18s ease-in-out infinite alternate;
   pointer-events: none;
+  will-change: transform;
+}
+
+.lp-aurora::before {
+  content: "";
+  position: absolute;
+  inset: -200px;
+  background: radial-gradient(
+    closest-side,
+    rgba(0, 200, 83, var(--pico, 0.31)) 0%,
+    rgba(0, 200, 83, calc(var(--pico, 0.31) * 0.95)) 10%,
+    rgba(0, 200, 83, calc(var(--pico, 0.31) * 0.82)) 20%,
+    rgba(0, 200, 83, calc(var(--pico, 0.31) * 0.63)) 30%,
+    rgba(0, 200, 83, calc(var(--pico, 0.31) * 0.45)) 40%,
+    rgba(0, 200, 83, calc(var(--pico, 0.31) * 0.27)) 50%,
+    rgba(0, 200, 83, calc(var(--pico, 0.31) * 0.13)) 60%,
+    rgba(0, 200, 83, calc(var(--pico, 0.31) * 0.064)) 70%,
+    rgba(0, 200, 83, calc(var(--pico, 0.31) * 0.022)) 80%,
+    rgba(0, 200, 83, calc(var(--pico, 0.31) * 0.007)) 90%,
+    rgba(0, 200, 83, 0) 100%
+  );
 }
 
 @keyframes lp-deriva {
@@ -68,6 +93,8 @@
 .lp-trilho {
   position: relative;
   height: 210px;
+  /* Referência de largura (cqw) pros leads andarem com transform. */
+  container-type: inline-size;
 }
 
 .lp-trilho-linha {
@@ -97,14 +124,14 @@
 .lp-lead {
   position: absolute;
   top: 50%;
-  left: 2%;
+  left: 0;
   opacity: 0;
   translate: -50% -50%;
   animation-duration: 9.6s;
   animation-timing-function: linear;
   animation-iteration-count: infinite;
   animation-fill-mode: both;
-  will-change: left, opacity, transform;
+  will-change: opacity, transform;
 }
 
 .lp-lead[data-fim="1"] { animation-name: lp-cai-1; }
@@ -115,41 +142,43 @@
 
 /* Cada lead percorre o trilho e "cai" na estação em que a qualificação
    o descarta (1 = sem contato útil … 4 = não respondeu). Os que chegam
-   na 5ª viram reunião. Posições: 4 / 26 / 48 / 70 / 92 %. */
+   na 5ª viram reunião. Posições: 4 / 26 / 48 / 70 / 92 %. O deslocamento
+   horizontal é um translateX em cqw (% da largura do trilho) em vez de
+   animar `left`, pra não recalcular layout a cada quadro. */
 @keyframes lp-cai-1 {
-  0% { left: 0%; opacity: 0; transform: translateY(var(--y)); }
+  0% { opacity: 0; transform: translateX(0cqw) translateY(var(--y)); }
   6% { opacity: 1; }
-  24% { left: 26%; opacity: 1; transform: translateY(var(--y)); }
-  34% { left: 27%; opacity: 0; transform: translateY(calc(var(--y) + 26px)) scale(0.9); }
-  100% { left: 27%; opacity: 0; }
+  24% { opacity: 1; transform: translateX(26cqw) translateY(var(--y)); }
+  34% { opacity: 0; transform: translateX(27cqw) translateY(calc(var(--y) + 26px)) scale(0.9); }
+  100% { opacity: 0; transform: translateX(27cqw); }
 }
 @keyframes lp-cai-2 {
-  0% { left: 0%; opacity: 0; transform: translateY(var(--y)); }
+  0% { opacity: 0; transform: translateX(0cqw) translateY(var(--y)); }
   6% { opacity: 1; }
-  46% { left: 48%; opacity: 1; transform: translateY(var(--y)); }
-  56% { left: 49%; opacity: 0; transform: translateY(calc(var(--y) + 26px)) scale(0.9); }
-  100% { left: 49%; opacity: 0; }
+  46% { opacity: 1; transform: translateX(48cqw) translateY(var(--y)); }
+  56% { opacity: 0; transform: translateX(49cqw) translateY(calc(var(--y) + 26px)) scale(0.9); }
+  100% { opacity: 0; transform: translateX(49cqw); }
 }
 @keyframes lp-cai-3 {
-  0% { left: 0%; opacity: 0; transform: translateY(var(--y)); }
+  0% { opacity: 0; transform: translateX(0cqw) translateY(var(--y)); }
   6% { opacity: 1; }
-  68% { left: 70%; opacity: 1; transform: translateY(var(--y)); }
-  78% { left: 71%; opacity: 0; transform: translateY(calc(var(--y) + 26px)) scale(0.9); }
-  100% { left: 71%; opacity: 0; }
+  68% { opacity: 1; transform: translateX(70cqw) translateY(var(--y)); }
+  78% { opacity: 0; transform: translateX(71cqw) translateY(calc(var(--y) + 26px)) scale(0.9); }
+  100% { opacity: 0; transform: translateX(71cqw); }
 }
 @keyframes lp-cai-4 {
-  0% { left: 0%; opacity: 0; transform: translateY(var(--y)); }
+  0% { opacity: 0; transform: translateX(0cqw) translateY(var(--y)); }
   6% { opacity: 1; }
-  80% { left: 84%; opacity: 1; transform: translateY(var(--y)); }
-  90% { left: 85%; opacity: 0; transform: translateY(calc(var(--y) + 26px)) scale(0.9); }
-  100% { left: 85%; opacity: 0; }
+  80% { opacity: 1; transform: translateX(84cqw) translateY(var(--y)); }
+  90% { opacity: 0; transform: translateX(85cqw) translateY(calc(var(--y) + 26px)) scale(0.9); }
+  100% { opacity: 0; transform: translateX(85cqw); }
 }
 @keyframes lp-chega {
-  0% { left: 0%; opacity: 0; transform: translateY(var(--y)); }
+  0% { opacity: 0; transform: translateX(0cqw) translateY(var(--y)); }
   6% { opacity: 1; }
-  86% { left: 92%; opacity: 1; transform: translateY(0) scale(1); }
-  92% { left: 92%; opacity: 1; transform: translateY(0) scale(1.18); }
-  100% { left: 92%; opacity: 0; transform: translateY(0) scale(1.4); }
+  86% { opacity: 1; transform: translateX(92cqw) translateY(0) scale(1); }
+  92% { opacity: 1; transform: translateX(92cqw) translateY(0) scale(1.18); }
+  100% { opacity: 0; transform: translateX(92cqw) translateY(0) scale(1.4); }
 }
 
 .lp-lead-pilula {
@@ -305,16 +334,34 @@
 .lp input[type="range"] {
   -webkit-appearance: none;
   appearance: none;
-  height: 6px;
-  border-radius: 999px;
+  /* A trilha visível tem 6px (desenhada no ::-*-track), mas o controle
+     ocupa 36px de altura pra facilitar o toque; a margem negativa devolve
+     o espaço, então o layout não muda. --pct vem do componente. */
+  height: 36px;
+  margin: -15px 0;
+  background: transparent;
   outline: none;
   cursor: pointer;
+  touch-action: manipulation;
+}
+
+.lp input[type="range"]::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 999px;
+  background: linear-gradient(to right, #00c853 var(--pct), rgba(255, 255, 255, 0.08) var(--pct));
+}
+
+.lp input[type="range"]::-moz-range-track {
+  height: 6px;
+  border-radius: 999px;
+  background: linear-gradient(to right, #00c853 var(--pct), rgba(255, 255, 255, 0.08) var(--pct));
 }
 
 .lp input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
   width: 22px;
   height: 22px;
+  margin-top: -8px;
   border-radius: 999px;
   background: #f2f5f3;
   border: 5px solid #00c853;
@@ -332,6 +379,15 @@
 
 .lp input[type="range"]:focus-visible::-webkit-slider-thumb {
   box-shadow: 0 0 0 8px rgba(93, 255, 160, 0.35);
+}
+
+/* Seções fora da tela ficam com as animações pausadas
+   (src/components/lp/pausa-fora-da-tela.tsx). */
+.lp [data-fora],
+.lp [data-fora] *,
+.lp [data-fora] *::before,
+.lp [data-fora] *::after {
+  animation-play-state: paused !important;
 }
 
 @media (prefers-reduced-motion: reduce) {

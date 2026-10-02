@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { ArrowDown, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { num } from "./dados";
-import { useMenosMovimento } from "./hooks";
+import { useMenosMovimento, useNaTela } from "./hooks";
 
 const LEADS: [string, 1 | 2 | 3 | 4 | 5, number][] = [
   ["Sorriso Pleno", 2, -46], ["Grupo Vértice", 1, 38], ["Contábil Horizonte", 3, -14], ["Studio Forma", 1, 58],
@@ -28,15 +28,17 @@ const LETREIRO = [
 
 function FluxoAoVivo() {
   const menos = useMenosMovimento();
+  // O contador só anda com o painel na tela; fora dela não há o que atualizar.
+  const [painel, naTela] = useNaTela<HTMLDivElement>();
   const [tique, setTique] = useState(0);
   useEffect(() => {
-    if (menos) return;
+    if (menos || !naTela) return;
     const id = setInterval(() => setTique((t) => t + 1), 900);
     return () => clearInterval(id);
-  }, [menos]);
+  }, [menos, naTela]);
 
   return (
-    <div className="relative overflow-hidden rounded-[28px] border border-lp-line bg-lp-surface/70 shadow-[0_40px_120px_-40px_rgba(0,200,83,0.35)] backdrop-blur">
+    <div ref={painel} className="relative overflow-hidden rounded-[28px] border border-lp-line bg-lp-surface/70 shadow-[0_40px_120px_-40px_rgba(0,200,83,0.35)]">
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-lp-line px-4 py-3 font-lp-mono text-[11px] uppercase tracking-[0.14em] text-lp-muted-2 sm:px-6">
         <span className="flex items-center gap-2">
           <span className="relative flex h-2 w-2">
@@ -101,7 +103,7 @@ export function Hero() {
     <section className="relative isolate overflow-hidden pt-28 sm:pt-36">
       <div className="lp-grid absolute inset-0 -z-10" aria-hidden="true" />
       <div className="lp-aurora -z-10 left-[10%] top-[-140px] h-[520px] w-[520px]" aria-hidden="true" />
-      <div className="lp-aurora -z-10 right-[-120px] top-[260px] h-[420px] w-[420px] [animation-delay:-7s]" aria-hidden="true" />
+      <div className="lp-aurora -z-10 right-[-120px] top-[260px] h-[420px] w-[420px] [--pico:0.26] [animation-delay:-7s]" aria-hidden="true" />
 
       <div className="mx-auto max-w-7xl px-4 sm:px-6">
         <div className="mx-auto max-w-5xl text-center">

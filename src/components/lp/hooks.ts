@@ -39,6 +39,20 @@ export function useVisto<T extends Element>(margem = "0px 0px -12% 0px") {
   return [ref, visto] as const;
 }
 
+/** true enquanto o elemento está na tela (ou perto dela). */
+export function useNaTela<T extends Element>(margem = "200px 0px") {
+  const ref = useRef<T>(null);
+  const [naTela, setNaTela] = useState(true);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(([e]) => setNaTela(e.isIntersecting), { rootMargin: margem });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [margem]);
+  return [ref, naTela] as const;
+}
+
 /**
  * Linha do tempo de uma cena: quando `ativa`, avança de 0 até
  * `tempos.length` (cada número é quanto esperar, em ms, antes do passo
