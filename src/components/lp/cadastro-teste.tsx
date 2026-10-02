@@ -12,6 +12,9 @@ const BLOQUEADOS = ["Estratégia de prospecção criada por IA", "Disparos por W
 
 export function CadastroTeste({ creditos }: { creditos: number }) {
   const router = useRouter();
+  // Sem créditos de teste (padrão), o teste serve para conhecer a plataforma;
+  // com créditos configurados no admin, também dá para extrair empresas.
+  const extrai = creditos > 0;
   const [form, setForm] = useState({ nome: "", email: "", telefone: "", empresa: "", senha: "", site: "" });
   const [verSenha, setVerSenha] = useState(false);
   const [enviando, setEnviando] = useState(false);
@@ -47,11 +50,13 @@ export function CadastroTeste({ creditos }: { creditos: number }) {
       <div>
         <p className="font-lp-mono text-[12px] uppercase tracking-[0.18em] text-lp-accent">Teste grátis</p>
         <h1 className="mt-3 font-lp-display text-4xl font-extrabold leading-[1.04] tracking-[-0.03em] sm:text-5xl">
-          Veja a qualidade dos contatos{" "}
+          {extrai ? "Veja a qualidade dos contatos" : "Conheça o Leadmatic por dentro"}{" "}
           <span className="font-lp-serif font-normal italic text-lp-glow">antes de assinar.</span>
         </h1>
         <p className="mt-4 max-w-xl text-[16px] leading-relaxed text-lp-muted">
-          Crie a sua conta e extraia empresas do seu público por CNPJ ou Google Maps. Sem cartão e sem compromisso.
+          {extrai
+            ? "Crie a sua conta e extraia empresas do seu público por CNPJ ou Google Maps. Sem cartão e sem compromisso."
+            : "Crie a sua conta e explore as buscas, os disparos, o funil e as automações. Sem cartão e sem compromisso."}
         </p>
 
         <form onSubmit={enviar} className="mt-8 flex flex-col gap-5 rounded-[28px] border border-lp-line bg-lp-surface p-6 sm:p-8">
@@ -122,20 +127,30 @@ export function CadastroTeste({ creditos }: { creditos: number }) {
 
       <aside>
         <div className="flex flex-col gap-5 rounded-[28px] border border-lp-accent/40 bg-gradient-to-b from-[#0c2318] to-lp-surface p-6 shadow-[0_30px_80px_-40px_rgba(0,200,83,0.6)] sm:p-7 lg:sticky lg:top-8">
-          <div>
-            <p className="font-lp-mono text-[11px] uppercase tracking-[0.16em] text-lp-muted">Incluído no teste</p>
-            <p className="mt-2 lp-numero font-lp-display text-3xl font-extrabold tracking-tight text-lp-glow">{num(creditos)} créditos</p>
-            <p className="mt-1 text-sm text-lp-muted">para extrair empresas do seu público e ver os contatos que a plataforma encontra.</p>
-          </div>
-          <ul className="flex flex-col gap-2.5 border-t border-lp-line pt-4">
-            <li className="flex items-start gap-2.5 text-[14px] text-lp-text/90"><Building2 className="mt-0.5 h-4 w-4 shrink-0 text-lp-accent" /> Busca de empresas por CNPJ</li>
-            <li className="flex items-start gap-2.5 text-[14px] text-lp-text/90"><MapPin className="mt-0.5 h-4 w-4 shrink-0 text-lp-accent" /> Busca de empresas no Google Maps</li>
-            <li className="flex items-start gap-2.5 text-[14px] text-lp-text/90"><Check className="mt-0.5 h-4 w-4 shrink-0 text-lp-accent" /> Histórico com os contatos extraídos</li>
-          </ul>
+          {extrai ? (
+            <>
+              <div>
+                <p className="font-lp-mono text-[11px] uppercase tracking-[0.16em] text-lp-muted">Incluído no teste</p>
+                <p className="mt-2 lp-numero font-lp-display text-3xl font-extrabold tracking-tight text-lp-glow">{num(creditos)} créditos</p>
+                <p className="mt-1 text-sm text-lp-muted">para extrair empresas do seu público e ver os contatos que a plataforma encontra.</p>
+              </div>
+              <ul className="flex flex-col gap-2.5 border-t border-lp-line pt-4">
+                <li className="flex items-start gap-2.5 text-[14px] text-lp-text/90"><Building2 className="mt-0.5 h-4 w-4 shrink-0 text-lp-accent" /> Busca de empresas por CNPJ</li>
+                <li className="flex items-start gap-2.5 text-[14px] text-lp-text/90"><MapPin className="mt-0.5 h-4 w-4 shrink-0 text-lp-accent" /> Busca de empresas no Google Maps</li>
+                <li className="flex items-start gap-2.5 text-[14px] text-lp-text/90"><Check className="mt-0.5 h-4 w-4 shrink-0 text-lp-accent" /> Histórico com os contatos extraídos</li>
+              </ul>
+            </>
+          ) : (
+            <div>
+              <p className="font-lp-mono text-[11px] uppercase tracking-[0.16em] text-lp-muted">Incluído no teste</p>
+              <p className="mt-2 font-lp-display text-2xl font-extrabold tracking-tight text-lp-glow">Acesso a todas as telas</p>
+              <p className="mt-1 text-sm text-lp-muted">Navegue pelas buscas, pelos disparos, pelo funil e pelas automações e veja como a prospecção funciona antes de contratar.</p>
+            </div>
+          )}
           <div className="border-t border-lp-line pt-4">
             <p className="font-lp-mono text-[11px] uppercase tracking-[0.16em] text-lp-muted-2">Liberado ao assinar</p>
             <ul className="mt-3 flex flex-col gap-2">
-              {BLOQUEADOS.map((r) => (
+              {(extrai ? BLOQUEADOS : ["Créditos para extrair empresas por CNPJ, Google Maps, Instagram e LinkedIn", ...BLOQUEADOS]).map((r) => (
                 <li key={r} className="flex items-start gap-2.5 text-[13.5px] text-lp-muted">
                   <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0 text-lp-muted-2" /> {r}
                 </li>

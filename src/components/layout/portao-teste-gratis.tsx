@@ -50,7 +50,7 @@ function caminhoDe(alvo: string): string | null {
  * O servidor recusa essas ações por conta própria (proxy e flags do perfil);
  * isto aqui é só para a experiência ser clara em vez de mostrar erros soltos.
  */
-export function PortaoTesteGratis({ children }: { children: React.ReactNode }) {
+export function PortaoTesteGratis({ children, creditos }: { children: React.ReactNode; creditos: number }) {
   const pathname = usePathname();
   const visualizacao = !paginaLiberadaNoTeste(pathname);
   const area = areaDe(pathname);
@@ -106,7 +106,7 @@ export function PortaoTesteGratis({ children }: { children: React.ReactNode }) {
   }, [visualizacao]);
 
   if (!visualizacao) return <>{children}</>;
-  if (area.convite) return <ConviteAssinatura area={area} />;
+  if (area.convite) return <ConviteAssinatura area={area} creditos={creditos} />;
 
   const Icone = area.icone;
   return (
@@ -138,7 +138,10 @@ export function PortaoTesteGratis({ children }: { children: React.ReactNode }) {
             </div>
             <DialogTitle>{area.titulo} é dos planos pagos</DialogTitle>
             <DialogDescription>
-              {area.descricao} No teste grátis você pode conhecer a tela, e a extração por CNPJ e Google Maps funciona de verdade. Ao assinar, tudo é liberado na hora.
+              {area.descricao}{" "}
+              {creditos > 0
+                ? "No teste grátis você pode conhecer a tela, e a extração por CNPJ e Google Maps funciona de verdade. Ao assinar, tudo é liberado na hora."
+                : "No teste grátis você conhece a tela; ao assinar, tudo é liberado na hora."}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -156,7 +159,7 @@ export function PortaoTesteGratis({ children }: { children: React.ReactNode }) {
 }
 
 /** Tela de convite para assinar, no lugar do conteúdo (áreas com `convite`). */
-function ConviteAssinatura({ area }: { area: (typeof AREAS)[number] }) {
+function ConviteAssinatura({ area, creditos }: { area: (typeof AREAS)[number]; creditos: number }) {
   const Icone = area.icone;
   return (
     <div className="mx-auto flex max-w-2xl flex-col gap-6 py-6 md:py-12">
@@ -176,7 +179,11 @@ function ConviteAssinatura({ area }: { area: (typeof AREAS)[number] }) {
             <p className="text-muted-foreground">{area.descricao}</p>
           </div>
           <p className="rounded-2xl border border-border bg-secondary/50 px-4 py-3 text-sm text-muted-foreground">
-            A sua conta é de <strong className="font-semibold text-foreground">teste grátis</strong>: dá para extrair empresas por CNPJ e Google Maps e ver os contatos no histórico. Ao assinar um plano, a plataforma inteira é liberada na hora.
+            A sua conta é de <strong className="font-semibold text-foreground">teste grátis</strong>:{" "}
+            {creditos > 0
+              ? "dá para extrair empresas por CNPJ e Google Maps e ver os contatos no histórico."
+              : "dá para navegar pelas telas e conhecer como a plataforma funciona."}{" "}
+            Ao assinar um plano, a plataforma inteira é liberada na hora.
           </p>
           <div className="flex flex-wrap gap-3">
             <Button asChild>

@@ -1323,8 +1323,11 @@ mas nada é processado — é só fila).
   `0034_teste_gratis.sql`):
   - *Cadastro público sem cartão*: nome, empresa, e-mail, WhatsApp e
     senha. A conta nasce com `teste_gratis = true`, nenhum recurso de plano
-    e poucos créditos (`creditos_teste_gratis` em Chaves da plataforma,
-    padrão 50). Um teste por e-mail e por WhatsApp, 3 cadastros por hora
+    e os créditos de `creditos_teste_gratis` (Chaves da plataforma, padrão
+    0: o teste serve para conhecer a plataforma; com créditos, também dá
+    para extrair por CNPJ e Maps). Os textos do cadastro, do painel e das
+    telas bloqueadas mudam conforme haja créditos ou não, e a busca sem
+    saldo no teste explica que a extração é liberada ao assinar. Um teste por e-mail e por WhatsApp, 3 cadastros por hora
     por IP e campo invisível contra robôs.
   - *O que libera*: busca por CNPJ e Google Maps, histórico, perfil e
     créditos. O resto aparece no menu com cadeado e abre em *modo de

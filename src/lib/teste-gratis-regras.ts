@@ -46,4 +46,4 @@ export function acaoBloqueadaNaVisualizacao(pathname: string, metodo: string): b
   return metodo.toUpperCase() !== "GET" || ACOES_VIA_GET.some((p) => casa(pathname, p));
 }
 
-export const MSG_TESTE_GRATIS = "Este recurso faz parte dos planos pagos. No teste grátis você pode extrair empresas por CNPJ e Google Maps.";
+export const MSG_TESTE_GRATIS = "Este recurso faz parte dos planos pagos e é liberado ao assinar.";

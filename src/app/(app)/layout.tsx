@@ -55,7 +55,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <div className="flex min-w-0 flex-1 flex-col transition-[padding-left] duration-200 md:pl-[var(--app-sidebar-w)]">
         <Topbar profile={profile} />
         <main className="min-w-0 flex-1 p-4 pb-[max(1rem,var(--guia-espaco,0px))] md:p-8 md:pb-[max(2rem,var(--guia-espaco,0px))]">
-          {testeGratis ? <PortaoTesteGratis>{children}</PortaoTesteGratis> : children}
+          {testeGratis ? <PortaoTesteGratis creditos={profile.creditos}>{children}</PortaoTesteGratis> : children}
         </main>
       </div>
       {/* O guia leva à estratégia por IA, que fica bloqueada no teste grátis. */}

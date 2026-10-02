@@ -69,12 +69,23 @@ export default async function DashboardPage() {
                 <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-accent px-2.5 py-1 text-xs font-semibold text-accent-foreground">
                   <Sparkles className="h-3.5 w-3.5" /> Teste grátis
                 </span>
-                <p className="text-lg font-semibold text-foreground">
-                  Você tem {profile?.creditos ?? 0} créditos para extrair empresas do seu público.
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  Faça uma busca por CNPJ ou no Google Maps e veja os contatos no histórico. Para abordar essas empresas com a estratégia por IA, os disparos e o funil, assine um plano.
-                </p>
+                {(profile?.creditos ?? 0) > 0 ? (
+                  <>
+                    <p className="text-lg font-semibold text-foreground">
+                      Você tem {profile?.creditos} créditos para extrair empresas do seu público.
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Faça uma busca por CNPJ ou no Google Maps e veja os contatos no histórico. Para abordar essas empresas com a estratégia por IA, os disparos e o funil, assine um plano.
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-lg font-semibold text-foreground">Conheça o Leadmatic por dentro.</p>
+                    <p className="text-sm text-muted-foreground">
+                      Navegue pelas buscas, pelos disparos, pelo funil e pelas automações para ver como a prospecção funciona. Ao assinar um plano, os créditos entram na sua conta e tudo é liberado na hora.
+                    </p>
+                  </>
+                )}
               </div>
               <div className="flex flex-wrap gap-2">
                 <Button asChild>

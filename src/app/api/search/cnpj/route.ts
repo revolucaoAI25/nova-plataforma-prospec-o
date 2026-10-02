@@ -15,6 +15,7 @@ import { autoExportarSheetsSeConfigurado } from "@/lib/auto-export";
 import { CODIGO_PARA_DESC } from "@/lib/data/cnaes";
 import { criarRunBigDataCorp, perfilComBigDataCorpEnrichmentHabilitado } from "@/lib/bigdatacorp-enrichment-db";
 import { bigDataCorpConfigurado } from "@/lib/integrations/bigdatacorp";
+import { emTesteGratis, MSG_TESTE_GRATIS_SEM_CREDITOS } from "@/lib/teste-gratis";
 
 const bodySchema = z.object({
   cnaes: z.array(z.string()),
@@ -78,7 +79,8 @@ export async function POST(request: Request) {
     (filtros.mapsModo !== "nao_usar" ? await custoAcao(supabase, "cnpj_maps_extra") : 0);
   const saldo = profile.creditos;
   if (saldo < custoCnpj) {
-    return NextResponse.json({ error: "Você não tem créditos suficientes. Adquira mais créditos pra continuar." }, { status: 402 });
+    const erro = emTesteGratis(profile) ? MSG_TESTE_GRATIS_SEM_CREDITOS : "Você não tem créditos suficientes. Adquira mais créditos pra continuar.";
+    return NextResponse.json({ error: erro }, { status: 402 });
   }
 
   let avisoSaldo: string | null = null;

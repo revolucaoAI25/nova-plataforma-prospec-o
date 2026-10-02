@@ -7,6 +7,7 @@ import { buscarApifyMaps } from "@/lib/integrations/apify-maps";
 import { NICHOS } from "@/lib/data/nichos";
 import { salvarPesquisa, salvarLeads, buscarIdentificadoresExistentes } from "@/lib/db";
 import { autoExportarSheetsSeConfigurado } from "@/lib/auto-export";
+import { emTesteGratis, MSG_TESTE_GRATIS_SEM_CREDITOS } from "@/lib/teste-gratis";
 
 const bodySchema = z.object({
   nicho: z.string().default(""),
@@ -47,6 +48,9 @@ export async function POST(request: Request) {
   const limite = filtros.limite;
   const custo = await custoAcao(supabase, "maps");
   const saldo = profile.creditos;
+  if (saldo < limite * custo && emTesteGratis(profile)) {
+    return NextResponse.json({ error: MSG_TESTE_GRATIS_SEM_CREDITOS }, { status: 402 });
+  }
   if (saldo < limite * custo) {
     return NextResponse.json(
       { error: `Créditos insuficientes. Você tem ${saldo} créditos e essa busca pode custar até ${limite * custo}. Reduza o limite ou adquira mais créditos.` },
