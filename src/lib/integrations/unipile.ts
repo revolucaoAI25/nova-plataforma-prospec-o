@@ -140,17 +140,17 @@ export async function criarWebhook(requestUrl: string, source: "account_status" 
  * endpoints públicos (`webhooks/unipile/account-status` e `.../relations`)
  * exigem um segredo compartilhado na própria URL (`?secret=...`), definido
  * em `UNIPILE_WEBHOOK_SECRET` e configurado nas duas URLs cadastradas no
- * dashboard da Unipile. Se a variável não estiver definida, a checagem é
- * pulada (comportamento antigo, sem segredo) — só loga um aviso; é o mesmo
- * padrão "opcional, funcionalidade correspondente indisponível/degradada
- * se faltar" das outras integrações do projeto, aqui aplicado à segurança
- * em vez de uma feature inteira.
+ * dashboard da Unipile. Sem a variável definida, os webhooks recusam tudo
+ * (o disparo por LinkedIn segue enviando, mas aceites e respostas só
+ * chegam pelo poll de reforço).
  */
 export async function webhookSegredoValido(request: Request): Promise<boolean> {
   const esperado = await configPlataforma("unipile_webhook_secret", process.env.UNIPILE_WEBHOOK_SECRET);
   if (!esperado) {
-    console.warn("[unipile webhook] UNIPILE_WEBHOOK_SECRET não configurado — endpoint aceitando requisições sem verificação de origem.");
-    return true;
+    // Sem segredo, recusa: estes webhooks marcam convites como aceitos e
+    // registram respostas, então não podem aceitar chamadas de qualquer um.
+    console.warn("[unipile webhook] UNIPILE_WEBHOOK_SECRET não configurado — recusando a requisição.");
+    return false;
   }
   // Aceita na URL (?secret=…) ou num cabeçalho customizado do webhook
   // (x-webhook-secret), pra quando o painel não deixa pôr parâmetro na URL.

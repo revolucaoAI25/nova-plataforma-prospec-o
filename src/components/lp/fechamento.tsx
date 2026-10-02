@@ -11,7 +11,7 @@ export const PERGUNTAS: [string, string][] = [
   ],
   [
     "Posso testar antes de assinar?",
-    "Sim. No teste grátis você cria a conta sem cartão e conhece o Leadmatic por dentro: as buscas, os disparos, o funil e as automações. E, ao assinar, você tem 7 dias de garantia: se a plataforma não fizer sentido para a sua empresa, devolvemos 100% do valor pago.",
+    "Sim. No teste grátis você cria a conta sem cartão, recebe créditos para extrair as primeiras empresas do seu público por CNPJ e Google Maps e conhece o resto do Leadmatic por dentro. E, ao assinar, você tem 7 dias de garantia: se a plataforma não fizer sentido para a sua empresa, devolvemos 100% do valor pago.",
   ],
   [
     "Preciso investir em tráfego pago também?",

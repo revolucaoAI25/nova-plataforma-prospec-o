@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { validarEmail, extrairDominio } from "@/lib/email";
 import { getProfile } from "@/lib/credits";
 import { chaveEmail } from "@/lib/contatos";
@@ -70,8 +71,12 @@ export class DominioJaRegistradoError extends Error {
  * verificado manualmente no dashboard antes desse fluxo existir) só
  * acontece na primeira vez que alguém registra aquele nome por aqui.
  */
-export async function criarDominioEmail(sb: SupabaseClient, userId: string, dominio: string): Promise<EmailDomainRow | null> {
+export async function criarDominioEmail(userId: string, dominio: string): Promise<EmailDomainRow | null> {
   const nomeNormalizado = dominio.trim().toLowerCase();
+  // Cliente admin: o usuário só lê os próprios domínios (o status
+  // "verified" não pode ser gravado por ele), e a checagem de dono precisa
+  // enxergar domínios de outras contas.
+  const sb = createAdminClient();
 
   const { data: existente } = await sb.from("email_domains").select("*").eq("dominio", nomeNormalizado).maybeSingle();
   if (existente) {
@@ -112,10 +117,13 @@ export async function verificarDominioEmail(sb: SupabaseClient, domainId: string
   await verificarDominioResend(dominio.resend_domain_id);
   const atualizado = await obterDominioResend(dominio.resend_domain_id);
 
-  const { data } = await sb
+  // `dominio` veio da sessão do usuário (RLS garante que é dele); a escrita
+  // do status é do servidor.
+  const { data } = await createAdminClient()
     .from("email_domains")
     .update({ status: mapearStatusResend(atualizado.status), records: atualizado.records, atualizado_em: new Date().toISOString() })
     .eq("id", domainId)
+    .eq("user_id", dominio.user_id)
     .select("*")
     .single();
   return (data as EmailDomainRow) || dominio;
@@ -130,7 +138,8 @@ export async function deletarDominioEmail(sb: SupabaseClient, domainId: string):
       // segue removendo do banco mesmo se a Resend já não tiver o domínio
     }
   }
-  const { error } = await sb.from("email_domains").delete().eq("id", domainId);
+  if (!dominio) return false;
+  const { error } = await createAdminClient().from("email_domains").delete().eq("id", domainId).eq("user_id", dominio.user_id);
   return !error;
 }
 

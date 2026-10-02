@@ -56,7 +56,7 @@ export const PLATFORM_SETTINGS_META: Record<
   openai_api_key_plataforma: { grupo: "IA do onboarding (OpenAI)", label: "API Key da plataforma", envFallback: "OPENAI_API_KEY", secreto: true },
   onboarding_modelo_ia: { grupo: "IA do onboarding (OpenAI)", label: "Modelo (padrão gpt-5.6-luna)", envFallback: "ONBOARDING_MODELO_IA", secreto: false },
   creditos_conta_teste: { grupo: "Conta de teste", label: "Créditos concedidos a cada nova conta de teste", envFallback: "CREDITOS_CONTA_TESTE", secreto: false },
-  creditos_teste_gratis: { grupo: "Teste grátis (cadastro público)", label: "Créditos de cada novo teste grátis (padrão 0)", envFallback: "CREDITOS_TESTE_GRATIS", secreto: false },
+  creditos_teste_gratis: { grupo: "Teste grátis (cadastro público)", label: "Créditos de cada novo teste grátis (padrão 100)", envFallback: "CREDITOS_TESTE_GRATIS", secreto: false },
   resend_api_key: { grupo: "Resend (e-mail)", label: "API Key", envFallback: "RESEND_API_KEY", secreto: true },
   resend_webhook_secret: { grupo: "Resend (e-mail)", label: "Signing secret do webhook (whsec_…)", envFallback: "RESEND_WEBHOOK_SECRET", secreto: true },
   unipile_dsn: { grupo: "Unipile (LinkedIn)", label: "DSN (URL do tenant)", envFallback: "UNIPILE_DSN", secreto: false },

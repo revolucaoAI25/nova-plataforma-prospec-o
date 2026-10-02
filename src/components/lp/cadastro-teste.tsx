@@ -12,8 +12,8 @@ const BLOQUEADOS = ["Estratégia de prospecção criada por IA", "Disparos por W
 
 export function CadastroTeste({ creditos }: { creditos: number }) {
   const router = useRouter();
-  // Sem créditos de teste (padrão), o teste serve para conhecer a plataforma;
-  // com créditos configurados no admin, também dá para extrair empresas.
+  // Com créditos de teste (padrão 100), o teste extrai empresas; se o admin
+  // zerar os créditos, o teste serve só para conhecer a plataforma.
   const extrai = creditos > 0;
   const [form, setForm] = useState({ nome: "", email: "", telefone: "", empresa: "", senha: "", site: "" });
   const [verSenha, setVerSenha] = useState(false);

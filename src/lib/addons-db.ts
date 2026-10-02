@@ -29,7 +29,6 @@ export async function listarAssinaturasAddonsDoUsuario(sb: SupabaseClient, userI
  * linha (user_id, addon_id) é reaproveitada em vez de duplicada.
  */
 export async function assinarAddon(
-  sb: SupabaseClient,
   profile: Profile,
   addon: AddonRow,
   cpfCnpj: string | null,
@@ -43,12 +42,15 @@ export async function assinarAddon(
     externalReference: `${profile.id}:${addon.id}`,
   });
 
-  await sb
+  // Cliente admin: o usuário só lê as próprias assinaturas de extras.
+  const { error } = await createAdminClient()
     .from("user_addon_subscriptions")
     .upsert(
       { user_id: profile.id, addon_id: addon.id, asaas_subscription_id: assinatura.id, status: "pendente", atualizado_em: new Date().toISOString() },
       { onConflict: "user_id,addon_id" },
     );
+  // Sem a assinatura gravada, o webhook não acharia o extra e o pagamento não o ativaria.
+  if (error) throw new Error("Não foi possível registrar a assinatura do extra.");
 
   const fatura = await obterPrimeiraFaturaAssinatura(assinatura.id);
   if (!fatura) throw new Error("Assinatura criada, mas a fatura ainda não foi gerada. Atualize a página em instantes.");
@@ -56,10 +58,10 @@ export async function assinarAddon(
 }
 
 /** Cancela no Asaas — mantém a linha (histórico), só marca cancelada e limpa o subscription_id, pra permitir assinar de novo depois sem colidir com o unique. NÃO revoga o feature_flag concedido (mesma cautela de cancelarPlano — revogar é ação manual do admin). */
-export async function cancelarAddon(sb: SupabaseClient, assinatura: UserAddonSubscriptionRow): Promise<void> {
+export async function cancelarAddon(assinatura: UserAddonSubscriptionRow): Promise<void> {
   if (!assinatura.asaas_subscription_id) return;
   await cancelarAssinatura(assinatura.asaas_subscription_id);
-  await sb
+  await createAdminClient()
     .from("user_addon_subscriptions")
     .update({ asaas_subscription_id: null, status: "cancelada" as AddonSubscriptionStatus, atualizado_em: new Date().toISOString() })
     .eq("id", assinatura.id);

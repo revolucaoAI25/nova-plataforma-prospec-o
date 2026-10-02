@@ -31,7 +31,7 @@ export async function POST(request: Request) {
   if (!parsed.success) return NextResponse.json({ error: "Dados inválidos.", detalhes: parsed.error.flatten() }, { status: 400 });
 
   try {
-    const domain = await criarDominioEmail(supabase, user.id, parsed.data.dominio);
+    const domain = await criarDominioEmail(user.id, parsed.data.dominio);
     if (!domain) return NextResponse.json({ error: "Erro ao registrar o domínio." }, { status: 500 });
     return NextResponse.json({ domain }, { status: 201 });
   } catch (e) {

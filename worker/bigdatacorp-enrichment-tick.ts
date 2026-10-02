@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { consultarEmpresaBigDataCorp, bigDataCorpConfigurado } from "../src/lib/integrations/bigdatacorp";
-import { debitarCreditos } from "../src/lib/credits";
+import { custoAcao, debitarCreditos } from "../src/lib/credits";
 
 /**
  * Processa execuções de Enriquecimento por CNPJ (BigDataCorp) pendentes —
@@ -52,6 +52,25 @@ export async function tickBigDataCorpEnrichment(sb: SupabaseClient, log: (msg: s
     return;
   }
 
+  // A execução pode ter sido criada pela tela, por um fluxo ou direto no
+  // banco: quem decide se roda é o perfil de agora (recurso liberado) e o
+  // saldo, conferido antes de cada consulta paga (o débito satura em 0 e,
+  // sozinho, não barraria nada).
+  const { data: perfil } = await sb
+    .from("profiles")
+    .select("bigdatacorp_enrichment_habilitado, role, creditos")
+    .eq("id", run.user_id)
+    .maybeSingle();
+  if (!perfil || (!perfil.bigdatacorp_enrichment_habilitado && perfil.role !== "admin")) {
+    await sb
+      .from("bigdatacorp_enrichment_runs")
+      .update({ status: "erro", erro: "O enriquecimento avançado não está liberado para esta conta.", concluido_em: new Date().toISOString() })
+      .eq("id", run.id);
+    return;
+  }
+  const custoPorConsulta = await custoAcao(sb, "bigdatacorp");
+  let saldo = Number(perfil.creditos) || 0;
+
   const { data: leadRows } = await sb
     .from("bigdatacorp_enrichment_leads")
     .select("*")
@@ -65,6 +84,12 @@ export async function tickBigDataCorpEnrichment(sb: SupabaseClient, log: (msg: s
   let erros = 0;
 
   for (const leadRow of leadRows ?? []) {
+    if (saldo < custoPorConsulta) {
+      await sb.from("bigdatacorp_enrichment_leads").update({ status: "erro", erro: "Créditos insuficientes." }).eq("id", leadRow.id);
+      processados += 1;
+      erros += 1;
+      continue;
+    }
     try {
       const resultado = await consultarEmpresaBigDataCorp(leadRow.cnpj_entrada);
       await sb
@@ -86,6 +111,7 @@ export async function tickBigDataCorpEnrichment(sb: SupabaseClient, log: (msg: s
       // encontra — a BigDataCorp cobra por chamada feita, não por match
       // (diferente da busca de leads, cobrada pelo que foi encontrado).
       await debitarCreditos(sb, run.user_id, "bigdatacorp", 1);
+      saldo -= custoPorConsulta;
     } catch (e) {
       await sb.from("bigdatacorp_enrichment_leads").update({ status: "erro", erro: (e as Error).message }).eq("id", leadRow.id);
       processados += 1;

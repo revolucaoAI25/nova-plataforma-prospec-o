@@ -52,13 +52,15 @@ export async function obterOuCriarClienteAsaas(profile: Profile, cpfCnpj: string
  * `asaas_customer_id`) — chamado já validou isso antes de chegar aqui.
  */
 export async function criarCompra(
-  sb: SupabaseClient,
   profile: Profile,
   pacote: CreditPackageRow,
   cpfCnpj: string | null,
 ): Promise<{ invoiceUrl: string }> {
   const customerId = await obterOuCriarClienteAsaas(profile, cpfCnpj || profile.cpf_cnpj || "");
 
+  // Cliente admin: o usuário só lê as próprias compras (não cria nem altera);
+  // quem grava é o servidor, com os valores do pacote, nunca vindos do navegador.
+  const sb = createAdminClient();
   const { data: compra, error } = await sb
     .from("credit_purchases")
     .insert({
@@ -80,10 +82,13 @@ export async function criarCompra(
     externalReference: compra.id,
   });
 
-  await sb
+  const { error: erroVinculo } = await sb
     .from("credit_purchases")
     .update({ asaas_payment_id: cobranca.id, invoice_url: cobranca.invoiceUrl })
     .eq("id", compra.id);
+  // Sem o id da cobrança gravado, o webhook não acharia a compra e o
+  // pagamento nunca viraria crédito.
+  if (erroVinculo) throw new Error("Não foi possível vincular a cobrança à compra.");
 
   return { invoiceUrl: cobranca.invoiceUrl };
 }
@@ -101,8 +106,23 @@ export async function criarCompra(
  * guarda de idempotência bloquearia reprocessar). Erro de verdade aqui
  * propaga (o handler do webhook responde 500, o Asaas reentrega).
  */
-export async function marcarCompraPaga(asaasPaymentId: string): Promise<boolean> {
+export async function marcarCompraPaga(
+  asaasPaymentId: string,
+  conferencia: { valorCentavos: number; referenciaExterna: string | null },
+): Promise<boolean> {
   const sbAdmin = createAdminClient();
+  // Só credita se a cobrança paga for exatamente a desta compra: mesma
+  // referência (o id da compra, enviado ao criar a cobrança) e mesmo valor.
+  const { data: compra } = await sbAdmin
+    .from("credit_purchases")
+    .select("id, preco_centavos")
+    .eq("asaas_payment_id", asaasPaymentId)
+    .maybeSingle();
+  if (!compra) return false;
+  if (compra.id !== conferencia.referenciaExterna || compra.preco_centavos !== conferencia.valorCentavos) {
+    console.error("[marcarCompraPaga] cobrança não confere com a compra; nada creditado", asaasPaymentId, compra.id);
+    return false;
+  }
   const { data: creditado, error } = await sbAdmin.rpc("marcar_compra_paga_e_creditar", { p_payment_id: asaasPaymentId });
   if (error) {
     console.error("[marcarCompraPaga] falha ao processar pagamento", asaasPaymentId, error);

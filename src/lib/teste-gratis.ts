@@ -7,14 +7,14 @@ export { emTesteGratis, paginaLiberadaNoTeste, MSG_TESTE_GRATIS } from "@/lib/te
  * Teste grátis do cadastro público (/teste-gratis). Não confundir com
  * `conta_teste` (conta de demonstração criada pelo admin, ver conta-teste.ts).
  *
- * A pessoa recebe os créditos configurados (padrão 0: o teste serve para
- * conhecer a plataforma; com créditos, também dá para extrair por CNPJ e
- * Google Maps). O resto da plataforma aparece no menu com cadeado e abre em modo
+ * A pessoa recebe os créditos configurados (padrão 100) para extrair
+ * empresas por CNPJ e Google Maps; com 0, o teste serve só para conhecer a
+ * plataforma. O resto da plataforma aparece no menu com cadeado e abre em modo
  * de visualização (dá para ver as telas, não para usar). O bloqueio acaba
  * sozinho quando a assinatura fica ativa.
  */
 
-const CREDITOS_PADRAO = 0;
+const CREDITOS_PADRAO = 100;
 
 export async function creditosTesteGratis(): Promise<number> {
   const valor = parseInt(await configPlataforma("creditos_teste_gratis", process.env.CREDITOS_TESTE_GRATIS), 10);

@@ -5,6 +5,7 @@ import {
   listarCampanhasEmailSheetWatchAtivas, listarCampanhasEmailAutoTriggerAtivas, obterSheetWatcherEmail,
   atualizarSheetWatcherEmail, enrollEmailTargets, buscarLeadsFiltro, atualizarCampanhaEmail,
   contarEnviosHojeSender, contarEnviosHojeUsuario, cotaEmailDiariaDoPlano, estaOptOutEmail, perfilComEmailDisparoHabilitado,
+  dominioVerificadoPeloUsuario,
 } from "../src/lib/email-dispatch-db";
 import { enviarLoteEmails, textoParaHtml, type EmailEnvio } from "../src/lib/integrations/resend";
 import { lerValores } from "../src/lib/integrations/google-sheets";
@@ -34,6 +35,14 @@ async function processarCampanha(sb: SupabaseClient, campanha: EmailCampaignRow,
   // Alvo pode ter sido inscrito antes de um admin revogar o flag do
   // usuário — reconfirma a cada tick, não só na inscrição.
   if (!(await perfilComEmailDisparoHabilitado(sb, campanha.user_id))) return;
+
+  // O remetente pode ter sido alterado fora da tela (direto no banco): só
+  // envia de domínio verificado pelo próprio dono da campanha, nunca com o
+  // domínio de outra conta da Resend compartilhada.
+  if (sender.user_id !== campanha.user_id || !(await dominioVerificadoPeloUsuario(sb, campanha.user_id, sender.from_email))) {
+    log(`Campanha de e-mail ${campanha.id}: remetente sem domínio verificado pelo dono; envio pausado.`);
+    return;
+  }
 
   let tamanhoLote = EMAIL_BATCH_SIZE;
   if (sender.limite_diario_envios) {

@@ -95,9 +95,9 @@ indisponível/com erro amigável se faltar, o resto da plataforma funciona norma
 - `UNIPILE_DSN` / `UNIPILE_API_KEY` — disparo por LinkedIn. Além da chave,
   exige registrar dois webhooks manualmente (uma vez, no dashboard da
   Unipile ou via `criarWebhook()`) — ver comentário no `.env.example`.
-  `UNIPILE_WEBHOOK_SECRET` (também opcional, mas recomendado) protege
-  esses dois endpoints públicos com um segredo na própria URL — ver
-  "Decisões de arquitetura".
+  `UNIPILE_WEBHOOK_SECRET` é obrigatório para os webhooks funcionarem:
+  protege esses endpoints públicos com um segredo na própria URL e, sem
+  ele, eles recusam tudo — ver "Decisões de arquitetura".
 - `BIGDATACORP_TOKEN_ID` / `BIGDATACORP_ACCESS_TOKEN` — enriquecimento de
   leads por CNPJ (sócios/quadro societário + telefone/e-mail registrados),
   disponível em `/enriquecimento` → aba "Sócios e Contato", como extra
@@ -131,6 +131,15 @@ Sem cadastro público, o primeiro usuário precisa ser criado direto no Supabase
 **Authentication → Users → Add user** (marque "Auto Confirm User"), depois em
 **Table Editor → profiles**, edite a linha criada pelo trigger e mude `role` para
 `admin`. A partir daí, esse admin cria os demais usuários por `/admin`.
+
+### Recuperação de senha
+
+A tela de login tem "Esqueci minha senha" (`/redefinir-senha`). O link
+enviado pelo Supabase volta por `/auth/confirmar`, então cadastre
+`{NEXT_PUBLIC_APP_URL}/auth/confirmar` em Authentication → URL
+Configuration → Redirect URLs. Para produção, configure um SMTP próprio
+em Authentication → Emails (o envio padrão do Supabase tem limite baixo
+por hora).
 
 ### 4. Rodar localmente
 
@@ -1324,8 +1333,8 @@ mas nada é processado — é só fila).
   - *Cadastro público sem cartão*: nome, empresa, e-mail, WhatsApp e
     senha. A conta nasce com `teste_gratis = true`, nenhum recurso de plano
     e os créditos de `creditos_teste_gratis` (Chaves da plataforma, padrão
-    0: o teste serve para conhecer a plataforma; com créditos, também dá
-    para extrair por CNPJ e Maps). Os textos do cadastro, do painel e das
+    100, para extrair por CNPJ e Maps; com 0, o teste serve só para
+    conhecer a plataforma). Os textos do cadastro, do painel e das
     telas bloqueadas mudam conforme haja créditos ou não, e a busca sem
     saldo no teste explica que a extração é liberada ao assinar. Um teste por e-mail e por WhatsApp, 3 cadastros por hora
     por IP e campo invisível contra robôs.

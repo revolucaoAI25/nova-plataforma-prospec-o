@@ -39,6 +39,23 @@ export const COLUNAS_PADRAO: Array<[keyof LeadRow, string]> = [
   ["fonte", "Fonte"],
 ];
 
+/**
+ * Célula de CSV segura: dados vêm de fontes externas (Maps, Instagram…) e
+ * um texto como "=HYPERLINK(…)" vira fórmula ao abrir no Excel. Prefixa
+ * com apóstrofo o que começa como fórmula, sem mexer em telefones e
+ * números (+55 11 9…, -10).
+ */
+function celulaCsv(valor: string): string {
+  const pareceFormula = /^[=@\t\r]/.test(valor) || (/^[+-]/.test(valor) && !/^[+-][\d\s().-]*$/.test(valor));
+  const v = (pareceFormula ? `'${valor}` : valor).replace(/"/g, '""');
+  return v.includes(",") || v.includes('"') || v.includes("\n") ? `"${v}"` : v;
+}
+
+/** Só vira link clicável na planilha o que for http(s). */
+function linkSeguro(valor: string): string | null {
+  return /^https?:\/\//i.test(valor) ? valor : null;
+}
+
 function cell(lead: LeadRow, col: keyof LeadRow): string {
   const v = lead[col];
   return v === null || v === undefined ? "" : String(v);
@@ -47,10 +64,7 @@ function cell(lead: LeadRow, col: keyof LeadRow): string {
 export function exportarCsv(leads: LeadRow[]): string {
   const linhas = [COLUNAS_PADRAO.map(([, label]) => label).join(",")];
   for (const lead of leads) {
-    const linha = COLUNAS_PADRAO.map(([col]) => {
-      const v = cell(lead, col).replace(/"/g, '""');
-      return v.includes(",") || v.includes('"') || v.includes("\n") ? `"${v}"` : v;
-    });
+    const linha = COLUNAS_PADRAO.map(([col]) => celulaCsv(cell(lead, col)));
     linhas.push(linha.join(","));
   }
   // BOM UTF-8 — evita acentos quebrados ao abrir no Excel
@@ -75,7 +89,7 @@ export async function exportarExcel(leads: LeadRow[]): Promise<Buffer> {
       });
     }
     for (const col of ["site", "maps_url"] as const) {
-      const value = cell(lead, col);
+      const value = linkSeguro(cell(lead, col));
       if (value) {
         const c = row.getCell(col);
         c.value = { text: value, hyperlink: value };
@@ -129,10 +143,7 @@ export function exportarEnrichmentCsv(leads: EnrichmentLeadRow[]): string {
   const cols = enriqColunas(leads);
   const linhas = [cols.map(([, label]) => label).join(",")];
   for (const lead of leads) {
-    const linha = cols.map(([col]) => {
-      const v = enriqValor(lead, col).replace(/"/g, '""');
-      return v.includes(",") || v.includes('"') || v.includes("\n") ? `"${v}"` : v;
-    });
+    const linha = cols.map(([col]) => celulaCsv(enriqValor(lead, col)));
     linhas.push(linha.join(","));
   }
   return "﻿" + linhas.join("\r\n");
@@ -157,7 +168,7 @@ export async function exportarEnrichmentExcel(leads: EnrichmentLeadRow[]): Promi
       });
     }
     for (const col of ["website", "linkedin_url"]) {
-      const value = enriqValor(lead, col);
+      const value = linkSeguro(enriqValor(lead, col));
       if (value) {
         const c = row.getCell(col);
         c.value = { text: value, hyperlink: value };

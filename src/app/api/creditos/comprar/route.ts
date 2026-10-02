@@ -41,7 +41,7 @@ export async function POST(request: Request) {
   if (!pacote) return NextResponse.json({ error: "Pacote não encontrado." }, { status: 404 });
 
   try {
-    const { invoiceUrl } = await criarCompra(supabase, profile, pacote, parsed.data.cpfCnpj || null);
+    const { invoiceUrl } = await criarCompra(profile, pacote, parsed.data.cpfCnpj || null);
     return NextResponse.json({ invoiceUrl });
   } catch (err) {
     console.error("[creditos/comprar]", err);

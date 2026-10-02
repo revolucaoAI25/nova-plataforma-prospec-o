@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, Suspense } from "react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -9,6 +10,9 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Logo } from "@/components/layout/logo";
+import { caminhoInterno } from "@/lib/caminho-interno";
+
+const MSG_PERFIL_AUSENTE = "Não encontramos os dados da sua conta. Fale com o suporte para regularizar o acesso.";
 
 function LoginForm() {
   const router = useRouter();
@@ -20,7 +24,7 @@ function LoginForm() {
     searchParams.get("expirado")
       ? "Sua sessão expirou porque o prazo da conta de teste terminou."
       : searchParams.get("perfil_ausente")
-        ? "Sua conta não tem um perfil configurado ainda. Veja em Table Editor → profiles no Supabase se existe uma linha com o mesmo id do seu usuário em Authentication → Users — se não existir, crie uma manualmente (ou peça pro administrador)."
+        ? MSG_PERFIL_AUSENTE
         : null,
   );
 
@@ -53,9 +57,7 @@ function LoginForm() {
       .single();
     if (!profile) {
       await supabase.auth.signOut();
-      setError(
-        "Sua conta não tem um perfil configurado ainda. Veja em Table Editor → profiles no Supabase se existe uma linha com o mesmo id do seu usuário em Authentication → Users — se não existir, crie uma manualmente (ou peça pro administrador).",
-      );
+      setError(MSG_PERFIL_AUSENTE);
       setLoading(false);
       return;
     }
@@ -67,8 +69,7 @@ function LoginForm() {
       return;
     }
 
-    const next = searchParams.get("next") || "/";
-    router.replace(next);
+    router.replace(caminhoInterno(searchParams.get("next")));
     router.refresh();
   }
 
@@ -99,7 +100,12 @@ function LoginForm() {
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="password">Senha</Label>
+            <div className="flex items-center justify-between gap-2">
+              <Label htmlFor="password">Senha</Label>
+              <Link href="/redefinir-senha" className="text-xs font-medium text-primary hover:underline">
+                Esqueci minha senha
+              </Link>
+            </div>
             <Input
               id="password"
               type="password"

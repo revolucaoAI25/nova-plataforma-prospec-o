@@ -16,7 +16,7 @@ export const metadata: Metadata = {
 
 export default async function TesteGratisPage() {
   const [creditos, sessao] = await Promise.all([
-    creditosTesteGratis().catch(() => 0),
+    creditosTesteGratis().catch(() => 100),
     createClient().then((sb) => sb.auth.getUser()).catch(() => null),
   ]);
   const logado = Boolean(sessao?.data.user);

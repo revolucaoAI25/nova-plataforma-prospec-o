@@ -54,7 +54,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ add
   if (!addon) return NextResponse.json({ error: "Add-on não encontrado." }, { status: 404 });
 
   try {
-    const { invoiceUrl } = await assinarAddon(supabase, profile, addon, parsed.data.cpfCnpj || null);
+    const { invoiceUrl } = await assinarAddon(profile, addon, parsed.data.cpfCnpj || null);
     return NextResponse.json({ invoiceUrl });
   } catch (err) {
     console.error("[addons POST]", err);
@@ -78,7 +78,7 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
   if (!assinatura) return NextResponse.json({ error: "Assinatura não encontrada." }, { status: 404 });
 
   try {
-    await cancelarAddon(supabase, assinatura);
+    await cancelarAddon(assinatura);
     return NextResponse.json({ ok: true });
   } catch (err) {
     console.error("[addons DELETE]", err);

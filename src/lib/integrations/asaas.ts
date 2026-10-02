@@ -163,6 +163,19 @@ export async function cancelarAssinatura(subscriptionId: string): Promise<void> 
 }
 
 /** A criação da assinatura não retorna a fatura da 1ª cobrança — precisa buscar separado pra redirecionar o cliente já no ato de assinar. */
+/** Cobrança como o Asaas a vê agora: usada pelo webhook para não confiar só no corpo recebido. */
+export interface AsaasCobrancaDetalhe {
+  id: string;
+  status: string;
+  value: number;
+  subscription?: string | null;
+  externalReference?: string | null;
+}
+
+export async function obterCobranca(paymentId: string): Promise<AsaasCobrancaDetalhe> {
+  return req<AsaasCobrancaDetalhe>(`/payments/${encodeURIComponent(paymentId)}`);
+}
+
 export async function obterPrimeiraFaturaAssinatura(subscriptionId: string): Promise<AsaasCobranca | null> {
   const lista = await req<{ data: AsaasCobranca[] }>(`/subscriptions/${subscriptionId}/payments`);
   return lista.data?.[0] ?? null;

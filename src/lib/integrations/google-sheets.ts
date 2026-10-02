@@ -144,6 +144,18 @@ async function garantirLinhas(
   }
 }
 
+/**
+ * A gravação usa USER_ENTERED (números e datas viram valores de verdade),
+ * então um texto vindo de fonte externa como "=IMPORTXML(…)" seria
+ * executado na planilha do cliente. O apóstrofo na frente faz o Sheets
+ * tratar como texto, sem mostrar o apóstrofo; telefones e números ficam
+ * como estão.
+ */
+function neutralizarFormula(valor: string): string {
+  const pareceFormula = /^[=@]/.test(valor) || (/^[+-]/.test(valor) && !/^[+-][\d\s().,-]*$/.test(valor));
+  return pareceFormula ? `'${valor}` : valor;
+}
+
 async function escreverPlanilha(
   creds: OAuthCreds,
   sheetId: string,
@@ -153,6 +165,7 @@ async function escreverPlanilha(
   linhas: string[][],
 ): Promise<{ ok: boolean; msg: string }> {
   if (!linhas.length) return { ok: false, msg: "Nenhum resultado para exportar." };
+  linhas = linhas.map((linha) => linha.map(neutralizarFormula));
 
   const auth = await credsClient(creds);
   const sheets = google.sheets({ version: "v4", auth });
