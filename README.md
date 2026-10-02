@@ -1219,6 +1219,25 @@ mas nada é processado — é só fila).
     rodapé dos e-mails e os webhooks do LinkedIn (rotas públicas fora de
     /api/webhooks) — nenhum dos dois funcionava.
 
+- **Página de vendas** (`/conheca`, pública): rota fora do app, com paleta
+  própria sempre escura (tokens `lp-*` em `globals.css`, efeitos em
+  `src/app/conheca/lp.css`) e fontes que só carregam ali. Componentes em
+  `src/components/lp/`: hero com o fluxo de leads animado, manifesto que
+  acende palavra por palavra na rolagem, a história em seis cenas (palco
+  fixo no desktop, cena embaixo de cada texto no celular), semana com/sem,
+  calculadora, recursos, planos, dúvidas e chamada final. As cenas são
+  telas simuladas do produto (dados fictícios, marcados como simulação).
+  A calculadora usa as mesmas faixas de resposta da estimativa do
+  onboarding (`estimativa.ts`) e escolhe o menor plano cujos créditos
+  cobrem o volume (custo por empresa = `cnpj` + `cnpj_maps_extra` de
+  `credit_costs`); a seção de planos destaca esse plano. Planos e custos
+  vêm do banco, com revalidação a cada 10 min; sem banco, a página mostra
+  o CTA de contato no lugar dos preços. Todos os botões levam ao WhatsApp
+  (`NEXT_PUBLIC_LP_WHATSAPP`) com mensagem pronta, a da calculadora com os
+  números simulados. Respeita `prefers-reduced-motion`. A regra global de
+  cor de borda (fora de camada, ganha das classes `border-*`) não se
+  aplica dentro de `.lp`.
+
 - **Dados do cliente** (`0033`): nome, telefone (guardado em E.164) e
   empresa no perfil. O admin preenche ao criar a conta (nome obrigatório) e
   edita em *Conta do usuário*; a tabela de usuários mostra nome, e-mail,

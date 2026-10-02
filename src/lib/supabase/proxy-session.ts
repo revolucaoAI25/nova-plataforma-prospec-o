@@ -6,12 +6,13 @@ import { NextResponse, type NextRequest } from "next/server";
 // = Edge no Next.js), que já tem WebSocket nativo e NÃO suporta os módulos
 // Node (net/tls) que o pacote `ws` usa — importá-lo aqui quebraria o build.
 
-// Além das páginas de login: rotas de API chamadas por quem NÃO tem sessão
-// — o link de descadastro no rodapé dos e-mails (destinatário do disparo) e
-// os webhooks do LinkedIn. Sem isso o proxy devolvia 307 pro /login e nada
+// Além das páginas de login e da página de vendas (/conheca): rotas de API
+// chamadas por quem NÃO tem sessão — o link de descadastro no rodapé dos
+// e-mails (destinatário do disparo) e os webhooks do LinkedIn. Sem isso o proxy devolvia 307 pro /login e nada
 // disso funcionava. Cada rota faz a própria verificação (token/segredo).
 // Os webhooks em /api/webhooks já ficam fora do matcher do proxy.
 const PUBLIC_PATHS = [
+  "/conheca",
   "/login",
   "/redefinir-senha",
   "/auth",

@@ -191,6 +191,25 @@
   --shadow-lg: var(--elevation-lg);
 
   --font-sans: var(--font-inter);
+
+  /* Página de vendas (/conheca) — paleta própria, sempre escura, que não
+     segue o ThemeToggle do app. As fontes extras só carregam nessa rota. */
+  --color-lp-bg: #050706;
+  --color-lp-bg-2: #08100c;
+  --color-lp-surface: #0d1310;
+  --color-lp-surface-2: #131b17;
+  --color-lp-line: rgba(255, 255, 255, 0.08);
+  --color-lp-line-2: rgba(255, 255, 255, 0.15);
+  --color-lp-text: #f2f5f3;
+  --color-lp-muted: #9aa69f;
+  --color-lp-muted-2: #66736c;
+  --color-lp-accent: #00c853;
+  --color-lp-glow: #5dffa0;
+  --color-lp-accent-soft: rgba(0, 200, 83, 0.12);
+  --color-lp-warn: #ff7a59;
+  --font-lp-display: var(--font-bricolage), var(--font-inter), sans-serif;
+  --font-lp-serif: var(--font-instrument), Georgia, serif;
+  --font-lp-mono: var(--font-geist-mono), ui-monospace, monospace;
 }
 
 html {
@@ -225,7 +244,9 @@ body {
   background-color: var(--muted-2);
 }
 
-* {
+/* Fora de camada, essa regra ganha das classes border-* do Tailwind — por
+   isso a página de vendas (.lp) fica de fora e define a própria em lp.css. */
+:where(*:not(.lp, .lp *)) {
   border-color: var(--border-subtle);
 }
 
