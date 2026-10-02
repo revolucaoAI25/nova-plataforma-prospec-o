@@ -71,10 +71,10 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // Teste grátis: APIs de recursos pagos sem flag própria no perfil
-  // (fluxos, funil, estratégia por IA, conexões). Só essas rotas pagam a
+  // Teste grátis: ações em recursos pagos sem flag própria no perfil
+  // (fluxos, funil, estratégia por IA, conexões). Só essas chamadas pagam a
   // consulta extra ao perfil.
-  if (user && apiBloqueadaNoTeste(pathname)) {
+  if (user && apiBloqueadaNoTeste(pathname, request.method)) {
     const { data: perfil } = await supabase
       .from("profiles")
       .select("teste_gratis, assinatura_status, role")

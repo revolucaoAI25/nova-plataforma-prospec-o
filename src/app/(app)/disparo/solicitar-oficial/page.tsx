@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getProfile } from "@/lib/credits";
 import { OficialRequestForm } from "@/components/dispatch/oficial-request-form";
 import { PageHeader } from "@/components/layout/page-header";
+import { emTesteGratis } from "@/lib/teste-gratis-regras";
 
 export const metadata = { title: "Solicitar canal oficial" };
 
@@ -11,7 +12,8 @@ export default async function SolicitarOficialPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
   const profile = await getProfile(supabase, user.id);
-  if (!profile || (!profile.disparo_habilitado && profile.role !== "admin")) redirect("/");
+  // No teste grátis a página abre em modo de visualização (PortaoTesteGratis).
+  if (!profile || (!profile.disparo_habilitado && profile.role !== "admin" && !emTesteGratis(profile))) redirect("/");
 
   return (
     <div className="flex max-w-lg flex-col gap-6">

@@ -10,6 +10,7 @@ import { TemplatesPanel } from "@/components/email-dispatch/templates-panel";
 import { ReportsPanel } from "@/components/email-dispatch/reports-panel";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { PageHeader } from "@/components/layout/page-header";
+import { emTesteGratis } from "@/lib/teste-gratis-regras";
 
 export const metadata = { title: "Disparo E-mail" };
 
@@ -19,7 +20,8 @@ export default async function DisparoEmailPage() {
   if (!user) redirect("/login");
 
   const profile = await getProfile(supabase, user.id);
-  if (!profile || (!profile.email_disparo_habilitado && profile.role !== "admin")) redirect("/");
+  // No teste grátis a página abre em modo de visualização (PortaoTesteGratis).
+  if (!profile || (!profile.email_disparo_habilitado && profile.role !== "admin" && !emTesteGratis(profile))) redirect("/");
 
   const [senders, campanhas, templates, dominios] = await Promise.all([
     listarSenders(supabase, user.id),

@@ -15,7 +15,7 @@ export default async function BuscaLinkedInPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
   const profile = await getProfile(supabase, user.id);
-  // No teste grátis a página aparece com o convite para assinar (PortaoTesteGratis).
+  // No teste grátis a página abre em modo de visualização (PortaoTesteGratis).
   if (!profile?.linkedin_visible && !emTesteGratis(profile)) redirect("/");
   const custos = await custosVisiveis(supabase, ["linkedin"]);
 

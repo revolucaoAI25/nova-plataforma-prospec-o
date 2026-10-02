@@ -1327,12 +1327,16 @@ mas nada é processado — é só fila).
     padrão 50). Um teste por e-mail e por WhatsApp, 3 cadastros por hora
     por IP e campo invisível contra robôs.
   - *O que libera*: busca por CNPJ e Google Maps, histórico, perfil e
-    créditos. O resto aparece no menu com cadeado e a página mostra o
-    convite para assinar (`PortaoTesteGratis`). Nas APIs, disparos,
-    enriquecimento e Instagram/LinkedIn já caem pelas flags do perfil
-    (desligadas); fluxos, funil, onboarding e integrações são recusados no
-    proxy, que só consulta o perfil nessas rotas. Créditos avulsos e
-    extras ficam fora: no teste só o plano faz sentido.
+    créditos. O resto aparece no menu com cadeado e abre em *modo de
+    visualização* (`PortaoTesteGratis`): a página real, com uma faixa no
+    topo; dá para navegar, trocar de aba e abrir formulários, mas qualquer
+    ação (chamada não-GET à API, ou o login com o Google) é barrada no
+    navegador antes de sair e abre o convite para assinar. O servidor
+    recusa por conta própria: disparos, enriquecimento e Instagram/LinkedIn
+    caem pelas flags do perfil (desligadas); fluxos, funil, onboarding e
+    integrações aceitam só leitura no teste, checado no proxy, que só
+    consulta o perfil nessas chamadas. Créditos avulsos e extras ficam
+    fora: no teste só o plano faz sentido.
   - *Fim do teste*: o webhook de pagamento desliga `teste_gratis` na 1ª
     cobrança confirmada (e `emTesteGratis` já ignora a coluna com a
     assinatura ativa). A coluna é protegida pelo trigger de 0028, então o

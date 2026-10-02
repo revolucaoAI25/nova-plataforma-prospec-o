@@ -29,7 +29,7 @@ export interface NavLeaf {
   href: string;
   label: string;
   icon: LucideIcon;
-  /** Teste grátis: aparece com cadeado e a página mostra o convite para assinar. */
+  /** Teste grátis: aparece com cadeado e a página abre em modo de visualização. */
   bloqueado?: boolean;
 }
 

@@ -21,7 +21,7 @@ export default async function EnriquecimentoPage() {
   const profile = await getProfile(supabase, user.id);
   const podeIa = Boolean(profile && (profile.enriquecimento_ia_habilitado || profile.role === "admin"));
   const podeBigDataCorp = Boolean(profile && (profile.bigdatacorp_enrichment_habilitado || profile.role === "admin"));
-  // No teste grátis a página aparece com o convite para assinar (PortaoTesteGratis).
+  // No teste grátis a página abre em modo de visualização (PortaoTesteGratis).
   if (!profile || (!podeIa && !podeBigDataCorp && !emTesteGratis(profile))) redirect("/");
   const bigDataCorpDisponivel = await bigDataCorpConfigurado();
 

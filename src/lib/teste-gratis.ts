@@ -8,8 +8,9 @@ export { emTesteGratis, paginaLiberadaNoTeste, MSG_TESTE_GRATIS } from "@/lib/te
  * `conta_teste` (conta de demonstração criada pelo admin, ver conta-teste.ts).
  *
  * A pessoa recebe poucos créditos e só extrai empresas por CNPJ e Google
- * Maps. O resto da plataforma aparece no menu com cadeado e leva para os
- * planos. O bloqueio acaba sozinho quando a assinatura fica ativa.
+ * Maps. O resto da plataforma aparece no menu com cadeado e abre em modo
+ * de visualização (dá para ver as telas, não para usar). O bloqueio acaba
+ * sozinho quando a assinatura fica ativa.
  */
 
 const CREDITOS_PADRAO = 50;

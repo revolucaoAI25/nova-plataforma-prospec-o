@@ -11,6 +11,7 @@ import { ReportsPanel } from "@/components/dispatch/reports-panel";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { PageHeader } from "@/components/layout/page-header";
+import { emTesteGratis } from "@/lib/teste-gratis-regras";
 
 export const metadata = { title: "Disparo WhatsApp" };
 
@@ -20,7 +21,8 @@ export default async function DisparoPage() {
   if (!user) redirect("/login");
 
   const profile = await getProfile(supabase, user.id);
-  if (!profile || (!profile.disparo_habilitado && profile.role !== "admin")) redirect("/");
+  // No teste grátis a página abre em modo de visualização (PortaoTesteGratis).
+  if (!profile || (!profile.disparo_habilitado && profile.role !== "admin" && !emTesteGratis(profile))) redirect("/");
 
   const [instancias, campanhas, templates] = await Promise.all([
     listarInstancias(supabase, user.id),
