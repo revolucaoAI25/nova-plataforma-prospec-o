@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 
 /**
- * Marca da Revolução AI. Espera um arquivo em `/public/logo.png` — até esse
+ * Marca do Revolução AI. Espera um arquivo em `/public/logo.png` — até esse
  * arquivo existir, mostra o monograma "R". A checagem roda via um objeto
  * Image() à parte antes de montar o <img> de verdade, então nunca aparece
  * o ícone de imagem quebrada (nem por um instante) enquanto o arquivo não

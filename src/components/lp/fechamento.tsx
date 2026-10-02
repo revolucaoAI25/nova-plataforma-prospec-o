@@ -22,8 +22,8 @@ export const PERGUNTAS: [string, string][] = [
     "Não. Você responde ao questionário, escolhe uma das estratégias criadas pela IA e conecta o seu WhatsApp pelo QR Code. A partir daí, basta revisar as mensagens, se quiser, e ativar a campanha.",
   ],
   [
-    "A plataforma é indicada para o meu negócio?",
-    "Ela funciona melhor para empresas que vendem para outras empresas ou para negócios locais: softwares, serviços, agências, consultorias, distribuidores, escritórios e fornecedores. Para vendas em massa ao consumidor final, provavelmente não é a ferramenta mais adequada.",
+    "O Leadmatic é indicado para o meu negócio?",
+    "Ele funciona melhor para empresas que vendem para outras empresas ou para negócios locais: softwares, serviços, agências, consultorias, distribuidores, escritórios e fornecedores. Para vendas em massa ao consumidor final, provavelmente não é a ferramenta mais adequada.",
   ],
   [
     "Existe risco de bloqueio do WhatsApp?",

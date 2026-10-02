@@ -7,7 +7,7 @@ const FRASES: { texto: string; destaque?: boolean }[] = [
   { texto: "O difícil é manter a constância." },
   { texto: "Montar listas, encontrar o decisor, escrever, lembrar do follow-up, registrar quem respondeu." },
   { texto: "Na correria da semana, a prospecção é sempre a primeira a ficar para depois." },
-  { texto: "Com a plataforma, ela acontece todos os dias.", destaque: true },
+  { texto: "Com o Leadmatic, ela acontece todos os dias.", destaque: true },
 ];
 
 /**

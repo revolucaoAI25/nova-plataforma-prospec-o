@@ -10,7 +10,7 @@ import "../conheca/lp.css";
 
 export const metadata: Metadata = {
   title: { absolute: "Assinar · Leadmatic" },
-  description: "Crie a sua conta, conclua o pagamento e comece a prospectar com a plataforma.",
+  description: "Crie a sua conta, conclua o pagamento e comece a prospectar com o Leadmatic.",
   robots: { index: false },
 };
 

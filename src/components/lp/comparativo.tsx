@@ -79,7 +79,7 @@ export function Comparativo({ planos }: { planos: PlanoLP[] }) {
             <span className="font-lp-serif font-normal italic text-lp-glow">às outras formas de gerar clientes.</span>
           </h2>
           <p className="mt-5 max-w-2xl text-[17px] leading-relaxed text-lp-muted">
-            Cada alternativa resolve uma parte do problema. A plataforma reúne, em um só lugar, a lista qualificada, o decisor, a
+            Cada alternativa resolve uma parte do problema. O Leadmatic reúne, em um só lugar, a lista qualificada, o decisor, a
             abordagem e o acompanhamento.
           </p>
         </Revela>
@@ -88,7 +88,7 @@ export function Comparativo({ planos }: { planos: PlanoLP[] }) {
           <p className="mb-3 font-lp-mono text-[11px] uppercase tracking-[0.12em] text-lp-muted-2 lg:hidden">Deslize a tabela para comparar →</p>
           <div className="overflow-x-auto rounded-[28px] border border-lp-line bg-lp-surface">
             <table className="w-full min-w-[920px] border-collapse text-left">
-              <caption className="sr-only">Comparativo entre a plataforma e outras formas de gerar clientes</caption>
+              <caption className="sr-only">Comparativo entre o Leadmatic e outras formas de gerar clientes</caption>
               <thead>
                 <tr className="border-b border-lp-line">
                   <th scope="col" className="sticky left-0 z-10 w-[26%] bg-lp-surface px-5 py-5" />

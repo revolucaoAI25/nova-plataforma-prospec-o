@@ -119,7 +119,7 @@ export function Hero() {
             </span>
           </h1>
           <p className="lp-entra mx-auto mt-7 max-w-2xl text-[17px] leading-relaxed text-lp-muted sm:text-lg [animation-delay:160ms]">
-            A plataforma encontra leads qualificados com o perfil do seu cliente ideal, identifica e enriquece o contato de quem decide,
+            O Leadmatic encontra leads qualificados com o perfil do seu cliente ideal, identifica e enriquece o contato de quem decide,
             conduz a abordagem com uma sequência de mensagens e avisa quando alguém responde. Você entra na conversa quando ela já está aquecida.
           </p>
           <div className="lp-entra mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row [animation-delay:240ms]">

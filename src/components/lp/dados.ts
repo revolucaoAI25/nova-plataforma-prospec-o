@@ -5,7 +5,7 @@
 export const WHATSAPP_NUMERO = (process.env.NEXT_PUBLIC_LP_WHATSAPP || "553131573153").replace(/\D/g, "");
 export const EMAIL_CONTATO = "contato@revolucao-ai.com";
 
-export function linkWhatsApp(texto = "Olá! Conheci a plataforma de prospecção pela página e gostaria de entender se ela atende o meu negócio."): string {
+export function linkWhatsApp(texto = "Olá! Conheci o Leadmatic pela página e gostaria de entender se ele atende o meu negócio."): string {
   return `https://wa.me/${WHATSAPP_NUMERO}?text=${encodeURIComponent(texto)}`;
 }
 

@@ -61,7 +61,7 @@ export function SemTrafego() {
                   <Crosshair className="h-5 w-5" />
                 </span>
                 <div>
-                  <h3 className="font-lp-display text-xl font-bold tracking-tight">Prospecção ativa com a plataforma</h3>
+                  <h3 className="font-lp-display text-xl font-bold tracking-tight">Prospecção ativa com o Leadmatic</h3>
                   <p className="text-[13px] text-lp-glow">Quem decide é você</p>
                 </div>
               </div>

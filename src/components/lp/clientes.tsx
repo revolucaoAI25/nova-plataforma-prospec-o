@@ -1,7 +1,7 @@
 import Image from "next/image";
 import { Revela } from "./revela";
 
-// Mesmas imagens da vitrine do site da Revolução AI (src/components/ui/ClientLogos.tsx no repositório do site).
+// Mesmas imagens da vitrine do site do Revolução AI (src/components/ui/ClientLogos.tsx no repositório do site).
 const LOGOS = [
   { nome: "Governo de Minas Gerais", src: "/lp/clientes/minas-gerais.png", w: 1280, h: 270 },
   { nome: "Casoca", src: "/lp/clientes/casoca.png", w: 554, h: 554 },
@@ -33,15 +33,15 @@ export function Clientes() {
         <p className="font-lp-mono text-[12px] uppercase tracking-[0.18em] text-lp-accent">Quem está por trás</p>
         <h2 id="clientes-titulo" className="mt-4 font-lp-display text-3xl font-extrabold leading-[1.05] tracking-[-0.03em] text-balance sm:text-5xl">
           Centenas de empresas e profissionais{" "}
-          <span className="font-lp-serif font-normal italic text-lp-glow">já confiaram na Revolução AI.</span>
+          <span className="font-lp-serif font-normal italic text-lp-glow">já confiaram no Revolução AI.</span>
         </h2>
         <p className="mx-auto mt-5 max-w-2xl text-[16px] leading-relaxed text-lp-muted">
-          A plataforma foi criada pela Revolução AI, que implementa automação comercial e inteligência artificial em negócios de
+          O Leadmatic foi criado pelo Revolução AI, que implementa automação comercial e inteligência artificial em negócios de
           portes muito diferentes, de franquias a escritórios de advocacia e clínicas.
         </p>
       </Revela>
 
-      <div className="mt-12 flex flex-col gap-4" aria-label="Clientes atendidos pela Revolução AI">
+      <div className="mt-12 flex flex-col gap-4" aria-label="Clientes atendidos pelo Revolução AI">
         <div className="lp-letreiro">
           <div className="lp-letreiro-faixa gap-4 pr-4" style={{ animationDuration: "48s" }}>
             {[...LOGOS, ...LOGOS].map((c, i) => {

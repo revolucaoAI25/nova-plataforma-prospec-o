@@ -1232,7 +1232,7 @@ mas nada é processado — é só fila).
   quadro societário, contato do decisor, validação no Maps, pesquisa com IA e
   perguntas personalizadas), o comparativo por tipo de solução
   (`comparativo.tsx`: tráfego pago, SDR, base de dados, ferramentas
-  internacionais, sem números de concorrentes) e a vitrine de clientes da
+  internacionais, sem números de concorrentes) e a vitrine de clientes do
   Revolução AI (`clientes.tsx`, imagens em `public/lp/clientes`, as mesmas do
   site). As cenas são telas simuladas do
   produto (dados fictícios, marcados como simulação). A simulação usa as

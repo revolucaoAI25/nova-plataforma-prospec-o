@@ -17,7 +17,7 @@ export function Semana() {
           <p className="font-lp-mono text-[12px] uppercase tracking-[0.18em] text-lp-accent">A diferença na prática</p>
           <h2 className="mt-4 font-lp-display text-4xl font-extrabold leading-[1.02] tracking-[-0.03em] text-balance sm:text-6xl">
             A mesma semana,{" "}
-            <span className="font-lp-serif font-normal italic text-lp-glow">com e sem a plataforma.</span>
+            <span className="font-lp-serif font-normal italic text-lp-glow">com e sem o Leadmatic.</span>
           </h2>
         </Revela>
 
@@ -25,7 +25,7 @@ export function Semana() {
           <div className="hidden grid-cols-[88px_1fr_1fr] bg-lp-surface sm:grid">
             <span />
             <span className="px-6 py-4 font-lp-mono text-[11px] uppercase tracking-[0.16em] text-lp-muted-2">Prospecção manual</span>
-            <span className="border-l border-lp-line px-6 py-4 font-lp-mono text-[11px] uppercase tracking-[0.16em] text-lp-glow">Com a plataforma</span>
+            <span className="border-l border-lp-line px-6 py-4 font-lp-mono text-[11px] uppercase tracking-[0.16em] text-lp-glow">Com o Leadmatic</span>
           </div>
           {DIAS.map(([dia, sem, com], i) => (
             <Revela key={dia} atraso={i * 90} className="grid bg-lp-surface sm:grid-cols-[88px_1fr_1fr]">
@@ -37,7 +37,7 @@ export function Semana() {
               </p>
               <p className="flex items-start gap-3 border-lp-line px-5 pb-5 pt-1 text-[15px] leading-relaxed text-lp-text sm:border-l sm:px-6 sm:py-6">
                 <Check className="mt-1 h-4 w-4 shrink-0 text-lp-accent" aria-hidden="true" />
-                <span className="sr-only">Com a plataforma:</span>
+                <span className="sr-only">Com o Leadmatic:</span>
                 {com}
               </p>
             </Revela>
