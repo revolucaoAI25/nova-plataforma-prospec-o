@@ -17,7 +17,8 @@ export default async function BuscaInstagramPage() {
   const profile = await getProfile(supabase, user.id);
   // No teste grátis a página abre em modo de visualização (PortaoTesteGratis).
   if (!profile?.instagram_visible && !emTesteGratis(profile)) redirect("/");
-  const custos = await custosVisiveis(supabase, ["instagram"]);
+  // No teste grátis a página é só visualização: o custo em créditos não aparece.
+  const custoPorResultado = emTesteGratis(profile) ? 0 : (await custosVisiveis(supabase, ["instagram"])).instagram;
 
   const sugestoes = await sugestoesDaBusca(user.id, "instagram");
   return (
@@ -27,7 +28,7 @@ export default async function BuscaInstagramPage() {
         title="Busca por Instagram"
         description="Extrai seguidores ou seguindo de um perfil público."
       />
-      <InstagramSearchForm custoPorResultado={custos.instagram} publicos={sugestoes.publicos} temPerfil={sugestoes.temPerfil} precisaAtualizar={sugestoes.precisaAtualizar} />
+      <InstagramSearchForm custoPorResultado={custoPorResultado} publicos={sugestoes.publicos} temPerfil={sugestoes.temPerfil} precisaAtualizar={sugestoes.precisaAtualizar} />
     </div>
   );
 }

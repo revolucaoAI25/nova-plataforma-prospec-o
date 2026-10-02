@@ -17,7 +17,8 @@ export default async function BuscaLinkedInPage() {
   const profile = await getProfile(supabase, user.id);
   // No teste grátis a página abre em modo de visualização (PortaoTesteGratis).
   if (!profile?.linkedin_visible && !emTesteGratis(profile)) redirect("/");
-  const custos = await custosVisiveis(supabase, ["linkedin"]);
+  // No teste grátis a página é só visualização: o custo em créditos não aparece.
+  const custoPorResultado = emTesteGratis(profile) ? 0 : (await custosVisiveis(supabase, ["linkedin"])).linkedin;
 
   const sugestoes = await sugestoesDaBusca(user.id, "linkedin");
   return (
@@ -27,7 +28,7 @@ export default async function BuscaLinkedInPage() {
         title="Busca por LinkedIn"
         description="Encontra pessoas e decisores por cargo e localização."
       />
-      <LinkedInSearchForm custoPorResultado={custos.linkedin} publicos={sugestoes.publicos} temPerfil={sugestoes.temPerfil} precisaAtualizar={sugestoes.precisaAtualizar} />
+      <LinkedInSearchForm custoPorResultado={custoPorResultado} publicos={sugestoes.publicos} temPerfil={sugestoes.temPerfil} precisaAtualizar={sugestoes.precisaAtualizar} />
     </div>
   );
 }

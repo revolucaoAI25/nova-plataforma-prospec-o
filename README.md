@@ -1335,8 +1335,11 @@ mas nada é processado — é só fila).
     recusa por conta própria: disparos, enriquecimento e Instagram/LinkedIn
     caem pelas flags do perfil (desligadas); fluxos, funil, onboarding e
     integrações aceitam só leitura no teste, checado no proxy, que só
-    consulta o perfil nessas chamadas. Créditos avulsos e extras ficam
-    fora: no teste só o plano faz sentido.
+    consulta o perfil nessas chamadas. Exceção: a estratégia por IA
+    (`/onboarding`) não abre nem em visualização; mostra só o convite
+    para assinar. As buscas de Instagram e LinkedIn não mostram o custo em
+    créditos no teste. Créditos avulsos e extras ficam fora: no teste só o
+    plano faz sentido.
   - *Fim do teste*: o webhook de pagamento desliga `teste_gratis` na 1ª
     cobrança confirmada (e `emTesteGratis` já ignora a coluna com a
     assinatura ativa). A coluna é protegida pelo trigger de 0028, então o
