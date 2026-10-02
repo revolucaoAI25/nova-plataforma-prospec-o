@@ -186,6 +186,14 @@
   animation: lp-letreiro 38s linear infinite;
 }
 
+.lp-letreiro-reverso {
+  animation-direction: reverse;
+}
+
+.lp-letreiro:hover .lp-letreiro-faixa {
+  animation-play-state: paused;
+}
+
 @keyframes lp-letreiro {
   from { transform: translateX(0); }
   to { transform: translateX(-50%); }

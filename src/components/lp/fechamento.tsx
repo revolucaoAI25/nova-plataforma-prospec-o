@@ -10,6 +10,10 @@ export const PERGUNTAS: [string, string][] = [
     "Você escolhe o plano, cria a sua conta e conclui o pagamento por Pix, boleto ou cartão. Assim que o pagamento é confirmado, os créditos e os recursos do plano são liberados e o onboarding começa.",
   ],
   [
+    "Preciso investir em tráfego pago também?",
+    "Não. A prospecção ativa gera oportunidades sem anúncios: você escolhe as empresas e a plataforma inicia a conversa com quem decide. Se você já investe em tráfego, as duas estratégias se complementam, e a sua agenda deixa de depender de um único canal.",
+  ],
+  [
     "Preciso de conhecimento técnico?",
     "Não. Você responde ao questionário, escolhe uma das estratégias criadas pela IA e conecta o seu WhatsApp pelo QR Code. A partir daí, basta revisar as mensagens, se quiser, e ativar a campanha.",
   ],

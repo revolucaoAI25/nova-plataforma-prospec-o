@@ -1226,7 +1226,15 @@ mas nada é processado — é só fila).
   com o fluxo de leads animado, manifesto que acende palavra por palavra na
   rolagem, a história em seis etapas (palco fixo no desktop, cena embaixo de
   cada texto no celular), semana com/sem, simulação, recursos, planos,
-  perguntas frequentes e chamada final. As cenas são telas simuladas do
+  perguntas frequentes e chamada final. Também tem a seção sobre não depender
+  de tráfego pago (`sem-trafego.tsx`), o enriquecimento com IA e decisor
+  animado (`enriquecimento.tsx`, com o que o enriquecimento entrega de fato:
+  quadro societário, contato do decisor, validação no Maps, pesquisa com IA e
+  perguntas personalizadas), o comparativo por tipo de solução
+  (`comparativo.tsx`: tráfego pago, SDR, base de dados, ferramentas
+  internacionais, sem números de concorrentes) e a vitrine de clientes da
+  Revolução AI (`clientes.tsx`, imagens em `public/lp/clientes`, as mesmas do
+  site). As cenas são telas simuladas do
   produto (dados fictícios, marcados como simulação). A simulação usa as
   mesmas faixas de resposta da estimativa do onboarding (`estimativa.ts`) e
   indica o menor plano cujos créditos cobrem o volume (custo por empresa =

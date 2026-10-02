@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 const LINKS = [
   ["#como-funciona", "Como funciona"],
   ["#conta", "Simulação"],
+  ["#comparativo", "Comparativo"],
   ["#planos", "Planos"],
   ["#duvidas", "Dúvidas"],
 ] as const;

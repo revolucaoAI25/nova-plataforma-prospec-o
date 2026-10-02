@@ -107,7 +107,7 @@ export function Hero() {
         <div className="mx-auto max-w-5xl text-center">
           <p className="lp-entra mx-auto inline-flex items-center gap-2 rounded-full border border-lp-line-2 bg-white/[0.03] px-3.5 py-1.5 font-lp-mono text-[11px] uppercase tracking-[0.16em] text-lp-muted">
             <span className="h-1.5 w-1.5 rounded-full bg-lp-accent" />
-            Prospecção ativa B2B, de ponta a ponta
+            Leads qualificados, sem depender de tráfego pago
           </p>
           <h1 className="lp-entra mt-7 font-lp-display text-[40px] font-extrabold leading-[0.98] tracking-[-0.035em] text-balance sm:text-6xl lg:text-[76px] [animation-delay:80ms]">
             Reuniões qualificadas na sua agenda, toda semana.{" "}
@@ -116,8 +116,8 @@ export function Hero() {
             </span>
           </h1>
           <p className="lp-entra mx-auto mt-7 max-w-2xl text-[17px] leading-relaxed text-lp-muted sm:text-lg [animation-delay:160ms]">
-            A plataforma encontra empresas com o perfil do seu cliente ideal, identifica quem decide, conduz a abordagem
-            com uma sequência de mensagens e avisa quando alguém responde. Você entra na conversa quando ela já está aquecida.
+            A plataforma encontra leads qualificados com o perfil do seu cliente ideal, identifica e enriquece o contato de quem decide,
+            conduz a abordagem com uma sequência de mensagens e avisa quando alguém responde. Você entra na conversa quando ela já está aquecida.
           </p>
           <div className="lp-entra mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row [animation-delay:240ms]">
             <a

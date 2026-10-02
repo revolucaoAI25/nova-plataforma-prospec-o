@@ -8,6 +8,10 @@ import { Semana } from "@/components/lp/semana";
 import { Calculadora } from "@/components/lp/calculadora";
 import { Recursos } from "@/components/lp/recursos";
 import { Planos } from "@/components/lp/planos";
+import { SemTrafego } from "@/components/lp/sem-trafego";
+import { Enriquecimento } from "@/components/lp/enriquecimento";
+import { Comparativo } from "@/components/lp/comparativo";
+import { Clientes } from "@/components/lp/clientes";
 import { ChamadaFinal, Duvidas, PERGUNTAS, Rodape } from "@/components/lp/fechamento";
 import { FONTES_LP } from "./fontes";
 import "./lp.css";
@@ -43,10 +47,14 @@ export default async function ConhecaPage() {
       <main>
         <Hero />
         <Manifesto />
+        <SemTrafego />
         <Historia />
+        <Enriquecimento />
         <Semana />
         <Calculadora planos={planos} creditosPorLead={creditosPorLead} />
         <Recursos />
+        <Comparativo planos={planos} />
+        <Clientes />
         <Planos planos={planos} creditosPorLead={creditosPorLead} />
         <Duvidas />
         <ChamadaFinal />
