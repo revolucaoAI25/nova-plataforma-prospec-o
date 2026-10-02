@@ -5,7 +5,7 @@
 export const WHATSAPP_NUMERO = (process.env.NEXT_PUBLIC_LP_WHATSAPP || "553131573153").replace(/\D/g, "");
 export const EMAIL_CONTATO = "contato@revolucao-ai.com";
 
-export function linkWhatsApp(texto = "Oi! Vi a página da plataforma de prospecção e quero entender se faz sentido pro meu negócio."): string {
+export function linkWhatsApp(texto = "Olá! Conheci a plataforma de prospecção pela página e gostaria de entender se ela atende o meu negócio."): string {
   return `https://wa.me/${WHATSAPP_NUMERO}?text=${encodeURIComponent(texto)}`;
 }
 
@@ -46,7 +46,14 @@ export const CANAIS = {
   whatsapp: { rotulo: "WhatsApp", resposta: [0.08, 0.2] },
   email: { rotulo: "E-mail", resposta: [0.01, 0.05] },
   linkedin: { rotulo: "LinkedIn", resposta: [0.02, 0.06] },
-  multicanal: { rotulo: "Vários canais", resposta: [0.092, 0.23] },
+  multicanal: { rotulo: "Multicanal", resposta: [0.092, 0.23] },
 } as const;
 export type CanalLP = keyof typeof CANAIS;
 export const RESPOSTA_PARA_REUNIAO = [0.2, 0.35] as const;
+
+/** Página pública de contratação: cadastro + pagamento do plano escolhido. */
+export function linkAssinar(planoId: string, ciclo: "mensal" | "anual" = "mensal"): string {
+  const q = new URLSearchParams({ plano: planoId });
+  if (ciclo === "anual") q.set("ciclo", "anual");
+  return `/assinar?${q.toString()}`;
+}

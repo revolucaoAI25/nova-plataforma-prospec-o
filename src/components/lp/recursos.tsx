@@ -23,14 +23,14 @@ function Cartao({ children, className }: { children: ReactNode; className?: stri
 }
 
 const RECURSOS: [LucideIcon, string, string][] = [
-  [Workflow, "Fluxos em blocos", "Buscar, filtrar, enriquecer, mandar pro funil, disparar. Você monta encaixando os blocos e deixa rodar no horário que quiser."],
-  [ShieldCheck, "Ritmo que protege seu número", "Janela de horário, limite de contatos novos por dia e intervalo entre mensagens. E saída fácil pra quem não quer receber."],
-  [FlaskConical, "Teste A/B", "Duas versões da mesma mensagem rodando juntas. Você vê qual responde mais e fica com a melhor."],
-  [CheckCheck, "Entregue, lida, respondida", "O status de cada mensagem, em cada canal. Dá pra saber o que está funcionando sem achismo."],
-  [QrCode, "QR Code ou API oficial", "Conecta seu WhatsApp em um minuto pelo QR Code, ou usa a API oficial da Meta quando o volume pedir."],
-  [Layers, "Nunca o mesmo lead duas vezes", "Quem já foi abordado não volta pra lista, mesmo entre campanhas e fontes diferentes."],
-  [FileSpreadsheet, "Google Sheets e Excel", "Exporta quando quiser. O que você extraiu continua seu, com ou sem assinatura."],
-  [Coins, "Um saldo só de créditos", "Busca, enriquecimento e canais saem do mesmo saldo. Você coloca onde está dando resultado."],
+  [Workflow, "Automações visuais", "Buscar, filtrar, enriquecer, enviar para o funil e disparar. Você monta o fluxo em blocos e define o horário de execução."],
+  [ShieldCheck, "Ritmo que protege o seu número", "Janela de horário, limite diário de novos contatos e intervalo entre mensagens, além de descadastro simples para quem não quiser receber."],
+  [FlaskConical, "Teste A/B", "Duas versões da mesma mensagem rodando em paralelo. Você acompanha qual gera mais respostas e mantém a melhor."],
+  [CheckCheck, "Entregue, lida, respondida", "Status de cada mensagem em todos os canais, para decisões baseadas em dados, não em impressões."],
+  [QrCode, "QR Code ou API oficial", "Conecte o WhatsApp em um minuto pelo QR Code ou utilize a API oficial da Meta para volumes maiores."],
+  [Layers, "Sem leads duplicados", "Empresas já abordadas não voltam para a lista, mesmo entre campanhas e fontes diferentes."],
+  [FileSpreadsheet, "Google Sheets e Excel", "Exporte os seus leads quando quiser. Os dados extraídos continuam sendo seus."],
+  [Coins, "Saldo único de créditos", "Buscas, enriquecimento e canais usam o mesmo saldo. Você direciona o investimento para o que gera resultado."],
 ];
 
 const FONTES = ["CNPJ", "Google Maps", "Instagram", "LinkedIn"];
@@ -41,10 +41,10 @@ export function Recursos() {
     <section className="relative border-t border-lp-line py-20 sm:py-28">
       <div className="mx-auto max-w-7xl px-4 sm:px-6">
         <Revela className="max-w-3xl">
-          <p className="font-lp-mono text-[12px] uppercase tracking-[0.18em] text-lp-accent">Por baixo do capô</p>
+          <p className="font-lp-mono text-[12px] uppercase tracking-[0.18em] text-lp-accent">Recursos</p>
           <h2 className="mt-4 font-lp-display text-4xl font-extrabold leading-[1.02] tracking-[-0.03em] text-balance sm:text-6xl">
-            Tudo o que roda{" "}
-            <span className="font-lp-serif font-normal italic text-lp-glow">enquanto você atende cliente.</span>
+            Tudo o que trabalha por você{" "}
+            <span className="font-lp-serif font-normal italic text-lp-glow">enquanto você atende seus clientes.</span>
           </h2>
         </Revela>
 
@@ -52,9 +52,9 @@ export function Recursos() {
           <Revela className="sm:col-span-2 lg:row-span-2">
             <Cartao className="flex flex-col justify-between gap-8 p-7 sm:p-8">
               <div>
-                <h3 className="font-lp-display text-2xl font-bold tracking-tight sm:text-3xl">Quatro fontes. Três canais. Um funil.</h3>
+                <h3 className="font-lp-display text-2xl font-bold tracking-tight sm:text-3xl">Quatro fontes, três canais e um funil.</h3>
                 <p className="mt-3 max-w-md text-[15px] leading-relaxed text-lp-muted">
-                  Você não precisa de uma ferramenta pra lista, outra pra disparo e uma planilha pra controlar quem respondeu. Está tudo no mesmo lugar, conversando entre si.
+                  Nada de uma ferramenta para listas, outra para disparos e uma planilha para controlar respostas. Tudo acontece no mesmo lugar, de forma integrada.
                 </p>
               </div>
               <div className="grid grid-cols-[1fr_auto_1fr_auto_auto] items-center gap-2 sm:gap-3" aria-hidden="true">

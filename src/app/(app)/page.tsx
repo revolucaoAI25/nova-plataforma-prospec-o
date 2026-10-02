@@ -40,9 +40,23 @@ export default async function DashboardPage() {
         <PageHeader
           eyebrow="Painel"
           title="Visão geral"
-          description={`Bem-vindo(a)${profile ? `, ${profile.email}` : ""}. Extraia leads, aborde pelos seus canais e acompanhe tudo no funil.`}
+          description={`Bem-vindo(a)${profile ? `, ${profile.nome?.trim().split(/\s+/)[0] || profile.email}` : ""}. Extraia leads, aborde pelos seus canais e acompanhe tudo no funil.`}
         />
       </Reveal>
+
+      {profile?.assinatura_status === "pendente" && (
+        <Reveal delay={20}>
+          <Link
+            href="/bem-vindo"
+            className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber/40 bg-amber-soft px-5 py-4 text-sm transition-colors hover:border-amber/70"
+          >
+            <span className="text-foreground">
+              <strong className="font-semibold">Pagamento pendente.</strong> Assim que a primeira cobrança for confirmada, os créditos e os recursos do plano são liberados.
+            </span>
+            <span className="inline-flex items-center gap-1 font-semibold text-amber">Ver fatura <ArrowRight className="h-4 w-4" /></span>
+          </Link>
+        </Reveal>
+      )}
 
       <Reveal delay={30}>
         <OnboardingCta status={onboarding?.status ?? null} aplicacoes={aplicacoes} />

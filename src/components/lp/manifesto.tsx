@@ -3,11 +3,11 @@
 import { useEffect, useRef } from "react";
 
 const FRASES: { texto: string; destaque?: boolean }[] = [
-  { texto: "Prospectar não é difícil." },
-  { texto: "Difícil é fazer todo dia." },
-  { texto: "Montar a lista, achar o dono, escrever, lembrar do follow-up, anotar quem respondeu." },
-  { texto: "Na terça você já parou." },
-  { texto: "A máquina não para.", destaque: true },
+  { texto: "Prospectar não é o difícil." },
+  { texto: "O difícil é manter a constância." },
+  { texto: "Montar listas, encontrar o decisor, escrever, lembrar do follow-up, registrar quem respondeu." },
+  { texto: "Na correria da semana, a prospecção é sempre a primeira a ficar para depois." },
+  { texto: "Com a plataforma, ela acontece todos os dias.", destaque: true },
 ];
 
 /**
@@ -53,7 +53,7 @@ export function Manifesto() {
   }, []);
 
   return (
-    <section ref={secao} className="relative mx-auto max-w-5xl px-4 py-28 sm:px-6 sm:py-40" aria-label="Por que prospecção trava">
+    <section ref={secao} className="relative mx-auto max-w-5xl px-4 py-28 sm:px-6 sm:py-40" aria-label="Por que a prospecção fica para depois">
       <p className="font-lp-display text-[30px] font-bold leading-[1.18] tracking-[-0.025em] sm:text-5xl sm:leading-[1.12]">
         {FRASES.map((f, fi) => (
           <span key={fi} className={f.destaque ? "font-lp-serif text-[1.1em] font-normal italic text-lp-glow" : undefined}>

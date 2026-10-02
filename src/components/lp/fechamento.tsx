@@ -1,41 +1,45 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowUpRight, Plus } from "lucide-react";
+import { ArrowRight, ArrowUpRight, Plus } from "lucide-react";
 import { EMAIL_CONTATO, linkWhatsApp, whatsappExibicao } from "./dados";
 import { Revela } from "./revela";
 
 export const PERGUNTAS: [string, string][] = [
   [
-    "Preciso entender de tecnologia?",
-    "Não. Você responde o questionário, escolhe uma das estratégias que a IA montou e conecta o seu WhatsApp pelo QR Code. Daí pra frente é ajustar a mensagem, se quiser, e dar play.",
+    "Como funciona a contratação?",
+    "Você escolhe o plano, cria a sua conta e conclui o pagamento por Pix, boleto ou cartão. Assim que o pagamento é confirmado, os créditos e os recursos do plano são liberados e o onboarding começa.",
   ],
   [
-    "Funciona pro meu negócio?",
-    "Funciona melhor pra quem vende pra empresas ou pra negócios locais: software, serviços, agências, consultorias, distribuidores, escritórios, fornecedores. Se você vende direto pro consumidor final, em massa, provavelmente não é a ferramenta certa, e a gente prefere te dizer isso antes.",
+    "Preciso de conhecimento técnico?",
+    "Não. Você responde ao questionário, escolhe uma das estratégias criadas pela IA e conecta o seu WhatsApp pelo QR Code. A partir daí, basta revisar as mensagens, se quiser, e ativar a campanha.",
   ],
   [
-    "Meu WhatsApp pode ser bloqueado?",
-    "Todo disparo por número comum tem algum risco. Por isso a plataforma trabalha com horário comercial, limite de contatos novos por dia, intervalo entre mensagens e para de mandar pra quem respondeu ou pediu pra sair. Se você quer tirar esse risco da mesa, dá pra usar a API oficial do WhatsApp (a Meta cobra por conversa, à parte).",
+    "A plataforma é indicada para o meu negócio?",
+    "Ela funciona melhor para empresas que vendem para outras empresas ou para negócios locais: softwares, serviços, agências, consultorias, distribuidores, escritórios e fornecedores. Para vendas em massa ao consumidor final, provavelmente não é a ferramenta mais adequada.",
   ],
   [
-    "De onde vêm os dados? Isso pode?",
-    "São dados públicos de empresas: cadastro na Receita Federal, perfis no Google Maps, no Instagram e no LinkedIn. Abordagem entre empresas costuma se apoiar no legítimo interesse previsto na LGPD, desde que quem recebe tenha uma saída fácil. A plataforma já cuida do descadastro no e-mail e do opt-out no WhatsApp.",
+    "Existe risco de bloqueio do WhatsApp?",
+    "Todo envio por número comum envolve algum risco. Por isso, a plataforma respeita o horário comercial, limita os novos contatos por dia, espaça as mensagens e interrompe o envio para quem respondeu ou pediu para sair. Para eliminar esse risco, é possível usar a API oficial do WhatsApp (a Meta cobra por conversa, à parte).",
   ],
   [
-    "Em quanto tempo aparece a primeira reunião?",
-    "Depende do seu mercado, da oferta e da mensagem. A primeira mensagem pode sair no mesmo dia em que você entra, e é comum as primeiras respostas aparecerem já na primeira semana de cadência.",
+    "De onde vêm os dados? O uso é permitido?",
+    "São dados públicos de empresas: cadastro na Receita Federal e perfis no Google Maps, no Instagram e no LinkedIn. A abordagem entre empresas costuma se apoiar no legítimo interesse previsto na LGPD, desde que o destinatário tenha uma forma simples de sair. A plataforma já oferece descadastro no e-mail e opt-out no WhatsApp.",
   ],
   [
-    "O que são os créditos?",
-    "Cada ação que tem custo pra gente, como buscar uma empresa ou achar o contato do decisor, consome créditos do seu plano. É um saldo só pra tudo. Se acabar antes do mês virar, você compra um pacote avulso.",
+    "Em quanto tempo surgem os primeiros resultados?",
+    "Depende do mercado, da oferta e da mensagem. As primeiras mensagens podem ser enviadas no mesmo dia da contratação, e é comum que as primeiras respostas apareçam já na primeira semana de cadência.",
   ],
   [
-    "Tem fidelidade?",
-    "No mensal, não: cancela quando quiser. O anual sai mais barato e é cobrado uma vez por ano.",
+    "Como funcionam os créditos?",
+    "Ações com custo operacional, como buscar uma empresa ou localizar o contato do decisor, consomem créditos do seu plano. O saldo é único para todas as funções e, se acabar antes da renovação, você pode adquirir um pacote avulso.",
   ],
   [
-    "E se eu já tiver uma lista de clientes?",
-    "Pode subir a sua planilha e usar as mesmas cadências, o mesmo funil e os mesmos relatórios.",
+    "Existe fidelidade?",
+    "O plano mensal não tem fidelidade e pode ser cancelado quando você quiser. O plano anual tem valor reduzido e é cobrado uma vez por ano.",
+  ],
+  [
+    "Posso usar a minha própria lista de contatos?",
+    "Sim. Você pode importar a sua planilha e utilizar as mesmas cadências, o mesmo funil e os mesmos relatórios.",
   ],
 ];
 
@@ -44,13 +48,17 @@ export function Duvidas() {
     <section id="duvidas" className="relative scroll-mt-20 border-t border-lp-line py-20 sm:py-28">
       <div className="mx-auto grid max-w-7xl grid-cols-1 gap-10 px-4 sm:px-6 lg:grid-cols-[minmax(0,4fr)_minmax(0,7fr)] lg:gap-16">
         <Revela>
-          <p className="font-lp-mono text-[12px] uppercase tracking-[0.18em] text-lp-accent">Dúvidas</p>
+          <p className="font-lp-mono text-[12px] uppercase tracking-[0.18em] text-lp-accent">Perguntas frequentes</p>
           <h2 className="mt-4 font-lp-display text-4xl font-extrabold leading-[1.02] tracking-[-0.03em] text-balance sm:text-5xl">
-            O que todo mundo pergunta{" "}
+            O que você precisa saber{" "}
             <span className="font-lp-serif font-normal italic text-lp-glow">antes de começar.</span>
           </h2>
           <p className="mt-5 text-[16px] leading-relaxed text-lp-muted">
-            Ficou alguma? Chama no WhatsApp que quem responde é gente do time.
+            Ainda tem dúvidas?{" "}
+            <a href={linkWhatsApp()} target="_blank" rel="noopener noreferrer" className="text-lp-glow underline-offset-4 hover:underline">
+              Fale com a nossa equipe pelo WhatsApp
+            </a>
+            .
           </p>
         </Revela>
         <div className="flex flex-col">
@@ -78,26 +86,33 @@ export function ChamadaFinal() {
       <div className="lp-aurora left-1/2 top-1/2 -z-10 h-[520px] w-[520px] -translate-x-1/2 -translate-y-1/2" aria-hidden="true" />
       <Revela className="mx-auto max-w-4xl px-4 text-center sm:px-6">
         <h2 className="font-lp-display text-[40px] font-extrabold leading-[1] tracking-[-0.035em] text-balance sm:text-7xl">
-          A prospecção que vive ficando pra semana que vem{" "}
+          A prospecção que sempre fica para depois{" "}
           <span className="font-lp-serif font-normal italic text-lp-glow">pode começar hoje.</span>
         </h2>
         <p className="mx-auto mt-6 max-w-xl text-[17px] leading-relaxed text-lp-muted">
-          Chama a gente no WhatsApp, conta o que você vende e a gente te mostra a plataforma rodando com o seu público.
+          Escolha o plano, crie a sua conta e, em poucos minutos, a IA monta a sua primeira estratégia de prospecção.
         </p>
         <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
+          <a
+            href="#planos"
+            className="group inline-flex h-14 w-full items-center justify-center gap-2 rounded-full bg-lp-accent px-8 text-base font-semibold text-[#04140a] shadow-[0_0_0_1px_rgba(93,255,160,0.4),0_20px_60px_-12px_rgba(0,200,83,0.7)] transition-[background-color,transform] hover:bg-lp-glow active:scale-[0.98] sm:w-auto focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-lp-glow"
+          >
+            Escolher meu plano
+            <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-0.5" />
+          </a>
           <a
             href={linkWhatsApp()}
             target="_blank"
             rel="noopener noreferrer"
-            className="group inline-flex h-14 w-full items-center justify-center gap-2 rounded-full bg-lp-accent px-8 text-base font-semibold text-[#04140a] shadow-[0_0_0_1px_rgba(93,255,160,0.4),0_20px_60px_-12px_rgba(0,200,83,0.7)] transition-[background-color,transform] hover:bg-lp-glow active:scale-[0.98] sm:w-auto focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-lp-glow"
+            className="inline-flex h-14 w-full items-center justify-center gap-2 rounded-full border border-lp-line-2 px-8 text-base text-lp-text transition-colors hover:border-lp-accent/60 sm:w-auto"
           >
-            Quero ver com o meu público
-            <ArrowUpRight className="h-5 w-5 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+            Falar com um especialista <ArrowUpRight className="h-4 w-4" />
           </a>
-          <Link href="/login" className="inline-flex h-14 w-full items-center justify-center rounded-full border border-lp-line-2 px-8 text-base text-lp-text transition-colors hover:border-lp-accent/60 sm:w-auto">
-            Já sou cliente, entrar
-          </Link>
         </div>
+        <p className="mt-6 text-sm text-lp-muted-2">
+          Já é cliente?{" "}
+          <Link href="/login" className="text-lp-muted underline-offset-4 hover:text-lp-text hover:underline">Entrar na plataforma</Link>
+        </p>
       </Revela>
     </section>
   );

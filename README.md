@@ -1221,22 +1221,41 @@ mas nada é processado — é só fila).
 
 - **Página de vendas** (`/conheca`, pública): rota fora do app, com paleta
   própria sempre escura (tokens `lp-*` em `globals.css`, efeitos em
-  `src/app/conheca/lp.css`) e fontes que só carregam ali. Componentes em
-  `src/components/lp/`: hero com o fluxo de leads animado, manifesto que
-  acende palavra por palavra na rolagem, a história em seis cenas (palco
-  fixo no desktop, cena embaixo de cada texto no celular), semana com/sem,
-  calculadora, recursos, planos, dúvidas e chamada final. As cenas são
-  telas simuladas do produto (dados fictícios, marcados como simulação).
-  A calculadora usa as mesmas faixas de resposta da estimativa do
-  onboarding (`estimativa.ts`) e escolhe o menor plano cujos créditos
-  cobrem o volume (custo por empresa = `cnpj` + `cnpj_maps_extra` de
-  `credit_costs`); a seção de planos destaca esse plano. Planos e custos
-  vêm do banco, com revalidação a cada 10 min; sem banco, a página mostra
-  o CTA de contato no lugar dos preços. Todos os botões levam ao WhatsApp
-  (`NEXT_PUBLIC_LP_WHATSAPP`) com mensagem pronta, a da calculadora com os
-  números simulados. Respeita `prefers-reduced-motion`. A regra global de
-  cor de borda (fora de camada, ganha das classes `border-*`) não se
-  aplica dentro de `.lp`.
+  `src/app/conheca/lp.css`) e fontes que só carregam ali
+  (`src/app/conheca/fontes.ts`). Componentes em `src/components/lp/`: hero
+  com o fluxo de leads animado, manifesto que acende palavra por palavra na
+  rolagem, a história em seis etapas (palco fixo no desktop, cena embaixo de
+  cada texto no celular), semana com/sem, simulação, recursos, planos,
+  perguntas frequentes e chamada final. As cenas são telas simuladas do
+  produto (dados fictícios, marcados como simulação). A simulação usa as
+  mesmas faixas de resposta da estimativa do onboarding (`estimativa.ts`) e
+  indica o menor plano cujos créditos cobrem o volume (custo por empresa =
+  `cnpj` + `cnpj_maps_extra` de `credit_costs`). Na seção de planos, o plano
+  do meio fica em destaque como "Recomendado"; o indicado pela simulação
+  ganha um selo próprio. Planos e custos vêm do banco
+  (`src/lib/planos-publicos.ts`), com revalidação a cada 10 min; sem banco, a
+  página mostra o contato no lugar dos preços. Respeita
+  `prefers-reduced-motion`. A regra global de cor de borda (fora de camada,
+  ganha das classes `border-*`) não se aplica dentro de `.lp`.
+
+- **Contratação automática** (`/assinar` → `/bem-vindo` → `/onboarding`):
+  os botões de plano levam para `/assinar?plano=<id>&ciclo=anual|mensal`
+  (pública). O formulário pede nome, empresa, e-mail, WhatsApp, CPF/CNPJ
+  (dígitos verificadores conferidos em `cpf-cnpj.ts`) e senha.
+  `POST /api/assinar` cria o usuário pelo cliente admin (e-mail já
+  confirmado), grava os dados no perfil, abre a assinatura no Asaas com
+  `assinarPlano` e faz o login na mesma resposta. Se o Asaas falhar antes de
+  criar a assinatura, a conta é apagada para a pessoa tentar de novo; se a
+  assinatura existir e só a fatura atrasar, segue normalmente. Proteções:
+  limite de 6 tentativas por IP a cada 15 min (em memória, por instância —
+  `limite-tentativas.ts`) e campo invisível contra robôs. `/bem-vindo`
+  mostra a fatura e consulta `/api/assinatura` a cada 5 s; quando o
+  webhook do Asaas ativa a assinatura (créditos + recursos do plano, como já
+  acontecia), libera o botão do onboarding. Quem fecha a página antes de
+  pagar vê um aviso de pagamento pendente no painel. O cadastro aberto do
+  Supabase continua podendo ficar desligado: a conta é criada pelo servidor.
+  O WhatsApp (`NEXT_PUBLIC_LP_WHATSAPP`) fica para "Falar com um
+  especialista".
 
 - **Dados do cliente** (`0033`): nome, telefone (guardado em E.164) e
   empresa no perfil. O admin preenche ao criar a conta (nome obrigatório) e

@@ -15,51 +15,51 @@ interface Ato {
 
 const ATOS: Ato[] = [
   {
-    rotulo: "Você conta como vende",
-    titulo: "Você responde umas perguntas. A IA monta o plano.",
+    rotulo: "Estratégia sob medida",
+    titulo: "Você descreve o seu negócio. A IA monta a estratégia.",
     texto:
-      "O que você vende, pra quem, quanto custa, quem decide a compra e quantas conversas o seu time dá conta de atender. Com isso ela desenha estratégias prontas: de onde tirar os leads, por qual canal falar, quantos por dia e o que escrever.",
-    detalhes: ["Você escolhe uma e ajusta o que quiser", "O volume já vem calculado pelos seus créditos"],
+      "O que você vende, para quem, qual o ticket, quem decide a compra e quantas conversas a sua equipe consegue atender. A partir dessas respostas, a IA define de onde vêm os leads, quais canais usar, o volume diário e as mensagens de cada etapa.",
+    detalhes: ["Estratégias prontas para escolher e ajustar", "Volume calculado de acordo com o seu plano"],
     Cena: CenaEstrategia,
   },
   {
-    rotulo: "Ela acha quem compra",
-    titulo: "Milhares de empresas com cara de cliente seu.",
+    rotulo: "Leads com o perfil certo",
+    titulo: "Milhares de empresas com o perfil do seu cliente ideal.",
     texto:
-      "Base de CNPJ da Receita com filtro por atividade, cidade, porte e idade da empresa. Google Maps pra negócio local, com nota e avaliações. Instagram e LinkedIn quando o seu cliente vive lá. Quem você já abordou não volta pra lista.",
-    detalhes: ["Busca na hora ou agendada todo dia", "Sem lead repetido entre campanhas"],
+      "Base de CNPJ da Receita Federal com filtros por atividade, cidade, porte e tempo de abertura. Google Maps para negócios locais, com nota e avaliações. Instagram e LinkedIn quando o seu público está lá. Empresas já abordadas não voltam para a lista.",
+    detalhes: ["Buscas pontuais ou agendadas diariamente", "Sem leads duplicados entre campanhas"],
     Cena: CenaBusca,
   },
   {
-    rotulo: "E descobre quem decide",
-    titulo: "Nada de falar com a recepção.",
+    rotulo: "Contato do decisor",
+    titulo: "A conversa começa com quem decide.",
     texto:
-      "Sócios, celular, e-mail, site e nota no Google. A plataforma cruza as fontes pra você chegar em quem assina o contrato, e não no famoso “manda um e-mail pro comercial”.",
-    detalhes: ["Telefone e site conferidos no Google Maps", "Contato do decisor por enriquecimento"],
+      "Sócios, celular, e-mail, site e avaliações no Google. A plataforma cruza as fontes para que a abordagem chegue a quem assina o contrato, e não a um e-mail genérico do comercial.",
+    detalhes: ["Telefone e site validados no Google Maps", "Contato do decisor por enriquecimento de dados"],
     Cena: CenaDecisor,
   },
   {
-    rotulo: "A mensagem sai. E a próxima também.",
-    titulo: "Follow-up é onde a venda acontece. E é o que todo mundo esquece.",
+    rotulo: "Cadência multicanal",
+    titulo: "O follow-up acontece sempre, no momento certo.",
     texto:
-      "Cadência com várias mensagens no WhatsApp, no e-mail e no LinkedIn, com intervalo entre elas, só em horário comercial e num ritmo que não queima o seu número. Cada mensagem fala o nome da pessoa, o nome da empresa e por que você está ali.",
-    detalhes: ["Teste A/B pra ver qual versão responde mais", "Entregue, lida e respondida, mensagem por mensagem"],
+      "Sequências com várias mensagens por WhatsApp, e-mail e LinkedIn, com intervalos definidos, apenas em horário comercial e em um ritmo que protege o seu número. Cada mensagem é personalizada com o nome da pessoa, o da empresa e o motivo do contato.",
+    detalhes: ["Teste A/B para descobrir a mensagem que mais converte", "Status de entrega, leitura e resposta de cada mensagem"],
     Cena: CenaCadencia,
   },
   {
-    rotulo: "Quem responde vira oportunidade",
-    titulo: "Respondeu? Já está no seu funil.",
+    rotulo: "Funil integrado",
+    titulo: "Quem responde entra automaticamente no seu funil.",
     texto:
-      "A cadência para pra quem respondeu, o card vai pra coluna certa e você assume a conversa. Mover um card pode disparar a próxima automação: lembrete de reunião, proposta, o que fizer sentido no seu processo.",
-    detalhes: ["Funil em Kanban, do jeito que você vende", "Automação disparada pela etapa do card"],
+      "A cadência é pausada para quem respondeu, o card vai para a etapa certa e você assume a conversa. A mudança de etapa pode disparar a próxima automação: lembrete de reunião, envio de proposta ou o que fizer sentido no seu processo.",
+    detalhes: ["Funil em Kanban adaptado ao seu processo comercial", "Automações disparadas pela etapa do card"],
     Cena: CenaFunil,
   },
   {
-    rotulo: "Você aparece pra fechar",
-    titulo: "No fim do mês, a conta é simples.",
+    rotulo: "Resultado mensurável",
+    titulo: "No fim do mês, os números mostram o caminho.",
     texto:
-      "Quantas empresas foram abordadas, quantas responderam, quantas viraram reunião e quantas fecharam. Dá pra ver onde o funil vaza e mexer na mensagem, no público ou no ritmo, em vez de chutar.",
-    detalhes: ["Relatório por campanha e por canal", "Exemplo com taxas médias de prospecção B2B"],
+      "Empresas abordadas, respostas, reuniões e contratos fechados. Você identifica em que ponto o funil perde força e ajusta a mensagem, o público ou o ritmo com base em dados.",
+    detalhes: ["Relatórios por campanha e por canal", "Exemplo ilustrativo com taxas de mercado"],
     Cena: CenaResultado,
   },
 ];
@@ -102,8 +102,8 @@ export function Historia() {
         <div className="max-w-3xl">
           <p className="font-lp-mono text-[12px] uppercase tracking-[0.18em] text-lp-accent">Como o resultado é construído</p>
           <h2 className="mt-4 font-lp-display text-4xl font-extrabold leading-[1.02] tracking-[-0.03em] text-balance sm:text-6xl">
-            Do zero à reunião marcada, em{" "}
-            <span className="font-lp-serif font-normal italic text-lp-glow">seis movimentos.</span>
+            Do primeiro contato à reunião marcada,{" "}
+            <span className="font-lp-serif font-normal italic text-lp-glow">em seis etapas.</span>
           </h2>
         </div>
 
@@ -139,7 +139,7 @@ export function Historia() {
                   ))}
                 </ul>
                 {!desktop && (
-                  <div className="mt-7 h-[440px]">
+                  <div className="mt-7 h-[520px]">
                     <a.Cena ativa={ativo === i} />
                   </div>
                 )}

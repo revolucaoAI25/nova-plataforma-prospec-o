@@ -3,13 +3,12 @@
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowUpRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { linkWhatsApp } from "./dados";
 
 const LINKS = [
   ["#como-funciona", "Como funciona"],
-  ["#conta", "Faça a conta"],
+  ["#conta", "Simulação"],
   ["#planos", "Planos"],
   ["#duvidas", "Dúvidas"],
 ] as const;
@@ -65,13 +64,11 @@ export function Cabecalho() {
             Entrar
           </Link>
           <a
-            href={linkWhatsApp()}
-            target="_blank"
-            rel="noopener noreferrer"
+            href="#planos"
             className="group inline-flex items-center gap-1.5 rounded-full bg-lp-accent px-4 py-2 text-sm font-semibold text-[#04140a] transition-[background-color,box-shadow] hover:bg-lp-glow hover:shadow-[0_0_24px_rgba(0,200,83,0.5)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lp-glow"
           >
-            Falar com a gente
-            <ArrowUpRight className="h-4 w-4 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+            Começar agora
+            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
           </a>
         </div>
       </div>

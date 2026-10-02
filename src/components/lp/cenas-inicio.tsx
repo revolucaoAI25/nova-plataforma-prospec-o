@@ -9,23 +9,23 @@ import { Janela, Selo } from "./janela";
 /* ── 01 · A IA monta a estratégia ─────────────────────────────── */
 
 const RESPOSTAS = [
-  ["O que você vende?", "Sistema de agenda e prontuário pra clínicas odontológicas"],
-  ["Ticket médio", "R$ 390 por mês"],
-  ["Quem decide a compra?", "Dono(a) ou sócio(a) da clínica"],
-  ["Quantas conversas seu time atende por dia?", "Umas 15"],
+  ["O que você vende?", "Marketing e captação de pacientes para clínicas odontológicas"],
+  ["Ticket médio", "R$ 2.500 por mês"],
+  ["Quem decide a compra?", "Sócio(a) ou diretor(a) clínico(a)"],
+  ["Quantas conversas a sua equipe atende por dia?", "Cerca de 30"],
 ] as const;
 
 const ESTRATEGIAS = [
-  { letra: "A", titulo: "Clínicas com CNPJ ativo há mais de 2 anos em MG", canal: "WhatsApp + e-mail · 6 toques em 12 dias", volume: "~900 empresas/mês", selo: "Mais volume" },
-  { letra: "B", titulo: "Clínicas com nota alta no Google Maps", canal: "WhatsApp · 5 toques em 10 dias", volume: "~450 empresas/mês", selo: "Mais qualificada" },
-  { letra: "C", titulo: "Dentistas donos de clínica no LinkedIn", canal: "Convite + 3 mensagens", volume: "~200 pessoas/mês", selo: null },
+  { letra: "A", titulo: "Clínicas com CNPJ ativo há mais de 2 anos em MG", canal: "WhatsApp + e-mail · 6 contatos em 12 dias", volume: "~1.600 empresas/mês", selo: "Maior volume" },
+  { letra: "B", titulo: "Clínicas com avaliação alta no Google Maps", canal: "WhatsApp · 5 contatos em 10 dias", volume: "~800 empresas/mês", selo: "Mais qualificada" },
+  { letra: "C", titulo: "Dentistas proprietários de clínica no LinkedIn", canal: "Convite + 3 mensagens", volume: "~300 decisores/mês", selo: null },
 ];
 
 export function CenaEstrategia({ ativa }: { ativa: boolean }) {
   const p = useLinhaDoTempo(ativa, [350, 650, 650, 650, 700, 1300, 260, 260]);
   const montando = p === 5;
   return (
-    <Janela caminho="prospeccao-ativa / sua estratégia" status={p >= 6 ? <span className="text-lp-glow">3 sugestões prontas</span> : "questionário"}>
+    <Janela caminho="prospeccao-ativa / sua estratégia" status={p >= 6 ? <span className="text-lp-glow">3 estratégias prontas</span> : "questionário"}>
       <div className="flex h-full flex-col gap-2.5">
         {RESPOSTAS.map(([pergunta, resposta], i) =>
           p > i ? (
@@ -37,7 +37,7 @@ export function CenaEstrategia({ ativa }: { ativa: boolean }) {
         )}
         {montando && (
           <div className="lp-entra lp-varredura mt-1 flex items-center gap-2.5 rounded-xl border border-lp-accent/30 bg-lp-accent-soft px-3.5 py-3 text-sm text-lp-glow">
-            <Sparkles className="h-4 w-4" /> Montando suas estratégias com os seus créditos e a capacidade do seu time…
+            <Sparkles className="h-4 w-4 shrink-0" /> Criando estratégias com base no seu plano e na capacidade da sua equipe…
           </div>
         )}
         {p >= 6 && (
@@ -86,7 +86,7 @@ const EMPRESAS = [
 
 export function CenaBusca({ ativa }: { ativa: boolean }) {
   const p = useLinhaDoTempo(ativa, [300, 380, 380, 380, 500, 900, 170, 170, 170, 170, 170, 170, 170]);
-  const total = useContagem(1284, p >= 6, 2200);
+  const total = useContagem(2410, p >= 6, 2200);
   const fontes = ["CNPJ", "Google Maps", "Instagram", "LinkedIn"];
   return (
     <Janela caminho="prospeccao-ativa / buscar empresas" status={p >= 6 ? <span className="lp-numero text-lp-glow">{num(total)} encontradas</span> : "nova busca"}>
@@ -109,7 +109,7 @@ export function CenaBusca({ ativa }: { ativa: boolean }) {
         </div>
         {p === 5 && (
           <div className="lp-entra lp-varredura flex items-center gap-2 rounded-xl border border-lp-line bg-white/[0.02] px-3 py-2.5 text-[13px] text-lp-muted">
-            <Loader2 className="h-4 w-4 animate-spin text-lp-accent motion-reduce:animate-none" /> Consultando a base da Receita e tirando quem você já abordou…
+            <Loader2 className="h-4 w-4 shrink-0 animate-spin text-lp-accent motion-reduce:animate-none" /> Consultando a Receita Federal e removendo empresas já abordadas…
           </div>
         )}
         {p >= 6 && (
@@ -140,8 +140,8 @@ export function CenaBusca({ ativa }: { ativa: boolean }) {
 
 const DADOS_DECISOR = [
   { icone: UserRound, rotulo: "Sócia-administradora", valor: "Mariana Costa", fonte: "Receita Federal" },
-  { icone: Phone, rotulo: "Celular", valor: "(31) 9 8•••-••42", fonte: "enriquecimento" },
-  { icone: Mail, rotulo: "E-mail", valor: "mariana@sorrisopleno.com.br", fonte: "enriquecimento" },
+  { icone: Phone, rotulo: "Celular", valor: "(31) 9 8•••-••42", fonte: "Enriquecimento" },
+  { icone: Mail, rotulo: "E-mail", valor: "mariana@sorrisopleno.com.br", fonte: "Enriquecimento" },
   { icone: Star, rotulo: "Google", valor: "4,8 · 212 avaliações", fonte: "Google Maps" },
   { icone: Globe, rotulo: "Site", valor: "sorrisopleno.com.br", fonte: "Google Maps" },
 ];
@@ -149,7 +149,7 @@ const DADOS_DECISOR = [
 export function CenaDecisor({ ativa }: { ativa: boolean }) {
   const p = useLinhaDoTempo(ativa, [300, 900, 420, 420, 420, 420, 420, 500]);
   return (
-    <Janela caminho="prospeccao-ativa / lead / sorriso-pleno" status={p >= 7 ? <span className="text-lp-glow">pronto pra abordar</span> : "enriquecendo"}>
+    <Janela caminho="prospeccao-ativa / lead / sorriso-pleno" status={p >= 7 ? <span className="text-lp-glow">pronto para abordagem</span> : "enriquecendo"}>
       <div className="flex h-full flex-col gap-3">
         <div className="flex items-center gap-3 rounded-xl border border-lp-line bg-white/[0.02] px-3.5 py-3">
           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/[0.05] text-lp-muted"><Building2 className="h-5 w-5" /></span>
@@ -160,7 +160,7 @@ export function CenaDecisor({ ativa }: { ativa: boolean }) {
         </div>
         {p === 1 && (
           <div className="lp-entra lp-varredura flex items-center gap-2 rounded-xl border border-lp-line bg-white/[0.02] px-3 py-2.5 text-[13px] text-lp-muted">
-            <Loader2 className="h-4 w-4 animate-spin text-lp-accent motion-reduce:animate-none" /> Cruzando Receita, Google Maps e enriquecimento…
+            <Loader2 className="h-4 w-4 shrink-0 animate-spin text-lp-accent motion-reduce:animate-none" /> Cruzando dados da Receita Federal, do Google Maps e de enriquecimento…
           </div>
         )}
         <div className="flex flex-col gap-1.5">
@@ -178,7 +178,7 @@ export function CenaDecisor({ ativa }: { ativa: boolean }) {
         {p >= 7 && (
           <div className="lp-entra mt-auto flex items-center gap-2.5 rounded-xl border border-lp-accent/50 bg-lp-accent-soft px-3.5 py-3 shadow-[0_0_40px_-12px_rgba(0,200,83,0.7)]">
             <span className="flex h-6 w-6 items-center justify-center rounded-full bg-lp-accent text-[#04140a]"><Check className="h-3.5 w-3.5" strokeWidth={3} /></span>
-            <span className="text-sm font-semibold text-lp-glow">Decisor encontrado. Entrou na cadência de amanhã.</span>
+            <span className="text-sm font-semibold text-lp-glow">Decisor identificado. Lead incluído na cadência de amanhã.</span>
           </div>
         )}
       </div>

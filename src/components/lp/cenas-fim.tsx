@@ -9,9 +9,9 @@ import { Janela, Selo } from "./janela";
 /* ── 04 · Cadência ─────────────────────────────────────────────── */
 
 const TOQUES = [
-  { dia: "Dia 1 · seg 9:12", canal: "whatsapp" as const, texto: "Oi, Mariana, tudo bem? Vi que a Sorriso Pleno tem 4,8 no Google com mais de 200 avaliações, bem acima da média. Pergunta rápida: a confirmação de consulta aí ainda é por telefone?" },
-  { dia: "Dia 3 · qua 10:05", canal: "email" as const, assunto: "Faltas na agenda da Sorriso Pleno", texto: "Mariana, te mandei uma mensagem no WhatsApp também. Clínica com o movimento de vocês costuma perder alguns horários por semana com paciente que não aparece. Se quiser, te mostro como outras clínicas de BH resolveram isso sem contratar ninguém." },
-  { dia: "Dia 6 · seg 8:47", canal: "whatsapp" as const, texto: "Sei que a rotina aí é corrida. Se fizer sentido, te mostro em 15 minutos. Quinta à tarde funciona?" },
+  { dia: "Dia 1 · seg 9:12", canal: "whatsapp" as const, texto: "Olá, Dra. Mariana, tudo bem? Vi que a Sorriso Pleno tem nota 4,8 no Google, com mais de 200 avaliações. Uma curiosidade: hoje os novos pacientes chegam mais por indicação ou pela internet?" },
+  { dia: "Dia 3 · qua 10:05", canal: "email" as const, assunto: "Novos pacientes para a Sorriso Pleno", texto: "Mariana, enviei também uma mensagem pelo WhatsApp. Clínicas com a reputação de vocês costumam ter bastante espaço para crescer no digital sem reduzir o valor da consulta. Ajudamos outras clínicas de BH a preencher a agenda de avaliações. Posso mostrar como foi feito?" },
+  { dia: "Dia 6 · seg 8:47", canal: "whatsapp" as const, texto: "Dra. Mariana, imagino que a rotina esteja intensa. Se fizer sentido, apresento o trabalho em 15 minutos. Quinta à tarde seria possível?" },
 ];
 
 const ICONE_CANAL = { whatsapp: MessageCircle, email: Mail, linkedin: Briefcase };
@@ -53,18 +53,18 @@ export function CenaCadencia({ ativa }: { ativa: boolean }) {
             <div className="lp-entra flex flex-col items-start gap-1">
               <span className="font-lp-mono text-[10px] uppercase tracking-[0.1em] text-lp-muted-2">seg 11:32</span>
               <div className="max-w-[85%] rounded-2xl rounded-tl-md border border-lp-line-2 bg-lp-surface-2 px-3 py-2 text-[12.5px] leading-snug text-lp-text">
-                Oi! Quinta 17h pode ser? Tenho interesse sim, a gente perde muito horário.
+                Olá! Quinta às 17h funciona para mim. Temos interesse, sim.
               </div>
             </div>
           )}
           {p >= 6 && (
             <div className="lp-entra flex flex-wrap items-center gap-2 pt-1">
               <span className="inline-flex items-center gap-1.5 rounded-full border border-[#f5b544]/30 bg-[#f5b544]/10 px-2.5 py-1 text-[11px] text-[#f5c46b]">
-                <PauseCircle className="h-3.5 w-3.5" /> Cadência pausada pra ela
+                <PauseCircle className="h-3.5 w-3.5" /> Cadência pausada para Mariana
               </span>
               {p >= 7 && (
                 <span className="lp-entra inline-flex items-center gap-1.5 rounded-full border border-lp-accent/40 bg-lp-accent-soft px-2.5 py-1 text-[11px] text-lp-glow">
-                  <Workflow className="h-3.5 w-3.5" /> Card movido pra &ldquo;Respondeu&rdquo;
+                  <Workflow className="h-3.5 w-3.5" /> Card movido para &ldquo;Respondeu&rdquo;
                 </span>
               )}
             </div>
@@ -77,11 +77,11 @@ export function CenaCadencia({ ativa }: { ativa: boolean }) {
 
 /* ── 05 · Funil ─────────────────────────────────────────────────── */
 
-const COLUNAS = ["Abordados", "Responderam", "Reunião", "Fechado"] as const;
-const BASE_COLUNAS = [812, 64, 19, 5];
+const COLUNAS = ["Abordados", "Respostas", "Reunião", "Fechados"] as const;
+const BASE_COLUNAS = [1620, 194, 58, 14];
 const FIXOS: [number, string, string][] = [
   [0, "Grupo Vértice", "etapa 3/6"], [0, "Oral Center", "etapa 2/6"], [0, "OdontoVida", "etapa 5/6"],
-  [1, "Clínica Sorrir Mais", "há 2 h"], [2, "Dra. Ana Ribeiro", "ter 10h"], [3, "Instituto Triângulo", "R$ 390/mês"],
+  [1, "Clínica Sorrir Mais", "há 2 h"], [2, "Dra. Ana Ribeiro", "ter 10h"], [3, "Instituto Triângulo", "R$ 2.500/mês"],
 ];
 
 export function CenaFunil({ ativa }: { ativa: boolean }) {
@@ -127,7 +127,7 @@ export function CenaFunil({ ativa }: { ativa: boolean }) {
           )}
           {p >= 3 && (
             <div className="lp-entra flex items-center gap-2 rounded-xl border border-lp-line bg-white/[0.02] px-3 py-2 text-[12.5px] text-lp-muted">
-              <Workflow className="h-4 w-4 shrink-0 text-lp-accent" /> Fluxo disparado: lembrete da reunião vai sair na quinta de manhã
+              <Workflow className="h-4 w-4 shrink-0 text-lp-accent" /> Automação disparada: lembrete da reunião agendado para quinta pela manhã
             </div>
           )}
         </div>
@@ -138,21 +138,21 @@ export function CenaFunil({ ativa }: { ativa: boolean }) {
 
 /* ── 06 · Resultado ─────────────────────────────────────────────── */
 
-const SEMANAS = [3, 4, 5, 7];
+const SEMANAS = [11, 13, 16, 18];
 
 export function CenaResultado({ ativa }: { ativa: boolean }) {
   const p = useLinhaDoTempo(ativa, [250, 500, 500]);
   const ligado = p >= 1;
-  const encontradas = useContagem(1284, ligado, 1500);
-  const abordadas = useContagem(812, ligado, 1700);
-  const conversas = useContagem(64, ligado, 1900);
-  const reunioes = useContagem(19, ligado, 2100);
-  const contratos = useContagem(5, ligado, 2300);
-  const receita = useContagem(1950, p >= 2, 1800);
+  const encontradas = useContagem(2410, ligado, 1500);
+  const abordadas = useContagem(1620, ligado, 1700);
+  const conversas = useContagem(194, ligado, 1900);
+  const reunioes = useContagem(58, ligado, 2100);
+  const contratos = useContagem(14, ligado, 2300);
+  const receita = useContagem(35000, p >= 2, 1800);
   const linhas = [
     ["Empresas encontradas", encontradas],
     ["Abordadas", abordadas],
-    ["Responderam", conversas],
+    ["Respostas", conversas],
     ["Reuniões", reunioes],
     ["Contratos", contratos],
   ] as const;
@@ -175,7 +175,7 @@ export function CenaResultado({ ativa }: { ativa: boolean }) {
                 <span className="lp-numero font-lp-mono text-[11px] text-lp-muted">{ligado ? s : ""}</span>
                 <div
                   className="w-full origin-bottom rounded-t-md bg-gradient-to-t from-lp-accent/40 to-lp-glow transition-transform duration-1000 ease-out"
-                  style={{ height: `${(s / 7) * 96}px`, transform: `scaleY(${ligado ? 1 : 0.04})`, transitionDelay: `${i * 140}ms` }}
+                  style={{ height: `${(s / 18) * 96}px`, transform: `scaleY(${ligado ? 1 : 0.04})`, transitionDelay: `${i * 140}ms` }}
                 />
                 <span className="font-lp-mono text-[10px] text-lp-muted-2">S{i + 1}</span>
               </div>
@@ -188,7 +188,7 @@ export function CenaResultado({ ativa }: { ativa: boolean }) {
             {brl(receita)}<span className="text-base font-semibold text-lp-muted">/mês</span>
           </p>
           <p className={cn("text-[12px] text-lp-muted transition-opacity duration-700", p >= 3 ? "opacity-100" : "opacity-0")}>
-            São {brl(23400)} em 12 meses, de um mês de prospecção.
+            {brl(420000)} em 12 meses, a partir de um único mês de prospecção.
           </p>
         </div>
       </div>
