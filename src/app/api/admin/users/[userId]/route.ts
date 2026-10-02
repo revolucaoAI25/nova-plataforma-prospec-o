@@ -4,8 +4,9 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/require-admin";
 import { camposAtivacaoContaTeste } from "@/lib/conta-teste";
+import { dadosClienteSchema, erroValidacao } from "@/lib/dados-cliente";
 
-const patchSchema = z.object({
+const patchSchema = dadosClienteSchema.extend({
   role: z.enum(["user", "admin"]).optional(),
   creditos: z.number().int().min(0).optional(),
   monthly_creditos: z.number().int().min(0).optional(),
@@ -34,13 +35,15 @@ export async function PATCH(
   }
 
   const parsed = patchSchema.safeParse(await request.json().catch(() => null));
-  if (!parsed.success) return NextResponse.json({ error: "Dados inválidos.", detalhes: parsed.error.flatten() }, { status: 400 });
+  if (!parsed.success) return NextResponse.json({ error: erroValidacao(parsed.error), detalhes: parsed.error.flatten() }, { status: 400 });
 
   const admin = createAdminClient();
   const { data: atual } = await admin.from("profiles").select("conta_teste").eq("id", userId).maybeSingle();
   if (!atual) return NextResponse.json({ error: "Usuário não encontrado." }, { status: 404 });
 
-  let campos: Record<string, unknown> = { ...parsed.data };
+  let campos: Record<string, unknown> = Object.fromEntries(
+    Object.entries(parsed.data).filter(([, v]) => v !== undefined),
+  );
   const ficaTeste = parsed.data.conta_teste ?? atual.conta_teste;
   if (parsed.data.conta_teste === true && !atual.conta_teste) {
     campos = { ...campos, ...(await camposAtivacaoContaTeste()) };
@@ -50,5 +53,5 @@ export async function PATCH(
 
   const { error } = await admin.from("profiles").update(campos).eq("id", userId);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, telefone: campos.telefone });
 }

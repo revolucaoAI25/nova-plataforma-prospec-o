@@ -33,6 +33,7 @@ export default async function PerfilPage() {
       />
       <PerfilProspeccao
         email={profile.email}
+        dadosCliente={{ nome: profile.nome, telefone: profile.telefone, empresa: profile.empresa }}
         nomePlano={nomePlano}
         creditos={profile.creditos}
         status={onboarding?.status ?? null}

@@ -30,9 +30,13 @@ export async function listarComprasDoUsuario(sb: SupabaseClient, userId: string)
 export async function obterOuCriarClienteAsaas(profile: Profile, cpfCnpj: string): Promise<string> {
   if (profile.asaas_customer_id) return profile.asaas_customer_id;
 
+  // CNPJ → razão/nome da empresa; CPF → nome da pessoa. Sem cadastro, o e-mail.
+  const ehCnpj = cpfCnpj.replace(/\D/g, "").length === 14;
+  const nome = (ehCnpj ? profile.empresa || profile.nome : profile.nome || profile.empresa) || profile.email;
   const customerId = await criarClienteAsaas({
-    nome: profile.email,
+    nome,
     cpfCnpj,
+    telefone: profile.telefone,
     email: profile.email,
     externalReference: profile.id,
   });

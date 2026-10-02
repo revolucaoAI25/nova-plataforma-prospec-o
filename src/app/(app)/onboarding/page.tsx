@@ -6,6 +6,8 @@ import { OnboardingShell } from "@/components/onboarding/onboarding-shell";
 import { listarAplicacoes, obterOnboarding } from "@/lib/onboarding/db";
 import { LISTA_CENARIOS } from "@/lib/onboarding/cenarios";
 import { respostasSchema } from "@/lib/onboarding/questionario";
+import { respostasComDadosDoPerfil } from "@/lib/dados-cliente";
+import { getProfile } from "@/lib/credits";
 
 export const metadata = { title: "Estratégia de prospecção" };
 
@@ -15,7 +17,9 @@ export default async function OnboardingPage() {
   if (!user) redirect("/login");
 
   const admin = createAdminClient();
-  const [onboarding, aplicacoes] = await Promise.all([obterOnboarding(admin, user.id), listarAplicacoes(admin, user.id)]);
+  const [onboarding, aplicacoes, profile] = await Promise.all([
+    obterOnboarding(admin, user.id), listarAplicacoes(admin, user.id), getProfile(admin, user.id),
+  ]);
   const metaCenarios = Object.fromEntries(LISTA_CENARIOS.map((c) => [c.id, { nome: c.nome, etapas: c.etapas, canais: c.canais }]));
   const status = onboarding?.status ?? "rascunho";
 
@@ -32,7 +36,7 @@ export default async function OnboardingPage() {
       />
       <OnboardingShell
         status={status}
-        respostas={respostasSchema.safeParse(onboarding?.respostas ?? {}).data ?? {}}
+        respostas={respostasComDadosDoPerfil(respostasSchema.safeParse(onboarding?.respostas ?? {}).data ?? {}, profile)}
         resultado={onboarding?.resultado ?? null}
         erro={onboarding?.erro ?? null}
         aplicacoes={aplicacoes.filter((a) => a.geracao === onboarding?.resultado?.geradoEm)}

@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import type { UserStatsRow } from "@/lib/database.types";
+import { formatarExibicao } from "@/lib/phone";
 
 function UserRow({ user, isSelf }: { user: UserStatsRow; isSelf: boolean }) {
   const router = useRouter();
@@ -61,9 +62,19 @@ function UserRow({ user, isSelf }: { user: UserStatsRow; isSelf: boolean }) {
 
   return (
     <TableRow>
-      <TableCell className="max-w-[200px] truncate font-medium">
-        {user.email}
-        {user.conta_teste && <Badge variant="outline" className="ml-2">Teste</Badge>}
+      <TableCell className="max-w-[240px]">
+        <div className="flex min-w-0 flex-col gap-0.5">
+          <span className="flex min-w-0 items-center gap-2">
+            <span className="truncate font-medium text-foreground" title={user.nome || user.email}>{user.nome || user.email}</span>
+            {user.conta_teste && <Badge variant="outline">Teste</Badge>}
+          </span>
+          {user.nome && <span className="truncate text-xs text-muted-foreground" title={user.email}>{user.email}</span>}
+          {(user.empresa || user.telefone) && (
+            <span className="truncate text-xs text-muted-foreground">
+              {[user.empresa, user.telefone && formatarExibicao(user.telefone)].filter(Boolean).join(" · ")}
+            </span>
+          )}
+        </div>
       </TableCell>
       <TableCell>
         <Select value={role} onValueChange={(v) => markDirty(setRole)(v as "user" | "admin")} disabled={isSelf}>
@@ -109,7 +120,7 @@ function UserRow({ user, isSelf }: { user: UserStatsRow; isSelf: boolean }) {
       </TableCell>
       <TableCell className="text-right">
         <div className="flex justify-end gap-1">
-          <Button asChild size="sm" variant="ghost" title="Conta de teste">
+          <Button asChild size="sm" variant="ghost" title="Dados do cliente e conta de teste">
             <Link href={`/admin/${user.id}`}>
               <UserCog className="h-4 w-4" />
             </Link>
@@ -128,7 +139,7 @@ export function AdminUsersTable({ users, currentUserId }: { users: UserStatsRow[
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead>E-mail</TableHead>
+          <TableHead>Cliente</TableHead>
           <TableHead>Papel</TableHead>
           <TableHead>Créditos</TableHead>
           <TableHead>Renovação mensal</TableHead>

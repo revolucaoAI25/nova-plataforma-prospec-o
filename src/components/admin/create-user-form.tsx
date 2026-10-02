@@ -14,6 +14,9 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 export function CreateUserForm() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
+  const [nome, setNome] = useState("");
+  const [telefone, setTelefone] = useState("");
+  const [empresa, setEmpresa] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [creditos, setCreditos] = useState(0);
@@ -29,7 +32,7 @@ export function CreateUserForm() {
     const resp = await fetch("/api/admin/users", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password, creditos, contaTeste, testeExpiraEm: testeExpiraEm || undefined }),
+      body: JSON.stringify({ nome, telefone, empresa, email, password, creditos, contaTeste, testeExpiraEm: testeExpiraEm || undefined }),
     });
     const data = await resp.json();
     if (!resp.ok) {
@@ -37,6 +40,9 @@ export function CreateUserForm() {
       setLoading(false);
       return;
     }
+    setNome("");
+    setTelefone("");
+    setEmpresa("");
     setEmail("");
     setPassword("");
     setCreditos(0);
@@ -63,6 +69,23 @@ export function CreateUserForm() {
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <div className="flex flex-wrap items-end gap-3">
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="new-nome">Nome</Label>
+              <Input id="new-nome" required autoComplete="off" value={nome} onChange={(e) => setNome(e.target.value)} className="w-64" />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="new-telefone">Telefone <span className="font-normal text-muted-2">(opcional)</span></Label>
+              <Input
+                id="new-telefone" type="tel" inputMode="tel" autoComplete="off" placeholder="(11) 99999-9999"
+                value={telefone} onChange={(e) => setTelefone(e.target.value)} className="w-48"
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="new-empresa">Empresa <span className="font-normal text-muted-2">(opcional)</span></Label>
+              <Input id="new-empresa" autoComplete="off" value={empresa} onChange={(e) => setEmpresa(e.target.value)} className="w-64" />
+            </div>
+          </div>
           <div className="flex flex-wrap items-end gap-3">
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="new-email">E-mail</Label>

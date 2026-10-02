@@ -3,10 +3,11 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Coins, Compass, Loader2, Mail, Plug, RefreshCw, Save, Sparkles, UserRound } from "lucide-react";
+import { ArrowRight, Coins, Compass, IdCard, Loader2, Mail, Plug, RefreshCw, Save, Sparkles, UserRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
+import { DadosClienteForm, type DadosClienteValores } from "@/components/perfil/dados-cliente-form";
 import { CampoPergunta, respondida, type Valor } from "@/components/onboarding/questionario-wizard";
 import {
   ETAPAS_QUESTIONARIO, pendenciasParaGerar, perguntaVisivel, type RespostasOnboarding,
@@ -23,9 +24,10 @@ function dataCurta(iso: string) {
  * sugestões atuais; "atualizar sugestões" gera de novo com o perfil novo.
  */
 export function PerfilProspeccao({
-  email, nomePlano, creditos, status, geradoEm, respostasIniciais,
+  email, dadosCliente, nomePlano, creditos, status, geradoEm, respostasIniciais,
 }: {
   email: string;
+  dadosCliente: DadosClienteValores;
   nomePlano: string | null;
   creditos: number;
   status: OnboardingStatus | null;
@@ -113,6 +115,17 @@ export function PerfilProspeccao({
           </div>
           <ArrowRight className="h-4 w-4 text-muted-2 transition-transform group-hover:translate-x-0.5" />
         </Link>
+      </section>
+
+      <section className="flex flex-col gap-4 rounded-2xl border border-border bg-card p-5">
+        <div className="flex items-center gap-3">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent text-primary"><IdCard className="h-5 w-5" /></span>
+          <div className="min-w-0">
+            <h2 className="text-base font-semibold text-foreground">Seus dados</h2>
+            <p className="text-xs text-muted-foreground">Usados no seu cadastro e nas cobranças.</p>
+          </div>
+        </div>
+        <DadosClienteForm inicial={dadosCliente} endpoint="/api/perfil" />
       </section>
 
       {nuncaComecou ? (

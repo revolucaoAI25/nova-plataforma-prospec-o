@@ -54,13 +54,17 @@ export async function criarClienteAsaas(dados: {
   cpfCnpj: string;
   email: string;
   externalReference: string;
+  /** E.164 sem "+"; o Asaas quer só DDD + número. */
+  telefone?: string | null;
 }): Promise<string> {
+  const tel = (dados.telefone ?? "").replace(/\D/g, "").replace(/^55(?=\d{10,11}$)/, "");
   const cliente = await req<AsaasCustomer>("/customers", {
     method: "POST",
     body: JSON.stringify({
       name: dados.nome,
       cpfCnpj: dados.cpfCnpj.replace(/\D/g, ""),
       email: dados.email,
+      ...(tel ? { mobilePhone: tel } : {}),
       externalReference: dados.externalReference,
     }),
   });

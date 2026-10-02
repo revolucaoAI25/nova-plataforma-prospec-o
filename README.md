@@ -48,7 +48,7 @@ No [painel do Supabase](https://supabase.com/dashboard), crie um projeto novo
 10. `supabase/migrations/0010_email_domains.sql` (verificação de domínio por usuário, disparo por e-mail)
 11. `supabase/migrations/0011_email_domains_global_unique.sql` (corrige falha de segurança multi-tenant — ver "Decisões de arquitetura")
 12. `supabase/migrations/0012_bigdatacorp_enrichment.sql` (enriquecimento de leads por CNPJ via BigDataCorp)
-13. Em seguida, `0013` a `0032`, sempre em ordem numérica. Destaques:
+13. Em seguida, `0013` a `0033`, sempre em ordem numérica. Destaques:
     `0028_seguranca_profiles.sql` (fecha escalonamento de privilégio — ver
     "Decisões de arquitetura") e `0029_limpeza_legado.sql` (remove colunas e
     tabelas antigas e conserta `platform_settings`). Rode a `0029` **depois**
@@ -58,11 +58,16 @@ No [painel do Supabase](https://supabase.com/dashboard), crie um projeto novo
     chaves de contato nos cards e o status "respondeu" nos alvos de disparo.
     `0032_ritmo_ab_status.sql` traz ritmo de envio (limite de leads novos
     por dia, janela de horário e dias), teste A/B por etapa e as colunas de
-    entregue/lido/clicado/devolvido nos logs. Todas podem ser rodadas de
+    entregue/lido/clicado/devolvido nos logs. `0033_dados_cliente.sql`
+    adiciona nome, telefone e empresa ao perfil e faz todo perfil novo nascer
+    como `user` (o papel não vem mais do metadata do cadastro). Todas podem ser rodadas de
     novo sem erro (usam `if not exists` / `create or replace`).
 
 Em **Authentication → Providers**, deixe E-mail/senha habilitado (é o único método
-usado no login). Contas são criadas pelo admin — não há cadastro público.
+usado no login). Contas são criadas pelo admin — não há cadastro público. Em
+**Authentication → Sign In / Providers**, desligue *Allow new users to sign
+up*: a chave anon é pública, e com o cadastro aberto qualquer um cria conta
+direto pela API do Supabase (sem créditos nem recursos, mas cria).
 
 ### 2. Variáveis de ambiente
 
@@ -1213,6 +1218,17 @@ mas nada é processado — é só fila).
   - *Correção*: o proxy redirecionava pro /login o link de descadastro do
     rodapé dos e-mails e os webhooks do LinkedIn (rotas públicas fora de
     /api/webhooks) — nenhum dos dois funcionava.
+
+- **Dados do cliente** (`0033`): nome, telefone (guardado em E.164) e
+  empresa no perfil. O admin preenche ao criar a conta (nome obrigatório) e
+  edita em *Conta do usuário*; a tabela de usuários mostra nome, e-mail,
+  empresa e telefone. O cliente corrige em *Meu perfil → Seus dados*
+  (`PATCH /api/perfil`, com a sessão dele — o trigger de `0028` libera só
+  essas três colunas). O questionário de prospecção já vem com nome da
+  empresa e quem assina preenchidos, e o cliente do Asaas é criado com o
+  nome (CPF) ou a empresa (CNPJ) e o celular. *Correção*: `handle_new_user`
+  lia o papel do `user_metadata`, que quem se cadastra controla — com o
+  cadastro aberto no Supabase, dava pra criar conta já como admin.
 
 - **Ritmo de envio, teste A/B e status de entrega/leitura** (`0032`):
   - *Ritmo* (`ritmo.ts`, card "Ritmo de envio" em cada campanha): limite

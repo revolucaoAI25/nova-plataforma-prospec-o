@@ -37,6 +37,10 @@ export interface Profile {
   id: string;
   email: string;
   role: "user" | "admin";
+  nome: string | null;
+  /** E.164 sem "+" (ex.: 5511999999999). */
+  telefone: string | null;
+  empresa: string | null;
   credits_renewed_at: string | null;
 
   instagram_visible: boolean;
@@ -309,6 +313,9 @@ export interface UserStatsRow {
   bigdatacorp_enrichment_habilitado: boolean;
   creditos: number;
   monthly_creditos: number;
+  nome: string | null;
+  telefone: string | null;
+  empresa: string | null;
 }
 
 export type EnrichmentRunStatus = "pendente" | "processando" | "concluido" | "erro";
