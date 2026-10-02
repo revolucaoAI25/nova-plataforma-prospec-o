@@ -1,13 +1,15 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { apiBloqueadaNoTeste, emTesteGratis, MSG_TESTE_GRATIS } from "@/lib/teste-gratis-regras";
+import type { Profile } from "@/lib/database.types";
 
 // Não importa o polyfill de WebSocket (src/lib/supabase/websocket-polyfill)
 // aqui: este arquivo roda no Edge Runtime (proxy.ts, sem `runtime` explícito
 // = Edge no Next.js), que já tem WebSocket nativo e NÃO suporta os módulos
 // Node (net/tls) que o pacote `ws` usa — importá-lo aqui quebraria o build.
 
-// Além das páginas de login, da página de vendas (/conheca) e da contratação
-// (/assinar, com a API que cria a conta): rotas de API
+// Além das páginas de login, da página de vendas (/conheca), da contratação
+// (/assinar) e do teste grátis (/teste-gratis), com as APIs que criam a conta: rotas de API
 // chamadas por quem NÃO tem sessão — o link de descadastro no rodapé dos
 // e-mails (destinatário do disparo) e os webhooks do LinkedIn. Sem isso o proxy devolvia 307 pro /login e nada
 // disso funcionava. Cada rota faz a própria verificação (token/segredo).
@@ -16,6 +18,8 @@ const PUBLIC_PATHS = [
   "/conheca",
   "/assinar",
   "/api/assinar",
+  "/teste-gratis",
+  "/api/teste-gratis",
   "/login",
   "/redefinir-senha",
   "/auth",
@@ -65,6 +69,20 @@ export async function updateSession(request: NextRequest) {
     url.pathname = "/login";
     url.searchParams.set("next", pathname);
     return NextResponse.redirect(url);
+  }
+
+  // Teste grátis: APIs de recursos pagos sem flag própria no perfil
+  // (fluxos, funil, estratégia por IA, conexões). Só essas rotas pagam a
+  // consulta extra ao perfil.
+  if (user && apiBloqueadaNoTeste(pathname)) {
+    const { data: perfil } = await supabase
+      .from("profiles")
+      .select("teste_gratis, assinatura_status, role")
+      .eq("id", user.id)
+      .maybeSingle();
+    if (emTesteGratis(perfil as Pick<Profile, "teste_gratis" | "assinatura_status" | "role"> | null)) {
+      return NextResponse.json({ error: MSG_TESTE_GRATIS, testeGratis: true }, { status: 403 });
+    }
   }
 
   if (user && pathname === "/login") {

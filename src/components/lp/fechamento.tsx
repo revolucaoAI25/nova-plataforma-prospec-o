@@ -10,6 +10,10 @@ export const PERGUNTAS: [string, string][] = [
     "Você escolhe o plano, cria a sua conta e conclui o pagamento por Pix, boleto ou cartão. Assim que o pagamento é confirmado, os créditos e os recursos do plano são liberados e o onboarding começa.",
   ],
   [
+    "Posso testar antes de assinar?",
+    "Sim. No teste grátis você cria a conta sem cartão e extrai empresas do seu público por CNPJ e Google Maps para conferir a qualidade dos contatos. E, ao assinar, você tem 7 dias de garantia: se a plataforma não fizer sentido para a sua empresa, devolvemos 100% do valor pago.",
+  ],
+  [
     "Preciso investir em tráfego pago também?",
     "Não. A prospecção ativa gera oportunidades sem anúncios: você escolhe as empresas e a plataforma inicia a conversa com quem decide. Se você já investe em tráfego, as duas estratégias se complementam, e a sua agenda deixa de depender de um único canal.",
   ],
@@ -114,6 +118,9 @@ export function ChamadaFinal() {
           </a>
         </div>
         <p className="mt-6 text-sm text-lp-muted-2">
+          Prefere conhecer antes?{" "}
+          <Link href="/teste-gratis" className="-my-2 inline-block py-2 text-lp-muted underline-offset-4 hover:text-lp-text hover:underline">Teste grátis, sem cartão</Link>
+          <span aria-hidden="true"> · </span>
           Já é cliente?{" "}
           <Link href="/login" className="-my-2 inline-block py-2 text-lp-muted underline-offset-4 hover:text-lp-text hover:underline">Entrar na plataforma</Link>
         </p>

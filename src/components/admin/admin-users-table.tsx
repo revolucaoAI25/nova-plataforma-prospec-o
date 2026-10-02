@@ -67,6 +67,7 @@ function UserRow({ user, isSelf }: { user: UserStatsRow; isSelf: boolean }) {
           <span className="flex min-w-0 items-center gap-2">
             <span className="truncate font-medium text-foreground" title={user.nome || user.email}>{user.nome || user.email}</span>
             {user.conta_teste && <Badge variant="outline">Teste</Badge>}
+            {user.teste_gratis && <Badge variant="outline">Teste grátis</Badge>}
           </span>
           {user.nome && <span className="truncate text-xs text-muted-foreground" title={user.email}>{user.email}</span>}
           {(user.empresa || user.telefone) && (

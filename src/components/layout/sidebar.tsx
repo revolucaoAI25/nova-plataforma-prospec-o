@@ -19,6 +19,7 @@ export function Sidebar({
   bigdatacorpEnrichmentHabilitado,
   emailDisparoHabilitado,
   linkedinDisparoHabilitado,
+  testeGratis = false,
 }: {
   role: "user" | "admin";
   email: string;
@@ -29,6 +30,7 @@ export function Sidebar({
   bigdatacorpEnrichmentHabilitado: boolean;
   emailDisparoHabilitado: boolean;
   linkedinDisparoHabilitado: boolean;
+  testeGratis?: boolean;
 }) {
   const [collapsed, setCollapsed] = useState(false);
 
@@ -57,7 +59,7 @@ export function Sidebar({
 
   const sections = buildNavSections({
     isAdmin: role === "admin", instagramVisible, linkedinVisible, disparoHabilitado, enriquecimentoIaHabilitado,
-    bigdatacorpEnrichmentHabilitado, emailDisparoHabilitado, linkedinDisparoHabilitado,
+    bigdatacorpEnrichmentHabilitado, emailDisparoHabilitado, linkedinDisparoHabilitado, testeGratis,
   });
 
   return (

@@ -4,6 +4,8 @@ import { getProfile } from "@/lib/credits";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Topbar } from "@/components/layout/topbar";
 import { GuiaFlutuante } from "@/components/onboarding/guia-flutuante";
+import { PortaoTesteGratis } from "@/components/layout/portao-teste-gratis";
+import { emTesteGratis } from "@/lib/teste-gratis-regras";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
@@ -31,6 +33,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     redirect("/login?expirado=1");
   }
 
+  const testeGratis = emTesteGratis(profile);
+
   return (
     <div className="flex min-h-screen bg-background">
       <Sidebar
@@ -43,15 +47,19 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         bigdatacorpEnrichmentHabilitado={profile.bigdatacorp_enrichment_habilitado}
         emailDisparoHabilitado={profile.email_disparo_habilitado}
         linkedinDisparoHabilitado={profile.linkedin_disparo_habilitado}
+        testeGratis={testeGratis}
       />
       {/* min-w-0 é essencial aqui: sem isso, um item flex nunca encolhe
           abaixo do conteúdo intrínseco — uma tabela larga (leads, usuários)
           empurra a página inteira pro lado em vez de rolar só por dentro. */}
       <div className="flex min-w-0 flex-1 flex-col transition-[padding-left] duration-200 md:pl-[var(--app-sidebar-w)]">
         <Topbar profile={profile} />
-        <main className="min-w-0 flex-1 p-4 pb-[max(1rem,var(--guia-espaco,0px))] md:p-8 md:pb-[max(2rem,var(--guia-espaco,0px))]">{children}</main>
+        <main className="min-w-0 flex-1 p-4 pb-[max(1rem,var(--guia-espaco,0px))] md:p-8 md:pb-[max(2rem,var(--guia-espaco,0px))]">
+          {testeGratis ? <PortaoTesteGratis>{children}</PortaoTesteGratis> : children}
+        </main>
       </div>
-      <GuiaFlutuante />
+      {/* O guia leva à estratégia por IA, que fica bloqueada no teste grátis. */}
+      {!testeGratis && <GuiaFlutuante />}
     </div>
   );
 }

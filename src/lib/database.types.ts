@@ -47,6 +47,8 @@ export interface Profile {
   disparo_habilitado: boolean;
   conta_teste: boolean;
   teste_expira_em: string | null;
+  /** Teste grátis do cadastro público — ver src/lib/teste-gratis.ts. */
+  teste_gratis: boolean;
 
   enriquecimento_ia_habilitado: boolean;
   openai_api_key: string | null;
@@ -206,6 +208,7 @@ export type PlatformSettingKey =
   | "google_maps_api_key"
   | "apify_api_key"
   | "creditos_conta_teste"
+  | "creditos_teste_gratis"
   | "openai_api_key_plataforma"
   | "onboarding_modelo_ia"
   | "resend_api_key"
@@ -316,6 +319,7 @@ export interface UserStatsRow {
   nome: string | null;
   telefone: string | null;
   empresa: string | null;
+  teste_gratis: boolean;
 }
 
 export type EnrichmentRunStatus = "pendente" | "processando" | "concluido" | "erro";

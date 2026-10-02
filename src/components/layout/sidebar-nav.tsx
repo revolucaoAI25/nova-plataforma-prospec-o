@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useMemo, useState } from "react";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { NavSection, NavLeaf, NavGroupNode } from "./nav-items";
 
@@ -96,7 +96,7 @@ function NavLink({
   return (
     <Link
       href={item.href}
-      title={collapsed ? item.label : undefined}
+      title={collapsed ? `${item.label}${item.bloqueado ? " (disponível ao assinar)" : ""}` : undefined}
       onClick={onNavigate}
       className={cn(
         "relative flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-colors",
@@ -104,14 +104,17 @@ function NavLink({
         indent && "py-1.5 text-[13px]",
         active
           ? "bg-accent text-accent-foreground"
-          : "text-muted-foreground hover:bg-secondary hover:text-foreground",
+          : item.bloqueado
+            ? "text-muted-2 hover:bg-secondary hover:text-muted-foreground"
+            : "text-muted-foreground hover:bg-secondary hover:text-foreground",
       )}
     >
       {active && !collapsed && (
         <span className="absolute left-0 top-1/2 h-4 w-0.5 -translate-y-1/2 rounded-full bg-primary" />
       )}
       <Icon className={cn("shrink-0", indent ? "h-3.5 w-3.5" : "h-4 w-4")} />
-      {!collapsed && item.label}
+      {!collapsed && <span className="flex-1 truncate">{item.label}</span>}
+      {!collapsed && item.bloqueado && <Lock className="h-3 w-3 shrink-0" aria-label="Disponível ao assinar" />}
     </Link>
   );
 }
@@ -172,6 +175,7 @@ function NavGroup({
       >
         <Icon className="h-4 w-4 shrink-0" />
         <span className="flex-1 text-left">{item.label}</span>
+        {item.bloqueado && <Lock className="h-3 w-3 shrink-0 text-muted-2" aria-label="Disponível ao assinar" />}
         <ChevronDown className={cn("h-3.5 w-3.5 shrink-0 transition-transform duration-200", open && "rotate-180")} />
       </button>
       {open && (

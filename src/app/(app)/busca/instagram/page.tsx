@@ -4,6 +4,7 @@ import { getProfile, custosVisiveis } from "@/lib/credits";
 import { InstagramSearchForm } from "@/components/search/instagram-search-form";
 import { PageHeader } from "@/components/layout/page-header";
 import { sugestoesDaBusca } from "@/lib/onboarding/publicos";
+import { emTesteGratis } from "@/lib/teste-gratis-regras";
 
 export const metadata = { title: "Busca por Instagram" };
 
@@ -14,7 +15,8 @@ export default async function BuscaInstagramPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
   const profile = await getProfile(supabase, user.id);
-  if (!profile?.instagram_visible) redirect("/");
+  // No teste grátis a página aparece com o convite para assinar (PortaoTesteGratis).
+  if (!profile?.instagram_visible && !emTesteGratis(profile)) redirect("/");
   const custos = await custosVisiveis(supabase, ["instagram"]);
 
   const sugestoes = await sugestoesDaBusca(user.id, "instagram");

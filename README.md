@@ -1319,6 +1319,30 @@ mas nada é processado — é só fila).
     lido, e abertura de e-mail é aproximada — por isso o relatório põe a
     resposta em destaque, não a leitura.
 
+- **Teste grátis e garantia** (`/teste-gratis`, `src/lib/teste-gratis*.ts`,
+  `0034_teste_gratis.sql`):
+  - *Cadastro público sem cartão*: nome, empresa, e-mail, WhatsApp e
+    senha. A conta nasce com `teste_gratis = true`, nenhum recurso de plano
+    e poucos créditos (`creditos_teste_gratis` em Chaves da plataforma,
+    padrão 50). Um teste por e-mail e por WhatsApp, 3 cadastros por hora
+    por IP e campo invisível contra robôs.
+  - *O que libera*: busca por CNPJ e Google Maps, histórico, perfil e
+    créditos. O resto aparece no menu com cadeado e a página mostra o
+    convite para assinar (`PortaoTesteGratis`). Nas APIs, disparos,
+    enriquecimento e Instagram/LinkedIn já caem pelas flags do perfil
+    (desligadas); fluxos, funil, onboarding e integrações são recusados no
+    proxy, que só consulta o perfil nessas rotas. Créditos avulsos e
+    extras ficam fora: no teste só o plano faz sentido.
+  - *Fim do teste*: o webhook de pagamento desliga `teste_gratis` na 1ª
+    cobrança confirmada (e `emTesteGratis` já ignora a coluna com a
+    assinatura ativa). A coluna é protegida pelo trigger de 0028, então o
+    próprio usuário não consegue se liberar.
+  - *Diferente de `conta_teste`*: aquela é a conta de demonstração criada
+    pelo admin, com quase tudo liberado.
+  - *Garantia de 7 dias* na página de planos, no checkout e no FAQ — é o
+    direito de arrependimento do CDC (art. 49) para compras online, então
+    não cria obrigação nova; o reembolso é feito manualmente no Asaas.
+
 ## Estrutura
 
 ```

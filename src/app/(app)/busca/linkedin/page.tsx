@@ -4,6 +4,7 @@ import { getProfile, custosVisiveis } from "@/lib/credits";
 import { LinkedInSearchForm } from "@/components/search/linkedin-search-form";
 import { PageHeader } from "@/components/layout/page-header";
 import { sugestoesDaBusca } from "@/lib/onboarding/publicos";
+import { emTesteGratis } from "@/lib/teste-gratis-regras";
 
 export const metadata = { title: "Busca por LinkedIn" };
 
@@ -14,7 +15,8 @@ export default async function BuscaLinkedInPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
   const profile = await getProfile(supabase, user.id);
-  if (!profile?.linkedin_visible) redirect("/");
+  // No teste grátis a página aparece com o convite para assinar (PortaoTesteGratis).
+  if (!profile?.linkedin_visible && !emTesteGratis(profile)) redirect("/");
   const custos = await custosVisiveis(supabase, ["linkedin"]);
 
   const sugestoes = await sugestoesDaBusca(user.id, "linkedin");

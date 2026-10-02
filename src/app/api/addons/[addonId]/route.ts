@@ -3,6 +3,7 @@ import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { getProfile } from "@/lib/credits";
 import { MSG_CONTA_TESTE_SEM_COMPRA } from "@/lib/conta-teste";
+import { emTesteGratis, MSG_TESTE_GRATIS_ASSINAR } from "@/lib/teste-gratis";
 import { asaasConfigurado } from "@/lib/integrations/asaas";
 import { assinarAddon, cancelarAddon } from "@/lib/addons-db";
 import type { UserAddonSubscriptionRow } from "@/lib/database.types";
@@ -24,6 +25,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ add
   const profile = await getProfile(supabase, user.id);
   if (!profile) return NextResponse.json({ error: "Perfil não encontrado." }, { status: 404 });
   if (profile.conta_teste) return NextResponse.json({ error: MSG_CONTA_TESTE_SEM_COMPRA }, { status: 403 });
+  if (emTesteGratis(profile)) return NextResponse.json({ error: MSG_TESTE_GRATIS_ASSINAR }, { status: 403 });
 
   const { data: assinaturaAtual } = await supabase
     .from("user_addon_subscriptions")

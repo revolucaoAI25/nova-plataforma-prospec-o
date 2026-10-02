@@ -2,15 +2,17 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { LogOut, Coins, Plus } from "lucide-react";
+import { LogOut, Coins, Plus, Sparkles } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { MobileNav } from "@/components/layout/mobile-nav";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import type { Profile } from "@/lib/database.types";
+import { emTesteGratis } from "@/lib/teste-gratis-regras";
 
 export function Topbar({ profile }: { profile: Profile }) {
   const router = useRouter();
+  const testeGratis = emTesteGratis(profile);
 
   async function handleLogout() {
     const supabase = createClient();
@@ -31,6 +33,7 @@ export function Topbar({ profile }: { profile: Profile }) {
           bigdatacorpEnrichmentHabilitado={profile.bigdatacorp_enrichment_habilitado}
           emailDisparoHabilitado={profile.email_disparo_habilitado}
           linkedinDisparoHabilitado={profile.linkedin_disparo_habilitado}
+          testeGratis={testeGratis}
         />
         <div className="flex items-center gap-2 text-sm">
           <Link
@@ -43,6 +46,15 @@ export function Topbar({ profile }: { profile: Profile }) {
             <span className="hidden text-muted-foreground sm:inline">créditos</span>
             <Plus className="h-3 w-3 text-primary opacity-0 transition-opacity group-hover:opacity-100" />
           </Link>
+          {testeGratis && (
+            <Link
+              href="/creditos"
+              className="flex items-center gap-1.5 rounded-full bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground transition-opacity hover:opacity-90"
+            >
+              <Sparkles className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Teste grátis ·</span> Assinar
+            </Link>
+          )}
         </div>
       </div>
       <div className="flex items-center gap-3">

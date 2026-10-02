@@ -35,8 +35,6 @@ export interface PlanoLP {
   creditosMes: number;
   /** Teto de empresas por mês: créditos ÷ custo da fonte de extração mais barata do plano. */
   empresasMes: number | null;
-  /** Fonte usada nesse cálculo (ex.: "busca por CNPJ"). */
-  fonteEmpresas: string | null;
   recursos: string[];
 }
 

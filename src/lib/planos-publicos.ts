@@ -16,27 +16,24 @@ const ROTULO_RECURSO: Record<keyof PlanFeatureFlags, string> = {
 /** Créditos de uma empresa com contato conferido: busca por CNPJ + verificação no Maps. */
 const CREDITOS_POR_LEAD_PADRAO = 6;
 
-/**
- * Fontes de extração, na ordem de preferência em caso de empate de custo.
- * CNPJ e Maps entram em todo plano; Instagram e LinkedIn dependem da flag.
- */
-const FONTES: { acao: string; rotulo: string; flag?: keyof PlanFeatureFlags }[] = [
-  { acao: "cnpj", rotulo: "busca por CNPJ" },
-  { acao: "maps", rotulo: "busca no Google Maps" },
-  { acao: "instagram", rotulo: "busca no Instagram", flag: "instagram_visible" },
-  { acao: "linkedin", rotulo: "busca no LinkedIn", flag: "linkedin_visible" },
+/** Fontes de extração. CNPJ e Maps entram em todo plano; Instagram e LinkedIn dependem da flag. */
+const FONTES: { acao: string; flag?: keyof PlanFeatureFlags }[] = [
+  { acao: "cnpj" },
+  { acao: "maps" },
+  { acao: "instagram", flag: "instagram_visible" },
+  { acao: "linkedin", flag: "linkedin_visible" },
 ];
 
-/** Fonte de extração mais barata disponível no plano (custo em créditos por empresa). */
-function fonteMaisBarata(plano: PlanRow, custos: Map<string, number>): { custo: number; rotulo: string } | null {
-  let melhor: { custo: number; rotulo: string } | null = null;
+/** Custo em créditos por empresa da fonte de extração mais barata disponível no plano. */
+function menorCustoExtracao(plano: PlanRow, custos: Map<string, number>): number | null {
+  let menor: number | null = null;
   for (const f of FONTES) {
     if (f.flag && !plano[f.flag]) continue;
     const custo = custos.get(f.acao);
     if (!custo || custo <= 0) continue;
-    if (!melhor || custo < melhor.custo) melhor = { custo, rotulo: f.rotulo };
+    if (menor === null || custo < menor) menor = custo;
   }
-  return melhor;
+  return menor;
 }
 
 export async function carregarPlanosPublicos(): Promise<{ planos: PlanoLP[]; creditosPorLead: number }> {
@@ -51,7 +48,7 @@ export async function carregarPlanosPublicos(): Promise<{ planos: PlanoLP[]; cre
     return {
       creditosPorLead: soma > 0 ? soma : CREDITOS_POR_LEAD_PADRAO,
       planos: ((planos ?? []) as PlanRow[]).map((p) => {
-        const fonte = fonteMaisBarata(p, custoPorAcao);
+        const custoEmpresa = menorCustoExtracao(p, custoPorAcao);
         return {
           id: p.id,
           nome: p.nome,
@@ -59,8 +56,7 @@ export async function carregarPlanosPublicos(): Promise<{ planos: PlanoLP[]; cre
           precoMes: p.preco_centavos / 100,
           precoAnual: p.preco_anual_centavos ? p.preco_anual_centavos / 100 : null,
           creditosMes: p.creditos_mensais,
-          empresasMes: fonte ? Math.floor(p.creditos_mensais / fonte.custo) : null,
-          fonteEmpresas: fonte?.rotulo ?? null,
+          empresasMes: custoEmpresa ? Math.floor(p.creditos_mensais / custoEmpresa) : null,
           recursos: PLAN_FEATURE_FLAG_KEYS.filter((k) => p[k]).map((k) =>
             k === "email_disparo_habilitado" && p.email_limite_diario
               ? `${ROTULO_RECURSO[k]} (até ${num(p.email_limite_diario)} por dia)`

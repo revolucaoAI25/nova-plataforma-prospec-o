@@ -22,12 +22,15 @@ import {
   Compass,
   UserRound,
 } from "lucide-react";
+import { paginaLiberadaNoTeste } from "@/lib/teste-gratis-regras";
 
 export interface NavLeaf {
   type: "link";
   href: string;
   label: string;
   icon: LucideIcon;
+  /** Teste grátis: aparece com cadeado e a página mostra o convite para assinar. */
+  bloqueado?: boolean;
 }
 
 export interface NavGroupNode {
@@ -35,6 +38,7 @@ export interface NavGroupNode {
   label: string;
   icon: LucideIcon;
   children: NavLeaf[];
+  bloqueado?: boolean;
 }
 
 export type NavNode = NavLeaf | NavGroupNode;
@@ -50,6 +54,29 @@ export interface NavSection {
  * só adicionando itens/grupos aqui, sem duplicar lógica de highlight/estado.
  */
 export function buildNavSections({
+  testeGratis = false,
+  ...flags
+}: Parameters<typeof montarSecoes>[0] & { testeGratis?: boolean }): NavSection[] {
+  if (!testeGratis) return montarSecoes(flags);
+  // Teste grátis: o menu mostra a plataforma inteira (como num plano completo,
+  // sem admin) para a pessoa ver o que ganha ao assinar; o que não é CNPJ,
+  // Maps, histórico ou conta fica com cadeado.
+  const secoes = montarSecoes({
+    isAdmin: false, instagramVisible: true, linkedinVisible: true, disparoHabilitado: true, enriquecimentoIaHabilitado: true,
+    bigdatacorpEnrichmentHabilitado: true, emailDisparoHabilitado: true, linkedinDisparoHabilitado: true,
+  });
+  const marcar = (folha: NavLeaf): NavLeaf => ({ ...folha, bloqueado: !paginaLiberadaNoTeste(folha.href) });
+  return secoes.map((secao) => ({
+    ...secao,
+    items: secao.items.map((item) => {
+      if (item.type === "link") return marcar(item);
+      const children = item.children.map(marcar);
+      return { ...item, children, bloqueado: children.every((c) => c.bloqueado) };
+    }),
+  }));
+}
+
+function montarSecoes({
   isAdmin,
   instagramVisible,
   linkedinVisible,

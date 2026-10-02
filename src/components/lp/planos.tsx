@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowRight, ArrowUpRight, Check, Lock, Sparkles } from "lucide-react";
+import Link from "next/link";
+import { ArrowRight, ArrowUpRight, Check, Lock, ShieldCheck, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { brl, linkAssinar, linkWhatsApp, num, type PlanoLP } from "./dados";
 import { usePlanoSugerido } from "./hooks";
@@ -96,7 +97,6 @@ export function Planos({ planos }: { planos: PlanoLP[] }) {
                       {p.empresasMes !== null && (
                         <p className="mt-0.5 text-[13px] text-lp-muted">
                           Até <span className="lp-numero font-semibold text-lp-text">{num(p.empresasMes)}</span> empresas extraídas por mês
-                          {p.fonteEmpresas && <span className="text-lp-muted-2"> na {p.fonteEmpresas}</span>}
                         </p>
                       )}
                     </div>
@@ -139,9 +139,23 @@ export function Planos({ planos }: { planos: PlanoLP[] }) {
         )}
 
         {planos.length > 0 && (
-          <p className="mt-10 flex items-center justify-center gap-2 text-center text-[13px] text-lp-muted-2">
-            <Lock className="h-3.5 w-3.5" /> Pagamento seguro por Pix, boleto ou cartão. Acesso liberado assim que o pagamento é confirmado.
-          </p>
+          <Revela className="mx-auto mt-10 flex max-w-3xl flex-col items-center gap-5 text-center">
+            <div className="flex flex-col items-center gap-3 rounded-2xl border border-lp-line bg-lp-surface px-6 py-5 sm:flex-row sm:text-left">
+              <ShieldCheck className="h-8 w-8 shrink-0 text-lp-accent" />
+              <p className="text-[15px] leading-relaxed text-lp-muted">
+                <strong className="font-semibold text-lp-text">Garantia de 7 dias.</strong> Se a plataforma não fizer sentido para a sua empresa, devolvemos 100% do valor pago.
+              </p>
+            </div>
+            <p className="text-[15px] text-lp-muted">
+              Prefere conhecer antes?{" "}
+              <Link href="/teste-gratis" className="-my-2 inline-block py-2 font-semibold text-lp-glow underline-offset-4 hover:underline">
+                Faça o teste grátis, sem cartão
+              </Link>
+            </p>
+            <p className="flex items-center justify-center gap-2 text-[13px] text-lp-muted-2">
+              <Lock className="h-3.5 w-3.5 shrink-0" /> Pagamento seguro por Pix, boleto ou cartão. Acesso liberado assim que o pagamento é confirmado.
+            </p>
+          </Revela>
         )}
       </div>
     </section>

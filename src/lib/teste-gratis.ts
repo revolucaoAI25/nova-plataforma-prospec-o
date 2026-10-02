@@ -1,0 +1,29 @@
+import { configPlataforma } from "@/lib/platform-settings";
+import { PLAN_FEATURE_FLAG_KEYS } from "@/lib/database.types";
+
+export { emTesteGratis, paginaLiberadaNoTeste, MSG_TESTE_GRATIS } from "@/lib/teste-gratis-regras";
+
+/**
+ * Teste grátis do cadastro público (/teste-gratis). Não confundir com
+ * `conta_teste` (conta de demonstração criada pelo admin, ver conta-teste.ts).
+ *
+ * A pessoa recebe poucos créditos e só extrai empresas por CNPJ e Google
+ * Maps. O resto da plataforma aparece no menu com cadeado e leva para os
+ * planos. O bloqueio acaba sozinho quando a assinatura fica ativa.
+ */
+
+const CREDITOS_PADRAO = 50;
+
+export async function creditosTesteGratis(): Promise<number> {
+  const valor = parseInt(await configPlataforma("creditos_teste_gratis", process.env.CREDITOS_TESTE_GRATIS), 10);
+  return Number.isFinite(valor) && valor >= 0 ? valor : CREDITOS_PADRAO;
+}
+
+/** Campos gravados no perfil quando o teste começa: só créditos, nenhum recurso de plano. */
+export async function camposInicioTesteGratis(): Promise<Record<string, unknown>> {
+  const semRecursos = Object.fromEntries(PLAN_FEATURE_FLAG_KEYS.map((k) => [k, false]));
+  return { ...semRecursos, teste_gratis: true, creditos: await creditosTesteGratis() };
+}
+
+export const MSG_TESTE_GRATIS_ASSINAR = "No teste grátis, os créditos e recursos extras são liberados ao assinar um plano.";
+

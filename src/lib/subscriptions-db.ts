@@ -113,6 +113,8 @@ export async function processarPagamentoAssinatura(asaasSubscriptionId: string, 
 
   const campos: Record<string, unknown> = {
     assinatura_status: "ativa",
+    // Assinou: encerra o teste grátis (se havia), liberando a plataforma.
+    teste_gratis: false,
     monthly_creditos: creditosMensais,
     credits_renewed_at: new Date().toISOString().slice(0, 10),
   };

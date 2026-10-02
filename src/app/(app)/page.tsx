@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Building2, MapPin, AtSign, UserSearch, History, ArrowRight, Search, Users, Coins } from "lucide-react";
+import { Building2, MapPin, AtSign, UserSearch, History, ArrowRight, Search, Users, Coins, Sparkles } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getProfile } from "@/lib/credits";
 import { listarPesquisas, contarPesquisasELeads } from "@/lib/db";
@@ -12,6 +12,8 @@ import { Reveal } from "@/components/ui/reveal";
 import { OnboardingCta } from "@/components/dashboard/onboarding-cta";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { listarAplicacoes, obterOnboarding } from "@/lib/onboarding/db";
+import { Button } from "@/components/ui/button";
+import { emTesteGratis } from "@/lib/teste-gratis-regras";
 
 const FONTE_LABEL: Record<string, string> = { cnpj: "CNPJ", google_maps: "Google Maps", instagram: "Instagram", linkedin: "LinkedIn" };
 const FONTE_ICON: Record<string, typeof Building2> = { cnpj: Building2, google_maps: MapPin, instagram: AtSign, linkedin: UserSearch };
@@ -59,7 +61,34 @@ export default async function DashboardPage() {
       )}
 
       <Reveal delay={30}>
-        <OnboardingCta status={onboarding?.status ?? null} aplicacoes={aplicacoes} />
+        {emTesteGratis(profile) ? (
+          <Card className="relative overflow-hidden border-primary/30">
+            <div aria-hidden className="pointer-events-none absolute -right-10 -top-12 h-40 w-40 rounded-full bg-primary opacity-[0.14] blur-3xl" />
+            <CardContent className="flex flex-col gap-4 p-6 md:flex-row md:items-center md:justify-between md:p-7">
+              <div className="flex max-w-2xl flex-col gap-1.5">
+                <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-accent px-2.5 py-1 text-xs font-semibold text-accent-foreground">
+                  <Sparkles className="h-3.5 w-3.5" /> Teste grátis
+                </span>
+                <p className="text-lg font-semibold text-foreground">
+                  Você tem {profile?.creditos ?? 0} créditos para extrair empresas do seu público.
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Faça uma busca por CNPJ ou no Google Maps e veja os contatos no histórico. Para abordar essas empresas com a estratégia por IA, os disparos e o funil, assine um plano.
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button asChild>
+                  <Link href="/busca/maps"><MapPin /> Buscar no Maps</Link>
+                </Button>
+                <Button asChild variant="outline">
+                  <Link href="/creditos">Ver planos <ArrowRight /></Link>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <OnboardingCta status={onboarding?.status ?? null} aplicacoes={aplicacoes} />
+        )}
       </Reveal>
 
       <Reveal delay={60} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

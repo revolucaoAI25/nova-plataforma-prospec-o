@@ -3,12 +3,12 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Check, Eye, EyeOff, Loader2, Lock } from "lucide-react";
+import { ArrowRight, Check, Eye, EyeOff, Loader2, Lock, ShieldCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { mascararCpfCnpj } from "@/lib/cpf-cnpj";
 import { brl, num, type PlanoLP } from "./dados";
 
-function mascararTelefone(valor: string): string {
+export function mascararTelefone(valor: string): string {
   const d = valor.replace(/\D/g, "").slice(0, 11);
   if (d.length <= 2) return d.length ? `(${d}` : "";
   if (d.length <= 6) return `(${d.slice(0, 2)}) ${d.slice(2)}`;
@@ -24,7 +24,7 @@ const ETAPAS = [
 
 const SEMPRE = ["Busca por CNPJ e Google Maps", "Estratégia criada por IA", "Funil, automações e cadências"];
 
-function Campo({
+export function Campo({
   id, rotulo, ajuda, children,
 }: { id: string; rotulo: string; ajuda?: string; children: React.ReactNode }) {
   return (
@@ -36,7 +36,7 @@ function Campo({
   );
 }
 
-const estiloInput =
+export const estiloInput =
   "h-12 w-full rounded-xl border border-lp-line-2 bg-lp-bg/60 px-4 text-base text-lp-text sm:text-[15px] outline-none transition-colors placeholder:text-lp-muted-2 focus:border-lp-accent/70 focus:bg-lp-bg";
 
 export function Checkout({
@@ -165,6 +165,10 @@ export function Checkout({
           <p className="text-center text-[12.5px] leading-relaxed text-lp-muted-2">
             Ao continuar, você autoriza a cobrança {anual ? "anual" : "mensal"} do plano {plano.nome}.
             {anual ? " A renovação acontece a cada 12 meses." : " O plano mensal pode ser cancelado a qualquer momento, sem multa."}
+          </p>
+          <p className="flex items-center justify-center gap-2 text-center text-[13px] text-lp-muted">
+            <ShieldCheck className="h-4 w-4 shrink-0 text-lp-accent" />
+            Garantia de 7 dias: se não fizer sentido, devolvemos 100% do valor.
           </p>
         </form>
       </div>

@@ -8,6 +8,7 @@ import { PageHeader } from "@/components/layout/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { MSG_CONTA_TESTE_SEM_COMPRA } from "@/lib/conta-teste";
+import { emTesteGratis } from "@/lib/teste-gratis";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { PacotesGrid } from "@/components/creditos/pacotes-grid";
 import { HistoricoCompras } from "@/components/creditos/historico-compras";
@@ -35,6 +36,8 @@ export default async function CreditosPage() {
     asaasConfigurado(),
   ]);
   const podeComprar = configurado && !profile.conta_teste;
+  // No teste grátis só o plano faz sentido: créditos avulsos e extras não liberam os recursos bloqueados.
+  const testeGratis = emTesteGratis(profile);
 
   return (
     <div className="flex flex-col gap-6">
@@ -55,11 +58,19 @@ export default async function CreditosPage() {
         </Alert>
       )}
 
+      {testeGratis && (
+        <Alert variant="info">
+          <AlertDescription>
+            Você está no teste grátis. Ao assinar um plano, os créditos do plano entram na sua conta e a plataforma inteira é liberada: estratégia por IA, disparos, funil e automações.
+          </AlertDescription>
+        </Alert>
+      )}
+
       <Tabs defaultValue="planos">
         <TabsList>
           <TabsTrigger value="planos"><Crown className="h-3.5 w-3.5" /> Planos</TabsTrigger>
-          <TabsTrigger value="avulso"><Package className="h-3.5 w-3.5" /> Créditos avulsos</TabsTrigger>
-          {addons.length > 0 && <TabsTrigger value="extras"><Puzzle className="h-3.5 w-3.5" /> Extras</TabsTrigger>}
+          {!testeGratis && <TabsTrigger value="avulso"><Package className="h-3.5 w-3.5" /> Créditos avulsos</TabsTrigger>}
+          {addons.length > 0 && !testeGratis && <TabsTrigger value="extras"><Puzzle className="h-3.5 w-3.5" /> Extras</TabsTrigger>}
         </TabsList>
         <TabsContent value="planos">
           <PlanosGrid

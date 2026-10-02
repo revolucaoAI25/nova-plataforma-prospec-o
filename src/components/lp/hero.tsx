@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { ArrowDown, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { num } from "./dados";
@@ -138,7 +139,10 @@ export function Hero() {
             </a>
           </div>
           <p className="lp-entra mt-5 text-[13px] text-lp-muted-2 [animation-delay:300ms]">
-            Plano mensal sem fidelidade · Acesso liberado após o pagamento · Primeira estratégia criada por IA
+            <Link href="/teste-gratis" className="-my-2 inline-block py-2 text-lp-muted underline decoration-lp-line-2 underline-offset-4 transition-colors hover:text-lp-text">
+              Teste grátis, sem cartão
+            </Link>
+            {" · "}Garantia de 7 dias · Plano mensal sem fidelidade
           </p>
         </div>
 
