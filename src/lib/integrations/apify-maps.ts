@@ -1,6 +1,7 @@
 import { apenasDigitos } from "@/lib/phone";
 import { emptyLead, type Lead } from "@/lib/types";
 import { MODIFICADORES_CIDADE, MODIFICADORES_ESTADO, shuffle } from "@/lib/integrations/google-maps";
+import { aguardarRunApify, iniciarRunApify } from "@/lib/integrations/apify-run";
 
 // Busca via Apify Google Maps Scraper (compass/crawler-google-places).
 // Fallback quando a cota do Google Maps API é excedida ou quando não há
@@ -8,41 +9,10 @@ import { MODIFICADORES_CIDADE, MODIFICADORES_ESTADO, shuffle } from "@/lib/integ
 
 const ACTOR_ID = "compass~crawler-google-places";
 const BASE = "https://api.apify.com/v2";
-
-function sleep(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-async function iniciarRun(token: string, payload: Record<string, unknown>) {
-  const resp = await fetch(`${BASE}/acts/${ACTOR_ID}/runs?token=${encodeURIComponent(token)}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
-  if (!resp.ok) {
-    const body = (await resp.text()).slice(0, 300);
-    if (resp.status === 401) throw new Error("Token Apify inválido. Verifique a chave em Configurações.");
-    throw new Error(`Apify retornou ${resp.status}: ${body}`);
-  }
-  const data = (await resp.json()).data;
-  return { runId: data.id as string, datasetId: data.defaultDatasetId as string };
-}
-
-async function aguardarRun(token: string, runId: string, timeoutMs: number, log: (a: number, t: number, m: string) => void) {
-  const deadline = Date.now() + timeoutMs;
-  while (Date.now() < deadline) {
-    const resp = await fetch(`${BASE}/actor-runs/${runId}?token=${encodeURIComponent(token)}`);
-    if (!resp.ok) throw new Error(`Apify HTTP ${resp.status}`);
-    const status = (await resp.json()).data.status as string;
-    if (status === "SUCCEEDED") return;
-    if (["FAILED", "ABORTED", "TIMED-OUT"].includes(status)) {
-      throw new Error(`Run Apify encerrado com status: ${status}`);
-    }
-    log(0, 1, `[Apify] Aguardando… (${status})`);
-    await sleep(5000);
-  }
-  throw new Error("Timeout aguardando resultado do Apify (>10 min).");
-}
+// Prazo de cada run no Apify e da nossa espera (a espera é um pouco maior
+// para receber o status final do próprio Apify).
+const RUN_TIMEOUT_S = 540;
+const ESPERA_MS = 560_000;
 
 async function buscarItems(token: string, datasetId: string): Promise<Record<string, unknown>[]> {
   const params = new URLSearchParams({ token, format: "json", clean: "true" });
@@ -83,11 +53,15 @@ async function buscarUmaLocalidade(p: BuscarUmaLocalidadeParams): Promise<Lead[]
     searchStringsArray: searchStrings,
     locationQuery: p.localidade,
     maxCrawledPlacesPerSearch: cotaPorVariacao,
+    // País e idioma explícitos: a localização ("Cidade, Estado") é resolvida
+    // direto no Brasil, sem ambiguidade, e os dados voltam em português.
+    countryCode: "br",
+    language: "pt-BR",
   };
 
-  const { runId, datasetId } = await iniciarRun(p.apiKey, payload);
+  const { runId, datasetId } = await iniciarRunApify(p.apiKey, ACTOR_ID, payload, RUN_TIMEOUT_S);
   p.log(0, p.limite, "[Apify] Run iniciado. Aguardando resultados…");
-  await aguardarRun(p.apiKey, runId, 600_000, p.log);
+  await aguardarRunApify(p.apiKey, runId, ESPERA_MS, (status, seg) => p.log(0, 1, `[Apify] Aguardando… (${status}, ${seg}s)`));
   p.log(0, p.limite, "[Apify] Coletando resultados…");
 
   const items = await buscarItems(p.apiKey, datasetId);

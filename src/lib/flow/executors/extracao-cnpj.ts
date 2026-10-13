@@ -6,6 +6,7 @@ import { salvarPesquisa, salvarLeads, buscarIdentificadoresExistentes } from "@/
 import { CODIGO_PARA_DESC } from "@/lib/data/cnaes";
 import type { Json } from "@/lib/database.types";
 import type { FlowExecutorContext, FlowExecutorOutcome } from "../executor-types";
+import { dataISOBrasil } from "@/lib/datas";
 
 /**
  * Espelha /api/search/cnpj/route.ts (mesmos filtros e mesma lógica de
@@ -33,7 +34,7 @@ export async function executarExtracaoCnpj(ctx: FlowExecutorContext): Promise<Fl
   // fixas — um fluxo agendado com data fixa deixaria de achar empresas novas.
   const ultimosDias = Number(config.aberturaUltimosDias ?? 0);
   const dataAberturaInicio = ultimosDias > 0
-    ? new Date(Date.now() - ultimosDias * 86_400_000).toISOString().slice(0, 10)
+    ? dataISOBrasil(new Date(Date.now() - ultimosDias * 86_400_000))
     : String(config.dataAberturaInicio || "");
   const dataAberturaFim = ultimosDias > 0 ? "" : String(config.dataAberturaFim || "");
 

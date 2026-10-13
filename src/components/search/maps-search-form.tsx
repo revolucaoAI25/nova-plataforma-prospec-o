@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Search, Download, Loader2, X, MapPin, SlidersHorizontal, SearchX } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -22,6 +22,7 @@ import { ESTADOS } from "@/lib/data/estados";
 import type { Lead } from "@/lib/types";
 import { SugestoesPublico } from "@/components/search/sugestoes-publico";
 import type { PublicoSugerido } from "@/lib/onboarding/ia";
+import { ExportarSheetsButton } from "@/components/historico/exportar-sheets-button";
 
 const OUTRO = "Outro / Personalizado";
 
@@ -61,6 +62,16 @@ export function MapsSearchForm({
 
   const subnichosDisponiveis = NICHOS[nicho]?.subnichos ?? [];
 
+  // Cronômetro da busca: a busca no Maps leva alguns minutos e, sem retorno
+  // visual, parece travada.
+  const [segundos, setSegundos] = useState(0);
+  useEffect(() => {
+    if (!loading) return;
+    const inicio = Date.now();
+    const id = setInterval(() => setSegundos(Math.floor((Date.now() - inicio) / 1000)), 1000);
+    return () => clearInterval(id);
+  }, [loading]);
+
   function addCidade() {
     const v = cidadeInput.trim();
     if (v && !cidades.includes(v)) setCidades([...cidades, v]);
@@ -90,6 +101,7 @@ export function MapsSearchForm({
       return;
     }
 
+    setSegundos(0);
     setLoading(true);
     setLeads(null);
 
@@ -259,6 +271,12 @@ export function MapsSearchForm({
             {loading ? "Buscando…" : "Buscar no Google Maps"}
           </Button>
           <CreditoEstimado custoPorUnidade={custoPorResultado} unidade="lugar" />
+          {loading && (
+            <p className="max-w-md text-xs leading-relaxed text-muted-foreground" aria-live="polite">
+              Buscando há {Math.floor(segundos / 60)}:{String(segundos % 60).padStart(2, "0")}. A busca no Google Maps costuma levar de 1 a 3 minutos
+              (mais quando a busca é por estado inteiro). Se sair desta tela, ela continua e o resultado fica salvo no Histórico.
+            </p>
+          )}
         </div>
       </form>
 
@@ -289,6 +307,7 @@ export function MapsSearchForm({
                     <Download className="h-4 w-4" /> CSV
                   </a>
                 </Button>
+                <ExportarSheetsButton searchId={searchId} />
               </div>
             )}
           </CardHeader>

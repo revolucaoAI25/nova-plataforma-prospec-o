@@ -63,12 +63,18 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "A busca no Google Maps está temporariamente indisponível. Tente novamente mais tarde." }, { status: 503 });
   }
 
+  // Tempos de cada etapa no log do servidor, para diagnosticar lentidão.
+  const t0 = Date.now();
+  const marcas: string[] = [];
+  const marca = (nome: string) => marcas.push(`${nome} ${((Date.now() - t0) / 1000).toFixed(1)}s`);
+
   let excludeTels = new Set<string>();
   if (filtros.apenasNovos) {
     const existentes = await buscarIdentificadoresExistentes(supabase, user.id);
     excludeTels = existentes.telefones;
   }
 
+  marca("deduplicação");
   let resultados;
   try {
     resultados = await buscarApifyMaps({
@@ -83,8 +89,11 @@ export async function POST(request: Request) {
       showRating: filtros.showRating,
     });
   } catch (e) {
+    marca("erro no provedor");
+    console.warn(`[busca maps] ${user.id} ${marcas.join(" · ")}: ${(e as Error).message}`);
     return NextResponse.json({ error: (e as Error).message }, { status: 502 });
   }
+  marca("provedor");
 
   const localidade = filtros.localidades.join(", ");
   const searchId = await salvarPesquisa(supabase, user.id, {
@@ -107,7 +116,10 @@ export async function POST(request: Request) {
 
   await debitarCreditos(supabase, user.id, "maps", resultados.length);
 
+  marca("histórico e créditos");
   const avisoSheets = await autoExportarSheetsSeConfigurado(supabase, user.id, searchId);
+  marca("exportação automática");
+  console.info(`[busca maps] ${user.id} ${resultados.length} resultados · ${marcas.join(" · ")}`);
 
   return NextResponse.json({
     searchId,

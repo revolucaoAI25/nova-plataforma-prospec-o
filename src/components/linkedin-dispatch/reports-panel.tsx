@@ -11,6 +11,7 @@ import { MetricasCampanhaPanel } from "@/components/dispatch/metricas-campanha";
 import { StatCard } from "@/components/dashboard/stat-card";
 import type { BadgeProps } from "@/components/ui/badge";
 import type { LinkedinCampaignRow, LinkedinTargetRow } from "@/lib/database.types";
+import { formatarDataHora } from "@/lib/datas";
 
 const TARGET_STATUS_LABEL: Record<string, { label: string; variant: BadgeProps["variant"] }> = {
   pendente: { label: "Pendente", variant: "outline" },
@@ -123,8 +124,8 @@ export function ReportsPanel({ campanhasIniciais }: { campanhasIniciais: Linkedi
                         <a href={t.linkedin_url} target="_blank" rel="noreferrer" className="text-primary hover:underline">{t.linkedin_url}</a>
                       </TableCell>
                       <TableCell><Badge variant={s.variant}>{s.label}</Badge></TableCell>
-                      <TableCell>{t.proxima_etapa_em ? new Date(t.proxima_etapa_em).toLocaleString("pt-BR") : "—"}</TableCell>
-                      <TableCell>{new Date(t.atualizado_em).toLocaleString("pt-BR")}</TableCell>
+                      <TableCell>{formatarDataHora(t.proxima_etapa_em)}</TableCell>
+                      <TableCell>{formatarDataHora(t.atualizado_em)}</TableCell>
                     </TableRow>
                   );
                 })}

@@ -13,6 +13,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import type { SearchRow, LeadRow } from "@/lib/database.types";
+import { formatarData } from "@/lib/datas";
 
 interface LeadStaged {
   nome: string;
@@ -324,7 +325,7 @@ export function AdicionarLeadsDialog({
                     <SelectContent>
                       {pesquisas.map((p) => (
                         <SelectItem key={p.id} value={p.id}>
-                          {[p.nicho, p.localidade].filter(Boolean).join(" — ") || p.id} ({p.total_results} resultado(s), {new Date(p.created_at).toLocaleDateString("pt-BR")})
+                          {[p.nicho, p.localidade].filter(Boolean).join(" — ") || p.id} ({p.total_results} resultado(s), {formatarData(p.created_at)})
                         </SelectItem>
                       ))}
                     </SelectContent>

@@ -13,6 +13,7 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { parseLeadsColados } from "@/lib/lead-enrichment-shared";
 import type { SearchRow, LeadRow } from "@/lib/database.types";
+import { formatarData } from "@/lib/datas";
 
 export interface LeadStaged {
   nome: string;
@@ -200,7 +201,7 @@ export function LeadStagingEditor({ leads, onChange }: { leads: LeadStaged[]; on
                     <SelectContent>
                       {pesquisas.map((p) => (
                         <SelectItem key={p.id} value={p.id}>
-                          {[p.nicho, p.localidade].filter(Boolean).join(" — ") || p.id} ({p.total_results} resultado(s), {new Date(p.created_at).toLocaleDateString("pt-BR")})
+                          {[p.nicho, p.localidade].filter(Boolean).join(" — ") || p.id} ({p.total_results} resultado(s), {formatarData(p.created_at)})
                         </SelectItem>
                       ))}
                     </SelectContent>

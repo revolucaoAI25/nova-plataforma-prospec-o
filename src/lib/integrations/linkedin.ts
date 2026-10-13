@@ -1,5 +1,6 @@
 import { emptyLead, type Lead } from "@/lib/types";
 import { LINKEDIN_INDUSTRY_LABEL_EN } from "@/lib/data/linkedin-industries-en";
+import { aguardarRunApify, iniciarRunApify } from "@/lib/integrations/apify-run";
 
 // Extração de leads via LinkedIn (busca por pessoas/decisores, estilo Sales
 // Navigator) — integração com Apify, mesmo padrão de instagram.ts.
@@ -67,46 +68,14 @@ const APIFY_BASE = "https://api.apify.com/v2";
 const ACTOR_PEOPLE_SEARCH = "harvestapi~linkedin-profile-search";
 const RUN_TIMEOUT_MS = 420_000;
 
-function sleep(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+// Run, espera e cancelamento ficam em apify-run.ts (prazo próprio por run e
+// cancelamento quando a espera estoura).
+function iniciarRun(apiKey: string, actorId: string, inputData: Record<string, unknown>) {
+  return iniciarRunApify(apiKey, actorId, inputData, Math.ceil(RUN_TIMEOUT_MS / 1000) - 20);
 }
 
-async function iniciarRun(apiKey: string, actorId: string, inputData: Record<string, unknown>) {
-  const resp = await fetch(`${APIFY_BASE}/acts/${actorId}/runs?token=${encodeURIComponent(apiKey)}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(inputData),
-  });
-  if (!resp.ok) {
-    let detalhe = "";
-    try {
-      const j = await resp.json();
-      detalhe = j?.error?.message || JSON.stringify(j).slice(0, 300);
-    } catch {
-      detalhe = (await resp.text()).slice(0, 300);
-    }
-    throw new Error(`Apify ${resp.status}: ${detalhe}`);
-  }
-  const data = (await resp.json()).data;
-  return { runId: data.id as string, datasetId: data.defaultDatasetId as string };
-}
-
-async function aguardarRun(apiKey: string, runId: string, onProgress?: (a: number, t: number, msg: string) => void) {
-  const deadline = Date.now() + RUN_TIMEOUT_MS;
-  let tentativa = 0;
-  while (Date.now() < deadline) {
-    await sleep(Math.min(8000 + tentativa * 2000, 20000));
-    tentativa += 1;
-    const resp = await fetch(`${APIFY_BASE}/actor-runs/${runId}?token=${encodeURIComponent(apiKey)}`);
-    if (!resp.ok) throw new Error(`Apify HTTP ${resp.status} consultando o run.`);
-    const status = (await resp.json()).data.status as string;
-    onProgress?.(0, 1, `Apify: ${status.toLowerCase()}… (${tentativa * 10}s)`);
-    if (status === "SUCCEEDED") return;
-    if (["FAILED", "ABORTED", "TIMED-OUT"].includes(status)) {
-      throw new Error(`Apify encerrou com status: ${status}`);
-    }
-  }
-  throw new Error(`Apify não respondeu em ${RUN_TIMEOUT_MS / 1000}s. Tente com menos resultados.`);
+function aguardarRun(apiKey: string, runId: string, onProgress?: (a: number, t: number, msg: string) => void) {
+  return aguardarRunApify(apiKey, runId, RUN_TIMEOUT_MS, (status, seg) => onProgress?.(0, 1, `Apify: ${status.toLowerCase()}… (${seg}s)`));
 }
 
 async function obterItems(apiKey: string, datasetId: string, limite: number): Promise<Record<string, unknown>[]> {

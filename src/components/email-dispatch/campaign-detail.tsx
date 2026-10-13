@@ -26,6 +26,7 @@ import type {
   EmailTemplateRow,
   SearchRow,
 } from "@/lib/database.types";
+import { formatarDataHora } from "@/lib/datas";
 
 const TARGET_STATUS_LABEL: Record<string, { label: string; variant: BadgeProps["variant"] }> = {
   pendente: { label: "Pendente", variant: "outline" },
@@ -503,7 +504,7 @@ export function CampaignDetail({
                       <TableCell className="max-w-[220px] truncate font-medium">{t.nome || "—"}</TableCell>
                       <TableCell>{t.email}</TableCell>
                       <TableCell><Badge variant={s.variant}>{s.label}</Badge></TableCell>
-                      <TableCell>{t.proxima_etapa_em ? new Date(t.proxima_etapa_em).toLocaleString("pt-BR") : "—"}</TableCell>
+                      <TableCell>{formatarDataHora(t.proxima_etapa_em)}</TableCell>
                       <TableCell>
                         {removivel && (
                           <Button

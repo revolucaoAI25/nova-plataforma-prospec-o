@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useConfirm } from "@/components/ui/confirm-provider";
 import type { BigDataCorpEnrichmentRunRow } from "@/lib/database.types";
+import { formatarDataHora } from "@/lib/datas";
 
 const STATUS_LABEL: Record<string, { label: string; variant: "success" | "outline" | "destructive" }> = {
   pendente: { label: "Na fila", variant: "outline" },
@@ -66,7 +67,7 @@ export function BigDataCorpRunsTable({ runs }: { runs: BigDataCorpEnrichmentRunR
               <TableCell>{r.total}</TableCell>
               <TableCell>{r.encontrados}</TableCell>
               <TableCell className="capitalize">{r.origem.replace("_", " ")}</TableCell>
-              <TableCell>{new Date(r.created_at).toLocaleString("pt-BR")}</TableCell>
+              <TableCell>{formatarDataHora(r.created_at)}</TableCell>
               <TableCell>
                 <div className="flex justify-end gap-1">
                   <Button asChild variant="ghost" size="icon" title="Ver resultado">

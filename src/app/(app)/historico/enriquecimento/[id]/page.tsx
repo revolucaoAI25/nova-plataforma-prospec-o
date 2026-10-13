@@ -4,6 +4,7 @@ import { PageHeader } from "@/components/layout/page-header";
 import { EnrichmentResults } from "@/components/enrichment/enrichment-results";
 import { Badge } from "@/components/ui/badge";
 import type { EnrichmentRunRow, EnrichmentLeadRow } from "@/lib/database.types";
+import { formatarDataHora } from "@/lib/datas";
 
 export const metadata = { title: "Enriquecimento com IA" };
 
@@ -31,7 +32,7 @@ export default async function EnrichmentRunDetailPage({ params }: { params: Prom
         backLabel="Voltar ao histórico"
         title="Enriquecimento com IA"
         badge={<Badge variant="outline">{STATUS_LABEL[run.status] ?? run.status}</Badge>}
-        description={new Date(run.created_at).toLocaleString("pt-BR")}
+        description={formatarDataHora(run.created_at)}
       />
       <EnrichmentResults run={run as EnrichmentRunRow} leads={(leads as EnrichmentLeadRow[]) ?? []} />
     </div>

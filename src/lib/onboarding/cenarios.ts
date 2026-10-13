@@ -4,6 +4,7 @@ import { CODIGO_PARA_DESC } from "@/lib/data/cnaes";
 import { NICHOS } from "@/lib/data/nichos";
 import { SIGLAS_ESTADOS } from "@/lib/data/estados";
 import { LINKEDIN_INDUSTRIES } from "@/lib/data/linkedin-industries";
+import { dataISOBrasil } from "@/lib/datas";
 
 // Mapa de cenários de prospecção — o "cardápio" fechado de onde a IA do
 // onboarding monta os planos A, B, C… de cada cliente. A IA NÃO desenha
@@ -128,7 +129,7 @@ const planilha = (): Passo => ({
 function dataHaAnos(anos: number): string {
   const d = new Date();
   d.setFullYear(d.getFullYear() - anos);
-  return d.toISOString().slice(0, 10);
+  return dataISOBrasil(d);
 }
 
 function cnpj(p: ParametrosCenario, extra: Record<string, unknown> = {}): Passo {

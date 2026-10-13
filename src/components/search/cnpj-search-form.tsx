@@ -23,6 +23,8 @@ import { SugestoesPublico } from "@/components/search/sugestoes-publico";
 import type { PublicoSugerido } from "@/lib/onboarding/ia";
 import { ESTADOS } from "@/lib/data/estados";
 import type { CnaeTipo, Lead } from "@/lib/types";
+import { dataISOBrasil } from "@/lib/datas";
+import { ExportarSheetsButton } from "@/components/historico/exportar-sheets-button";
 
 const CNAE_OPTIONS: MultiSelectOption[] = CNAES.map((c) => ({
   value: c.codigo,
@@ -49,7 +51,7 @@ function dataRelativa(opcoes: { dias?: number; anos?: number }): string {
   const d = new Date();
   if (opcoes.dias) d.setDate(d.getDate() - opcoes.dias);
   if (opcoes.anos) d.setFullYear(d.getFullYear() - opcoes.anos);
-  return d.toISOString().slice(0, 10);
+  return dataISOBrasil(d);
 }
 
 export function CnpjSearchForm({
@@ -457,6 +459,7 @@ export function CnpjSearchForm({
                     <Download className="h-4 w-4" /> CSV
                   </a>
                 </Button>
+                <ExportarSheetsButton searchId={searchId} />
               </div>
             )}
           </CardHeader>

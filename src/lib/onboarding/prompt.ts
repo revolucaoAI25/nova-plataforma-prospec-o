@@ -4,6 +4,7 @@ import { LINKEDIN_INDUSTRIES } from "@/lib/data/linkedin-industries";
 import type { AcaoCredito } from "@/lib/database.types";
 import type { Cenario } from "./cenarios";
 import { custoPorLead, type ContextoOrcamento } from "./estimativa";
+import { dataISOBrasil } from "@/lib/datas";
 
 export interface ContextoCliente {
   respostasTexto: string;
@@ -121,7 +122,7 @@ export function promptGerador(ctx: ContextoCliente): string {
   const orc = ctx.orcamento;
   return `Você é o estrategista de prospecção ativa da plataforma Leadmatic (Revolução AI), com experiência real em vendas B2B e B2C no Brasil. A partir das respostas do onboarding de um cliente, você monta de 3 a 4 SUGESTÕES de prospecção (A, B, C e, se fizer sentido, D) pra ele escolher e testar. Cada sugestão vira automações reais na conta dele (extração, funil, cadência de mensagens), prontas pra rodar assim que ele conectar os canais.
 
-Hoje é ${new Date().toISOString().slice(0, 10)}.
+Hoje é ${dataISOBrasil()}.
 ${METODOLOGIA}
 
 ## Regras das sugestões

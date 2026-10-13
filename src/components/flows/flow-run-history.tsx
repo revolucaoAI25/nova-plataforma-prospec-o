@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { FLOW_NODE_TYPES } from "@/lib/flow/node-types";
 import type { FlowRunRow, FlowRunStepRow, FlowNodeTipo } from "@/lib/database.types";
+import { formatarDataHora } from "@/lib/datas";
 
 const STATUS_LABEL: Record<FlowRunRow["status"], string> = {
   executando: "Em execução",
@@ -32,11 +33,6 @@ function formatarProximaTentativa(iso: string | null) {
   if (diffMs <= 0) return "a qualquer instante";
   const min = Math.ceil(diffMs / 60_000);
   return min <= 1 ? "em ~1 min" : `em ~${min} min`;
-}
-
-function formatarData(iso: string | null) {
-  if (!iso) return "—";
-  return new Date(iso).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
 }
 
 const EM_ANDAMENTO = new Set<FlowRunRow["status"]>(["executando", "aguardando_subprocesso", "aguardando_retry"]);
@@ -106,7 +102,7 @@ export function FlowRunHistory({
               <div className="flex flex-wrap items-center gap-2 text-sm">
                 <StatusIcon status={run.status} />
                 <span className="font-medium text-foreground">{STATUS_LABEL[run.status]}</span>
-                <span className="text-xs text-muted-foreground">{formatarData(run.iniciado_em)}</span>
+                <span className="text-xs text-muted-foreground">{formatarDataHora(run.iniciado_em)}</span>
                 {run.status === "aguardando_retry" && (
                   <Badge variant="outline" className="ml-1">
                     tentativa {run.tentativas}/{run.max_tentativas} · próxima {formatarProximaTentativa(run.proxima_tentativa_em)}

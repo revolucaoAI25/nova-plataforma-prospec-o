@@ -16,6 +16,23 @@ const bodySchema = z.object({
   autoExport: z.boolean(),
 });
 
+/** Planilhas configuradas (sem as credenciais), para a exportação manual. */
+export async function GET() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: "Não autenticado." }, { status: 401 });
+
+  const { data: profile } = await supabase.from("profiles").select("google_sheets_creds").eq("id", user.id).single();
+  const creds = (profile?.google_sheets_creds as GoogleSheetsCreds) || {};
+  return NextResponse.json({
+    conectado: Boolean(creds.oauth),
+    planilhas: creds.oauth ? (creds.planilhas ?? []) : [],
+    autoExport: Boolean(creds.oauth && creds.auto_export),
+  });
+}
+
 export async function PATCH(request: Request) {
   const supabase = await createClient();
   const {

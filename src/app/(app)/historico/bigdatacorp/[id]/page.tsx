@@ -4,6 +4,7 @@ import { PageHeader } from "@/components/layout/page-header";
 import { BigDataCorpResults } from "@/components/bigdatacorp/bigdatacorp-enrichment-results";
 import { Badge } from "@/components/ui/badge";
 import type { BigDataCorpEnrichmentRunRow, BigDataCorpEnrichmentLeadRow } from "@/lib/database.types";
+import { formatarDataHora } from "@/lib/datas";
 
 export const metadata = { title: "Sócios e Contato" };
 
@@ -31,7 +32,7 @@ export default async function BigDataCorpRunDetailPage({ params }: { params: Pro
         backLabel="Voltar ao histórico"
         title="Sócios e Contato"
         badge={<Badge variant="outline">{STATUS_LABEL[run.status] ?? run.status}</Badge>}
-        description={new Date(run.created_at).toLocaleString("pt-BR")}
+        description={formatarDataHora(run.created_at)}
       />
       <BigDataCorpResults run={run as BigDataCorpEnrichmentRunRow} leads={(leads as BigDataCorpEnrichmentLeadRow[]) ?? []} />
     </div>

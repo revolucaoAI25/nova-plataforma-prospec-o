@@ -11,6 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Logo } from "@/components/layout/logo";
 import { caminhoInterno } from "@/lib/caminho-interno";
+import { formatarData } from "@/lib/datas";
 
 const MSG_PERFIL_AUSENTE = "Não encontramos os dados da sua conta. Fale com o suporte para regularizar o acesso.";
 
@@ -63,7 +64,7 @@ function LoginForm() {
     }
     if (profile.conta_teste && profile.teste_expira_em && new Date(profile.teste_expira_em) <= new Date()) {
       await supabase.auth.signOut();
-      const dataExp = new Date(profile.teste_expira_em).toLocaleDateString("pt-BR");
+      const dataExp = formatarData(profile.teste_expira_em);
       setError(`Sua conta de teste expirou em ${dataExp}. Fale com o administrador para renovar.`);
       setLoading(false);
       return;

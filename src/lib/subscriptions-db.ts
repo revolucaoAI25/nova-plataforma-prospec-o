@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { obterOuCriarClienteAsaas } from "@/lib/credit-purchases-db";
 import { criarAssinatura, cancelarAssinatura, obterPrimeiraFaturaAssinatura } from "@/lib/integrations/asaas";
 import { PLAN_FEATURE_FLAG_KEYS, type AssinaturaCiclo, type PlanRow, type Profile } from "@/lib/database.types";
+import { dataISOBrasil } from "@/lib/datas";
 
 // Assinatura recorrente de plano via Asaas — ver comentário de topo de
 // supabase/migrations/0018_asaas_subscriptions.sql pro desenho geral.
@@ -116,7 +117,7 @@ export async function processarPagamentoAssinatura(asaasSubscriptionId: string, 
     // Assinou: encerra o teste grátis (se havia), liberando a plataforma.
     teste_gratis: false,
     monthly_creditos: creditosMensais,
-    credits_renewed_at: new Date().toISOString().slice(0, 10),
+    credits_renewed_at: dataISOBrasil(),
   };
 
   // Bundle de features do plano — só aplicado na 1ª ativação desta

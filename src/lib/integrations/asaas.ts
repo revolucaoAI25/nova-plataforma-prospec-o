@@ -15,6 +15,7 @@
 // docs.asaas.com) — mesma ressalva que resend.ts/evolution-api.ts já
 // carregam.
 import { configPlataforma } from "@/lib/platform-settings";
+import { dataISOBrasil } from "@/lib/datas";
 
 async function chaveApi(): Promise<string> {
   return configPlataforma("asaas_api_key", process.env.ASAAS_API_KEY);
@@ -98,7 +99,7 @@ export async function criarCobranca(dados: {
       customer: dados.customerId,
       billingType: "UNDEFINED",
       value: Math.round(dados.valorCentavos) / 100,
-      dueDate: vencimento.toISOString().slice(0, 10),
+      dueDate: dataISOBrasil(vencimento),
       description: dados.descricao,
       externalReference: dados.externalReference,
     }),
@@ -136,7 +137,7 @@ export async function criarAssinatura(dados: {
       customer: dados.customerId,
       billingType: "UNDEFINED",
       value: Math.round(dados.valorCentavos) / 100,
-      nextDueDate: primeiraCobranca.toISOString().slice(0, 10),
+      nextDueDate: dataISOBrasil(primeiraCobranca),
       cycle: dados.cycle ?? "MONTHLY",
       description: dados.descricao,
       externalReference: dados.externalReference,

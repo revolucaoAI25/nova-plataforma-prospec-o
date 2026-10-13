@@ -27,6 +27,7 @@ import type {
   LinkedinStepTipo,
   SearchRow,
 } from "@/lib/database.types";
+import { formatarDataHora } from "@/lib/datas";
 
 const TARGET_STATUS_LABEL: Record<string, { label: string; variant: BadgeProps["variant"] }> = {
   pendente: { label: "Pendente", variant: "outline" },
@@ -542,7 +543,7 @@ export function CampaignDetail({
                         <a href={t.linkedin_url} target="_blank" rel="noreferrer" className="text-primary hover:underline">{t.linkedin_url}</a>
                       </TableCell>
                       <TableCell><Badge variant={s.variant}>{s.label}</Badge></TableCell>
-                      <TableCell>{t.proxima_etapa_em ? new Date(t.proxima_etapa_em).toLocaleString("pt-BR") : "—"}</TableCell>
+                      <TableCell>{formatarDataHora(t.proxima_etapa_em)}</TableCell>
                       <TableCell>
                         {removivel && (
                           <Button

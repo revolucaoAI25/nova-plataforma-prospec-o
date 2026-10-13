@@ -13,9 +13,10 @@ import {
   ETAPAS_QUESTIONARIO, pendenciasParaGerar, perguntaVisivel, type RespostasOnboarding,
 } from "@/lib/onboarding/questionario";
 import type { OnboardingStatus } from "@/lib/onboarding/db";
+import { formatarData } from "@/lib/datas";
 
 function dataCurta(iso: string) {
-  return new Date(iso).toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" });
+  return formatarData(iso, { day: "2-digit", month: "short", year: "numeric" });
 }
 
 /**

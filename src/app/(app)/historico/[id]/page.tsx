@@ -9,6 +9,8 @@ import { LeadsTable } from "@/components/historico/leads-table";
 import { AdicionarAoFunilButton } from "@/components/historico/adicionar-ao-funil-button";
 import { PageHeader } from "@/components/layout/page-header";
 import { ResultsSummary, buildGeneralMetrics, buildInstagramMetrics, buildLinkedInMetrics } from "@/components/search/results-summary";
+import { formatarDataHora } from "@/lib/datas";
+import { ExportarSheetsButton } from "@/components/historico/exportar-sheets-button";
 
 const FONTE_LABEL: Record<string, string> = { cnpj: "CNPJ", google_maps: "Google Maps", instagram: "Instagram", linkedin: "LinkedIn" };
 
@@ -32,13 +34,13 @@ export default async function HistoricoDetailPage({ params }: { params: Promise<
         backLabel="Voltar ao histórico"
         title={search.nicho || "Pesquisa"}
         badge={<Badge variant="outline">{FONTE_LABEL[search.fonte] ?? search.fonte}</Badge>}
-        description={`${search.localidade} · ${new Date(search.created_at).toLocaleString("pt-BR")}`}
+        description={`${search.localidade} · ${formatarDataHora(search.created_at)}`}
       />
 
       <Card>
         <CardHeader className="flex flex-wrap items-center justify-between gap-2">
           <CardTitle className="text-base">{leads.length} leads</CardTitle>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             {leads.length > 0 && <AdicionarAoFunilButton searchId={id} />}
             <Button asChild variant="outline" size="sm">
               <a href={`/api/export/${id}?formato=xlsx`}>
@@ -50,6 +52,7 @@ export default async function HistoricoDetailPage({ params }: { params: Promise<
                 <Download className="h-4 w-4" /> CSV
               </a>
             </Button>
+            {leads.length > 0 && <ExportarSheetsButton searchId={id} />}
           </div>
         </CardHeader>
         <CardContent className="flex flex-col gap-5">

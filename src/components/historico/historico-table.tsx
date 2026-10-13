@@ -10,6 +10,8 @@ import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useConfirm } from "@/components/ui/confirm-provider";
 import type { SearchRow } from "@/lib/database.types";
+import { formatarDataHora } from "@/lib/datas";
+import { ExportarSheetsButton } from "@/components/historico/exportar-sheets-button";
 
 const FONTE_LABEL: Record<string, string> = { cnpj: "CNPJ", google_maps: "Google Maps", instagram: "Instagram", linkedin: "LinkedIn" };
 
@@ -61,7 +63,7 @@ export function HistoricoTable({ pesquisas }: { pesquisas: SearchRow[] }) {
               <Badge variant="outline">{FONTE_LABEL[p.fonte] ?? p.fonte}</Badge>
             </TableCell>
             <TableCell>{p.total_results}</TableCell>
-            <TableCell>{new Date(p.created_at).toLocaleString("pt-BR")}</TableCell>
+            <TableCell>{formatarDataHora(p.created_at)}</TableCell>
             <TableCell>
               <div className="flex justify-end gap-1">
                 <Button asChild variant="ghost" size="icon" title="Ver leads">
@@ -74,6 +76,7 @@ export function HistoricoTable({ pesquisas }: { pesquisas: SearchRow[] }) {
                     <Download className="h-4 w-4" />
                   </a>
                 </Button>
+                {p.total_results > 0 && <ExportarSheetsButton searchId={p.id} compacto />}
                 <Button
                   variant="ghost"
                   size="icon"

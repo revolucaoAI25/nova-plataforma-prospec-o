@@ -1,5 +1,6 @@
 import ExcelJS from "exceljs";
 import type { LeadRow, EnrichmentLeadRow } from "@/lib/database.types";
+import { carimboBrasil } from "@/lib/datas";
 
 // Exportação Excel/CSV — portado de modules/export.py.
 export const COLUNAS_PADRAO: Array<[keyof LeadRow, string]> = [
@@ -182,7 +183,7 @@ export async function exportarEnrichmentExcel(leads: EnrichmentLeadRow[]): Promi
 }
 
 export function nomeArquivo(prefixo: string, localidade: string, extensao: string): string {
-  const agora = new Date().toISOString().replace(/[-:T]/g, "").slice(0, 15);
+  const agora = carimboBrasil();
   const slug = localidade.toLowerCase().replace(/\s+/g, "_").replace(/\//g, "-");
   return `${prefixo}_${slug}_${agora}.${extensao}`;
 }

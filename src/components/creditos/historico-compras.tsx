@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
 import type { CreditPurchaseRow, CreditPurchaseStatus } from "@/lib/database.types";
+import { formatarDataHora } from "@/lib/datas";
 
 const STATUS_LABEL: Record<CreditPurchaseStatus, { label: string; variant: "success" | "outline" | "destructive" | "secondary" }> = {
   pendente: { label: "Aguardando pagamento", variant: "outline" },
@@ -55,7 +56,7 @@ export function HistoricoCompras({ comprasIniciais }: { comprasIniciais: CreditP
                   <div className="min-w-0">
                     <p className="font-medium text-foreground">{c.quantidade_creditos.toLocaleString("pt-BR")} créditos</p>
                     <p className="text-muted-foreground">
-                      {formatarPreco(c.preco_centavos)} · {new Date(c.criado_em).toLocaleString("pt-BR")}
+                      {formatarPreco(c.preco_centavos)} · {formatarDataHora(c.criado_em)}
                     </p>
                   </div>
                   <div className="flex shrink-0 items-center gap-2">

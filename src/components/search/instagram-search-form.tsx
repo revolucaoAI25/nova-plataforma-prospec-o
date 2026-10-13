@@ -19,6 +19,7 @@ import { ResultsSummary, buildInstagramMetrics } from "@/components/search/resul
 import type { InstagramTipo, Lead } from "@/lib/types";
 import { SugestoesPublico } from "@/components/search/sugestoes-publico";
 import type { PublicoSugerido } from "@/lib/onboarding/ia";
+import { ExportarSheetsButton } from "@/components/historico/exportar-sheets-button";
 
 export function InstagramSearchForm({
   custoPorResultado,
@@ -166,6 +167,7 @@ export function InstagramSearchForm({
                     <Download className="h-4 w-4" /> CSV
                   </a>
                 </Button>
+                <ExportarSheetsButton searchId={searchId} />
               </div>
             )}
           </CardHeader>
