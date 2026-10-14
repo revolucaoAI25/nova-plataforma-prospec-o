@@ -1390,9 +1390,8 @@ mas nada é processado — é só fila).
   em calor ou pontos, com o ranking de cidades/bairros ao lado. A busca do
   Google Maps já traz a coordenada; na de CNPJ o endereço é localizado quando
   o mapa abre, em lotes, e gravado no lead (`src/lib/geocodificacao.ts`).
-  Provedor: Google Geocoding quando a chave do Google Maps da plataforma está
-  configurada (rápido; US$ 5/1.000 além da cota grátis), senão o Photon
-  público (gratuito, mas vários segundos por endereço). Cache compartilhado
+  Provedor: Photon (OpenStreetMap), gratuito e sem chave, mas com alguns
+  segundos por endereço; Google Geocoding descartado por custo. Cache compartilhado
   em `geocodificacoes`; endereço que não acha a rua cai no bairro e, por fim,
   no centro da cidade, com peso menor no calor.
 

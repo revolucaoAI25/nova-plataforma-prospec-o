@@ -1,18 +1,14 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { configPlataforma } from "@/lib/platform-settings";
 
 /**
  * Endereço → coordenada, para o mapa dos resultados.
  *
- * Dois provedores, com cache compartilhado na tabela `geocodificacoes` (o
- * mesmo endereço, bairro ou cidade nunca é consultado duas vezes):
- * - Google Geocoding, quando a chave do Google Maps da plataforma está
- *   configurada (a mesma da verificação de CNPJ; a Geocoding API precisa
- *   estar ativada no projeto). Rápido e preciso; US$ 5 a cada 1.000 consultas
- *   além da cota gratuita mensal do Google, e o cache segura a repetição.
- * - Photon (geocodificador aberto do OpenStreetMap), sem chave e sem custo,
- *   como reserva. O serviço público é lento (vários segundos por consulta) e
- *   pede uso moderado; GEOCODER_URL aponta para uma instância própria.
+ * Usa o Photon (geocodificador aberto em cima do OpenStreetMap), sem chave e
+ * sem custo, com cache compartilhado na tabela `geocodificacoes`: o mesmo
+ * endereço, bairro ou cidade nunca é consultado duas vezes. O serviço
+ * público é lento (alguns segundos por consulta) e pede uso moderado; com
+ * volume alto, GEOCODER_URL aponta para uma instância própria do Photon.
+ * Google Geocoding foi descartado de propósito: custo por consulta.
  *
  * Tentativas, da mais precisa para a menos: endereço completo (precisão de
  * rua), bairro + cidade e, por fim, o centro da cidade. Resultado que cai
@@ -38,7 +34,6 @@ export interface Coordenada {
 
 const BASE = (process.env.GEOCODER_URL || "https://photon.komoot.io").replace(/\/$/, "");
 const TIMEOUT_MS = 15_000;
-const GOOGLE_URL = "https://maps.googleapis.com/maps/api/geocode/json";
 
 const normalizar = (t: string | null | undefined) =>
   String(t ?? "")
@@ -81,46 +76,6 @@ function naCidade(features: FeaturePhoton[], municipio: string): [number, number
   return null;
 }
 
-interface ResultadoGoogle {
-  geometry?: { location?: { lat: number; lng: number } };
-  address_components?: { long_name: string; types: string[] }[];
-}
-
-// Chave recusada (ex.: Geocoding API desativada no projeto): para de tentar
-// o Google por um tempo e segue só com o Photon.
-let googleIndisponivelAte = 0;
-
-/** null = não achou na cidade; undefined = Google indisponível (cai no Photon). */
-async function consultarGoogle(q: string, municipio: string, uf: string): Promise<[number, number] | null | undefined> {
-  if (Date.now() < googleIndisponivelAte) return undefined;
-  const chave = await configPlataforma("google_maps_api_key", process.env.GOOGLE_MAPS_API_KEY).catch(() => "");
-  if (!chave) return undefined;
-  const params = new URLSearchParams({
-    address: q, key: chave, region: "br", language: "pt-BR",
-    components: `country:BR${uf ? `|administrative_area:${uf}` : ""}`,
-  });
-  try {
-    const resp = await fetch(`${GOOGLE_URL}?${params}`, { signal: AbortSignal.timeout(TIMEOUT_MS) });
-    const json = (await resp.json()) as { status: string; results?: ResultadoGoogle[] };
-    if (json.status === "ZERO_RESULTS") return null;
-    if (json.status !== "OK") {
-      googleIndisponivelAte = Date.now() + 10 * 60_000;
-      return undefined;
-    }
-    const alvo = normalizar(municipio);
-    for (const r of json.results ?? []) {
-      const cidades = (r.address_components ?? [])
-        .filter((c) => c.types.includes("administrative_area_level_2") || c.types.includes("locality"))
-        .map((c) => normalizar(c.long_name));
-      const loc = r.geometry?.location;
-      if (loc && (!alvo || cidades.includes(alvo))) return [loc.lng, loc.lat];
-    }
-    return null;
-  } catch {
-    return undefined;
-  }
-}
-
 async function doCache(sb: SupabaseClient, chave: string): Promise<Coordenada | null> {
   const { data } = await sb.from("geocodificacoes").select("latitude, longitude, precisao").eq("chave", chave).maybeSingle();
   return data ? { latitude: data.latitude, longitude: data.longitude, precisao: data.precisao as PrecisaoGeo } : null;
@@ -132,12 +87,11 @@ async function guardar(sb: SupabaseClient, chave: string, c: Coordenada) {
 
 /** Tenta uma consulta (com cache). Devolve null quando não achou nada na cidade. */
 async function tentativa(
-  sb: SupabaseClient, chave: string, q: string, municipio: string, uf: string, precisao: PrecisaoGeo, extrasPhoton?: Record<string, string>,
+  sb: SupabaseClient, chave: string, q: string, municipio: string, precisao: PrecisaoGeo, extrasPhoton?: Record<string, string>,
 ): Promise<Coordenada | null> {
   const cache = await doCache(sb, chave);
   if (cache) return cache.precisao === "nao_encontrado" ? null : cache;
-  const google = await consultarGoogle(q, municipio, uf);
-  const coords = google === undefined ? await consultarPhoton(q, municipio, extrasPhoton) : google;
+  const coords = await consultarPhoton(q, municipio, extrasPhoton);
   const c: Coordenada = coords ? { longitude: coords[0], latitude: coords[1], precisao } : { latitude: null, longitude: null, precisao: "nao_encontrado" };
   await guardar(sb, chave, c);
   return coords ? c : null;
@@ -152,15 +106,15 @@ export async function geocodificar(sb: SupabaseClient, e: EnderecoLead): Promise
 
   if (e.endereco?.trim()) {
     const q = `${e.endereco.trim()}, ${local}`;
-    const r = await tentativa(sb, `end:${normalizar(q)}`, q, municipio, uf, "rua");
+    const r = await tentativa(sb, `end:${normalizar(q)}`, q, municipio, "rua");
     if (r) return r;
   }
   if (e.bairro?.trim()) {
     const q = `${e.bairro.trim()}, ${local}`;
-    const r = await tentativa(sb, `bairro:${normalizar(q)}`, q, municipio, uf, "bairro");
+    const r = await tentativa(sb, `bairro:${normalizar(q)}`, q, municipio, "bairro");
     if (r) return r;
   }
-  const r = await tentativa(sb, `cidade:${normalizar(local)}`, local, municipio, uf, "cidade", { osm_tag: "place" });
+  const r = await tentativa(sb, `cidade:${normalizar(local)}`, local, municipio, "cidade", { osm_tag: "place" });
   return r ?? { latitude: null, longitude: null, precisao: "nao_encontrado" };
 }
 
