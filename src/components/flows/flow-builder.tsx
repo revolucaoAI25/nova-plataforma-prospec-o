@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Save, Play, Pause, Trash2, Loader2, X, Maximize2, Minimize2, CircleDot } from "lucide-react";
+import { Save, Play, Pause, Trash2, Loader2, X, Maximize2, Minimize2, CircleDot, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 import { pendenciasDoFluxo } from "@/lib/flow/resumo";
 import { FlowCanvas } from "./flow-canvas";
 import { FlowRunHistory } from "./flow-run-history";
+import { chaveExplicacaoIa } from "./criar-fluxo-ia-dialog";
 import type { ExecucaoDoNo } from "./flow-node-card";
 import type { VariavelEntrada } from "@/lib/flow/node-types";
 import type { AutomationFlowRow, FlowNode, FlowEdge, FlowRunRow, FlowRunStepRow } from "@/lib/database.types";
@@ -28,7 +29,7 @@ function instantaneo(nome: string, ativo: boolean, nodes: FlowNode[], edges: Flo
     nome,
     ativo,
     nodes: nodes.map((n) => [n.id, n.tipo, n.config, Math.round(n.posicao.x), Math.round(n.posicao.y)]),
-    edges: edges.map((e) => [e.id, e.from, e.to]),
+    edges: edges.map((e) => [e.id, e.from, e.to, e.saida ?? ""]),
   });
 }
 
@@ -52,6 +53,26 @@ export function FlowBuilder({ flowInicial }: { flowInicial: AutomationFlowRow | 
   const [formVariaveis, setFormVariaveis] = useState<Record<string, string> | null>(null);
   const [telaCheia, setTelaCheia] = useState(false);
   const [execucaoPorNo, setExecucaoPorNo] = useState<Record<string, ExecucaoDoNo>>({});
+  // Resumo deixado pelo "Criar com IA" ao abrir o fluxo recém-gerado.
+  const [resumoIa, setResumoIa] = useState<{ explicacao: string; oQueFalta: string[] } | null>(null);
+  useEffect(() => {
+    if (!flowInicial?.id) return;
+    try {
+      const bruto = sessionStorage.getItem(chaveExplicacaoIa(flowInicial.id));
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      if (bruto) setResumoIa(JSON.parse(bruto));
+    } catch {
+      // sem sessionStorage: segue sem o resumo
+    }
+  }, [flowInicial?.id]);
+  function fecharResumoIa() {
+    setResumoIa(null);
+    try {
+      if (flowInicial?.id) sessionStorage.removeItem(chaveExplicacaoIa(flowInicial.id));
+    } catch {
+      // ignora
+    }
+  }
 
   const gatilhoManual = grafo.nodes.find((n) => n.tipo === "gatilho_manual");
   const variaveisDeclaradas = Array.isArray((gatilhoManual?.config as { variaveis?: unknown })?.variaveis)
@@ -274,6 +295,25 @@ export function FlowBuilder({ flowInicial }: { flowInicial: AutomationFlowRow | 
               {executando ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Play className="h-3.5 w-3.5" />}
               Executar com esses valores
             </Button>
+          </div>
+        )}
+
+        {resumoIa && (
+          <div className="flex gap-3 rounded-xl border border-primary/30 bg-accent/60 p-4">
+            <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+            <div className="flex min-w-0 flex-1 flex-col gap-2 text-sm">
+              <p className="font-semibold text-foreground">Fluxo montado pela IA</p>
+              <p className="leading-relaxed text-muted-foreground">{resumoIa.explicacao}</p>
+              {resumoIa.oQueFalta.length > 0 && (
+                <div>
+                  <p className="text-xs font-semibold text-foreground">Antes de ativar</p>
+                  <ul className="mt-1 list-disc space-y-0.5 pl-5 text-xs text-muted-foreground">
+                    {resumoIa.oQueFalta.map((f) => <li key={f}>{f}</li>)}
+                  </ul>
+                </div>
+              )}
+            </div>
+            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={fecharResumoIa} aria-label="Fechar resumo"><X className="h-4 w-4" /></Button>
           </div>
         )}
 

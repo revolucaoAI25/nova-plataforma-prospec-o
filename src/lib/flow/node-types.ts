@@ -553,7 +553,7 @@ export function validarFluxo(nodes: FlowGrafoNode[], edges: FlowGrafoEdge[]): { 
   for (const node of nodes) {
     const resultado = validarConfigDoNo(node.tipo, node.config);
     if (!resultado.success) {
-      return { ok: false, erro: `Configuração inválida no nó '${FLOW_NODE_TYPES[node.tipo].label}': ${resultado.error.issues[0]?.message || "campo inválido"}.` };
+      return { ok: false, erro: `Configuração inválida no nó '${FLOW_NODE_TYPES[node.tipo].label}': ${(resultado.error.issues[0]?.message || "campo inválido").replace(/\.$/, "")}.` };
     }
   }
 

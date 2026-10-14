@@ -11,13 +11,13 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { FLOW_NODE_TYPES, type SaidaDoNo, type VariavelEntrada } from "@/lib/flow/node-types";
 import { pendenciasDoFluxo, problemaDoNo, resumoDoNo } from "@/lib/flow/resumo";
+import { alturaEstimada, PASSO_X, posicoesEmArvore } from "@/lib/flow/layout";
 import type { FlowNode, FlowEdge, FlowNodeTipo, Json } from "@/lib/database.types";
 import { FlowNodeCard, type ExecucaoDoNo, type FlowNodeCardData } from "./flow-node-card";
 import { FlowNodePalette, FLOW_DRAG_DATA_FORMAT } from "./flow-node-palette";
 import { FlowNodeConfigPanel } from "./flow-node-config-panel";
 
 const nodeTypes: NodeTypes = { flowNode: FlowNodeCard };
-const PASSO_X = 300;
 const LARGURA_NO = 240;
 
 // O canvas segue o tema do app (atributo data-theme em <html>, ou a
@@ -313,31 +313,14 @@ function FlowCanvasInner({ nodesIniciais, edgesIniciais, onMudou, execucaoPorNo 
 
   /** Árvore da esquerda pra direita: caminho principal numa linha, cada ramo abaixo da sua saída. */
   function organizar() {
-    const ESPACO_Y = 48;
-    const gatilho = nodes.find((n) => ehGatilho(tipoDe(n)));
-    const pos = new Map<string, { x: number; y: number }>();
-    const altura = (id: string) => nodes.find((n) => n.id === id)?.measured?.height ?? 110;
-
-    // Filhos na ordem das saídas: principal primeiro, depois as extras.
-    const filhos = (id: string): string[] => {
-      const node = nodes.find((n) => n.id === id);
-      const ordem = ["", ...((node && FLOW_NODE_TYPES[tipoDe(node)].saidas) ?? []).map((x) => x.id)];
-      return edges
-        .filter((e) => e.source === id)
-        .sort((a, b) => ordem.indexOf(a.sourceHandle ?? "") - ordem.indexOf(b.sourceHandle ?? ""))
-        .map((e) => e.target);
-    };
-    // Posiciona a subárvore a partir de `y` e devolve a altura que ela ocupa.
-    const posicionar = (id: string, coluna: number, y: number): number => {
-      if (pos.has(id)) return 0;
-      pos.set(id, { x: coluna * PASSO_X, y });
-      let usada = 0;
-      for (const filho of filhos(id)) usada += posicionar(filho, coluna + 1, y + usada);
-      return Math.max(altura(id) + ESPACO_Y, usada);
-    };
-    let y = gatilho ? posicionar(gatilho.id, 0, 0) : 0;
-    for (const n of nodes) if (!pos.has(n.id)) y += posicionar(n.id, 0, y);
-
+    const pos = posicoesEmArvore(
+      nodes.map((n) => ({ id: n.id, tipo: tipoDe(n) })),
+      edges.map((e) => ({ from: e.source, to: e.target, saida: e.sourceHandle ?? null })),
+      (id) => {
+        const n = nodes.find((x) => x.id === id);
+        return n?.measured?.height ?? (n ? alturaEstimada(tipoDe(n)) : 100);
+      },
+    );
     setNodes((nds) => nds.map((n) => ({ ...n, position: pos.get(n.id) ?? n.position })));
     requestAnimationFrame(() => void fitView({ padding: 0.2, duration: 300 }));
   }

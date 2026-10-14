@@ -264,14 +264,14 @@ function ajustesObrigatorios(planos: PlanoOnboarding[], ctx: ContextoCliente, re
 // se quiser mais qualidade por um custo maior.
 const MODELO_PADRAO = "gpt-5.6-luna";
 
-async function clienteIa(): Promise<{ client: OpenAI; modelo: string }> {
+export async function clienteIa(): Promise<{ client: OpenAI; modelo: string }> {
   const chave = await configPlataforma("openai_api_key_plataforma", process.env.OPENAI_API_KEY);
   if (!chave) throw new Error("A IA do onboarding não está configurada (chave OpenAI da plataforma ausente).");
   const modelo = (await configPlataforma("onboarding_modelo_ia", process.env.ONBOARDING_MODELO_IA)) || MODELO_PADRAO;
   return { client: new OpenAI({ apiKey: chave }), modelo };
 }
 
-async function chamar<T extends z.ZodTypeAny>(
+export async function chamar<T extends z.ZodTypeAny>(
   ia: { client: OpenAI; modelo: string },
   instrucoes: string,
   entrada: string,

@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
 import { FLOW_NODE_TYPES } from "@/lib/flow/node-types";
 import type { AutomationFlowRow, FlowNodeTipo } from "@/lib/database.types";
+import { CriarFluxoIaDialog } from "./criar-fluxo-ia-dialog";
 
 function resumoDoFluxo(flow: AutomationFlowRow): string {
   const gatilho = flow.nodes.find((n) =>
@@ -21,14 +22,17 @@ function resumoDoFluxo(flow: AutomationFlowRow): string {
 export function FlowsListPanel({ fluxosIniciais }: { fluxosIniciais: AutomationFlowRow[] }) {
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-lg font-semibold text-foreground">Fluxos</h2>
           <p className="text-sm text-muted-foreground">Construtor visual — monte fluxos combinando gatilho, extração, enriquecimento, disparo e destino livremente.</p>
         </div>
-        <Button asChild size="sm">
-          <Link href="/automacoes/fluxos/novo"><Plus className="h-3.5 w-3.5" /> Novo fluxo</Link>
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <CriarFluxoIaDialog />
+          <Button asChild size="sm">
+            <Link href="/automacoes/fluxos/novo"><Plus className="h-3.5 w-3.5" /> Novo fluxo</Link>
+          </Button>
+        </div>
       </div>
 
       {!fluxosIniciais.length ? (
