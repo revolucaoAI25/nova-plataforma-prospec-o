@@ -34,11 +34,13 @@ export async function executarDestinoFunil(ctx: FlowExecutorContext): Promise<Fl
     return { status: "concluido", leadsEntrada: 0, leadsSaida: 0, detalhe: { funilId, colunaId, adicionados: 0 } };
   }
 
-  const total = await adicionarLeadsAoFunil(sb, funilId, colunaId, userId, lote);
+  // Lead que já está no funil (ex.: chegou por outro ramo do fluxo) avança
+  // de coluna em vez de ganhar um card repetido.
+  const r = await adicionarLeadsAoFunil(sb, funilId, colunaId, userId, lote, { avancarExistentes: true });
   return {
     status: "concluido",
     leadsEntrada: lote.length,
-    leadsSaida: total,
-    detalhe: { funilId, colunaId, adicionados: total },
+    leadsSaida: r.adicionados + r.movidos,
+    detalhe: { funilId, colunaId, ...r },
   };
 }

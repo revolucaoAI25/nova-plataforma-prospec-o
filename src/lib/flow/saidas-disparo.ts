@@ -190,7 +190,11 @@ async function rotearCanal(
   for (const g of grupos.values()) {
     if (agora - g.maisAntigo < JANELA_MS) continue;
     const lote = g.itens.map((alvo) => leadDoAlvo(alvo, canal, g.saida));
-    const runId = await abrirRamo(sb, g.flow, g.nodeId, g.saida, lote, { runPaiId: g.itens[0]?.flow_run_id ?? null });
+    const runPaiId = g.itens[0]?.flow_run_id ?? null;
+    // Parâmetros do fluxo ({{variaveis.x}}) da execução que inscreveu esses leads.
+    const { data: pai } = runPaiId ? await sb.from("flow_runs").select("contexto").eq("id", runPaiId).maybeSingle() : { data: null };
+    const variaveis = (pai?.contexto as { variaveis?: Record<string, string> } | null)?.variaveis;
+    const runId = await abrirRamo(sb, g.flow, g.nodeId, g.saida, lote, { runPaiId, variaveis });
     if (!runId) continue;
     for (const alvo of g.itens) marcarJa(alvo, g.saida);
     log(`Fluxo ${g.flow.id}: ${lote.length} lead(s) saíram por "${g.saida}" (execução ${runId}).`);

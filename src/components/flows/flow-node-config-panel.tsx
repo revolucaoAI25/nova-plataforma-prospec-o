@@ -17,7 +17,7 @@ import { CNAES } from "@/lib/data/cnaes";
 import { ESTADOS } from "@/lib/data/estados";
 import { NOMES_NICHOS } from "@/lib/data/nichos";
 import { LINKEDIN_INDUSTRIES } from "@/lib/data/linkedin-industries";
-import { LEAD_FIELD_GROUPS } from "./lead-field-reference";
+import { camposDisponiveis } from "./lead-field-reference";
 import type { FlowNode, FlowNodeTipo } from "@/lib/database.types";
 
 const DIAS = [
@@ -105,12 +105,12 @@ function useListaFetch<T>(url: string | null): T[] {
   return dados;
 }
 
-function TokenChip({ token }: { token: string }) {
+function TokenChip({ token, titulo }: { token: string; titulo?: string }) {
   const [copiado, setCopiado] = useState(false);
   return (
     <button
       type="button"
-      title="Clique para copiar"
+      title={titulo ? `${titulo} (clique para copiar)` : "Clique para copiar"}
       onClick={() => {
         navigator.clipboard?.writeText(token).catch(() => {});
         setCopiado(true);
@@ -125,45 +125,64 @@ function TokenChip({ token }: { token: string }) {
 }
 
 /**
- * Torna as variáveis de fato DESCOBRÍVEIS — em vez de só uma dica de
- * sintaxe, lista os tokens reais que existem nesse fluxo (variáveis do
- * gatilho manual) e um cheat-sheet dos campos de lead mais comuns, cada um
- * clicável pra copiar. `{{lead.campo}}` é sempre o PRIMEIRO lead do lote
- * atual (o motor roda cada nó uma vez por execução, não uma vez por lead).
+ * Duas coisas diferentes que antes apareciam misturadas:
+ * - Campos do lead para a MENSAGEM da campanha (`{{primeiro_nome}}`…),
+ *   mostrados nos módulos de disparo conforme o que veio antes no fluxo.
+ * - Parâmetros do FLUXO (`{{variaveis.x}}`), declarados no gatilho de
+ *   execução manual e digitados em campos de texto dos módulos.
  */
-function VariaveisDisponiveis({ variaveisFlow }: { variaveisFlow: VariavelEntrada[] }) {
+function CamposDaMensagem({ tipos, viaRamo }: { tipos: FlowNodeTipo[]; viaRamo: boolean }) {
+  const { grupos, dePlanilha } = camposDisponiveis(tipos, viaRamo);
   return (
     <Collapsible
       className="rounded-lg border border-dashed border-border bg-secondary/20 p-2.5"
-      trigger={<span className="text-xs font-semibold text-foreground">Variáveis disponíveis</span>}
+      trigger={<span className="text-xs font-semibold text-foreground">Campos para usar na mensagem</span>}
     >
       <div className="flex flex-col gap-2.5 pt-2.5">
-        <div className="flex flex-col gap-1.5">
-          <p className="text-[11px] font-medium text-muted-foreground">Entrada do gatilho manual</p>
-          {variaveisFlow.length > 0 ? (
-            <div className="flex flex-wrap gap-1.5">
-              {variaveisFlow.filter((v) => v.chave).map((v) => <TokenChip key={v.chave} token={`{{variaveis.${v.chave}}}`} />)}
-            </div>
-          ) : (
-            <p className="text-[11px] text-muted-foreground">
-              Nenhuma declarada ainda — adicione no nó de gatilho manual pra poder usar aqui.
-            </p>
-          )}
-        </div>
-        {LEAD_FIELD_GROUPS.map((g) => (
+        <p className="text-[11px] leading-snug text-muted-foreground">
+          Escreva estes campos no texto das etapas da campanha (não aqui). Cada lead recebe com os próprios dados. Com
+          barra, vira um texto padrão quando o campo vier vazio: <code className="rounded bg-secondary px-1">{"Oi {{primeiro_nome|tudo bem}}"}</code>.
+        </p>
+        {grupos.map((g) => (
           <div key={g.grupo} className="flex flex-col gap-1.5">
             <p className="text-[11px] font-medium text-muted-foreground">{g.grupo}</p>
             <div className="flex flex-wrap gap-1.5">
-              {g.campos.map((c) => <TokenChip key={c.chave} token={`{{lead.${c.chave}}}`} />)}
+              {g.campos.map((c) => <TokenChip key={c.chave} token={`{{${c.chave}}}`} titulo={c.label} />)}
             </div>
           </div>
         ))}
-        <p className="text-[11px] text-muted-foreground">
-          <code className="rounded bg-secondary px-1">{"{{lead.campo}}"}</code> usa o PRIMEIRO lead do lote atual — só
-          resolve a partir do nó seguinte a uma extração/histórico que já rodou (não funciona no primeiro nó de
-          extração, antes de haver lote nenhum). A lista de campos acima é um guia — só existe de verdade se a
-          origem do lote (CNPJ, Maps, LinkedIn, enriquecimento…) realmente o preencheu.
-        </p>
+        {dePlanilha && (
+          <p className="text-[11px] text-muted-foreground">Da planilha: cada coluna vira um campo com o nome do cabeçalho.</p>
+        )}
+      </div>
+    </Collapsible>
+  );
+}
+
+function ParametrosDoFluxo({ variaveisFlow }: { variaveisFlow: VariavelEntrada[] }) {
+  const declaradas = variaveisFlow.filter((v) => v.chave);
+  return (
+    <Collapsible
+      className="rounded-lg border border-dashed border-border bg-secondary/20 p-2.5"
+      trigger={<span className="text-xs font-semibold text-foreground">Parâmetros do fluxo</span>}
+    >
+      <div className="flex flex-col gap-2 pt-2.5">
+        {declaradas.length ? (
+          <>
+            <p className="text-[11px] leading-snug text-muted-foreground">
+              Digite um destes em qualquer campo de texto deste módulo (ex.: a cidade da busca). O valor é perguntado a cada
+              &quot;Executar agora&quot;.
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {declaradas.map((v) => <TokenChip key={v.chave} token={`{{variaveis.${v.chave}}}`} titulo={v.label || v.chave} />)}
+            </div>
+          </>
+        ) : (
+          <p className="text-[11px] leading-snug text-muted-foreground">
+            Quer usar o mesmo fluxo com valores diferentes a cada vez (outra cidade, outro nicho)? Use o gatilho
+            &quot;Execução manual&quot; e crie parâmetros nele. Eles aparecem aqui para você colar nos campos.
+          </p>
+        )}
       </div>
     </Collapsible>
   );
@@ -229,7 +248,9 @@ function CamposGatilhoManual({ config, set }: CamposProps) {
   return (
     <>
       <p className="text-xs text-muted-foreground">
-        Parâmetros de entrada — pedidos a cada &quot;Executar agora&quot; e disponíveis nos nós seguintes via <code className="rounded bg-secondary px-1">{"{{variaveis.chave}}"}</code>.
+        Parâmetros deixam o mesmo fluxo servir para casos diferentes. Ex.: crie <code className="rounded bg-secondary px-1">cidade</code>{" "}
+        com padrão &quot;Santo André&quot; e escreva <code className="rounded bg-secondary px-1">{"{{variaveis.cidade}}"}</code> no campo de
+        cidade da busca. A cada &quot;Executar agora&quot; a plataforma pergunta o valor.
       </p>
       {variaveis.map((v, i) => (
         <div key={i} className="flex flex-col gap-2 rounded-lg border border-border bg-secondary/30 p-2.5">
@@ -585,7 +606,9 @@ function CamposLimitarLote({ config, set }: CamposProps) {
         </>
       )}
       <p className="text-xs text-muted-foreground">
-        O resto do lote para aqui nesta execução. Antes de um disparo, use junto com o limite de novos por dia da campanha: o fluxo não inscreve mais do que a campanha dá conta.
+        O resto do lote para aqui e não volta: a extração já guardou esses leads no histórico, e com &quot;só leads novos&quot; eles não
+        aparecem de novo. Para dosar o disparo sem perder ninguém, prefira o limite da própria extração ou o limite de novos por dia da
+        campanha (a campanha guarda a fila e envia aos poucos). Use este módulo para ficar só com os melhores de um lote grande.
       </p>
     </>
   );
@@ -614,12 +637,8 @@ function CamposDisparoWhatsapp({ config, set }: CamposProps) {
         </Select>
       </Campo>
       <p className="text-xs text-muted-foreground">
-        Este nó só inscreve os leads na campanha — a mensagem em si (texto livre ou parâmetros de template) é editada
-        lá, em <strong className="text-foreground">/disparo</strong>. A sintaxe de lá é sem o prefixo &quot;lead.&quot;:{" "}
-        <code className="rounded bg-secondary px-1">{"{{campo}}"}</code> direto (ex.: <code className="rounded bg-secondary px-1">{"{{nome}}"}</code>).
-        Todos os campos que o lead tem NESTE ponto do fluxo ficam disponíveis lá — inclusive os de enriquecimento
-        (<code className="rounded bg-secondary px-1">{"{{enriquecimento_empresa}}"}</code>…), se esse nó vier depois
-        de um nó de enriquecimento.
+        Este módulo só inscreve os leads na campanha. O texto das mensagens fica nas etapas da própria campanha, em{" "}
+        <strong className="text-foreground">Disparo</strong>. Veja abaixo os campos que a mensagem pode usar.
       </p>
     </>
   );
@@ -647,11 +666,8 @@ function CamposDisparoLinkedin({ config, set }: CamposProps) {
         </Select>
       </Campo>
       <p className="text-xs text-muted-foreground">
-        Este nó só inscreve os leads na campanha — a nota de convite e o corpo da mensagem são editados lá, em{" "}
-        <strong className="text-foreground">/disparo-linkedin</strong>. Mesma sintaxe dos outros campos do fluxo:{" "}
-        <code className="rounded bg-secondary px-1">{"{{campo}}"}</code> direto (ex.: <code className="rounded bg-secondary px-1">{"{{nome}}"}</code>).
-        O lead precisa ter um <code className="rounded bg-secondary px-1">linkedin_url</code> válido neste ponto do
-        fluxo (vindo de uma extração LinkedIn ou de um nó de enriquecimento) pra ser inscrito.
+        Este módulo só inscreve os leads na campanha. A nota do convite e as mensagens ficam na campanha, em{" "}
+        <strong className="text-foreground">Disparo LinkedIn</strong>. O lead precisa ter o endereço do perfil (linkedin_url).
       </p>
     </>
   );
@@ -679,12 +695,8 @@ function CamposDisparoEmail({ config, set }: CamposProps) {
         </Select>
       </Campo>
       <p className="text-xs text-muted-foreground">
-        Este nó só inscreve os leads na campanha — o assunto e o corpo do e-mail são editados lá, em{" "}
-        <strong className="text-foreground">/disparo-email</strong>. A sintaxe de lá é a mesma dos outros campos do
-        fluxo: <code className="rounded bg-secondary px-1">{"{{campo}}"}</code> direto (ex.: <code className="rounded bg-secondary px-1">{"{{nome}}"}</code>).
-        Todos os campos que o lead tem NESTE ponto do fluxo ficam disponíveis lá — inclusive os de enriquecimento
-        (<code className="rounded bg-secondary px-1">{"{{enriquecimento_empresa}}"}</code>…), se esse nó vier depois
-        de um nó de enriquecimento.
+        Este módulo só inscreve os leads na campanha. O assunto e o texto ficam nas etapas da própria campanha, em{" "}
+        <strong className="text-foreground">Disparo e-mail</strong>. Veja abaixo os campos que a mensagem pode usar.
       </p>
     </>
   );
@@ -859,10 +871,12 @@ function CamposDoNo({ node, config, set }: { node: FlowNode } & CamposProps) {
 }
 
 export function FlowNodeConfigPanel({
-  node, variaveisFlow, saidasLigadas = {}, onAdicionarNaSaida, onChange, onClose, onDelete,
+  node, variaveisFlow, anteriores = { tipos: [], viaRamo: false }, saidasLigadas = {}, onAdicionarNaSaida, onChange, onClose, onDelete,
 }: {
   node: FlowNode;
   variaveisFlow: VariavelEntrada[];
+  /** Módulos antes deste no fluxo (para saber quais campos o lead tem aqui). */
+  anteriores?: { tipos: FlowNodeTipo[]; viaRamo: boolean };
   /** Saída extra → nome do passo ligado a ela. */
   saidasLigadas?: Record<string, string>;
   onAdicionarNaSaida?: (saida: string, tipo: FlowNodeTipo) => void;
@@ -893,7 +907,8 @@ export function FlowNodeConfigPanel({
       )}
 
       {/* Referência, não campo: fica recolhida e depois dos campos do nó. */}
-      {meta.categoria !== "gatilho" && <VariaveisDisponiveis variaveisFlow={variaveisFlow} />}
+      {meta.categoria === "disparo" && <CamposDaMensagem tipos={anteriores.tipos} viaRamo={anteriores.viaRamo} />}
+      {meta.categoria !== "gatilho" && meta.categoria !== "disparo" && <ParametrosDoFluxo variaveisFlow={variaveisFlow} />}
 
       <Button variant="outline" size="sm" onClick={onDelete} className="mt-auto text-destructive hover:border-destructive">
         <Trash2 className="h-3.5 w-3.5" /> Remover nó

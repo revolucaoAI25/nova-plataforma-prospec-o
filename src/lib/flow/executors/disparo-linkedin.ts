@@ -1,6 +1,6 @@
 import { enrollLinkedInTargets, obterCampanhaLinkedin, perfilComLinkedinDisparoHabilitado } from "@/lib/linkedin-dispatch-db";
 import type { FlowExecutorContext, FlowExecutorOutcome } from "../executor-types";
-import { opcoesInscricaoDoNo, saidasDaInscricao } from "./disparo-comum";
+import { avisoDaInscricao, opcoesInscricaoDoNo, saidasDaInscricao } from "./disparo-comum";
 
 /**
  * Inscreve o lote recebido numa campanha de disparo por LinkedIn já
@@ -36,7 +36,7 @@ export async function executarDisparoLinkedin(ctx: FlowExecutorContext): Promise
     status: "concluido",
     leadsEntrada: lote.length,
     leadsSaida: resultado.inscritos,
-    detalhe: { campaignId, ...resultado },
+    detalhe: { campaignId, ...resultado, aviso: avisoDaInscricao(String(campanha.status), lote.length, resultado) },
     contextoPatch: { campaignId },
     saidas: saidasDaInscricao(leadsInvalidos, "linkedin_url"),
   };

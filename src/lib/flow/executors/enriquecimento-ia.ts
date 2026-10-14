@@ -27,7 +27,10 @@ export async function executarEnriquecimentoIa(ctx: FlowExecutorContext): Promis
         status: "concluido",
         leadsEntrada: lote.length,
         leadsSaida: lote.length,
-        detalhe: { enrichmentRunId: runIdExistente, encontrados: run.encontrados, naoEncontrados: run.nao_encontrados, erros: run.erros },
+        detalhe: {
+          enrichmentRunId: runIdExistente, encontrados: run.encontrados, naoEncontrados: run.nao_encontrados, erros: run.erros,
+          ...(lote.length > run.total ? { aviso: `A IA enriquece até ${LIMITE_LOTE} leads por execução: ${lote.length - run.total} seguiram sem enriquecer.` } : {}),
+        },
         // Limpa a marca: outro nó de enriquecimento mais adiante (ou num
         // ramo que herdou este contexto) precisa criar a própria execução.
         contextoPatch: { lote: loteEnriquecido, enrichmentRunId: undefined },
@@ -45,7 +48,10 @@ export async function executarEnriquecimentoIa(ctx: FlowExecutorContext): Promis
     .slice(0, LIMITE_LOTE);
 
   if (!leadsValidos.length) {
-    return { status: "erro", erro: "Nenhum lead do lote tem e-mail ou telefone para enriquecer." };
+    return {
+      status: "concluido", leadsEntrada: lote.length, leadsSaida: lote.length,
+      detalhe: { aviso: "Nenhum lead tinha e-mail ou telefone: o lote seguiu sem enriquecer." },
+    };
   }
 
   const opcoes: EnrichmentOpcoes = {

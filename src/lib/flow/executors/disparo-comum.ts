@@ -26,3 +26,18 @@ export function saidasDaInscricao(leadsInvalidos: object[] | undefined, campoCon
     }),
   };
 }
+
+/** Avisos que não impedem o passo, mas explicam por que nada vai sair (aparecem no histórico). */
+export function avisoDaInscricao(
+  statusCampanha: string,
+  totalLote: number,
+  r: { inscritos: number; invalidos: number; duplicados: number; opt_out: number },
+): string | undefined {
+  if (totalLote > 0 && r.inscritos + r.invalidos + r.duplicados + r.opt_out === 0) {
+    return "A campanha não tem nenhuma etapa de mensagem: ninguém foi inscrito.";
+  }
+  if (statusCampanha !== "ativa" && r.inscritos > 0) {
+    return `A campanha está "${statusCampanha}": os leads foram inscritos, mas só recebem mensagem quando ela for ativada.`;
+  }
+  return undefined;
+}

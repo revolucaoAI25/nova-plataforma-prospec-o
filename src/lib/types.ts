@@ -49,6 +49,8 @@ export interface Lead {
   empresa_atual: string;
   senioridade: string;
 
+  /** Todos os sócios da empresa ("NOME (Sócio-Administrador); ..."), na busca por CNPJ. */
+  socios?: string;
   /** Localização: vem pronta do Google Maps; na busca por CNPJ só o bairro. */
   bairro?: string;
   latitude?: number | null;

@@ -1,73 +1,132 @@
+import type { FlowNodeTipo } from "@/lib/database.types";
+
 /**
- * Cheat-sheet de campos comuns que um lead pode ter dentro de `contexto.lote`
- * — usado só pra referência na UI (clique-pra-copiar `{{lead.campo}}` no
- * painel de configuração do nó). Não é uma lista exaustiva nem garantida:
- * o campo só existe de fato se o nó que produziu o lote (extração,
- * histórico, enriquecimento) o preencheu — por isso agrupado por origem,
- * pra deixar claro que "cargo" só faz sentido depois de um LinkedIn ou de
- * um enriquecimento, por exemplo.
+ * Campos que o lead tem em cada ponto do fluxo, conforme os módulos que
+ * vieram antes. Usado no painel do construtor pra mostrar quais `{{campo}}`
+ * a mensagem da campanha pode usar a partir daquele disparo. É um guia: o
+ * campo só vem preenchido se a origem trouxe o dado para aquele lead.
  */
 export interface CampoReferencia {
   chave: string;
   label: string;
 }
 
-export const LEAD_FIELD_GROUPS: { grupo: string; campos: CampoReferencia[] }[] = [
-  {
-    grupo: "Dados básicos (qualquer origem)",
-    campos: [
-      { chave: "nome", label: "Nome" },
-      { chave: "telefone", label: "Telefone" },
-      { chave: "email", label: "E-mail" },
-      { chave: "municipio", label: "Município" },
-      { chave: "uf", label: "UF" },
-      { chave: "site", label: "Site" },
-    ],
-  },
-  {
-    grupo: "CNPJ / Google Maps",
-    campos: [
-      { chave: "cnpj", label: "CNPJ" },
-      { chave: "endereco", label: "Endereço" },
-      { chave: "avaliacao", label: "Avaliação (Maps)" },
-      { chave: "socio_principal", label: "Sócio principal" },
-      { chave: "porte", label: "Porte" },
-    ],
-  },
-  {
-    grupo: "LinkedIn",
-    campos: [
-      { chave: "cargo", label: "Cargo" },
-      { chave: "empresa_atual", label: "Empresa atual" },
-      { chave: "senioridade", label: "Senioridade" },
-      { chave: "linkedin_url", label: "URL do LinkedIn" },
-    ],
-  },
-  {
-    grupo: "Enriquecimento (após um nó de enriquecimento via IA)",
-    campos: [
-      { chave: "enriquecimento_status", label: "Status" },
-      { chave: "enriquecimento_empresa", label: "Empresa" },
-      { chave: "enriquecimento_cargo", label: "Cargo" },
-      { chave: "enriquecimento_cnpj", label: "CNPJ" },
-      { chave: "enriquecimento_website", label: "Site" },
-      { chave: "enriquecimento_resumo", label: "Resumo" },
-    ],
-  },
-  {
-    grupo: "Sócios e Contato (após o nó de mesmo nome)",
-    campos: [
-      { chave: "bigdatacorp_socio_nome", label: "Sócio principal" },
-      { chave: "bigdatacorp_socios", label: "Todos os sócios" },
-      { chave: "bigdatacorp_telefone", label: "Telefone encontrado" },
-    ],
-  },
-  {
-    grupo: "Ramos de disparo (Enviou, Falhou, Respondeu, Sem resposta)",
-    campos: [
-      { chave: "resultado_disparo", label: "Saída por onde o lead veio" },
-      { chave: "contato_que_falhou", label: "Contato que falhou" },
-      { chave: "motivo_falha", label: "Motivo da falha" },
-    ],
-  },
-];
+export interface GrupoCampos {
+  grupo: string;
+  campos: CampoReferencia[];
+}
+
+/** Calculados na hora do envio, para qualquer lead (ver src/lib/mensagem.ts). */
+export const CAMPOS_PRONTOS: GrupoCampos = {
+  grupo: "Prontos para mensagem (já arrumados)",
+  campos: [
+    { chave: "primeiro_nome", label: "Primeiro nome do sócio ou da pessoa" },
+    { chave: "empresa", label: "Nome da empresa sem LTDA e sem caixa alta" },
+    { chave: "cidade", label: "Cidade" },
+  ],
+};
+
+const CNPJ: GrupoCampos = {
+  grupo: "Da busca por CNPJ",
+  campos: [
+    { chave: "socio_principal", label: "Nome completo do sócio principal (o administrador, quando há)" },
+    { chave: "socios", label: "Todos os sócios" },
+    { chave: "telefone", label: "Telefone" },
+    { chave: "email", label: "E-mail" },
+    { chave: "porte", label: "Porte" },
+    { chave: "bairro", label: "Bairro" },
+    { chave: "uf", label: "UF" },
+    { chave: "cnpj", label: "CNPJ" },
+    { chave: "nome", label: "Razão social (em caixa alta)" },
+  ],
+};
+
+const MAPS: GrupoCampos = {
+  grupo: "Do Google Maps",
+  campos: [
+    { chave: "nome", label: "Nome do estabelecimento" },
+    { chave: "telefone", label: "Telefone" },
+    { chave: "site", label: "Site" },
+    { chave: "avaliacao", label: "Nota no Google" },
+    { chave: "total_avaliacoes", label: "Número de avaliações" },
+    { chave: "bairro", label: "Bairro" },
+  ],
+};
+
+const LINKEDIN: GrupoCampos = {
+  grupo: "Do LinkedIn",
+  campos: [
+    { chave: "nome", label: "Nome da pessoa" },
+    { chave: "cargo", label: "Cargo" },
+    { chave: "empresa_atual", label: "Empresa atual" },
+  ],
+};
+
+const INSTAGRAM: GrupoCampos = {
+  grupo: "Do Instagram",
+  campos: [
+    { chave: "username", label: "@ do perfil" },
+    { chave: "nome_completo", label: "Nome no perfil" },
+  ],
+};
+
+const SOCIOS: GrupoCampos = {
+  grupo: "De Sócios e Contato",
+  campos: [
+    { chave: "bigdatacorp_socio_nome", label: "Sócio principal" },
+    { chave: "bigdatacorp_socios", label: "Todos os sócios" },
+  ],
+};
+
+const IA: GrupoCampos = {
+  grupo: "Do Enriquecimento via IA",
+  campos: [
+    { chave: "enriquecimento_empresa", label: "Empresa" },
+    { chave: "enriquecimento_cargo", label: "Cargo" },
+    { chave: "enriquecimento_resumo", label: "Resumo da empresa" },
+  ],
+};
+
+const MAPS_ENRIQ: GrupoCampos = {
+  grupo: "Do Enriquecimento via Maps",
+  campos: [
+    { chave: "site", label: "Site" },
+    { chave: "avaliacao", label: "Nota no Google" },
+    { chave: "total_avaliacoes", label: "Número de avaliações" },
+  ],
+};
+
+const RAMO_DISPARO: GrupoCampos = {
+  grupo: "De um ramo de disparo (Enviou, Falhou…)",
+  campos: [
+    { chave: "resultado_disparo", label: "Saída por onde o lead veio" },
+    { chave: "contato_que_falhou", label: "Contato que falhou" },
+  ],
+};
+
+const POR_TIPO: Partial<Record<FlowNodeTipo, GrupoCampos>> = {
+  extracao_cnpj: CNPJ,
+  gatilho_filtro_leads: CNPJ,
+  fonte_historico: CNPJ,
+  extracao_maps: MAPS,
+  extracao_linkedin: LINKEDIN,
+  extracao_instagram: INSTAGRAM,
+  enriquecimento_bigdatacorp: SOCIOS,
+  enriquecimento_ia: IA,
+  enriquecimento_maps: MAPS_ENRIQ,
+};
+
+/** Grupos de campos que existem num ponto do fluxo, dados os módulos anteriores. */
+export function camposDisponiveis(tiposAnteriores: FlowNodeTipo[], viaRamoDisparo: boolean): { grupos: GrupoCampos[]; dePlanilha: boolean } {
+  const grupos: GrupoCampos[] = [CAMPOS_PRONTOS];
+  const vistos = new Set<GrupoCampos>();
+  for (const t of tiposAnteriores) {
+    const g = POR_TIPO[t];
+    if (g && !vistos.has(g)) {
+      vistos.add(g);
+      grupos.push(g);
+    }
+  }
+  if (viaRamoDisparo) grupos.push(RAMO_DISPARO);
+  return { grupos, dePlanilha: tiposAnteriores.includes("gatilho_planilha") };
+}

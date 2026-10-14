@@ -137,12 +137,15 @@ export function FlowRunHistory({
             <div className="mt-3 flex flex-col gap-2 pl-6">
               {run.erro && <p className="text-xs text-destructive">{run.erro}</p>}
               {stepsDaRun.map((step) => (
-                <div key={step.id} className="flex items-center gap-2 text-xs">
+                <div key={step.id} className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs">
                   <StatusIcon status={step.status} />
                   <span className="text-foreground">{FLOW_NODE_TYPES[step.tipo as FlowNodeTipo]?.label ?? step.tipo}</span>
                   {step.status === "pulado" ? <span className="text-muted-foreground">· pulado, nenhum lead novo</span>
                     : step.leads_saida !== null && <span className="text-muted-foreground">· {step.leads_saida} lead(s)</span>}
                   {step.erro && <span className="text-destructive">· {step.erro}</span>}
+                  {typeof (step.detalhe as { aviso?: unknown } | null)?.aviso === "string" && (
+                    <span className="text-amber">· {(step.detalhe as { aviso: string }).aviso}</span>
+                  )}
                 </div>
               ))}
               {!stepsDaRun.length && <p className="text-xs text-muted-foreground">Sem etapas registradas.</p>}

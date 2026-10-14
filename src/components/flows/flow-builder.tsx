@@ -231,8 +231,11 @@ export function FlowBuilder({ flowInicial }: { flowInicial: AutomationFlowRow | 
     for (const runId of considerar) {
       for (const s of steps) {
         if (s.run_id !== runId || porNo[s.node_id]) continue;
-        const ramos = (s.detalhe as { ramos?: Record<string, number> } | null)?.ramos;
-        porNo[s.node_id] = { status: s.status, leadsSaida: s.leads_saida, erro: s.erro, ramos };
+        const d = s.detalhe as { ramos?: Record<string, number>; aviso?: unknown } | null;
+        porNo[s.node_id] = {
+          status: s.status, leadsSaida: s.leads_saida, erro: s.erro, ramos: d?.ramos,
+          aviso: typeof d?.aviso === "string" ? d.aviso : undefined,
+        };
       }
     }
     setExecucaoPorNo(porNo);

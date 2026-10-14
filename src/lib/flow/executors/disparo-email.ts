@@ -1,6 +1,6 @@
 import { enrollEmailTargets, obterCampanhaEmail, perfilComEmailDisparoHabilitado } from "@/lib/email-dispatch-db";
 import type { FlowExecutorContext, FlowExecutorOutcome } from "../executor-types";
-import { opcoesInscricaoDoNo, saidasDaInscricao } from "./disparo-comum";
+import { avisoDaInscricao, opcoesInscricaoDoNo, saidasDaInscricao } from "./disparo-comum";
 
 /**
  * Inscreve o lote recebido numa campanha de disparo por e-mail já
@@ -35,7 +35,7 @@ export async function executarDisparoEmail(ctx: FlowExecutorContext): Promise<Fl
     status: "concluido",
     leadsEntrada: lote.length,
     leadsSaida: resultado.inscritos,
-    detalhe: { campaignId, ...resultado },
+    detalhe: { campaignId, ...resultado, aviso: avisoDaInscricao(String(campanha.status), lote.length, resultado) },
     contextoPatch: { campaignId },
     saidas: saidasDaInscricao(leadsInvalidos, "email"),
   };

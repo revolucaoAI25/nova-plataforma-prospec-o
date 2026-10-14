@@ -50,7 +50,14 @@ export async function executarLimitarLote(ctx: FlowExecutorContext): Promise<Flo
     status: "concluido",
     leadsEntrada: ctx.contexto.lote?.length ?? 0,
     leadsSaida: saida.length,
-    detalhe: { maximo, modo, ...(modo === "ordenar" ? { campo, ordem } : {}), cortados: Math.max(0, lote.length - saida.length) },
+    detalhe: {
+      maximo, modo, ...(modo === "ordenar" ? { campo, ordem } : {}), cortados: Math.max(0, lote.length - saida.length),
+      // Os cortados já foram salvos no histórico pela extração; com "só
+      // leads novos" eles não voltam na próxima execução.
+      ...(lote.length > saida.length
+        ? { aviso: `${lote.length - saida.length} lead(s) ficaram de fora e não voltam nas próximas execuções. Para não perder ninguém, use o limite da própria extração ou o limite de novos por dia da campanha.` }
+        : {}),
+    },
     contextoPatch: { lote: saida },
   };
 }

@@ -9,7 +9,7 @@ import "@xyflow/react/dist/style.css";
 import { AlertTriangle, ChevronDown, LayoutGrid, Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { FLOW_NODE_TYPES, type SaidaDoNo, type VariavelEntrada } from "@/lib/flow/node-types";
+import { FLOW_NODE_TYPES, SAIDAS_DISPARO, type SaidaDoNo, type VariavelEntrada } from "@/lib/flow/node-types";
 import { pendenciasDoFluxo, problemaDoNo, resumoDoNo } from "@/lib/flow/resumo";
 import { alturaEstimada, PASSO_X, posicoesEmArvore } from "@/lib/flow/layout";
 import type { FlowNode, FlowEdge, FlowNodeTipo, Json } from "@/lib/database.types";
@@ -339,6 +339,30 @@ function FlowCanvasInner({ nodesIniciais, edgesIniciais, onMudou, execucaoPorNo 
     return Array.isArray(config?.variaveis) ? config.variaveis : [];
   }, [nodes, configsPorId]);
 
+  // Módulos que vêm antes do selecionado (por qualquer caminho) e se ele
+  // está dentro de um ramo de resultado de disparo.
+  const anterioresDoSelecionado = useMemo(() => {
+    if (!selecionadoId) return { tipos: [] as FlowNodeTipo[], viaRamo: false };
+    const saidasDisparo = new Set(SAIDAS_DISPARO.map((x) => x.id));
+    const tipos: FlowNodeTipo[] = [];
+    let viaRamo = false;
+    const vistos = new Set<string>([selecionadoId]);
+    const fila = [selecionadoId];
+    while (fila.length) {
+      const atual = fila.shift()!;
+      for (const e of edges) {
+        if (e.target !== atual) continue;
+        if (e.sourceHandle && saidasDisparo.has(e.sourceHandle)) viaRamo = true;
+        if (vistos.has(e.source)) continue;
+        vistos.add(e.source);
+        const n = nodes.find((x) => x.id === e.source);
+        if (n) tipos.push(tipoDe(n));
+        fila.push(e.source);
+      }
+    }
+    return { tipos, viaRamo };
+  }, [selecionadoId, edges, nodes]);
+
   const pendencias = useMemo(
     () => pendenciasDoFluxo(nodes.map((n) => ({ id: n.id, tipo: tipoDe(n), config: configsPorId[n.id] ?? {} })), edges.map((e) => ({ from: e.source, to: e.target, saida: e.sourceHandle ?? null }))),
     [nodes, edges, configsPorId],
@@ -439,6 +463,7 @@ function FlowCanvasInner({ nodesIniciais, edgesIniciais, onMudou, execucaoPorNo 
           <FlowNodeConfigPanel
             node={noSelecionado}
             variaveisFlow={variaveisFlow}
+            anteriores={anterioresDoSelecionado}
             saidasLigadas={Object.fromEntries(
               edges.filter((e) => e.source === noSelecionado.id && e.sourceHandle).map((e) => {
                 const alvo = nodes.find((n) => n.id === e.target);

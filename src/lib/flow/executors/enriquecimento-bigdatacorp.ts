@@ -44,8 +44,14 @@ export async function executarEnriquecimentoBigDataCorp(ctx: FlowExecutorContext
     .map((l) => ({ cnpj: String(l.cnpj || ""), nomeLead: String(l.nome || "") }))
     .filter((l) => l.cnpj.replace(/\D/g, "").length === 14);
 
+  // Sem CNPJ não há o que consultar (ex.: lote vindo do Google Maps). Não é
+  // erro: o lote segue como está, sem gastar crédito, e o aviso aparece no
+  // histórico. Antes isso virava erro e a execução tentava de novo 3 vezes.
   if (!itens.length) {
-    return { status: "erro", erro: "Nenhum lead do lote tem CNPJ para consultar na BigDataCorp." };
+    return {
+      status: "concluido", leadsEntrada: lote.length, leadsSaida: lote.length,
+      detalhe: { aviso: "Nenhum lead tinha CNPJ: o lote seguiu sem enriquecer." },
+    };
   }
 
   const { data: run, error: runError } = await sb

@@ -14,6 +14,8 @@ export interface ExecucaoDoNo {
   erro: string | null;
   /** Leads que saíram na hora por cada saída extra (ex.: { nao_atende: 12 }). */
   ramos?: Record<string, number>;
+  /** Algo que não travou o passo mas merece atenção (ex.: campanha pausada). */
+  aviso?: string;
 }
 
 const TOM_SAIDA: Record<SaidaDoNo["tom"], { texto: string; handle: string }> = {
@@ -65,9 +67,16 @@ export interface FlowNodeCardData {
 function SeloExecucao({ execucao }: { execucao: ExecucaoDoNo }) {
   if (execucao.status === "concluido") {
     return (
-      <span className="flex items-center gap-1 text-[11px] font-medium text-success">
-        <CheckCircle2 className="h-3 w-3" /> {execucao.leadsSaida !== null ? `${execucao.leadsSaida} lead${execucao.leadsSaida === 1 ? "" : "s"}` : "ok"}
-      </span>
+      <>
+        <span className="flex items-center gap-1 text-[11px] font-medium text-success">
+          <CheckCircle2 className="h-3 w-3" /> {execucao.leadsSaida !== null ? `${execucao.leadsSaida} lead${execucao.leadsSaida === 1 ? "" : "s"}` : "ok"}
+        </span>
+        {execucao.aviso && (
+          <span className="flex items-start gap-1 text-[11px] font-medium text-amber" title={execucao.aviso}>
+            <AlertTriangle className="mt-px h-3 w-3 shrink-0" /> <span className="line-clamp-2">{execucao.aviso}</span>
+          </span>
+        )}
+      </>
     );
   }
   if (execucao.status === "erro") {

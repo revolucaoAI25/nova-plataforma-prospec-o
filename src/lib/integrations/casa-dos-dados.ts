@@ -159,8 +159,20 @@ function mapearLead(item: any): Lead {
   const dataAberturaRaw = item.data_abertura || "";
   lead.data_abertura = dataAberturaRaw ? String(dataAberturaRaw).slice(0, 10) : "";
 
+  // Sócio principal: quem administra, quando a Receita diz (o 1º da lista
+  // nem sempre é). Todos os sócios ficam em `socios` para a mensagem e o
+  // export; o lead continua sendo um por empresa.
   const qsa: Array<Record<string, unknown>> = item.quadro_societario || [];
-  lead.socio_principal = qsa[0] ? String(qsa[0].nome ?? "") : "";
+  const qualificacao = (s: Record<string, unknown>) =>
+    String(s.qualificacao_socio ?? s.qualificacao ?? s.qualificacao_socio_descricao ?? "").replace(/^\d+\s*-\s*/, "").trim();
+  const administrador = qsa.find((s) => /administrador/i.test(qualificacao(s)));
+  const principal = administrador ?? qsa[0];
+  lead.socio_principal = principal ? String(principal.nome ?? "") : "";
+  lead.socios = qsa
+    .map((s) => [String(s.nome ?? "").trim(), qualificacao(s)].filter(Boolean))
+    .filter((p) => p[0])
+    .map(([nome, q]) => (q ? `${nome} (${q})` : nome))
+    .join("; ");
 
   const simplesObj = item.simples || {};
   const meiObj = item.mei || {};

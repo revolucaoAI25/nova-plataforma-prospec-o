@@ -114,29 +114,79 @@ export async function obterCard(sb: SupabaseClient, cardId: string): Promise<Fun
  * quanto pelo executor de fluxo `destino_funil`. `lead_snapshot` guarda o
  * registro inteiro; a UI escolhe os campos relevantes pra exibir no card.
  */
+export interface ResultadoAdicionarAoFunil {
+  adicionados: number;
+  /** Já estavam no funil e avançaram para a coluna pedida. */
+  movidos: number;
+  /** Já estavam no funil (na mesma coluna ou mais adiante) e ficaram onde estavam. */
+  jaNoFunil: number;
+}
+
+/**
+ * Coloca leads numa coluna do funil sem duplicar card: lead que já está no
+ * funil (mesmo telefone, e-mail ou LinkedIn) não ganha card novo. Com
+ * `avancarExistentes`, o card existente anda para a coluna pedida se ela
+ * vier depois da atual (nunca volta: um lead em "Respondeu" não regride
+ * para "Em cadência" porque passou por outro ramo do fluxo).
+ */
 export async function adicionarLeadsAoFunil(
   sb: SupabaseClient,
   funilId: string,
   colunaId: string,
   userId: string,
   leads: Array<Record<string, unknown>>,
-): Promise<number> {
-  if (!leads.length) return 0;
+  opcoes: { avancarExistentes?: boolean } = {},
+): Promise<ResultadoAdicionarAoFunil> {
+  const resultado: ResultadoAdicionarAoFunil = { adicionados: 0, movidos: 0, jaNoFunil: 0 };
+  if (!leads.length) return resultado;
   const existentes = await listarCards(sb, funilId);
+  const { data: colunasData } = await sb.from("funil_colunas").select("id, ordem").eq("funil_id", funilId);
+  const ordemColuna = new Map(((colunasData ?? []) as { id: string; ordem: number }[]).map((c) => [c.id, c.ordem]));
+  const destino = ordemColuna.get(colunaId) ?? 0;
+
+  const cardPorContato = new Map<string, FunilCardRow>();
+  for (const card of existentes) for (const c of card.contatos ?? []) cardPorContato.set(c, card);
+
   let ordem = existentes.length ? Math.max(...existentes.map((c) => c.ordem)) + 1 : 0;
+  const linhas: Record<string, unknown>[] = [];
+  const mover: string[] = [];
+  const vistos = new Set<string>();
+  for (const lead of leads) {
+    const contatos = contatosDoLead(lead);
+    // Mesmo lead repetido dentro do próprio lote.
+    if (contatos.some((c) => vistos.has(c))) continue;
+    contatos.forEach((c) => vistos.add(c));
 
-  const linhas = leads.map((lead) => ({
-    funil_id: funilId,
-    coluna_id: colunaId,
-    user_id: userId,
-    lead_id: (lead.id as string) || null,
-    lead_snapshot: lead,
-    contatos: contatosDoLead(lead),
-    ordem: ordem++,
-  }));
+    const card = contatos.map((c) => cardPorContato.get(c)).find(Boolean);
+    if (card) {
+      const atual = ordemColuna.get(card.coluna_id) ?? 0;
+      if (opcoes.avancarExistentes && atual < destino) mover.push(card.id);
+      else resultado.jaNoFunil++;
+      continue;
+    }
+    linhas.push({
+      funil_id: funilId,
+      coluna_id: colunaId,
+      user_id: userId,
+      lead_id: (lead.id as string) || null,
+      lead_snapshot: lead,
+      contatos,
+      ordem: ordem++,
+    });
+  }
 
-  const { error } = await sb.from("funil_cards").insert(linhas);
-  return error ? 0 : linhas.length;
+  if (linhas.length) {
+    const { error } = await sb.from("funil_cards").insert(linhas);
+    if (!error) resultado.adicionados = linhas.length;
+  }
+  if (mover.length) {
+    const { error } = await sb
+      .from("funil_cards")
+      .update({ coluna_id: colunaId, atualizado_em: new Date().toISOString() })
+      .in("id", mover);
+    if (!error) resultado.movidos = mover.length;
+  }
+  return resultado;
 }
 
 /**

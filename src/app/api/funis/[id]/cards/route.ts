@@ -54,6 +54,6 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     if (!leads.length) return NextResponse.json({ error: "Nenhum lead com nome, telefone ou e-mail." }, { status: 400 });
   }
 
-  const total = await adicionarLeadsAoFunil(supabase, id, parsed.data.colunaId, user.id, leads);
-  return NextResponse.json({ total });
+  const r = await adicionarLeadsAoFunil(supabase, id, parsed.data.colunaId, user.id, leads);
+  return NextResponse.json({ total: r.adicionados, jaNoFunil: r.jaNoFunil });
 }
