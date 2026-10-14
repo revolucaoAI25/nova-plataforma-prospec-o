@@ -60,7 +60,11 @@ No [painel do Supabase](https://supabase.com/dashboard), crie um projeto novo
     por dia, janela de horário e dias), teste A/B por etapa e as colunas de
     entregue/lido/clicado/devolvido nos logs. `0033_dados_cliente.sql`
     adiciona nome, telefone e empresa ao perfil e faz todo perfil novo nascer
-    como `user` (o papel não vem mais do metadata do cadastro). Todas podem ser rodadas de
+    como `user` (o papel não vem mais do metadata do cadastro). `0036` a
+    `0039`: ramos nos fluxos, correção da conferência de dono do canal das
+    campanhas, log do "Criar com IA" e coordenadas dos leads para o mapa.
+    Rode-as **antes** do deploy desta versão (o código novo grava colunas
+    que elas criam). Todas podem ser rodadas de
     novo sem erro (usam `if not exists` / `create or replace`).
 
 Em **Authentication → Providers**, deixe E-mail/senha habilitado (é o único método
@@ -1361,6 +1365,36 @@ mas nada é processado — é só fila).
   - *Garantia de 7 dias* na página de planos, no checkout e no FAQ — é o
     direito de arrependimento do CDC (art. 49) para compras online, então
     não cria obrigação nova; o reembolso é feito manualmente no Asaas.
+
+- **Ramos nos fluxos (saídas condicionais)** — `Filtrar leads` tem a saída
+  "Não atende" e os três disparos têm "Enviou", "Falhou", "Respondeu" e "Sem
+  resposta", além de "Em seguida" (a saída antiga, que segue na hora com os
+  inscritos). Cada saída extra abre uma execução própria (o ramo), que não
+  segura o gatilho agendado. Como o envio leva dias, as saídas por resultado
+  não esperam dentro da execução: o alvo de disparo guarda de qual fluxo/nó
+  veio (`flow_id`, `flow_node_id`) e `src/lib/flow/saidas-disparo.ts`, chamado
+  pelo worker, solta os leads de cada saída em lotes a cada ~30 min. Contato
+  inválido sai por "Falhou" na hora. O lead que sai por "Falhou" leva
+  `contato_que_falhou`, e o filtro compara campo com campo (ignorando a
+  formatação de telefone): é o que permite "falhou → Sócios e Contato →
+  telefone diferente → disparo de novo" sem pagar enriquecimento de todo
+  mundo. Loop no grafo é recusado.
+- **Criar fluxo com IA** — a pessoa descreve a estratégia em texto e a IA
+  (mesma chave e modelo do onboarding) devolve módulos, configuração e
+  conexões em saída estruturada. `src/lib/flow/gerar-ia.ts` saneia tudo antes
+  de salvar: tipos/saídas inexistentes caem, ids que não são da conta ficam
+  vazios e viram "o que falta", CNAEs são normalizados, loops e módulos soltos
+  saem e sempre fica um gatilho só. O fluxo nasce pausado. Limite de 20
+  gerações por conta a cada 24 h (`flow_geracoes_ia`).
+- **Mapa dos resultados** — MapLibre com mapas do OpenFreeMap (sem chave),
+  em calor ou pontos, com o ranking de cidades/bairros ao lado. A busca do
+  Google Maps já traz a coordenada; na de CNPJ o endereço é localizado quando
+  o mapa abre, em lotes, e gravado no lead (`src/lib/geocodificacao.ts`).
+  Provedor: Google Geocoding quando a chave do Google Maps da plataforma está
+  configurada (rápido; US$ 5/1.000 além da cota grátis), senão o Photon
+  público (gratuito, mas vários segundos por endereço). Cache compartilhado
+  em `geocodificacoes`; endereço que não acha a rua cai no bairro e, por fim,
+  no centro da cidade, com peso menor no calor.
 
 ## Estrutura
 

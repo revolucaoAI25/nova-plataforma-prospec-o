@@ -83,6 +83,10 @@ function leadToRow(userId: string, searchId: string, r: Lead) {
     cargo: r.cargo || "",
     empresa_atual: r.empresa_atual || "",
     senioridade: r.senioridade || "",
+    bairro: r.bairro || "",
+    ...(Number.isFinite(r.latitude) && Number.isFinite(r.longitude)
+      ? { latitude: r.latitude, longitude: r.longitude, geo_precisao: "exata" }
+      : {}),
   };
 }
 

@@ -95,6 +95,13 @@ async function buscarUmaLocalidade(p: BuscarUmaLocalidadeParams): Promise<Lead[]
     lead.cidade_busca = p.cidade;
     lead.estado_busca = p.estado;
     lead.fonte = "Apify Maps";
+    const local = item.location as { lat?: unknown; lng?: unknown } | undefined;
+    if (typeof local?.lat === "number" && typeof local?.lng === "number") {
+      lead.latitude = local.lat;
+      lead.longitude = local.lng;
+    }
+    if (typeof item.neighborhood === "string") lead.bairro = item.neighborhood;
+    if (typeof item.city === "string" && !lead.municipio) lead.municipio = item.city;
     resultados.push(lead);
     p.log(resultados.length, p.limite, `[Apify] ${resultados.length}/${p.limite}`);
   }

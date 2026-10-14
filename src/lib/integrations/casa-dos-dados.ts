@@ -175,6 +175,7 @@ function mapearLead(item: any): Lead {
   lead.municipio = end.municipio || "";
   lead.uf = (end.uf || "").toUpperCase();
   lead.cep = end.cep || "";
+  lead.bairro = end.bairro || "";
   lead.matriz_filial = item.matriz_filial || "";
   lead.natureza_juridica = item.descricao_natureza_juridica || "";
   lead.capital_social = String(item.capital_social ?? "");

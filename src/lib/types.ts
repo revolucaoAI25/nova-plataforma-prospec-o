@@ -48,6 +48,11 @@ export interface Lead {
   cargo: string;
   empresa_atual: string;
   senioridade: string;
+
+  /** Localização: vem pronta do Google Maps; na busca por CNPJ só o bairro. */
+  bairro?: string;
+  latitude?: number | null;
+  longitude?: number | null;
 }
 
 export function emptyLead(): Lead {

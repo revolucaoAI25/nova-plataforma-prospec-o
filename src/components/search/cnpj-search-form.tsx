@@ -25,6 +25,7 @@ import { ESTADOS } from "@/lib/data/estados";
 import type { CnaeTipo, Lead } from "@/lib/types";
 import { dataISOBrasil } from "@/lib/datas";
 import { ExportarSheetsButton } from "@/components/historico/exportar-sheets-button";
+import { MapaResultados } from "@/components/historico/mapa-resultados";
 
 const CNAE_OPTIONS: MultiSelectOption[] = CNAES.map((c) => ({
   value: c.codigo,
@@ -469,6 +470,7 @@ export function CnpjSearchForm({
             ) : (
               <>
                 <ResultsSummary metrics={buildGeneralMetrics(leads)} />
+                {searchId && <MapaResultados searchId={searchId} />}
                 <ResultsTable leads={leads} />
               </>
             )}

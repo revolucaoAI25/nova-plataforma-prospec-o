@@ -11,6 +11,7 @@ import { PageHeader } from "@/components/layout/page-header";
 import { ResultsSummary, buildGeneralMetrics, buildInstagramMetrics, buildLinkedInMetrics } from "@/components/search/results-summary";
 import { formatarDataHora } from "@/lib/datas";
 import { ExportarSheetsButton } from "@/components/historico/exportar-sheets-button";
+import { MapaResultados } from "@/components/historico/mapa-resultados";
 
 const FONTE_LABEL: Record<string, string> = { cnpj: "CNPJ", google_maps: "Google Maps", instagram: "Instagram", linkedin: "LinkedIn" };
 
@@ -57,6 +58,7 @@ export default async function HistoricoDetailPage({ params }: { params: Promise<
         </CardHeader>
         <CardContent className="flex flex-col gap-5">
           {leads.length > 0 && <ResultsSummary metrics={metrics} />}
+          {leads.length > 0 && (search.fonte === "cnpj" || search.fonte === "google_maps") && <MapaResultados searchId={id} />}
           <LeadsTable leads={leads} />
         </CardContent>
       </Card>

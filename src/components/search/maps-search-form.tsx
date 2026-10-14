@@ -23,6 +23,7 @@ import type { Lead } from "@/lib/types";
 import { SugestoesPublico } from "@/components/search/sugestoes-publico";
 import type { PublicoSugerido } from "@/lib/onboarding/ia";
 import { ExportarSheetsButton } from "@/components/historico/exportar-sheets-button";
+import { MapaResultados } from "@/components/historico/mapa-resultados";
 
 const OUTRO = "Outro / Personalizado";
 
@@ -317,6 +318,7 @@ export function MapsSearchForm({
             ) : (
               <>
                 <ResultsSummary metrics={buildGeneralMetrics(leads)} />
+                {searchId && <MapaResultados searchId={searchId} />}
                 <ResultsTable leads={leads} />
               </>
             )}
