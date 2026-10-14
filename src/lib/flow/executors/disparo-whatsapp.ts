@@ -1,5 +1,6 @@
 import { enrollTargets, obterCampanha, perfilComDisparoHabilitado } from "@/lib/dispatch-db";
 import type { FlowExecutorContext, FlowExecutorOutcome } from "../executor-types";
+import { opcoesInscricaoDoNo, saidasDaInscricao } from "./disparo-comum";
 
 /**
  * Inscreve o lote recebido numa campanha de disparo já existente. O envio
@@ -27,7 +28,7 @@ export async function executarDisparoWhatsapp(ctx: FlowExecutorContext): Promise
     return { status: "concluido", leadsEntrada: 0, leadsSaida: 0, detalhe: { campaignId, inscritos: 0 } };
   }
 
-  const resultado = await enrollTargets(sb, campaignId, lote as Array<{ nome?: string; telefone?: string }>);
+  const { leadsInvalidos, ...resultado } = await enrollTargets(sb, campaignId, lote as Array<{ nome?: string; telefone?: string }>, opcoesInscricaoDoNo(ctx));
 
   return {
     status: "concluido",
@@ -35,5 +36,6 @@ export async function executarDisparoWhatsapp(ctx: FlowExecutorContext): Promise
     leadsSaida: resultado.inscritos,
     detalhe: { campaignId, ...resultado },
     contextoPatch: { campaignId },
+    saidas: saidasDaInscricao(leadsInvalidos, "telefone"),
   };
 }

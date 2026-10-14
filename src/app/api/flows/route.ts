@@ -21,7 +21,10 @@ const nodeSchema = z.object({
   posicao: z.object({ x: z.number(), y: z.number() }),
 });
 
-const edgeSchema = z.object({ id: z.string().min(1), from: z.string().min(1), to: z.string().min(1) });
+const edgeSchema = z.object({
+  id: z.string().min(1), from: z.string().min(1), to: z.string().min(1),
+  saida: z.string().max(40).nullable().optional(),
+});
 
 const bodySchema = z.object({
   nome: z.string().min(1),

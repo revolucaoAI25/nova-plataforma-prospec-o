@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { colunasOrigemFluxo, type OpcoesInscricao } from "@/lib/origem-fluxo";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { validarEmail, extrairDominio } from "@/lib/email";
 import { getProfile } from "@/lib/credits";
@@ -442,6 +443,7 @@ export interface EnrollResultadoEmail {
   invalidos: number;
   duplicados: number;
   opt_out: number;
+  leadsInvalidos?: LeadParaEnrollEmail[];
 }
 
 /**
@@ -450,7 +452,9 @@ export interface EnrollResultadoEmail {
  * inscrito nesta campanha — a constraint UNIQUE(campaign_id, email) é a
  * rede de segurança real). Mirror de enrollTargets (dispatch-db.ts).
  */
-export async function enrollEmailTargets(sb: SupabaseClient, campaignId: string, leads: LeadParaEnrollEmail[]): Promise<EnrollResultadoEmail> {
+export async function enrollEmailTargets(
+  sb: SupabaseClient, campaignId: string, leads: LeadParaEnrollEmail[], opcoes: OpcoesInscricao = {},
+): Promise<EnrollResultadoEmail> {
   const vazio: EnrollResultadoEmail = { inscritos: 0, invalidos: 0, duplicados: 0, opt_out: 0 };
 
   const campanha = await obterCampanhaEmail(sb, campaignId);
@@ -464,11 +468,14 @@ export async function enrollEmailTargets(sb: SupabaseClient, campaignId: string,
 
   const porEmail = new Map<string, LeadParaEnrollEmail>();
   let invalidos = 0;
+  const leadsInvalidos: LeadParaEnrollEmail[] = [];
+  const comInvalidos = () => (opcoes.coletarInvalidos ? { leadsInvalidos } : {});
   let duplicadosLote = 0;
   for (const lead of leads) {
     const email = validarEmail(String(lead.email || ""));
     if (!email) {
       invalidos += 1;
+      if (opcoes.coletarInvalidos) leadsInvalidos.push(lead);
       continue;
     }
     if (porEmail.has(email)) {
@@ -478,7 +485,7 @@ export async function enrollEmailTargets(sb: SupabaseClient, campaignId: string,
     porEmail.set(email, lead);
   }
 
-  if (!porEmail.size) return { inscritos: 0, invalidos, duplicados: duplicadosLote, opt_out: 0 };
+  if (!porEmail.size) return { inscritos: 0, invalidos, duplicados: duplicadosLote, opt_out: 0, ...comInvalidos() };
 
   const optOuts = new Set<string>();
   const todosEmails = Array.from(porEmail.keys());
@@ -507,10 +514,11 @@ export async function enrollEmailTargets(sb: SupabaseClient, campaignId: string,
       current_step_id: null,
       proxima_etapa_em: proximaEm,
       variante: sortearVariante(),
+      ...colunasOrigemFluxo(opcoes.origemFluxo),
     });
   }
 
-  if (!linhas.length) return { inscritos: 0, invalidos, duplicados: duplicadosLote, opt_out: optOutCount };
+  if (!linhas.length) return { inscritos: 0, invalidos, duplicados: duplicadosLote, opt_out: optOutCount, ...comInvalidos() };
 
   let inscritos = 0;
   for (let i = 0; i < linhas.length; i += 500) {
@@ -522,7 +530,7 @@ export async function enrollEmailTargets(sb: SupabaseClient, campaignId: string,
   }
 
   const duplicadosDb = Math.max(0, linhas.length - inscritos);
-  return { inscritos, invalidos, duplicados: duplicadosLote + duplicadosDb, opt_out: optOutCount };
+  return { inscritos, invalidos, duplicados: duplicadosLote + duplicadosDb, opt_out: optOutCount, ...comInvalidos() };
 }
 
 export async function listarTargetsCampanhaEmail(sb: SupabaseClient, campaignId: string): Promise<EmailTargetRow[]> {

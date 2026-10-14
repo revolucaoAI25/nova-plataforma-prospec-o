@@ -30,10 +30,17 @@ export interface FlowExecutorContext {
   node: FlowNode;
   contexto: FlowContexto;
   log: (msg: string) => void;
+  flowId: string;
+  runId: string;
+  /** Saídas extras deste nó que estão ligadas a algum passo (ex.: ["falhou"]). */
+  saidasConectadas: string[];
 }
 
+/** Leads separados por saída extra (id da saída → leads), entregues na hora. */
+export type LotesPorSaida = Record<string, Array<Record<string, unknown>>>;
+
 export type FlowExecutorOutcome =
-  | { status: "concluido"; leadsEntrada?: number; leadsSaida?: number; detalhe?: Json; contextoPatch?: FlowContexto }
+  | { status: "concluido"; leadsEntrada?: number; leadsSaida?: number; detalhe?: Json; contextoPatch?: FlowContexto; saidas?: LotesPorSaida }
   | { status: "aguardando_subprocesso"; detalhe?: Json; contextoPatch?: FlowContexto }
   | { status: "erro"; erro: string; detalhe?: Json };
 

@@ -29,7 +29,9 @@ export async function executarEnriquecimentoBigDataCorp(ctx: FlowExecutorContext
         leadsEntrada: lote.length,
         leadsSaida: lote.length,
         detalhe: { bigdatacorpRunId: runIdExistente, encontrados: run.encontrados, naoEncontrados: run.nao_encontrados, erros: run.erros },
-        contextoPatch: { lote: loteEnriquecido },
+        // Limpa a marca: outro nó de enriquecimento mais adiante (ou num
+        // ramo que herdou este contexto) precisa criar a própria execução.
+        contextoPatch: { lote: loteEnriquecido, bigdatacorpRunId: undefined },
       };
     }
     if (run.status === "erro") {

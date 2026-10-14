@@ -4,7 +4,7 @@ import { memo } from "react";
 import { Handle, Position, type NodeProps } from "@xyflow/react";
 import { AlertTriangle, CheckCircle2, Loader2, XCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { FLOW_NODE_TYPES } from "@/lib/flow/node-types";
+import { FLOW_NODE_TYPES, type SaidaDoNo } from "@/lib/flow/node-types";
 import type { FlowNodeTipo, FlowRunStepRow } from "@/lib/database.types";
 import { FLOW_NODE_ICONS, FLOW_CATEGORIA_CORES } from "./node-visuals";
 
@@ -12,6 +12,46 @@ export interface ExecucaoDoNo {
   status: FlowRunStepRow["status"];
   leadsSaida: number | null;
   erro: string | null;
+  /** Leads que saíram na hora por cada saída extra (ex.: { nao_atende: 12 }). */
+  ramos?: Record<string, number>;
+}
+
+const TOM_SAIDA: Record<SaidaDoNo["tom"], { texto: string; handle: string }> = {
+  sucesso: { texto: "text-success", handle: "!bg-success" },
+  erro: { texto: "text-destructive", handle: "!bg-destructive" },
+  info: { texto: "text-info", handle: "!bg-info" },
+  neutro: { texto: "text-muted-foreground", handle: "!bg-muted-2" },
+};
+
+/** Saídas do nó listadas no rodapé do cartão, cada uma com a sua bolinha de conexão. */
+function SaidasDoCartao({ rotuloPrincipal, saidas, ramos }: { rotuloPrincipal: string; saidas: SaidaDoNo[]; ramos?: Record<string, number> }) {
+  const linhas = [{ id: null as string | null, label: rotuloPrincipal, tom: "sucesso" as const, quando: "imediata" as const }, ...saidas];
+  const temResultado = saidas.some((s) => s.quando === "resultado");
+  return (
+    <div className="-mx-3.5 mt-1 flex flex-col border-t border-border/70 pt-1.5">
+      {linhas.map((s, i) => {
+        const tom = s.id === null ? { texto: "text-foreground", handle: "!bg-primary" } : TOM_SAIDA[s.tom];
+        const qtd = s.id ? ramos?.[s.id] : undefined;
+        return (
+          <div key={s.id ?? "principal"}>
+            {temResultado && i === 1 && (
+              <p className="px-3.5 pb-0.5 pt-1 text-right text-[10px] font-semibold uppercase tracking-wide text-muted-2">Conforme o resultado</p>
+            )}
+            <div className="relative flex h-6 items-center justify-end gap-1.5 pr-3.5 text-[11px]">
+              {qtd !== undefined && <span className="rounded-full bg-secondary px-1.5 font-medium text-muted-foreground">{qtd}</span>}
+              <span className={cn("font-medium", tom.texto)}>{s.label}</span>
+              <Handle
+                type="source"
+                position={Position.Right}
+                id={s.id ?? undefined}
+                className={cn("!h-3 !w-3 !border-2 !border-card", tom.handle)}
+              />
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
 }
 
 export interface FlowNodeCardData {
@@ -84,7 +124,11 @@ function FlowNodeCardImpl({ data, selected }: NodeProps) {
       )}
       {execucao && <SeloExecucao execucao={execucao} />}
 
-      <Handle type="source" position={Position.Right} className="!h-3 !w-3 !border-2 !border-card !bg-primary" />
+      {meta.saidas?.length ? (
+        <SaidasDoCartao rotuloPrincipal={meta.rotuloSaidaPrincipal ?? "Em seguida"} saidas={meta.saidas} ramos={execucao?.ramos} />
+      ) : (
+        <Handle type="source" position={Position.Right} className="!h-3 !w-3 !border-2 !border-card !bg-primary" />
+      )}
     </div>
   );
 }

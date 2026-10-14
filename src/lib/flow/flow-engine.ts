@@ -23,8 +23,11 @@ import type {
  *    src/lib/flow/executors) e avança pro próximo nó do grafo.
  *
  * Nenhuma lógica de negócio nova de extração/enriquecimento/disparo/export
- * mora aqui — só orquestração. O grafo v1 é linear/DAG simples: cada fluxo
- * tem exatamente 1 nó-gatilho na raiz (validado na API, ver /api/flows).
+ * mora aqui — só orquestração. Cada fluxo tem exatamente 1 nó-gatilho na
+ * raiz (validado na API, ver /api/flows) e a execução segue pela saída
+ * principal de cada nó. Saídas extras (ex.: "Não atende" de um filtro,
+ * "Falhou" de um disparo) abrem uma execução própria, o ramo, que começa
+ * no nó ligado àquela saída — ver `abrirRamo` e src/lib/flow/saidas-disparo.ts.
  */
 
 const GATILHO_TIPOS: FlowNodeTipo[] = ["gatilho_agendado", "gatilho_filtro_leads", "gatilho_planilha", "gatilho_manual"];
@@ -33,18 +36,60 @@ function noGatilho(flow: AutomationFlowRow): FlowNode | null {
   return flow.nodes.find((n) => GATILHO_TIPOS.includes(n.tipo)) || null;
 }
 
-function proximoNo(flow: AutomationFlowRow, deId: string): string | null {
-  return flow.edges.find((e) => e.from === deId)?.to ?? null;
+/** Próximo nó pela saída principal (`saida` vazia) ou pela saída pedida. */
+export function proximoNo(flow: Pick<AutomationFlowRow, "edges">, deId: string, saida = ""): string | null {
+  return flow.edges.find((e) => e.from === deId && (e.saida || "") === saida)?.to ?? null;
 }
 
+/** Saídas extras do nó que estão ligadas a algum passo. */
+export function saidasConectadas(flow: Pick<AutomationFlowRow, "edges">, noId: string): string[] {
+  return flow.edges.filter((e) => e.from === noId && e.saida).map((e) => e.saida as string);
+}
+
+// Só a execução principal segura o gatilho: ramos (que podem durar dias
+// esperando resultado de disparo) não impedem a próxima execução agendada.
 async function temRunAtiva(sb: SupabaseClient, flowId: string): Promise<boolean> {
   const { data } = await sb
     .from("flow_runs")
     .select("id")
     .eq("flow_id", flowId)
+    .is("ramo_saida", null)
     .in("status", ["executando", "aguardando_subprocesso"])
     .limit(1);
   return Boolean(data?.length);
+}
+
+/**
+ * Abre uma execução de ramo: começa no nó ligado à saída `saida` do nó
+ * `origemNoId`, com o lote recebido. Devolve o id da execução, ou null se a
+ * saída não está ligada a nada (os leads dessa saída são só descartados).
+ */
+export async function abrirRamo(
+  sb: SupabaseClient,
+  flow: Pick<AutomationFlowRow, "id" | "user_id" | "edges">,
+  origemNoId: string,
+  saida: string,
+  lote: Array<Record<string, unknown>>,
+  extra: { runPaiId?: string | null; variaveis?: Record<string, string> } = {},
+): Promise<string | null> {
+  const inicio = proximoNo(flow, origemNoId, saida);
+  if (!inicio || !lote.length) return null;
+  const contexto: FlowContexto = { lote, ...(extra.variaveis ? { variaveis: extra.variaveis } : {}) };
+  const { data } = await sb
+    .from("flow_runs")
+    .insert({
+      flow_id: flow.id,
+      user_id: flow.user_id,
+      status: "executando",
+      no_atual_id: inicio,
+      contexto: contexto as Json,
+      ramo_saida: saida,
+      ramo_no_id: origemNoId,
+      run_pai_id: extra.runPaiId ?? null,
+    })
+    .select("id")
+    .single();
+  return (data?.id as string) ?? null;
 }
 
 async function registrarStepGatilho(sb: SupabaseClient, runId: string, gatilho: FlowNode, contexto: FlowContexto) {
@@ -337,6 +382,7 @@ async function avancarRun(sb: SupabaseClient, run: FlowRunRow, log: (m: string) 
   };
   const outcome = await executor({
     sb, userId: run.user_id, node: noResolvido, contexto, log: (m) => log(`run ${run.id} nó ${node.id}: ${m}`),
+    flowId: flow.id, runId: run.id, saidasConectadas: saidasConectadas(flow, node.id),
   });
 
   if (outcome.status === "erro") {
@@ -352,8 +398,22 @@ async function avancarRun(sb: SupabaseClient, run: FlowRunRow, log: (m: string) 
     return;
   }
 
+  // Saídas extras entregues na hora viram ramos. O detalhe do passo guarda
+  // quantos leads saíram por cada uma (a contagem aparece no cartão do nó).
+  const ramos: Record<string, number> = {};
+  for (const [saida, loteSaida] of Object.entries(outcome.saidas ?? {})) {
+    if (!loteSaida.length) continue;
+    ramos[saida] = loteSaida.length;
+    await abrirRamo(sb, flow, node.id, saida, loteSaida, {
+      runPaiId: run.id, variaveis: (contexto.variaveis as Record<string, string>) || undefined,
+    });
+  }
+  const detalhe = Object.keys(ramos).length && outcome.detalhe && typeof outcome.detalhe === "object" && !Array.isArray(outcome.detalhe)
+    ? ({ ...outcome.detalhe, ramos } as Json)
+    : outcome.detalhe;
+
   await upsertStep(sb, run.id, node, "concluido", {
-    leadsEntrada: outcome.leadsEntrada, leadsSaida: outcome.leadsSaida, detalhe: outcome.detalhe,
+    leadsEntrada: outcome.leadsEntrada, leadsSaida: outcome.leadsSaida, detalhe,
   });
   const novoContexto = { ...contexto, ...(outcome.contextoPatch || {}) };
   const proximoId = proximoNo(flow, node.id);

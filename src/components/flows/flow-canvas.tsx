@@ -9,7 +9,7 @@ import "@xyflow/react/dist/style.css";
 import { AlertTriangle, ChevronDown, LayoutGrid, Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { FLOW_NODE_TYPES, type VariavelEntrada } from "@/lib/flow/node-types";
+import { FLOW_NODE_TYPES, type SaidaDoNo, type VariavelEntrada } from "@/lib/flow/node-types";
 import { pendenciasDoFluxo, problemaDoNo, resumoDoNo } from "@/lib/flow/resumo";
 import type { FlowNode, FlowEdge, FlowNodeTipo, Json } from "@/lib/database.types";
 import { FlowNodeCard, type ExecucaoDoNo, type FlowNodeCardData } from "./flow-node-card";
@@ -55,11 +55,42 @@ function paraReactFlowNode(n: FlowNode): Node {
   };
 }
 
-function paraReactFlowEdge(e: FlowEdge): Edge {
-  return { id: e.id, source: e.from, target: e.to, animated: true };
+const COR_SAIDA: Record<SaidaDoNo["tom"], string> = {
+  sucesso: "var(--accent)",
+  erro: "var(--destructive)",
+  info: "var(--info)",
+  neutro: "var(--muted-2)",
+};
+
+/** Conexão saindo de uma saída extra ganha a cor da saída (o nome já está no cartão). */
+function estiloDaConexao(tipoOrigem: FlowNodeTipo | undefined, saida: string | null | undefined): Partial<Edge> {
+  const meta = saida && tipoOrigem ? FLOW_NODE_TYPES[tipoOrigem].saidas?.find((x) => x.id === saida) : undefined;
+  if (!meta) return { animated: true };
+  return { animated: true, style: { stroke: COR_SAIDA[meta.tom], strokeWidth: 1.5 } };
+}
+
+function paraReactFlowEdge(e: FlowEdge, tipoPorId: Map<string, FlowNodeTipo>): Edge {
+  return { id: e.id, source: e.from, target: e.to, sourceHandle: e.saida ?? null, ...estiloDaConexao(tipoPorId.get(e.from), e.saida) };
 }
 
 const tipoDe = (n: Node) => (n.data as unknown as FlowNodeCardData).tipo;
+/** Saída principal: conexão sem `sourceHandle`. */
+const ehPrincipal = (e: Edge) => !e.sourceHandle;
+
+/** Ligar `origem` a `destino` criaria um loop? (destino já chega na origem) */
+function criaCiclo(edges: Edge[], origem: string, destino: string): boolean {
+  if (origem === destino) return true;
+  const pilha = [destino];
+  const vistos = new Set<string>();
+  while (pilha.length) {
+    const atual = pilha.pop()!;
+    if (atual === origem) return true;
+    if (vistos.has(atual)) continue;
+    vistos.add(atual);
+    for (const e of edges) if (e.source === atual) pilha.push(e.target);
+  }
+  return false;
+}
 
 interface Props {
   nodesIniciais: FlowNode[];
@@ -70,7 +101,11 @@ interface Props {
 
 function FlowCanvasInner({ nodesIniciais, edgesIniciais, onMudou, execucaoPorNo }: Props) {
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>(nodesIniciais.map(paraReactFlowNode));
-  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>(edgesIniciais.map(paraReactFlowEdge));
+  const [edgesIniciaisRf] = useState(() => {
+    const tipoPorId = new Map(nodesIniciais.map((n) => [n.id, n.tipo]));
+    return edgesIniciais.map((e) => paraReactFlowEdge(e, tipoPorId));
+  });
+  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>(edgesIniciaisRf);
   const [configsPorId, setConfigsPorId] = useState<Record<string, unknown>>(
     Object.fromEntries(nodesIniciais.map((n) => [n.id, n.config])),
   );
@@ -88,7 +123,7 @@ function FlowCanvasInner({ nodesIniciais, edgesIniciais, onMudou, execucaoPorNo 
       config: (configsPorId[n.id] ?? {}) as Json,
       posicao: { x: n.position.x, y: n.position.y },
     }));
-    const flowEdges: FlowEdge[] = edges.map((e) => ({ id: e.id, from: e.source, to: e.target }));
+    const flowEdges: FlowEdge[] = edges.map((e) => ({ id: e.id, from: e.source, to: e.target, ...(e.sourceHandle ? { saida: e.sourceHandle } : {}) }));
     onMudou(flowNodes, flowEdges);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [nodes, edges, configsPorId]);
@@ -115,10 +150,22 @@ function FlowCanvasInner({ nodesIniciais, edgesIniciais, onMudou, execucaoPorNo 
 
   const onConnect: OnConnect = useCallback(
     (connection: Connection) => {
-      // v1: grafo linear — no máximo 1 conexão de saída por nó.
-      setEdges((eds) => addEdge({ ...connection, animated: true }, eds.filter((e) => e.source !== connection.source)));
+      // Cada saída liga a um passo só: reconectar troca a conexão antiga.
+      const saida = connection.sourceHandle ?? null;
+      const tipoOrigem = nodes.find((n) => n.id === connection.source);
+      setEdges((eds) =>
+        addEdge(
+          { ...connection, ...estiloDaConexao(tipoOrigem ? tipoDe(tipoOrigem) : undefined, saida) },
+          eds.filter((e) => !(e.source === connection.source && (e.sourceHandle ?? null) === saida)),
+        ),
+      );
     },
-    [setEdges],
+    [setEdges, nodes],
+  );
+
+  const conexaoValida = useCallback(
+    (c: Connection | Edge) => !criaCiclo(edges, c.source, c.target),
+    [edges],
   );
 
   function criarNo(tipo: FlowNodeTipo, posicao: { x: number; y: number }): string {
@@ -139,7 +186,7 @@ function FlowCanvasInner({ nodesIniciais, edgesIniciais, onMudou, execucaoPorNo 
     }
     const gatilho = nodes.find((n) => ehGatilho(tipoDe(n)));
     if (!gatilho) return nodes[nodes.length - 1] ?? null;
-    const proximo = new Map(edges.map((e) => [e.source, e.target]));
+    const proximo = new Map(edges.filter(ehPrincipal).map((e) => [e.source, e.target]));
     let atual = gatilho;
     const vistos = new Set([gatilho.id]);
     for (let alvo = proximo.get(atual.id); alvo && !vistos.has(alvo); alvo = proximo.get(alvo)) {
@@ -169,16 +216,31 @@ function FlowCanvasInner({ nodesIniciais, edgesIniciais, onMudou, execucaoPorNo 
       focarNo(criarNo(tipo, posicao), posicao);
       return;
     }
-    const saidaAtual = edges.find((e) => e.source === origem.id);
+    const saidaAtual = edges.find((e) => e.source === origem.id && ehPrincipal(e));
     // Inserindo no meio do caminho: desce um pouco pra não cobrir o próximo.
     const posicao = { x: origem.position.x + PASSO_X, y: origem.position.y + (saidaAtual ? 140 : 0) };
     const id = criarNo(tipo, posicao);
     setEdges((eds) => {
-      const semSaida = eds.filter((e) => e.source !== origem.id);
+      const semSaida = eds.filter((e) => !(e.source === origem.id && ehPrincipal(e)));
       const novas: Edge[] = [{ id: crypto.randomUUID(), source: origem.id, target: id, animated: true }];
       if (saidaAtual) novas.push({ id: crypto.randomUUID(), source: id, target: saidaAtual.target, animated: true });
       return [...semSaida, ...novas];
     });
+    focarNo(id, posicao);
+  }
+
+  /** Cria um módulo já ligado a uma saída extra do nó (ex.: "Falhou" → Sócios e Contato). */
+  function adicionarNaSaida(origemId: string, saida: string, tipo: FlowNodeTipo) {
+    const origem = nodes.find((n) => n.id === origemId);
+    if (!origem || ehGatilho(tipo)) return;
+    const meta = FLOW_NODE_TYPES[tipoDe(origem)].saidas ?? [];
+    const indice = Math.max(0, meta.findIndex((x) => x.id === saida));
+    const posicao = { x: origem.position.x + PASSO_X, y: origem.position.y + 200 + indice * 160 };
+    const id = criarNo(tipo, posicao);
+    setEdges((eds) => [
+      ...eds.filter((e) => !(e.source === origemId && e.sourceHandle === saida)),
+      { id: crypto.randomUUID(), source: origemId, target: id, sourceHandle: saida, ...estiloDaConexao(tipoDe(origem), saida) },
+    ]);
     focarNo(id, posicao);
   }
 
@@ -206,7 +268,11 @@ function FlowCanvasInner({ nodesIniciais, edgesIniciais, onMudou, execucaoPorNo 
     );
   }
 
-  /** Remove nós religando quem vinha antes com quem vinha depois — o caminho não quebra. */
+  /**
+   * Remove nós religando quem vinha antes com quem vinha depois pela saída
+   * principal — o caminho não quebra. Ramos que saíam do nó removido somem
+   * junto com as conexões dele (os passos do ramo ficam soltos no canvas).
+   */
   const removerNos = useCallback(
     (ids: string[]) => {
       if (!ids.length) return;
@@ -218,12 +284,13 @@ function FlowCanvasInner({ nodesIniciais, edgesIniciais, onMudou, execucaoPorNo 
         let resultado = eds;
         for (const id of ids) {
           const entradas = resultado.filter((e) => e.target === id);
-          const saida = resultado.find((e) => e.source === id);
+          const saida = resultado.find((e) => e.source === id && ehPrincipal(e));
           resultado = resultado.filter((e) => e.source !== id && e.target !== id);
           if (saida && !remover.has(saida.target)) {
             for (const entrada of entradas) {
               if (remover.has(entrada.source)) continue;
-              resultado = [...resultado, { id: crypto.randomUUID(), source: entrada.source, target: saida.target, animated: true }];
+              // A entrada mantém a saída de onde vinha (ex.: continua sendo o ramo "Falhou").
+              resultado = [...resultado, { ...entrada, id: crypto.randomUUID(), target: saida.target }];
             }
           }
         }
@@ -244,15 +311,33 @@ function FlowCanvasInner({ nodesIniciais, edgesIniciais, onMudou, execucaoPorNo 
     [removerNos],
   );
 
+  /** Árvore da esquerda pra direita: caminho principal numa linha, cada ramo abaixo da sua saída. */
   function organizar() {
+    const ESPACO_Y = 48;
     const gatilho = nodes.find((n) => ehGatilho(tipoDe(n)));
-    const proximo = new Map(edges.map((e) => [e.source, e.target]));
-    const caminho: string[] = [];
-    for (let atual = gatilho?.id; atual && !caminho.includes(atual); atual = proximo.get(atual)) caminho.push(atual);
-    const soltos = nodes.filter((n) => !caminho.includes(n.id)).map((n) => n.id);
     const pos = new Map<string, { x: number; y: number }>();
-    caminho.forEach((id, i) => pos.set(id, { x: i * PASSO_X, y: 0 }));
-    soltos.forEach((id, i) => pos.set(id, { x: i * PASSO_X, y: 220 }));
+    const altura = (id: string) => nodes.find((n) => n.id === id)?.measured?.height ?? 110;
+
+    // Filhos na ordem das saídas: principal primeiro, depois as extras.
+    const filhos = (id: string): string[] => {
+      const node = nodes.find((n) => n.id === id);
+      const ordem = ["", ...((node && FLOW_NODE_TYPES[tipoDe(node)].saidas) ?? []).map((x) => x.id)];
+      return edges
+        .filter((e) => e.source === id)
+        .sort((a, b) => ordem.indexOf(a.sourceHandle ?? "") - ordem.indexOf(b.sourceHandle ?? ""))
+        .map((e) => e.target);
+    };
+    // Posiciona a subárvore a partir de `y` e devolve a altura que ela ocupa.
+    const posicionar = (id: string, coluna: number, y: number): number => {
+      if (pos.has(id)) return 0;
+      pos.set(id, { x: coluna * PASSO_X, y });
+      let usada = 0;
+      for (const filho of filhos(id)) usada += posicionar(filho, coluna + 1, y + usada);
+      return Math.max(altura(id) + ESPACO_Y, usada);
+    };
+    let y = gatilho ? posicionar(gatilho.id, 0, 0) : 0;
+    for (const n of nodes) if (!pos.has(n.id)) y += posicionar(n.id, 0, y);
+
     setNodes((nds) => nds.map((n) => ({ ...n, position: pos.get(n.id) ?? n.position })));
     requestAnimationFrame(() => void fitView({ padding: 0.2, duration: 300 }));
   }
@@ -272,7 +357,7 @@ function FlowCanvasInner({ nodesIniciais, edgesIniciais, onMudou, execucaoPorNo 
   }, [nodes, configsPorId]);
 
   const pendencias = useMemo(
-    () => pendenciasDoFluxo(nodes.map((n) => ({ id: n.id, tipo: tipoDe(n), config: configsPorId[n.id] ?? {} })), edges.map((e) => ({ from: e.source, to: e.target }))),
+    () => pendenciasDoFluxo(nodes.map((n) => ({ id: n.id, tipo: tipoDe(n), config: configsPorId[n.id] ?? {} })), edges.map((e) => ({ from: e.source, to: e.target, saida: e.sourceHandle ?? null }))),
     [nodes, edges, configsPorId],
   );
   const temGatilho = nodes.some((n) => ehGatilho(tipoDe(n)));
@@ -306,6 +391,7 @@ function FlowCanvasInner({ nodesIniciais, edgesIniciais, onMudou, execucaoPorNo 
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
+          isValidConnection={conexaoValida}
           onBeforeDelete={onBeforeDelete}
           onNodeClick={(_e, n) => setSelecionadoId(n.id)}
           onPaneClick={() => { setSelecionadoId(null); setPendenciasAbertas(false); }}
@@ -370,6 +456,13 @@ function FlowCanvasInner({ nodesIniciais, edgesIniciais, onMudou, execucaoPorNo 
           <FlowNodeConfigPanel
             node={noSelecionado}
             variaveisFlow={variaveisFlow}
+            saidasLigadas={Object.fromEntries(
+              edges.filter((e) => e.source === noSelecionado.id && e.sourceHandle).map((e) => {
+                const alvo = nodes.find((n) => n.id === e.target);
+                return [e.sourceHandle as string, alvo ? FLOW_NODE_TYPES[tipoDe(alvo)].label : "outro passo"];
+              }),
+            )}
+            onAdicionarNaSaida={(saida, tipo) => adicionarNaSaida(noSelecionado.id, saida, tipo)}
             onChange={(config) => atualizarConfig(noSelecionado.id, config)}
             onClose={() => setSelecionadoId(null)}
             onDelete={() => removerNos([noSelecionado.id])}

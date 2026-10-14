@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { colunasOrigemFluxo, type OpcoesInscricao } from "@/lib/origem-fluxo";
 import { validarLinkedInUrl } from "@/lib/linkedin-url";
 import { getProfile } from "@/lib/credits";
 import { chaveLinkedin } from "@/lib/contatos";
@@ -309,6 +310,7 @@ export interface EnrollResultadoLinkedin {
   invalidos: number;
   duplicados: number;
   opt_out: number;
+  leadsInvalidos?: LeadParaEnrollLinkedin[];
 }
 
 /**
@@ -320,7 +322,9 @@ export interface EnrollResultadoLinkedin {
  * arquitetura: resolver exige saber qual conta vai agir primeiro).
  * Mirror de enrollEmailTargets.
  */
-export async function enrollLinkedInTargets(sb: SupabaseClient, campaignId: string, leads: LeadParaEnrollLinkedin[]): Promise<EnrollResultadoLinkedin> {
+export async function enrollLinkedInTargets(
+  sb: SupabaseClient, campaignId: string, leads: LeadParaEnrollLinkedin[], opcoes: OpcoesInscricao = {},
+): Promise<EnrollResultadoLinkedin> {
   const vazio: EnrollResultadoLinkedin = { inscritos: 0, invalidos: 0, duplicados: 0, opt_out: 0 };
 
   const campanha = await obterCampanhaLinkedin(sb, campaignId);
@@ -334,11 +338,14 @@ export async function enrollLinkedInTargets(sb: SupabaseClient, campaignId: stri
 
   const porUrl = new Map<string, LeadParaEnrollLinkedin>();
   let invalidos = 0;
+  const leadsInvalidos: LeadParaEnrollLinkedin[] = [];
+  const comInvalidos = () => (opcoes.coletarInvalidos ? { leadsInvalidos } : {});
   let duplicadosLote = 0;
   for (const lead of leads) {
     const url = validarLinkedInUrl(String(lead.linkedin_url || ""));
     if (!url) {
       invalidos += 1;
+      if (opcoes.coletarInvalidos) leadsInvalidos.push(lead);
       continue;
     }
     if (porUrl.has(url)) {
@@ -348,7 +355,7 @@ export async function enrollLinkedInTargets(sb: SupabaseClient, campaignId: stri
     porUrl.set(url, lead);
   }
 
-  if (!porUrl.size) return { inscritos: 0, invalidos, duplicados: duplicadosLote, opt_out: 0 };
+  if (!porUrl.size) return { inscritos: 0, invalidos, duplicados: duplicadosLote, opt_out: 0, ...comInvalidos() };
 
   const optOuts = new Set<string>();
   const todasUrls = Array.from(porUrl.keys());
@@ -377,10 +384,11 @@ export async function enrollLinkedInTargets(sb: SupabaseClient, campaignId: stri
       current_step_id: null,
       proxima_etapa_em: proximaEm,
       variante: sortearVariante(),
+      ...colunasOrigemFluxo(opcoes.origemFluxo),
     });
   }
 
-  if (!linhas.length) return { inscritos: 0, invalidos, duplicados: duplicadosLote, opt_out: optOutCount };
+  if (!linhas.length) return { inscritos: 0, invalidos, duplicados: duplicadosLote, opt_out: optOutCount, ...comInvalidos() };
 
   let inscritos = 0;
   for (let i = 0; i < linhas.length; i += 500) {
@@ -392,7 +400,7 @@ export async function enrollLinkedInTargets(sb: SupabaseClient, campaignId: stri
   }
 
   const duplicadosDb = Math.max(0, linhas.length - inscritos);
-  return { inscritos, invalidos, duplicados: duplicadosLote + duplicadosDb, opt_out: optOutCount };
+  return { inscritos, invalidos, duplicados: duplicadosLote + duplicadosDb, opt_out: optOutCount, ...comInvalidos() };
 }
 
 export async function listarTargetsCampanhaLinkedin(sb: SupabaseClient, campaignId: string): Promise<LinkedinTargetRow[]> {

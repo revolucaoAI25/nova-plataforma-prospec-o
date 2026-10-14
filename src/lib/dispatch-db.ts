@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { colunasOrigemFluxo, type OpcoesInscricao } from "@/lib/origem-fluxo";
 import { normalizarE164 } from "@/lib/phone";
 import { getProfile } from "@/lib/credits";
 import { chaveTelefone } from "@/lib/contatos";
@@ -388,6 +389,7 @@ export interface EnrollResultado {
   invalidos: number;
   duplicados: number;
   opt_out: number;
+  leadsInvalidos?: LeadParaEnroll[];
 }
 
 /**
@@ -396,7 +398,9 @@ export interface EnrollResultado {
  * campanha — a constraint UNIQUE(campaign_id, telefone) é a rede de
  * segurança real).
  */
-export async function enrollTargets(sb: SupabaseClient, campaignId: string, leads: LeadParaEnroll[]): Promise<EnrollResultado> {
+export async function enrollTargets(
+  sb: SupabaseClient, campaignId: string, leads: LeadParaEnroll[], opcoes: OpcoesInscricao = {},
+): Promise<EnrollResultado> {
   const vazio: EnrollResultado = { inscritos: 0, invalidos: 0, duplicados: 0, opt_out: 0 };
 
   const campanha = await obterCampanha(sb, campaignId);
@@ -410,11 +414,14 @@ export async function enrollTargets(sb: SupabaseClient, campaignId: string, lead
 
   const porTelefone = new Map<string, LeadParaEnroll>();
   let invalidos = 0;
+  const leadsInvalidos: LeadParaEnroll[] = [];
+  const comInvalidos = () => (opcoes.coletarInvalidos ? { leadsInvalidos } : {});
   let duplicadosLote = 0;
   for (const lead of leads) {
     const tel = normalizarE164(String(lead.telefone || ""));
     if (!tel) {
       invalidos += 1;
+      if (opcoes.coletarInvalidos) leadsInvalidos.push(lead);
       continue;
     }
     if (porTelefone.has(tel)) {
@@ -424,7 +431,7 @@ export async function enrollTargets(sb: SupabaseClient, campaignId: string, lead
     porTelefone.set(tel, lead);
   }
 
-  if (!porTelefone.size) return { inscritos: 0, invalidos, duplicados: duplicadosLote, opt_out: 0 };
+  if (!porTelefone.size) return { inscritos: 0, invalidos, duplicados: duplicadosLote, opt_out: 0, ...comInvalidos() };
 
   const optOuts = new Set<string>();
   const todosTels = Array.from(porTelefone.keys());
@@ -453,10 +460,11 @@ export async function enrollTargets(sb: SupabaseClient, campaignId: string, lead
       current_step_id: null,
       proxima_etapa_em: proximaEm,
       variante: sortearVariante(),
+      ...colunasOrigemFluxo(opcoes.origemFluxo),
     });
   }
 
-  if (!linhas.length) return { inscritos: 0, invalidos, duplicados: duplicadosLote, opt_out: optOutCount };
+  if (!linhas.length) return { inscritos: 0, invalidos, duplicados: duplicadosLote, opt_out: optOutCount, ...comInvalidos() };
 
   let inscritos = 0;
   for (let i = 0; i < linhas.length; i += 500) {
@@ -468,7 +476,7 @@ export async function enrollTargets(sb: SupabaseClient, campaignId: string, lead
   }
 
   const duplicadosDb = Math.max(0, linhas.length - inscritos);
-  return { inscritos, invalidos, duplicados: duplicadosLote + duplicadosDb, opt_out: optOutCount };
+  return { inscritos, invalidos, duplicados: duplicadosLote + duplicadosDb, opt_out: optOutCount, ...comInvalidos() };
 }
 
 export async function listarTargetsCampanha(sb: SupabaseClient, campaignId: string): Promise<DispatchTargetRow[]> {

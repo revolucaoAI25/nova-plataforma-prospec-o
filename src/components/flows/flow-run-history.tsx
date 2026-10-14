@@ -1,12 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { CheckCircle2, XCircle, Loader2, Clock, RotateCw, MinusCircle } from "lucide-react";
+import { CheckCircle2, XCircle, Loader2, Clock, RotateCw, MinusCircle, GitBranch } from "lucide-react";
 import { Collapsible } from "@/components/ui/collapsible";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
-import { FLOW_NODE_TYPES } from "@/lib/flow/node-types";
+import { FLOW_NODE_TYPES, FLOW_NODE_TYPES_LIST } from "@/lib/flow/node-types";
 import type { FlowRunRow, FlowRunStepRow, FlowNodeTipo } from "@/lib/database.types";
 import { formatarDataHora } from "@/lib/datas";
 
@@ -34,6 +34,8 @@ function formatarProximaTentativa(iso: string | null) {
   const min = Math.ceil(diffMs / 60_000);
   return min <= 1 ? "em ~1 min" : `em ~${min} min`;
 }
+
+const ROTULO_SAIDA = new Map(FLOW_NODE_TYPES_LIST.flatMap((t) => (t.saidas ?? []).map((x) => [x.id, x.label] as const)));
 
 const EM_ANDAMENTO = new Set<FlowRunRow["status"]>(["executando", "aguardando_subprocesso", "aguardando_retry"]);
 
@@ -103,6 +105,11 @@ export function FlowRunHistory({
                 <StatusIcon status={run.status} />
                 <span className="font-medium text-foreground">{STATUS_LABEL[run.status]}</span>
                 <span className="text-xs text-muted-foreground">{formatarDataHora(run.iniciado_em)}</span>
+                {run.ramo_saida && (
+                  <Badge variant="outline" className="ml-1 gap-1" title="Execução aberta por uma saída extra de um passo do fluxo">
+                    <GitBranch className="h-3 w-3" /> Ramo “{ROTULO_SAIDA.get(run.ramo_saida) ?? run.ramo_saida}”
+                  </Badge>
+                )}
                 {run.status === "aguardando_retry" && (
                   <Badge variant="outline" className="ml-1">
                     tentativa {run.tentativas}/{run.max_tentativas} · próxima {formatarProximaTentativa(run.proxima_tentativa_em)}

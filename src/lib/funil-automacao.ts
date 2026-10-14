@@ -10,6 +10,9 @@ import { partesTelefone } from "@/lib/contatos";
 // Sempre com o cliente admin: roda a partir de webhook e do worker.
 
 const EM_CADENCIA = ["pendente", "enviando", "enviado", "aguardando_aceite"];
+// Resposta depois da cadência terminar também conta: o alvo concluído vira
+// "respondeu" (é o que separa "Respondeu" de "Sem resposta" nas saídas do fluxo).
+const ACEITA_RESPOSTA = [...EM_CADENCIA, "concluido"];
 
 /** Papéis anteriores à resposta — só esses são "puxados" pra frente pela automação. */
 export const PAPEIS_PRE_RESPOSTA: PapelColunaFunil[] = ["entrada", "cadencia"];
@@ -46,9 +49,10 @@ async function moverCards(sb: SupabaseClient, userId: string, contatos: string[]
 }
 
 /**
- * Tira o contato da fila de follow-up em todos os canais do usuário. O
- * `status in (...)` evita reabrir alvo já concluído/removido e, pro alvo em
- * pleno envio, o worker só grava o resultado se ainda estiver "enviando".
+ * Tira o contato da fila de follow-up em todos os canais do usuário e marca
+ * a resposta. O `status in (...)` deixa de fora alvo removido/com falha e,
+ * pro alvo em pleno envio, o worker só grava o resultado se ainda estiver
+ * "enviando".
  */
 export async function pararCadencias(sb: SupabaseClient, userId: string, contatos: string[]): Promise<number> {
   const agora = new Date().toISOString();
@@ -62,7 +66,7 @@ export async function pararCadencias(sb: SupabaseClient, userId: string, contato
         .from("dispatch_targets")
         .select("id, telefone, dispatch_campaigns!inner(user_id)")
         .eq("dispatch_campaigns.user_id", userId)
-        .in("status", EM_CADENCIA)
+        .in("status", ACEITA_RESPOSTA)
         .like("telefone", `%${tel.final8}`);
       const ids = ((data ?? []) as { id: string; telefone: string }[])
         .filter((t) => {
@@ -82,7 +86,7 @@ export async function pararCadencias(sb: SupabaseClient, userId: string, contato
         .from("email_targets")
         .select("id, email_campaigns!inner(user_id)")
         .eq("email_campaigns.user_id", userId)
-        .in("status", EM_CADENCIA)
+        .in("status", ACEITA_RESPOSTA)
         .ilike("email", chave.slice(6));
       const ids = ((data ?? []) as { id: string }[]).map((t) => t.id);
       if (ids.length) {
@@ -97,7 +101,7 @@ export async function pararCadencias(sb: SupabaseClient, userId: string, contato
         .from("linkedin_targets")
         .select("id, linkedin_campaigns!inner(user_id)")
         .eq("linkedin_campaigns.user_id", userId)
-        .in("status", EM_CADENCIA)
+        .in("status", ACEITA_RESPOSTA)
         .ilike("linkedin_url", `%/in/${chave.slice(3)}%`);
       const ids = ((data ?? []) as { id: string }[]).map((t) => t.id);
       if (ids.length) {

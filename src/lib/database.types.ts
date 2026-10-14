@@ -830,6 +830,8 @@ export interface FlowEdge {
   id: string;
   from: string;
   to: string;
+  /** Saída do nó de origem (ex.: "falhou"); vazia é a saída principal. Ver FLOW_NODE_TYPES[...].saidas. */
+  saida?: string | null;
 }
 
 export interface AutomationFlowRow {
@@ -859,6 +861,11 @@ export interface FlowRunRow {
   tentativas: number;
   max_tentativas: number;
   proxima_tentativa_em: string | null;
+  /** Execução de um ramo: saída que a abriu (ex.: "falhou") e o nó dessa saída. Nulo na execução principal. */
+  ramo_saida: string | null;
+  ramo_no_id: string | null;
+  /** Execução que abriu este ramo, quando o ramo saiu na hora (ex.: "Não atende" de um filtro). */
+  run_pai_id: string | null;
 }
 
 export type FlowRunStepStatus = "pendente" | "executando" | "concluido" | "erro" | "pulado";

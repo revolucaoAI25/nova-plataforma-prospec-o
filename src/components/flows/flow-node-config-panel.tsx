@@ -11,13 +11,14 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Collapsible } from "@/components/ui/collapsible";
 import { MultiSelect, type MultiSelectOption } from "@/components/search/multi-select";
-import { FLOW_NODE_TYPES, FILTRO_OPERADORES, type VariavelEntrada } from "@/lib/flow/node-types";
+import { FLOW_NODE_TYPES, FLOW_NODE_TYPES_LIST, FLOW_NODE_CATEGORIAS, FILTRO_OPERADORES, type SaidaDoNo, type VariavelEntrada } from "@/lib/flow/node-types";
+import { cn } from "@/lib/utils";
 import { CNAES } from "@/lib/data/cnaes";
 import { ESTADOS } from "@/lib/data/estados";
 import { NOMES_NICHOS } from "@/lib/data/nichos";
 import { LINKEDIN_INDUSTRIES } from "@/lib/data/linkedin-industries";
 import { LEAD_FIELD_GROUPS } from "./lead-field-reference";
-import type { FlowNode } from "@/lib/database.types";
+import type { FlowNode, FlowNodeTipo } from "@/lib/database.types";
 
 const DIAS = [
   { value: 1, label: "Seg" }, { value: 2, label: "Ter" }, { value: 3, label: "Qua" },
@@ -38,6 +39,8 @@ const OPERADOR_LABEL: Record<(typeof FILTRO_OPERADORES)[number], string> = {
   nao_contem: "não contém",
   igual: "é igual a",
   diferente: "é diferente de",
+  igual_ao_campo: "é igual ao campo",
+  diferente_do_campo: "é diferente do campo",
 };
 
 function Campo({ label, children }: { label: string; children: React.ReactNode }) {
@@ -532,11 +535,18 @@ function CamposFiltroLeads({ config, set }: CamposProps) {
         </Select>
       </Campo>
       {!["preenchido", "vazio"].includes(String(config.operador || "preenchido")) && (
-        <Campo label="Valor">
-          <Input value={String(config.valor || "")} onChange={(e) => set({ valor: e.target.value })} />
+        <Campo label={String(config.operador || "").endsWith("_campo") ? "Outro campo" : "Valor"}>
+          <Input
+            value={String(config.valor || "")}
+            onChange={(e) => set({ valor: e.target.value })}
+            placeholder={String(config.operador || "").endsWith("_campo") ? "contato_que_falhou, telefone…" : undefined}
+          />
         </Campo>
       )}
-      <p className="text-xs text-muted-foreground">Leads que não baterem a condição saem do fluxo a partir daqui (não é ramificação — só reduz o lote).</p>
+      <p className="text-xs text-muted-foreground">
+        Quem atende segue pela saída <strong className="text-foreground">Atende</strong>. Quem não atende sai por{" "}
+        <strong className="text-foreground">Não atende</strong> se ela estiver ligada a algum passo; se não estiver, para aqui.
+      </p>
     </>
   );
 }
@@ -759,6 +769,70 @@ interface CamposProps {
   set: (patch: Record<string, unknown>) => void;
 }
 
+const TOM_TEXTO: Record<SaidaDoNo["tom"], string> = {
+  sucesso: "text-success",
+  erro: "text-destructive",
+  info: "text-info",
+  neutro: "text-muted-foreground",
+};
+
+const TIPOS_PARA_RAMO = FLOW_NODE_TYPES_LIST.filter((t) => t.categoria !== "gatilho" && t.categoria !== "extracao" && t.disponivel);
+
+/** Lista as saídas extras do nó: o que sai por cada uma e onde está ligada (ou um atalho pra ligar). */
+function SaidasDoNo({
+  tipo, config, set, ligadas, onAdicionar,
+}: { tipo: FlowNodeTipo; ligadas: Record<string, string>; onAdicionar: (saida: string, tipo: FlowNodeTipo) => void } & CamposProps) {
+  const meta = FLOW_NODE_TYPES[tipo];
+  if (!meta.saidas?.length) return null;
+  const porResultado = meta.saidas.some((x) => x.quando === "resultado");
+  return (
+    <div className="flex flex-col gap-3 rounded-xl border border-border bg-secondary/30 p-3">
+      <div>
+        <p className="text-xs font-semibold text-foreground">Saídas</p>
+        <p className="text-xs text-muted-foreground">
+          {porResultado
+            ? `"${meta.rotuloSaidaPrincipal}" segue na hora com quem foi inscrito. As outras soltam os leads conforme a campanha anda, em lotes a cada ~30 min, numa execução própria.`
+            : "Cada saída pode levar a um passo diferente. Arraste da bolinha no cartão ou use o atalho abaixo."}
+        </p>
+      </div>
+      {meta.saidas.map((saida) => (
+        <div key={saida.id} className="flex flex-col gap-1.5 border-t border-border/60 pt-2.5 first:border-t-0 first:pt-0">
+          <p className={cn("text-xs font-semibold", TOM_TEXTO[saida.tom])}>{saida.label}</p>
+          <p className="text-[11px] leading-snug text-muted-foreground">{saida.descricao}</p>
+          {saida.id === "sem_resposta" && (
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              Esperar
+              <Input
+                type="number" min={1} max={720} className="h-7 w-16 px-2 text-xs"
+                value={Number(config.horasSemResposta ?? 48)}
+                onChange={(e) => set({ horasSemResposta: Number(e.target.value) })}
+              />
+              horas depois da última mensagem
+            </div>
+          )}
+          {ligadas[saida.id] ? (
+            <p className="text-[11px] text-foreground">Ligada a <strong>{ligadas[saida.id]}</strong></p>
+          ) : (
+            <Select value="" onValueChange={(v) => onAdicionar(saida.id, v as FlowNodeTipo)}>
+              <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Adicionar um passo nesta saída…" /></SelectTrigger>
+              <SelectContent>
+                {FLOW_NODE_CATEGORIAS.filter((c) => TIPOS_PARA_RAMO.some((t) => t.categoria === c.categoria)).map((c) => (
+                  <div key={c.categoria}>
+                    <p className="px-2 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-wide text-muted-2">{c.label}</p>
+                    {TIPOS_PARA_RAMO.filter((t) => t.categoria === c.categoria).map((t) => (
+                      <SelectItem key={t.tipo} value={t.tipo}>{t.label}</SelectItem>
+                    ))}
+                  </div>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function CamposDoNo({ node, config, set }: { node: FlowNode } & CamposProps) {
   switch (node.tipo) {
     case "gatilho_agendado": return <CamposGatilhoAgendado config={config} set={set} />;
@@ -785,10 +859,13 @@ function CamposDoNo({ node, config, set }: { node: FlowNode } & CamposProps) {
 }
 
 export function FlowNodeConfigPanel({
-  node, variaveisFlow, onChange, onClose, onDelete,
+  node, variaveisFlow, saidasLigadas = {}, onAdicionarNaSaida, onChange, onClose, onDelete,
 }: {
   node: FlowNode;
   variaveisFlow: VariavelEntrada[];
+  /** Saída extra → nome do passo ligado a ela. */
+  saidasLigadas?: Record<string, string>;
+  onAdicionarNaSaida?: (saida: string, tipo: FlowNodeTipo) => void;
   onChange: (config: Record<string, unknown>) => void;
   onClose: () => void;
   onDelete: () => void;
@@ -810,6 +887,10 @@ export function FlowNodeConfigPanel({
       <div className="flex flex-col gap-4">
         <CamposDoNo node={node} config={config} set={set} />
       </div>
+
+      {onAdicionarNaSaida && (
+        <SaidasDoNo tipo={node.tipo} config={config} set={set} ligadas={saidasLigadas} onAdicionar={onAdicionarNaSaida} />
+      )}
 
       {/* Referência, não campo: fica recolhida e depois dos campos do nó. */}
       {meta.categoria !== "gatilho" && <VariaveisDisponiveis variaveisFlow={variaveisFlow} />}

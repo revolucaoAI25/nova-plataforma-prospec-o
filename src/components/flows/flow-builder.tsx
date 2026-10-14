@@ -200,13 +200,19 @@ export function FlowBuilder({ flowInicial }: { flowInicial: AutomationFlowRow | 
     router.push("/automacoes");
   }
 
-  // Última execução → status por nó, mostrado nos cartões do canvas.
+  // Status por nó mostrado nos cartões do canvas: o passo mais recente de
+  // cada nó, olhando a última execução principal e os ramos (que rodam em
+  // execuções próprias, às vezes dias depois).
   const aoCarregarHistorico = useCallback((runs: FlowRunRow[], steps: FlowRunStepRow[]) => {
-    const ultima = runs[0];
-    if (!ultima) return setExecucaoPorNo({});
+    const principal = runs.find((r) => !r.ramo_saida);
+    const considerar = runs.filter((r) => r.ramo_saida || r.id === principal?.id).map((r) => r.id);
     const porNo: Record<string, ExecucaoDoNo> = {};
-    for (const s of steps) {
-      if (s.run_id === ultima.id) porNo[s.node_id] = { status: s.status, leadsSaida: s.leads_saida, erro: s.erro };
+    for (const runId of considerar) {
+      for (const s of steps) {
+        if (s.run_id !== runId || porNo[s.node_id]) continue;
+        const ramos = (s.detalhe as { ramos?: Record<string, number> } | null)?.ramos;
+        porNo[s.node_id] = { status: s.status, leadsSaida: s.leads_saida, erro: s.erro, ramos };
+      }
     }
     setExecucaoPorNo(porNo);
   }, []);

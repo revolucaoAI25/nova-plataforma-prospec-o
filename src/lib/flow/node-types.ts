@@ -163,7 +163,7 @@ const enriquecimentoMapsConfigSchema = z.object({
 // tenha `cnpj` preenchido, sem opções de configuração.
 const enriquecimentoBigDataCorpConfigSchema = z.object({});
 
-const FILTRO_OPERADORES = ["preenchido", "vazio", "contem", "nao_contem", "igual", "diferente"] as const;
+const FILTRO_OPERADORES = ["preenchido", "vazio", "contem", "nao_contem", "igual", "diferente", "igual_ao_campo", "diferente_do_campo"] as const;
 const filtroLeadsConfigSchema = z.object({
   campo: z.string().min(1).default("email"),
   operador: z.enum(FILTRO_OPERADORES).default("preenchido"),
@@ -184,22 +184,29 @@ const esperaConfigSchema = z.object({
   minutos: z.number().int().min(1).max(43_200).default(60),
 });
 
+// Quanto tempo depois da última mensagem da cadência o lead sai por "Sem
+// resposta" (resposta costuma chegar nas horas seguintes ao último toque).
+const horasSemResposta = z.number().int().min(1).max(720).default(48);
+
 const disparoWhatsappConfigSchema = z.object({
   // Sem campanha o executor falha na hora de rodar — melhor barrar antes de ativar.
   campaignId: z.string().uuid().nullable().default(null).refine((v) => v !== null, "Escolha a campanha."),
   instanceId: z.string().uuid().nullable().default(null),
+  horasSemResposta,
 });
 
 const disparoEmailConfigSchema = z.object({
   // Sem campanha o executor falha na hora de rodar — melhor barrar antes de ativar.
   campaignId: z.string().uuid().nullable().default(null).refine((v) => v !== null, "Escolha a campanha."),
   senderId: z.string().uuid().nullable().default(null),
+  horasSemResposta,
 });
 
 const disparoLinkedinConfigSchema = z.object({
   // Sem campanha o executor falha na hora de rodar — melhor barrar antes de ativar.
   campaignId: z.string().uuid().nullable().default(null).refine((v) => v !== null, "Escolha a campanha."),
   accountId: z.string().uuid().nullable().default(null),
+  horasSemResposta,
 });
 
 const destinoSheetsConfigSchema = z.object({
@@ -215,6 +222,20 @@ const destinoFunilConfigSchema = z.object({
 
 // ── Metadados por tipo ─────────────────────────────────────────────
 
+/**
+ * Saída extra de um nó (além da principal). `imediata`: o executor já
+ * separa esses leads na hora (ex.: quem não atende o filtro). `resultado`:
+ * os leads saem depois, conforme a campanha de disparo anda (ver
+ * src/lib/flow/saidas-disparo.ts) — pode levar dias.
+ */
+export interface SaidaDoNo {
+  id: string;
+  label: string;
+  descricao: string;
+  quando: "imediata" | "resultado";
+  tom: "sucesso" | "erro" | "info" | "neutro";
+}
+
 export interface FlowNodeTypeMeta {
   tipo: FlowNodeTipo;
   categoria: FlowNodeCategoria;
@@ -224,7 +245,21 @@ export interface FlowNodeTypeMeta {
   configSchema: z.ZodTypeAny;
   /** Módulo anunciado no roadmap mas sem execução real ainda (falta infra). */
   disponivel: boolean;
+  /** Nome da saída principal quando o nó tem saídas extras (ex.: "Atende"). */
+  rotuloSaidaPrincipal?: string;
+  saidas?: SaidaDoNo[];
 }
+
+export const SAIDAS_DISPARO: SaidaDoNo[] = [
+  { id: "enviou", label: "Enviou", descricao: "A primeira mensagem saiu para o lead.", quando: "resultado", tom: "sucesso" },
+  { id: "falhou", label: "Falhou", descricao: "Não deu para enviar: contato inválido ou o envio deu erro antes da primeira mensagem.", quando: "resultado", tom: "erro" },
+  { id: "respondeu", label: "Respondeu", descricao: "O lead respondeu em algum momento da cadência.", quando: "resultado", tom: "info" },
+  { id: "sem_resposta", label: "Sem resposta", descricao: "A cadência terminou e o lead não respondeu no prazo definido.", quando: "resultado", tom: "neutro" },
+];
+
+const SAIDAS_FILTRO: SaidaDoNo[] = [
+  { id: "nao_atende", label: "Não atende", descricao: "Leads que não batem a condição seguem por aqui em vez de serem descartados.", quando: "imediata", tom: "neutro" },
+];
 
 export const FLOW_NODE_TYPES: Record<FlowNodeTipo, FlowNodeTypeMeta> = {
   gatilho_agendado: {
@@ -339,10 +374,12 @@ export const FLOW_NODE_TYPES: Record<FlowNodeTipo, FlowNodeTypeMeta> = {
     tipo: "filtro_leads",
     categoria: "controle",
     label: "Filtrar leads",
-    descricao: "Mantém no fluxo só os leads que batem uma condição (útil depois de um enriquecimento, por exemplo).",
+    descricao: "Separa os leads por uma condição: quem atende segue em frente e quem não atende pode ir por outro caminho.",
     icon: "SlidersHorizontal",
     configSchema: filtroLeadsConfigSchema,
     disponivel: true,
+    rotuloSaidaPrincipal: "Atende",
+    saidas: SAIDAS_FILTRO,
   },
   limitar_lote: {
     tipo: "limitar_lote",
@@ -370,6 +407,8 @@ export const FLOW_NODE_TYPES: Record<FlowNodeTipo, FlowNodeTypeMeta> = {
     icon: "Send",
     configSchema: disparoWhatsappConfigSchema,
     disponivel: true,
+    rotuloSaidaPrincipal: "Em seguida",
+    saidas: SAIDAS_DISPARO,
   },
   disparo_email: {
     tipo: "disparo_email",
@@ -379,6 +418,8 @@ export const FLOW_NODE_TYPES: Record<FlowNodeTipo, FlowNodeTypeMeta> = {
     icon: "Mail",
     configSchema: disparoEmailConfigSchema,
     disponivel: true,
+    rotuloSaidaPrincipal: "Em seguida",
+    saidas: SAIDAS_DISPARO,
   },
   disparo_linkedin: {
     tipo: "disparo_linkedin",
@@ -388,6 +429,8 @@ export const FLOW_NODE_TYPES: Record<FlowNodeTipo, FlowNodeTypeMeta> = {
     icon: "UserSearch",
     configSchema: disparoLinkedinConfigSchema,
     disponivel: true,
+    rotuloSaidaPrincipal: "Em seguida",
+    saidas: SAIDAS_DISPARO,
   },
   destino_sheets: {
     tipo: "destino_sheets",
@@ -436,12 +479,34 @@ export interface FlowGrafoEdge {
   id: string;
   from: string;
   to: string;
+  saida?: string | null;
+}
+
+/** Saídas que um tipo de nó aceita: "" é a principal. */
+export function saidasValidas(tipo: FlowNodeTipo): string[] {
+  return ["", ...(FLOW_NODE_TYPES[tipo]?.saidas ?? []).map((s) => s.id)];
+}
+
+function temCiclo(nodes: FlowGrafoNode[], edges: FlowGrafoEdge[]): boolean {
+  const saindo = new Map<string, string[]>();
+  for (const e of edges) saindo.set(e.from, [...(saindo.get(e.from) ?? []), e.to]);
+  const estado = new Map<string, 1 | 2>(); // 1 = visitando, 2 = pronto
+  const visitar = (id: string): boolean => {
+    if (estado.get(id) === 1) return true;
+    if (estado.get(id) === 2) return false;
+    estado.set(id, 1);
+    for (const prox of saindo.get(id) ?? []) if (visitar(prox)) return true;
+    estado.set(id, 2);
+    return false;
+  };
+  return nodes.some((n) => visitar(n.id));
 }
 
 /**
  * Validação estrutural: o grafo não está corrompido (ids únicos, tipos
- * conhecidos, conexões apontando pra nós que existem, no máximo uma saída
- * por nó). Vale pra qualquer gravação — inclusive rascunho.
+ * conhecidos, conexões apontando pra nós que existem, no máximo uma
+ * conexão por saída de cada nó, sem loop). Vale pra qualquer gravação —
+ * inclusive rascunho.
  */
 export function validarEstruturaFluxo(nodes: FlowGrafoNode[], edges: FlowGrafoEdge[]): { ok: true } | { ok: false; erro: string } {
   if (!nodes.length) return { ok: false, erro: "O fluxo precisa ter pelo menos um nó." };
@@ -453,16 +518,25 @@ export function validarEstruturaFluxo(nodes: FlowGrafoNode[], edges: FlowGrafoEd
     if (!(node.tipo in FLOW_NODE_TYPES)) return { ok: false, erro: `Tipo de nó desconhecido: ${node.tipo}.` };
   }
 
+  const tipoPorId = new Map(nodes.map((n) => [n.id, n.tipo]));
+  const origens = new Set<string>();
   for (const edge of edges) {
     if (!ids.has(edge.from) || !ids.has(edge.to)) {
       return { ok: false, erro: "Uma conexão do fluxo referencia um nó que não existe." };
     }
+    if (edge.from === edge.to) return { ok: false, erro: "Um nó não pode se conectar a ele mesmo." };
+    const saida = edge.saida || "";
+    if (!saidasValidas(tipoPorId.get(edge.from)!).includes(saida)) {
+      return { ok: false, erro: `Saída desconhecida '${saida}' no nó ${FLOW_NODE_TYPES[tipoPorId.get(edge.from)!].label}.` };
+    }
+    const chave = `${edge.from}|${saida}`;
+    if (origens.has(chave)) {
+      return { ok: false, erro: "Cada saída de um nó só pode ter uma conexão." };
+    }
+    origens.add(chave);
   }
 
-  const origens = new Set(edges.map((e) => e.from));
-  if (origens.size !== edges.length) {
-    return { ok: false, erro: "Cada nó só pode ter uma conexão de saída (v1 é um grafo linear)." };
-  }
+  if (temCiclo(nodes, edges)) return { ok: false, erro: "O fluxo tem um caminho que volta para um passo anterior (loop)." };
 
   return { ok: true };
 }

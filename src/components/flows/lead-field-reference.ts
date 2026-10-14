@@ -54,4 +54,20 @@ export const LEAD_FIELD_GROUPS: { grupo: string; campos: CampoReferencia[] }[] =
       { chave: "enriquecimento_resumo", label: "Resumo" },
     ],
   },
+  {
+    grupo: "Sócios e Contato (após o nó de mesmo nome)",
+    campos: [
+      { chave: "bigdatacorp_socio_nome", label: "Sócio principal" },
+      { chave: "bigdatacorp_socios", label: "Todos os sócios" },
+      { chave: "bigdatacorp_telefone", label: "Telefone encontrado" },
+    ],
+  },
+  {
+    grupo: "Ramos de disparo (Enviou, Falhou, Respondeu, Sem resposta)",
+    campos: [
+      { chave: "resultado_disparo", label: "Saída por onde o lead veio" },
+      { chave: "contato_que_falhou", label: "Contato que falhou" },
+      { chave: "motivo_falha", label: "Motivo da falha" },
+    ],
+  },
 ];

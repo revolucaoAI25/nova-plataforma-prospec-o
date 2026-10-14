@@ -81,8 +81,14 @@ export function resumoDoNo(tipo: FlowNodeTipo, config: unknown): string | null {
       return c.filtrar ? `Só quem está no Maps${num(c.minAvaliacoes) ? ` com ${num(c.minAvaliacoes)}+ avaliações` : ""}` : "Completa telefone, site e avaliação";
     case "enriquecimento_bigdatacorp":
       return "Sócio, telefone e e-mail pelo CNPJ";
-    case "filtro_leads":
-      return texto(c.campo) ? `${texto(c.campo)} ${String(c.operador ?? "").replace("_", " ")}${texto(c.valor) ? ` "${texto(c.valor)}"` : ""}` : null;
+    case "filtro_leads": {
+      if (!texto(c.campo)) return null;
+      const op = String(c.operador ?? "");
+      if (op === "igual_ao_campo" || op === "diferente_do_campo") {
+        return `${texto(c.campo)} ${op === "igual_ao_campo" ? "igual a" : "diferente de"} ${texto(c.valor) || "?"}`;
+      }
+      return `${texto(c.campo)} ${op.replace("_", " ")}${texto(c.valor) ? ` "${texto(c.valor)}"` : ""}`;
+    }
     case "limitar_lote": {
       const max = num(c.maximo);
       if (!max) return null;
@@ -127,7 +133,7 @@ export interface PendenciaFluxo {
 }
 
 interface NoMinimo { id: string; tipo: FlowNodeTipo; config: unknown }
-interface ArestaMinima { from: string; to: string }
+interface ArestaMinima { from: string; to: string; saida?: string | null }
 
 /**
  * O que impede o fluxo de rodar como o usuário espera: gatilho ausente ou
@@ -148,12 +154,17 @@ export function pendenciasDoFluxo(nodes: NoMinimo[], edges: ArestaMinima[]): Pen
   }
 
   if (gatilhos.length === 1) {
-    const proximo = new Map(edges.map((e) => [e.from, e.to]));
+    // Alcançável por qualquer saída (principal ou ramo).
     const alcancados = new Set<string>([gatilhos[0].id]);
-    let atual = proximo.get(gatilhos[0].id);
-    while (atual && !alcancados.has(atual)) {
-      alcancados.add(atual);
-      atual = proximo.get(atual);
+    const fila = [gatilhos[0].id];
+    while (fila.length) {
+      const atual = fila.shift()!;
+      for (const e of edges) {
+        if (e.from === atual && !alcancados.has(e.to)) {
+          alcancados.add(e.to);
+          fila.push(e.to);
+        }
+      }
     }
     if (nodes.length > 1 && alcancados.size === 1) {
       pendencias.push({ nodeId: gatilhos[0].id, mensagem: "Conecte o gatilho ao próximo passo (arraste da bolinha à direita)." });
