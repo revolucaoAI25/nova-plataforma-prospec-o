@@ -16,6 +16,9 @@ export interface GrupoCampos {
   campos: CampoReferencia[];
 }
 
+/** Campos que praticamente todo lead tem, venha de onde vier (não aparecem na lista, mas não geram aviso). */
+export const CAMPOS_SEMPRE = ["nome", "telefone", "email", "municipio", "uf", "fonte", "cidade_busca", "estado_busca"];
+
 /** Calculados na hora do envio, para qualquer lead (ver src/lib/mensagem.ts). */
 export const CAMPOS_PRONTOS: GrupoCampos = {
   grupo: "Prontos para mensagem (já arrumados)",
@@ -39,6 +42,10 @@ const CNPJ: GrupoCampos = {
     { chave: "uf", label: "UF" },
     { chave: "cnpj", label: "CNPJ" },
     { chave: "nome", label: "Razão social (em caixa alta)" },
+    { chave: "endereco", label: "Endereço" },
+    { chave: "cep", label: "CEP" },
+    { chave: "data_abertura", label: "Data de abertura" },
+    { chave: "capital_social", label: "Capital social" },
   ],
 };
 
@@ -51,6 +58,8 @@ const MAPS: GrupoCampos = {
     { chave: "avaliacao", label: "Nota no Google" },
     { chave: "total_avaliacoes", label: "Número de avaliações" },
     { chave: "bairro", label: "Bairro" },
+    { chave: "endereco", label: "Endereço" },
+    { chave: "maps_url", label: "Link no mapa" },
   ],
 };
 
@@ -60,6 +69,7 @@ const LINKEDIN: GrupoCampos = {
     { chave: "nome", label: "Nome da pessoa" },
     { chave: "cargo", label: "Cargo" },
     { chave: "empresa_atual", label: "Empresa atual" },
+    { chave: "senioridade", label: "Senioridade" },
   ],
 };
 

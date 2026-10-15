@@ -943,6 +943,8 @@ export interface FunilCardRow {
   /** Chaves normalizadas (tel:, email:, li:) — ver src/lib/contatos.ts. */
   contatos: string[];
   ordem: number;
+  /** Anotações livres do negócio (migration 0042). */
+  anotacoes?: string | null;
   criado_em: string;
   atualizado_em: string;
 }

@@ -82,7 +82,7 @@ export function TemplatesPanel({ templatesIniciais }: { templatesIniciais: Email
           </div>
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="tpl-assunto">Assunto</Label>
-            <Input id="tpl-assunto" value={assunto} onChange={(e) => setAssunto(e.target.value)} placeholder="Olá {{nome}}, tudo bem?" />
+            <Input id="tpl-assunto" value={assunto} onChange={(e) => setAssunto(e.target.value)} placeholder="Olá {{primeiro_nome}}, tudo bem?" />
           </div>
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="tpl-corpo">Corpo</Label>
@@ -90,7 +90,7 @@ export function TemplatesPanel({ templatesIniciais }: { templatesIniciais: Email
               id="tpl-corpo"
               value={corpo}
               onChange={(e) => setCorpo(e.target.value)}
-              placeholder="Use {{nome}}, {{email}}, {{municipio}}… pra puxar dados do lead"
+              placeholder="Use {{primeiro_nome}}, {{empresa}}, {{cidade}}… pra puxar dados do lead"
               rows={4}
             />
           </div>

@@ -208,6 +208,8 @@ const disparoWhatsappConfigSchema = z.object({
   // Sem campanha o executor falha na hora de rodar — melhor barrar antes de ativar.
   campaignId: z.string().uuid().nullable().default(null).refine((v) => v !== null, "Escolha a campanha."),
   instanceId: z.string().uuid().nullable().default(null),
+  // Para qual telefone do lead a mensagem vai (ver DESTINOS_TELEFONE em src/lib/phone.ts).
+  telefoneDestino: z.enum(["padrao", "socio", "empresa", "segundo"]).default("padrao"),
   horasSemResposta,
 });
 

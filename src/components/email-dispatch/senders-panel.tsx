@@ -93,7 +93,7 @@ export function SendersPanel({ sendersIniciais, dominiosVerificados }: { senders
                 <Badge variant="outline" className="ml-2">Limite: {s.limite_diario_envios}/dia</Badge>
               )}
             </div>
-            <Button type="button" variant="ghost" size="icon" onClick={() => remover(s.id)}>
+            <Button aria-label="Remover" title="Remover" type="button" variant="ghost" size="icon" onClick={() => remover(s.id)}>
               <Trash2 className="h-4 w-4 text-destructive" />
             </Button>
           </div>

@@ -28,6 +28,7 @@ import type {
   SearchRow,
 } from "@/lib/database.types";
 import { formatarDataHora } from "@/lib/datas";
+import { DESTINOS_TELEFONE, type DestinoTelefone } from "@/lib/phone";
 
 const TARGET_STATUS_LABEL: Record<string, { label: string; variant: BadgeProps["variant"] }> = {
   pendente: { label: "Pendente", variant: "outline" },
@@ -191,6 +192,7 @@ export function CampaignDetail({
   const [erroEtapa, setErroEtapa] = useState<string | null>(null);
 
   const [searchId, setSearchId] = useState("");
+  const [telefoneDestino, setTelefoneDestino] = useState<DestinoTelefone>("padrao");
   const [manualLista, setManualLista] = useState("");
   const [enrolling, setEnrolling] = useState(false);
 
@@ -290,6 +292,7 @@ export function CampaignDetail({
     const body: Record<string, unknown> = {};
     if (searchId) {
       body.searchId = searchId;
+      body.telefoneDestino = telefoneDestino;
     } else if (manualLista.trim()) {
       body.leads = manualLista
         .split("\n")
@@ -318,7 +321,8 @@ export function CampaignDetail({
     }
     setFeedback({
       ok: true,
-      msg: `${data.inscritos} inscritos · ${data.duplicados} duplicados · ${data.opt_out} em opt-out · ${data.invalidos} inválidos.`,
+      msg: `${data.inscritos} inscritos · ${data.duplicados} duplicados · ${data.opt_out} em opt-out · ${data.invalidos} inválidos` +
+        (data.sem_telefone_escolhido ? ` · ${data.sem_telefone_escolhido} sem o telefone escolhido.` : "."),
     });
     setManualLista("");
     setSearchId("");
@@ -393,7 +397,7 @@ export function CampaignDetail({
                   />
                 )}
               </div>
-              <Button variant="ghost" size="icon" onClick={() => removerEtapa(e.id)} className="shrink-0">
+              <Button aria-label="Remover etapa" title="Remover etapa" variant="ghost" size="icon" onClick={() => removerEtapa(e.id)} className="shrink-0">
                 <Trash2 className="h-4 w-4 text-destructive" />
               </Button>
             </div>
@@ -476,7 +480,7 @@ export function CampaignDetail({
                   placeholder="Ex.: Oi {{primeiro_nome}}, tudo bem? Vi que a {{empresa|sua empresa}}…"
                   rows={3}
                 />
-                <DicaVariaveis extras={["uf", "cnpj", "enriquecimento_resumo"]} />
+                <DicaVariaveis extras={["uf", "cnpj", "enriquecimento_resumo"]} texto={corpoMensagem} leads={targets.filter((t) => t.status !== "removido").slice(0, 20).map((t) => t.lead_snapshot)} />
                 <Label htmlFor="midia-url" className="mt-1 text-xs text-muted-foreground">
                   Mídia (opcional) — URL pública de imagem, vídeo ou documento
                 </Label>
@@ -517,6 +521,17 @@ export function CampaignDetail({
               ))}
             </SelectContent>
           </Select>
+          {searchId && (
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="telefone-destino">Enviar para</Label>
+              <Select value={telefoneDestino} onValueChange={(v) => setTelefoneDestino(v as DestinoTelefone)}>
+                <SelectTrigger id="telefone-destino"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {DESTINOS_TELEFONE.map((d) => <SelectItem key={d.id} value={d.id}>{d.rotulo}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
           <span className="text-center text-xs text-muted-foreground">ou</span>
           <Textarea
             value={manualLista}

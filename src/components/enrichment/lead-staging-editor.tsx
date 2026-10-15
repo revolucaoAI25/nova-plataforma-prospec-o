@@ -237,7 +237,7 @@ export function LeadStagingEditor({ leads, onChange }: { leads: LeadStaged[]; on
                   <TableCell><Input className="h-8" value={l.email} onChange={(e) => atualizarLinha(i, "email", e.target.value)} /></TableCell>
                   <TableCell><Input className="h-8" value={l.telefone} onChange={(e) => atualizarLinha(i, "telefone", e.target.value)} /></TableCell>
                   <TableCell>
-                    <Button type="button" variant="ghost" size="icon" onClick={() => removerLinha(i)}>
+                    <Button aria-label="Remover" title="Remover" type="button" variant="ghost" size="icon" onClick={() => removerLinha(i)}>
                       <Trash2 className="h-4 w-4 text-destructive" />
                     </Button>
                   </TableCell>

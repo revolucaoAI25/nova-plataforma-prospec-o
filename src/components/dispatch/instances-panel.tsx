@@ -137,11 +137,11 @@ export function InstancesPanel({ instanciasIniciais }: { instanciasIniciais: Wha
               <div className="flex items-center gap-2">
                 <Badge variant={STATUS_LABEL[inst.status]?.variant ?? "secondary"}>{STATUS_LABEL[inst.status]?.label ?? inst.status}</Badge>
                 {inst.canal === "evolution" && inst.status !== "conectado" && (
-                  <Button type="button" variant="ghost" size="icon" onClick={() => setQrAbertoPara(qrAbertoPara === inst.id ? null : inst.id)}>
+                  <Button aria-label="Mostrar QR code" title="Mostrar QR code" type="button" variant="ghost" size="icon" onClick={() => setQrAbertoPara(qrAbertoPara === inst.id ? null : inst.id)}>
                     <QrCode className="h-4 w-4" />
                   </Button>
                 )}
-                <Button type="button" variant="ghost" size="icon" onClick={() => remover(inst.id)}>
+                <Button aria-label="Remover" title="Remover" type="button" variant="ghost" size="icon" onClick={() => remover(inst.id)}>
                   <Trash2 className="h-4 w-4 text-destructive" />
                 </Button>
               </div>

@@ -1,4 +1,5 @@
 import { enrollTargets, obterCampanha, perfilComDisparoHabilitado } from "@/lib/dispatch-db";
+import { comTelefoneDeDestino, DESTINOS_TELEFONE, type DestinoTelefone } from "@/lib/phone";
 import type { FlowExecutorContext, FlowExecutorOutcome } from "../executor-types";
 import { avisoDaInscricao, opcoesInscricaoDoNo, saidasDaInscricao } from "./disparo-comum";
 
@@ -28,14 +29,34 @@ export async function executarDisparoWhatsapp(ctx: FlowExecutorContext): Promise
     return { status: "concluido", leadsEntrada: 0, leadsSaida: 0, detalhe: { campaignId, inscritos: 0 } };
   }
 
-  const { leadsInvalidos, ...resultado } = await enrollTargets(sb, campaignId, lote as Array<{ nome?: string; telefone?: string }>, opcoesInscricaoDoNo(ctx));
+  // Telefone escolhido no nó (celular do sócio, telefone da empresa…). Quem
+  // não tem esse telefone não é inscrito e sai por "Falhou" com o motivo.
+  const destino: DestinoTelefone = DESTINOS_TELEFONE.some((d) => d.id === config.telefoneDestino)
+    ? (config.telefoneDestino as DestinoTelefone)
+    : "padrao";
+  const comDestino = lote.map((l) => comTelefoneDeDestino(l as Record<string, unknown>, destino));
+  const semTelefone = destino === "padrao" ? [] : comDestino.filter((l) => !String(l.telefone ?? "").trim());
+  const aInscrever = destino === "padrao" ? comDestino : comDestino.filter((l) => String(l.telefone ?? "").trim());
+
+  const { leadsInvalidos, ...resultado } = await enrollTargets(sb, campaignId, aInscrever as Array<{ nome?: string; telefone?: string }>, opcoesInscricaoDoNo(ctx));
+  let saidas = saidasDaInscricao(leadsInvalidos, "telefone");
+  const motivoSem = destino === "socio" ? "Sem celular do sócio" : destino === "segundo" ? "Sem segundo telefone" : "Sem telefone da empresa";
+  if (semTelefone.length && ctx.saidasConectadas.includes("falhou")) {
+    const falhou = semTelefone.map((l) => ({ ...l, resultado_disparo: "falhou", motivo_falha: motivoSem, contato_que_falhou: "" }));
+    saidas = { ...saidas, falhou: [...(saidas?.falhou ?? []), ...falhou] };
+  }
 
   return {
     status: "concluido",
     leadsEntrada: lote.length,
     leadsSaida: resultado.inscritos,
-    detalhe: { campaignId, ...resultado, aviso: avisoDaInscricao(String(campanha.status), lote.length, resultado) },
+    detalhe: {
+      campaignId, ...resultado,
+      ...(semTelefone.length ? { semTelefoneEscolhido: semTelefone.length } : {}),
+      aviso: avisoDaInscricao(String(campanha.status), aInscrever.length, resultado)
+        ?? (semTelefone.length ? `${semTelefone.length} lead(s) ficaram de fora: ${motivoSem.toLowerCase()}.` : undefined),
+    },
     contextoPatch: { campaignId },
-    saidas: saidasDaInscricao(leadsInvalidos, "telefone"),
+    saidas,
   };
 }

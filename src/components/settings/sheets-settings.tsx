@@ -158,7 +158,7 @@ export function SheetsSettings({
                         <Button type="button" variant={p.padrao ? "default" : "ghost"} size="sm" onClick={() => definirPadrao(p.id)}>
                           <Star className="h-3.5 w-3.5" /> {p.padrao ? "Principal" : "Definir como principal"}
                         </Button>
-                        <Button type="button" variant="ghost" size="icon" onClick={() => removerPlanilha(p.id)}>
+                        <Button aria-label="Remover" title="Remover" type="button" variant="ghost" size="icon" onClick={() => removerPlanilha(p.id)}>
                           <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
                       </div>

@@ -83,7 +83,7 @@ export function TemplatesPanel({ templatesIniciais }: { templatesIniciais: Linke
               id="tpl-corpo"
               value={corpo}
               onChange={(e) => setCorpo(e.target.value)}
-              placeholder="Use {{nome}}, {{empresa_atual}}, {{cargo}}… pra puxar dados do lead"
+              placeholder="Use {{primeiro_nome}}, {{empresa}}, {{cargo}}… pra puxar dados do lead"
               rows={4}
             />
           </div>

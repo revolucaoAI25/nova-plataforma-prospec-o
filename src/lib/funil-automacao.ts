@@ -113,9 +113,22 @@ export async function pararCadencias(sb: SupabaseClient, userId: string, contato
   return parados;
 }
 
+/** Os contatos informados mais todos os outros dos cards de funil que têm algum deles. */
+async function contatosDosCards(sb: SupabaseClient, userId: string, contatos: string[]): Promise<string[]> {
+  if (!contatos.length) return contatos;
+  const { data } = await sb.from("funil_cards").select("contatos").eq("user_id", userId).overlaps("contatos", contatos);
+  const todos = new Set(contatos);
+  for (const c of (data ?? []) as Pick<FunilCardRow, "contatos">[]) for (const k of c.contatos ?? []) todos.add(k);
+  return [...todos].slice(0, 30);
+}
+
 /** Lead respondeu (webhook): para as cadências e leva o card pra "Respondeu". */
 export async function registrarResposta(sb: SupabaseClient, userId: string, contatos: string[]): Promise<{ parados: number; movidos: number }> {
-  const parados = await pararCadencias(sb, userId, contatos);
+  // O negócio respondeu: para a cadência de todos os contatos do card (o
+  // outro sócio da mesma empresa não segue recebendo mensagem), não só do
+  // número/e-mail que respondeu.
+  const doNegocio = await contatosDosCards(sb, userId, contatos);
+  const parados = await pararCadencias(sb, userId, doNegocio);
   const movidos = await moverCards(sb, userId, contatos, PAPEIS_PRE_RESPOSTA, "respondeu");
   return { parados, movidos };
 }

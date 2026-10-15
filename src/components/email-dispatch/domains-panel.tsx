@@ -112,7 +112,7 @@ export function DomainsPanel({ dominiosIniciais }: { dominiosIniciais: EmailDoma
                     {verificandoId === d.id ? "Verificando…" : "Verificar"}
                   </Button>
                 )}
-                <Button type="button" variant="ghost" size="icon" onClick={() => remover(d.id)}>
+                <Button aria-label="Remover" title="Remover" type="button" variant="ghost" size="icon" onClick={() => remover(d.id)}>
                   <Trash2 className="h-4 w-4 text-destructive" />
                 </Button>
               </div>

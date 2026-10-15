@@ -29,7 +29,8 @@ export async function POST(
     const rows = await buscarLeadsDaPesquisa(supabase, parsed.data.searchId);
     leads = rows.map((r) => ({ ...r, nome: r.nome, email: r.email }));
   } else if (parsed.data.leads) {
-    leads = parsed.data.leads;
+    // Lista colada: o nome é da pessoa ({{primeiro_nome}} usa ele).
+    leads = parsed.data.leads.map((l) => ({ ...l, nome_completo: l.nome ?? "" }));
   } else {
     return NextResponse.json({ error: "Informe searchId ou uma lista de leads." }, { status: 400 });
   }

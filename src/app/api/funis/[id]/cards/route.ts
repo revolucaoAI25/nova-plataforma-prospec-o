@@ -48,7 +48,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   if (parsed.data.searchId) {
     // RLS de `searches` já restringe ao dono — pesquisa de outro usuário
     // simplesmente não retorna leads aqui.
-    // Com celular do sócio, o card leva o celular dele (cada sócio vira um card).
+    // Com celular do sócio, o card leva o celular dele; os outros sócios da
+    // mesma empresa entram no mesmo card como outros contatos.
     leads = (await buscarLeadsDaPesquisa(supabase, parsed.data.searchId)).map(preferirCelularDoSocio) as unknown as Array<Record<string, unknown>>;
     if (!leads.length) return NextResponse.json({ error: "Nenhum lead encontrado nessa pesquisa." }, { status: 404 });
   } else {
@@ -57,5 +58,5 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   }
 
   const r = await adicionarLeadsAoFunil(supabase, id, parsed.data.colunaId, user.id, leads);
-  return NextResponse.json({ total: r.adicionados, jaNoFunil: r.jaNoFunil });
+  return NextResponse.json({ total: r.adicionados, jaNoFunil: r.jaNoFunil, contatosNovos: r.contatosNovos });
 }

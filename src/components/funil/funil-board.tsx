@@ -1,13 +1,14 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Plus, Settings2, Trash2, Zap, UserPlus, Bot } from "lucide-react";
+import { Plus, Settings2, Trash2, Zap, UserPlus, Bot, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useConfirm } from "@/components/ui/confirm-provider";
 import { FunilCardView } from "@/components/funil/funil-card";
+import { FunilCardDetalhe } from "@/components/funil/funil-card-detalhe";
 import { AdicionarLeadsDialog } from "@/components/funil/adicionar-leads-dialog";
 import type { FunilColunaRow, FunilCardRow, AutomationFlowRow, PapelColunaFunil } from "@/lib/database.types";
 
@@ -47,6 +48,9 @@ export function FunilBoard({ funilId, colunasIniciais, cardsIniciais, flows }: P
   const [aviso, setAviso] = useState<string | null>(null);
   const [dragCardId, setDragCardId] = useState<string | null>(null);
   const [colunaAdicionando, setColunaAdicionando] = useState<string | null>(null);
+  const [cardAberto, setCardAberto] = useState<string | null>(null);
+  const [busca, setBusca] = useState("");
+  const [limitePorColuna, setLimitePorColuna] = useState<Record<string, number>>({});
 
   const cardsPorColuna = useMemo(() => {
     const mapa = new Map<string, FunilCardRow[]>();
@@ -58,6 +62,18 @@ export function FunilBoard({ funilId, colunasIniciais, cardsIniciais, flows }: P
     for (const lista of mapa.values()) lista.sort((a, b) => a.ordem - b.ordem);
     return mapa;
   }, [colunas, cards]);
+
+  // Busca por nome, telefone (só dígitos), e-mail ou sócio — em todo o snapshot do card.
+  const termo = busca.trim().toLowerCase();
+  const digitos = termo.replace(/\D/g, "");
+  const casaBusca = (card: FunilCardRow) => {
+    if (!termo) return true;
+    const texto = JSON.stringify(card.lead_snapshot ?? {}).toLowerCase();
+    if (texto.includes(termo)) return true;
+    return digitos.length >= 4 && texto.replace(/\D/g, "").includes(digitos);
+  };
+  const POR_PAGINA = 50;
+  const cardDetalhe = cardAberto ? cards.find((c) => c.id === cardAberto) ?? null : null;
 
   function mostrarAviso(msg: string) {
     setAviso(msg);
@@ -111,12 +127,6 @@ export function FunilBoard({ funilId, colunasIniciais, cardsIniciais, flows }: P
     setCards(data.cards || []);
   }
 
-  async function excluirCard(cardId: string) {
-    const resp = await fetch(`/api/funis/${funilId}/cards/${cardId}`, { method: "DELETE" });
-    if (!resp.ok) return mostrarAviso("Não foi possível remover o card.");
-    setCards((prev) => prev.filter((c) => c.id !== cardId));
-  }
-
   async function moverCard(cardId: string, novaColunaId: string) {
     const card = cards.find((c) => c.id === cardId);
     if (!card || card.coluna_id === novaColunaId) return;
@@ -148,6 +158,35 @@ export function FunilBoard({ funilId, colunasIniciais, cardsIniciais, flows }: P
           <Zap className="h-4 w-4" />
           <AlertDescription>{aviso}</AlertDescription>
         </Alert>
+      )}
+
+      {cardDetalhe && (
+        <FunilCardDetalhe
+          key={cardDetalhe.id}
+          funilId={funilId}
+          card={cardDetalhe}
+          colunas={colunas}
+          onFechar={() => setCardAberto(null)}
+          onMover={(colunaId) => moverCard(cardDetalhe.id, colunaId)}
+          onRemovido={() => {
+            setCards((prev) => prev.filter((c) => c.id !== cardDetalhe.id));
+            setCardAberto(null);
+          }}
+          onAnotacoes={(texto) => setCards((prev) => prev.map((c) => (c.id === cardDetalhe.id ? { ...c, anotacoes: texto } : c)))}
+        />
+      )}
+
+      {cards.length > 0 && (
+        <div className="relative sm:max-w-sm">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={busca}
+            onChange={(e) => setBusca(e.target.value)}
+            placeholder="Buscar por empresa, sócio, telefone ou e-mail"
+            aria-label="Buscar negócios no funil"
+            className="pl-9"
+          />
+        </div>
       )}
 
       {colunaAdicionando && (
@@ -191,7 +230,7 @@ export function FunilBoard({ funilId, colunasIniciais, cardsIniciais, flows }: P
                 >
                   <UserPlus className="h-3.5 w-3.5" />
                 </Button>
-                <Button
+                <Button aria-label="Configurar coluna" title="Configurar coluna"
                   variant="ghost"
                   size="icon"
                   className="h-7 w-7"
@@ -252,17 +291,33 @@ export function FunilBoard({ funilId, colunasIniciais, cardsIniciais, flows }: P
                 setDragCardId(null);
               }}
             >
-              {(cardsPorColuna.get(coluna.id) || []).map((card) => (
-                <FunilCardView
-                  key={card.id}
-                  card={card}
-                  accentColor={cor}
-                  dragging={dragCardId === card.id}
-                  onDragStart={() => setDragCardId(card.id)}
-                  onDragEnd={() => setDragCardId(null)}
-                  onRemover={() => excluirCard(card.id)}
-                />
-              ))}
+              {(() => {
+                const daColuna = (cardsPorColuna.get(coluna.id) || []).filter(casaBusca);
+                const limite = limitePorColuna[coluna.id] ?? POR_PAGINA;
+                return (
+                  <>
+                    {daColuna.slice(0, limite).map((card) => (
+                      <FunilCardView
+                        key={card.id}
+                        card={card}
+                        accentColor={cor}
+                        dragging={dragCardId === card.id}
+                        onDragStart={() => setDragCardId(card.id)}
+                        onDragEnd={() => setDragCardId(null)}
+                        onAbrir={() => setCardAberto(card.id)}
+                      />
+                    ))}
+                    {daColuna.length > limite && (
+                      <Button variant="ghost" size="sm" onClick={() => setLimitePorColuna((p) => ({ ...p, [coluna.id]: limite + POR_PAGINA }))}>
+                        Mostrar mais {Math.min(POR_PAGINA, daColuna.length - limite)} de {daColuna.length - limite}
+                      </Button>
+                    )}
+                    {termo && daColuna.length === 0 && (cardsPorColuna.get(coluna.id) || []).length > 0 && (
+                      <span className="px-1 text-xs text-muted-foreground">Nada com &quot;{busca.trim()}&quot; aqui.</span>
+                    )}
+                  </>
+                );
+              })()}
             </div>
             </div>
           </div>

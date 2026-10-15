@@ -46,7 +46,11 @@ export function AdicionarAoFunilButton({ searchId }: { searchId: string }) {
     const data = await resp.json();
     setEnviando(false);
     if (!resp.ok) return setResultado(data.error || "Não foi possível adicionar ao funil.");
-    setResultado(`${data.total} lead(s) adicionado(s) ao funil.${data.jaNoFunil ? ` ${data.jaNoFunil} já estava(m) lá e não foi(ram) repetido(s).` : ""}`);
+    setResultado(
+      `${data.total} lead(s) adicionado(s) ao funil.` +
+      (data.contatosNovos ? ` ${data.contatosNovos} contato(s) a mais (outro sócio da mesma empresa) entraram no card que já existia.` : "") +
+      (data.jaNoFunil ? ` ${data.jaNoFunil} já estava(m) lá e não foi(ram) repetido(s).` : ""),
+    );
   }
 
   if (!open) {

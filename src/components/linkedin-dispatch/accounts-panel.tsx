@@ -65,7 +65,7 @@ function ContaCard({ conta, onAtualizada, onRemover }: { conta: LinkedinAccountR
             <RefreshCw className="h-4 w-4" /> {reconectando ? "Gerando link…" : "Reconectar"}
           </Button>
         )}
-        <Button type="button" variant="ghost" size="icon" onClick={() => onRemover(conta.id)}>
+        <Button aria-label="Remover" title="Remover" type="button" variant="ghost" size="icon" onClick={() => onRemover(conta.id)}>
           <Trash2 className="h-4 w-4 text-destructive" />
         </Button>
       </div>

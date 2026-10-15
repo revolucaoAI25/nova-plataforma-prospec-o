@@ -84,13 +84,27 @@ export function variaveisDerivadas(lead: Record<string, unknown>): Record<string
   const socio = texto(lead.socio_nome) || texto(lead.bigdatacorp_socio_nome) || texto(lead.socio_principal);
   // Pessoa: LinkedIn/Instagram trazem o nome da pessoa em `nome`/`nome_completo`;
   // em CNPJ/Maps `nome` é a empresa, então só o sócio vira primeiro nome.
-  const pessoa = texto(lead.nome_completo) || (lead.linkedin_url || lead.username ? texto(lead.nome) : "") || socio;
-  const empresaBruta = texto(lead.empresa_atual) || texto(lead.bigdatacorp_razao_social) || (lead.linkedin_url ? "" : texto(lead.nome));
+  // Lista colada/cadastro manual: `nome` é a pessoa (vem com nome_completo
+  // igual, ou com um campo `empresa` ao lado) — não pode virar {{empresa}}.
+  const nomeEhPessoa = Boolean(lead.linkedin_url || lead.username) || "empresa" in lead
+    || (texto(lead.nome_completo) !== "" && texto(lead.nome_completo) === texto(lead.nome));
+  const pessoa = texto(lead.nome_completo) || (nomeEhPessoa ? texto(lead.nome) : "") || socio;
+  const empresaBruta = texto(lead.empresa) || texto(lead.empresa_atual) || texto(lead.bigdatacorp_razao_social) || (nomeEhPessoa ? "" : texto(lead.nome));
   return {
     empresa: empresaBruta ? nomeEmpresa(empresaBruta) : "",
     primeiro_nome: pessoa ? primeiroNome(pessoa) : "",
     cidade: capitalizar(texto(lead.municipio) || texto(lead.cidade_busca)),
   };
+}
+
+/** Valor de um campo na mensagem: lista vira "a, b e c"; objeto não entra (nunca "[object Object]"). */
+function valorDoCampo(v: unknown): string {
+  if (Array.isArray(v)) {
+    const itens = v.map((i) => (typeof i === "object" && i ? texto((i as { nome?: unknown }).nome) : texto(i))).filter(Boolean);
+    return itens.length > 1 ? `${itens.slice(0, -1).join(", ")} e ${itens[itens.length - 1]}` : itens[0] ?? "";
+  }
+  if (typeof v === "object" && v !== null) return "";
+  return texto(v);
 }
 
 const TOKEN = /\{\{\s*([a-zA-Z0-9_]+)\s*(?:\|([^}]*))?\}\}/g;
@@ -111,7 +125,7 @@ export function renderizarMensagem(modelo: string, lead: Record<string, unknown>
   const dados = lead || {};
   const derivadas = variaveisDerivadas(dados);
   const saida = modelo.replace(TOKEN, (_m, campo: string, padrao?: string) => {
-    const valor = texto(dados[campo]) || texto(derivadas[campo as keyof typeof derivadas]);
+    const valor = valorDoCampo(dados[campo]) || texto(derivadas[campo as keyof typeof derivadas]);
     return valor || (padrao ?? "").trim();
   });
   return arrumarPontuacao(saida);

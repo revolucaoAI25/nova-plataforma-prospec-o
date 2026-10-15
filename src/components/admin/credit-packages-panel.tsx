@@ -76,7 +76,7 @@ function LinhaPacote({ pacote, onRemovido }: { pacote: CreditPackageRow; onRemov
           <Button size="sm" variant={dirty ? "default" : "ghost"} disabled={!dirty || saving} onClick={salvar}>
             <Save className="h-3.5 w-3.5" /> {saving ? "Salvando…" : "Salvar"}
           </Button>
-          <Button size="icon" variant="ghost" className="h-8 w-8" onClick={remover}>
+          <Button aria-label="Remover" title="Remover" size="icon" variant="ghost" className="h-8 w-8" onClick={remover}>
             <Trash2 className="h-3.5 w-3.5" />
           </Button>
         </div>

@@ -27,9 +27,11 @@ export async function POST(
   let leads: Array<{ nome?: string | null; linkedin_url?: string | null }> = [];
   if (parsed.data.searchId) {
     const rows = await buscarLeadsDaPesquisa(supabase, parsed.data.searchId);
-    leads = rows.map((r) => ({ nome: r.nome, linkedin_url: r.linkedin_url }));
+    // Lead inteiro: a mensagem usa {{cargo}}, {{empresa_atual}}, {{primeiro_nome}}…
+    // (antes só nome e URL iam para o alvo e essas variáveis saíam vazias).
+    leads = rows.map((r) => ({ ...r, nome: r.nome, linkedin_url: r.linkedin_url }));
   } else if (parsed.data.leads) {
-    leads = parsed.data.leads;
+    leads = parsed.data.leads.map((l) => ({ ...l, nome_completo: l.nome ?? "" }));
   } else {
     return NextResponse.json({ error: "Informe searchId ou uma lista de leads." }, { status: 400 });
   }

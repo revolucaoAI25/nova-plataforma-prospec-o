@@ -67,6 +67,7 @@ No [painel do Supabase](https://supabase.com/dashboard), crie um projeto novo
     execuções de "Sócios e Contato", `leads.celular_socio`, cache
     `consultas_cadastrais` e o custo "socio_celular". `0041`: origem dos
     leads sem nome de fornecedor (Maps, CNPJ, Instagram, LinkedIn).
+    `0042`: anotações no negócio do funil (`funil_cards.anotacoes`).
     Rode-as **antes** do deploy desta versão (o código novo grava colunas
     que elas criam). Todas podem ser rodadas de
     novo sem erro (usam `if not exists` / `create or replace`).
@@ -1370,6 +1371,29 @@ indisponível/com erro amigável se faltar, o resto da plataforma funciona norma
   recebe `customGeolocation` (círculo) no lugar de `locationQuery`
   (`src/lib/raio-maps.ts`). As duas opções existem também nos nós de
   extração do fluxo e a IA de fluxos sabe usá-las.
+- **Revisão de funil, disparo e personalização**: (1) o card do funil é o
+  negócio (a empresa): `contatosDoLead` passou a juntar todos os telefones
+  do lead (principal, celular do sócio, empresa, segundo telefone) e
+  `adicionarLeadsAoFunil` não descarta mais o 2º sócio da mesma empresa —
+  o contato dele entra no card que já existe (`contatos` +
+  `lead_snapshot.outros_contatos`). Clicar no card abre o detalhe
+  (`funil-card-detalhe.tsx`): todos os contatos com WhatsApp/ligar/copiar,
+  dados da empresa, anotações, etapa (alternativa ao arraste, que não
+  funciona no celular) e as campanhas/mensagens de cada contato
+  (`funil-historico.ts`, `GET /api/funis/[id]/cards/[cardId]`). Resposta
+  de qualquer contato para a cadência de todos os contatos do negócio. O
+  board ganhou busca e paginação por coluna. (2) Disparo WhatsApp escolhe o
+  telefone de destino (`DESTINOS_TELEFONE` em `src/lib/phone.ts`): celular
+  do sócio com volta para o da empresa (padrão), só o celular do sócio, o
+  da empresa ou o segundo — no nó do fluxo (quem não tem sai por "Falhou"
+  com o motivo) e na inscrição manual por pesquisa. (3) Personalização: o
+  gatilho por filtro e a inscrição de LinkedIn por pesquisa passaram a
+  guardar o lead inteiro (antes `{{porte}}`, `{{cargo}}`,
+  `{{empresa_atual}}` saíam vazios); em lista colada o nome é da pessoa
+  (`{{primeiro_nome}}` funciona e o nome não vira `{{empresa}}`); campo
+  lista vira "a, b e c". Os editores de campanha mostram a prévia da
+  mensagem com os leads inscritos, e o nó de disparo no fluxo confere as
+  variáveis da campanha com os campos que os passos anteriores trazem.
 
 ## Estrutura
 
@@ -1398,6 +1422,8 @@ src/
     credits.ts db.ts export.ts maps-key.ts apify-key.ts    lógica de negócio de extração
     dispatch-db.ts automation-db.ts automation-logic.ts automation-runner.ts   disparo e automações
     funil-db.ts                CRUD do Funil (Kanban)
+    funil-historico.ts         Campanhas e mensagens de cada contato do card
+    funil-resumo.ts            Como o card aparece (empresa, pessoa, telefones)
     flow/                      construtor de fluxos: node-types, flow-engine, executors/
 worker/                        processo de background (automações, disparo, enriquecimento IA, fluxos)
 supabase/migrations/           schema SQL (0001 Fase 0 · 0002 plataforma completa · 0003–0040 incrementais)

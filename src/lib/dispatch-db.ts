@@ -7,7 +7,7 @@ import { primeiroContatoDaCampanha } from "@/lib/funil-automacao";
 import { inicioDoDiaSP, sortearVariante } from "@/lib/ritmo";
 import type {
   WhatsappInstanceRow, DispatchCampaignRow, CadenceStepRow, DispatchTargetRow,
-  MessageTemplateRow, OficialConnectionRequestRow, SheetWatcherRow, InstanceCanal, CampaignOrigem, Profile, Variante,
+  MessageTemplateRow, OficialConnectionRequestRow, SheetWatcherRow, InstanceCanal, CampaignOrigem, Profile, Variante, LeadRow,
 } from "@/lib/database.types";
 
 // CRUD do disparo WhatsApp — portado de modules/dispatch_db.py. Diferente
@@ -229,14 +229,7 @@ export async function listarCampanhasAutoTriggerAtivas(sb: SupabaseClient): Prom
   return (data as DispatchCampaignRow[]) || [];
 }
 
-interface LeadFiltroRow {
-  nome: string | null; telefone: string | null; telefone2: string | null; email: string | null;
-  endereco: string | null; municipio: string | null; uf: string | null; cep: string | null;
-  site: string | null; maps_url: string | null; avaliacao: number | null; total_avaliacoes: number | null;
-  cnpj: string | null; nicho: string | null; subnicho: string | null; fonte: string | null; created_at: string;
-  linkedin_url: string | null;
-  socio_principal: string | null; celular_socio: string | null;
-}
+type LeadFiltroRow = LeadRow & { telefone_empresa?: string };
 
 /**
  * Leads do próprio dono da campanha que batem com nicho/subnicho/UF,
@@ -254,15 +247,18 @@ export async function buscarLeadsFiltro(
   for (;;) {
     let q = sb
       .from("leads")
-      .select("nome, telefone, telefone2, email, endereco, municipio, uf, cep, site, maps_url, avaliacao, total_avaliacoes, cnpj, nicho, subnicho, fonte, created_at, linkedin_url, socio_principal, celular_socio")
+      // Lead inteiro: a mensagem pode usar qualquer campo ({{porte}},
+      // {{cargo}}, {{empresa_atual}}…) — antes vinha só parte das colunas
+      // e essas variáveis saíam vazias nas campanhas por gatilho.
+      .select("*")
       .eq("user_id", userId);
     if (nicho) q = q.ilike("nicho", `%${nicho}%`);
     if (subnicho) q = q.ilike("subnicho", `%${subnicho}%`);
     if (uf) q = q.eq("uf", uf.toUpperCase());
     if (desde) q = q.gt("created_at", desde);
     const { data } = await q.order("created_at").range(offset, offset + pageSize - 1);
-    const linhas = (data as LeadFiltroRow[]) || [];
-    leads.push(...linhas.map(preferirCelularDoSocio));
+    const linhas = (data as LeadRow[]) || [];
+    leads.push(...linhas.map((l) => preferirCelularDoSocio(l)));
     if (linhas.length < pageSize) break;
     offset += pageSize;
   }

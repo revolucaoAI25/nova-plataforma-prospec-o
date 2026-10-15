@@ -396,7 +396,7 @@ export function CampaignDetail({
                   indice={e.ordem - 1}
                 />
               </div>
-              <Button variant="ghost" size="icon" onClick={() => removerEtapa(e.id)} className="shrink-0">
+              <Button aria-label="Remover etapa" title="Remover etapa" variant="ghost" size="icon" onClick={() => removerEtapa(e.id)} className="shrink-0">
                 <Trash2 className="h-4 w-4 text-destructive" />
               </Button>
             </div>
@@ -450,7 +450,7 @@ export function CampaignDetail({
                   id="nota"
                   value={nota}
                   onChange={(e) => setNota(e.target.value.slice(0, 300))}
-                  placeholder="Use {{nome}} para inserir o nome do lead — deixe em branco pra convite sem nota"
+                  placeholder="Ex.: Oi {{primeiro_nome}}, vi seu trabalho na {{empresa}}… (em branco = convite sem nota)"
                   rows={3}
                   maxLength={300}
                 />
@@ -463,12 +463,12 @@ export function CampaignDetail({
                   id="corpo"
                   value={corpo}
                   onChange={(e) => setCorpo(e.target.value)}
-                  placeholder="Use {{nome}} para inserir o nome do lead"
+                  placeholder="Ex.: Obrigado por aceitar, {{primeiro_nome}}…"
                   rows={4}
                 />
               </div>
             )}
-            <DicaVariaveis extras={["cargo", "enriquecimento_resumo"]} />
+            <DicaVariaveis extras={["cargo", "enriquecimento_resumo"]} texto={tipoEtapa === "convite" ? nota : corpo} leads={targets.filter((t) => t.status !== "removido").slice(0, 20).map((t) => t.lead_snapshot)} />
 
             <Button type="submit" disabled={addingStep} className="self-start">
               <Plus className="h-4 w-4" /> {addingStep ? "Adicionando…" : "Adicionar etapa"}

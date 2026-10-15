@@ -2,8 +2,9 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { FunilRow, FunilColunaRow, FunilCardRow, Profile, AutomationFlowRow, PapelColunaFunil } from "@/lib/database.types";
 import { criarRunDoFluxo } from "@/lib/flow/flow-engine";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { contatosDoLead } from "@/lib/contatos";
+import { chaveEmail, chaveTelefone, contatosDoLead, telefonesDoLead } from "@/lib/contatos";
 import { PAPEIS_PRE_RESPOSTA, pararCadencias } from "@/lib/funil-automacao";
+import type { OutroContato } from "@/lib/funil-resumo";
 
 // CRUD do Funil (Kanban) — visão de pipeline sobre leads já extraídos.
 // Mesma disciplina de IDOR dos outros módulos *-db.ts do projeto: toda
@@ -120,6 +121,24 @@ export interface ResultadoAdicionarAoFunil {
   movidos: number;
   /** Já estavam no funil (na mesma coluna ou mais adiante) e ficaram onde estavam. */
   jaNoFunil: number;
+  /** Mesma empresa de um card que já existe, mas com outro contato (outro sócio): o contato entrou no card. */
+  contatosNovos: number;
+}
+
+/** O que o lead traz de contato que o card ainda não tem — vira um item de `outros_contatos`. */
+function outrosContatosDoLead(lead: Record<string, unknown>, jaTem: Set<string>): OutroContato[] {
+  const nome = String(lead.socio_nome || lead.socio_principal || "").trim() || undefined;
+  const cargo = String(lead.socio_cargo || "").trim() || undefined;
+  const saida: OutroContato[] = [];
+  for (const t of telefonesDoLead(lead)) {
+    const chave = chaveTelefone(t.numero);
+    if (!chave || jaTem.has(chave)) continue;
+    const doSocio = t.rotulo === "Celular do sócio";
+    saida.push({ telefone: t.numero, rotulo: t.rotulo, whatsapp: t.whatsapp, ...(doSocio ? { nome, cargo } : {}) });
+  }
+  const email = chaveEmail(lead.email);
+  if (email && !jaTem.has(email)) saida.push({ email: String(lead.email).trim(), rotulo: "E-mail", nome });
+  return saida;
 }
 
 /**
@@ -128,6 +147,11 @@ export interface ResultadoAdicionarAoFunil {
  * `avancarExistentes`, o card existente anda para a coluna pedida se ela
  * vier depois da atual (nunca volta: um lead em "Respondeu" não regride
  * para "Em cadência" porque passou por outro ramo do fluxo).
+ *
+ * O card é o negócio (a empresa): o segundo sócio da mesma empresa — que
+ * chega como outro lead, com o mesmo e-mail ou telefone da empresa — não
+ * se perde: o celular dele entra no card (contatos e `outros_contatos`),
+ * aparece no detalhe do negócio e uma resposta dele também move o card.
  */
 export async function adicionarLeadsAoFunil(
   sb: SupabaseClient,
@@ -137,54 +161,83 @@ export async function adicionarLeadsAoFunil(
   leads: Array<Record<string, unknown>>,
   opcoes: { avancarExistentes?: boolean } = {},
 ): Promise<ResultadoAdicionarAoFunil> {
-  const resultado: ResultadoAdicionarAoFunil = { adicionados: 0, movidos: 0, jaNoFunil: 0 };
+  const resultado: ResultadoAdicionarAoFunil = { adicionados: 0, movidos: 0, jaNoFunil: 0, contatosNovos: 0 };
   if (!leads.length) return resultado;
   const existentes = await listarCards(sb, funilId);
   const { data: colunasData } = await sb.from("funil_colunas").select("id, ordem").eq("funil_id", funilId);
   const ordemColuna = new Map(((colunasData ?? []) as { id: string; ordem: number }[]).map((c) => [c.id, c.ordem]));
   const destino = ordemColuna.get(colunaId) ?? 0;
 
-  const cardPorContato = new Map<string, FunilCardRow>();
-  for (const card of existentes) for (const c of card.contatos ?? []) cardPorContato.set(c, card);
+  // Card de destino de cada contato: um card que já existe ou uma linha
+  // nova deste lote (dois sócios da mesma empresa no mesmo lote).
+  type Alvo = { tipo: "card"; card: FunilCardRow } | { tipo: "novo"; linha: LinhaNova };
+  type LinhaNova = { contatos: string[]; lead_snapshot: Record<string, unknown> } & Record<string, unknown>;
+  const alvoPorContato = new Map<string, Alvo>();
+  for (const card of existentes) for (const c of card.contatos ?? []) alvoPorContato.set(c, { tipo: "card", card });
 
   let ordem = existentes.length ? Math.max(...existentes.map((c) => c.ordem)) + 1 : 0;
-  const linhas: Record<string, unknown>[] = [];
-  const mover: string[] = [];
-  const vistos = new Set<string>();
+  const linhas: LinhaNova[] = [];
+  const mover = new Set<string>();
+  const cardsAlterados = new Map<string, FunilCardRow>();
+
   for (const lead of leads) {
     const contatos = contatosDoLead(lead);
-    // Mesmo lead repetido dentro do próprio lote.
-    if (contatos.some((c) => vistos.has(c))) continue;
-    contatos.forEach((c) => vistos.add(c));
-
-    const card = contatos.map((c) => cardPorContato.get(c)).find(Boolean);
-    if (card) {
-      const atual = ordemColuna.get(card.coluna_id) ?? 0;
-      if (opcoes.avancarExistentes && atual < destino) mover.push(card.id);
-      else resultado.jaNoFunil++;
+    const alvo = contatos.map((c) => alvoPorContato.get(c)).find(Boolean);
+    if (!alvo) {
+      const linha: LinhaNova = {
+        funil_id: funilId,
+        coluna_id: colunaId,
+        user_id: userId,
+        lead_id: (lead.id as string) || null,
+        lead_snapshot: lead,
+        contatos,
+        ordem: ordem++,
+      };
+      linhas.push(linha);
+      for (const c of contatos) alvoPorContato.set(c, { tipo: "novo", linha });
       continue;
     }
-    linhas.push({
-      funil_id: funilId,
-      coluna_id: colunaId,
-      user_id: userId,
-      lead_id: (lead.id as string) || null,
-      lead_snapshot: lead,
-      contatos,
-      ordem: ordem++,
-    });
+
+    const jaTem = new Set(alvo.tipo === "card" ? alvo.card.contatos ?? [] : alvo.linha.contatos);
+    const novos = contatos.filter((c) => !jaTem.has(c));
+    if (novos.length) {
+      const snapshot = alvo.tipo === "card" ? (alvo.card.lead_snapshot as Record<string, unknown>) : alvo.linha.lead_snapshot;
+      const outros = [...((snapshot.outros_contatos as OutroContato[] | undefined) ?? []), ...outrosContatosDoLead(lead, jaTem)];
+      const novoSnapshot = { ...snapshot, outros_contatos: outros };
+      const todos = [...jaTem, ...novos];
+      if (alvo.tipo === "card") {
+        alvo.card.contatos = todos;
+        alvo.card.lead_snapshot = novoSnapshot;
+        cardsAlterados.set(alvo.card.id, alvo.card);
+      } else {
+        alvo.linha.contatos = todos;
+        alvo.linha.lead_snapshot = novoSnapshot;
+      }
+      for (const c of novos) alvoPorContato.set(c, alvo);
+      resultado.contatosNovos++;
+    }
+    if (alvo.tipo === "novo") continue;
+    const atual = ordemColuna.get(alvo.card.coluna_id) ?? 0;
+    if (opcoes.avancarExistentes && atual < destino) mover.add(alvo.card.id);
+    else if (!novos.length) resultado.jaNoFunil++;
   }
 
   if (linhas.length) {
     const { error } = await sb.from("funil_cards").insert(linhas);
     if (!error) resultado.adicionados = linhas.length;
   }
-  if (mover.length) {
+  for (const card of cardsAlterados.values()) {
+    await sb
+      .from("funil_cards")
+      .update({ contatos: card.contatos, lead_snapshot: card.lead_snapshot, atualizado_em: new Date().toISOString() })
+      .eq("id", card.id);
+  }
+  if (mover.size) {
     const { error } = await sb
       .from("funil_cards")
       .update({ coluna_id: colunaId, atualizado_em: new Date().toISOString() })
-      .in("id", mover);
-    if (!error) resultado.movidos = mover.length;
+      .in("id", [...mover]);
+    if (!error) resultado.movidos = mover.size;
   }
   return resultado;
 }
@@ -235,6 +288,14 @@ export async function moverCard(
 
   const runId = await criarRunDoFluxo(sb, flowRow as AutomationFlowRow, { lote: [card.lead_snapshot] });
   return { ok: true, fluxoDisparado: runId || undefined };
+}
+
+export async function salvarAnotacoes(sb: SupabaseClient, cardId: string, anotacoes: string): Promise<boolean> {
+  const { error } = await sb
+    .from("funil_cards")
+    .update({ anotacoes: anotacoes.trim() || null, atualizado_em: new Date().toISOString() })
+    .eq("id", cardId);
+  return !error;
 }
 
 export async function excluirCard(sb: SupabaseClient, cardId: string): Promise<boolean> {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { X, Trash2, Plus, Copy, Check } from "lucide-react";
+import { X, Trash2, Plus, Copy, Check, AlertTriangle, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,7 +19,8 @@ import { CNAES } from "@/lib/data/cnaes";
 import { ESTADOS } from "@/lib/data/estados";
 import { NOMES_NICHOS } from "@/lib/data/nichos";
 import { LINKEDIN_INDUSTRIES } from "@/lib/data/linkedin-industries";
-import { camposDisponiveis } from "./lead-field-reference";
+import { camposDisponiveis, CAMPOS_SEMPRE } from "./lead-field-reference";
+import { DESTINOS_TELEFONE } from "@/lib/phone";
 import type { FlowNode, FlowNodeTipo } from "@/lib/database.types";
 
 const DIAS = [
@@ -161,6 +162,74 @@ function CamposDaMensagem({ tipos, viaRamo }: { tipos: FlowNodeTipo[]; viaRamo: 
   );
 }
 
+const CAMPANHA_DO_NO: Partial<Record<FlowNodeTipo, { api: string; pagina: string }>> = {
+  disparo_whatsapp: { api: "/api/dispatch/campaigns", pagina: "/disparo/campanhas" },
+  disparo_email: { api: "/api/email-dispatch/campaigns", pagina: "/disparo-email/campanhas" },
+  disparo_linkedin: { api: "/api/linkedin-dispatch/campaigns", pagina: "/disparo-linkedin/campanhas" },
+};
+
+/**
+ * Confere as {{variáveis}} das mensagens da campanha escolhida com os
+ * campos que o lead tem neste ponto do fluxo. Variável que não chega some
+ * da frase na hora do envio — melhor ver isso aqui do que no WhatsApp do
+ * cliente. Variável com padrão ({{campo|texto}}) nunca é problema.
+ */
+function ConferenciaVariaveis({ tipo, campaignId, tipos, viaRamo }: { tipo: FlowNodeTipo; campaignId: string; tipos: FlowNodeTipo[]; viaRamo: boolean }) {
+  const destino = CAMPANHA_DO_NO[tipo];
+  const [etapas, setEtapas] = useState<unknown[] | null>(null);
+  useEffect(() => {
+    if (!destino || !campaignId) return;
+    let vivo = true;
+    fetch(`${destino.api}/${campaignId}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => vivo && setEtapas(Array.isArray(d?.etapas) ? d.etapas : []))
+      .catch(() => vivo && setEtapas([]));
+    return () => {
+      vivo = false;
+    };
+  }, [destino, campaignId]);
+  if (!destino || !etapas) return null;
+
+  const { grupos, dePlanilha } = camposDisponiveis(tipos, viaRamo);
+  const conhecidos = new Set([...CAMPOS_SEMPRE, ...grupos.flatMap((g) => g.campos.map((c) => c.chave))]);
+  const usados = new Set<string>();
+  const semPadrao = new Set<string>();
+  for (const m of JSON.stringify(etapas).matchAll(/\{\{\s*([a-zA-Z0-9_]+)\s*(\|[^}]*)?\}\}/g)) {
+    if (/^\d+$/.test(m[1])) continue; // {{1}}: parâmetro de template oficial
+    usados.add(m[1]);
+    if (!m[2]) semPadrao.add(m[1]);
+  }
+  const faltando = [...semPadrao].filter((c) => !conhecidos.has(c));
+  const link = <a href={`${destino.pagina}/${campaignId}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-primary hover:underline">abrir campanha <ExternalLink className="h-3 w-3" /></a>;
+
+  if (!etapas.length) {
+    return (
+      <p className="flex items-start gap-1.5 rounded-lg border border-destructive/40 bg-destructive-soft p-2.5 text-xs text-destructive">
+        <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+        <span>Esta campanha ainda não tem nenhuma mensagem: ninguém será inscrito. {link}</span>
+      </p>
+    );
+  }
+  if (faltando.length && !dePlanilha) {
+    return (
+      <div className="flex items-start gap-1.5 rounded-lg border border-border bg-secondary/40 p-2.5 text-xs text-muted-foreground">
+        <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber" />
+        <span>
+          A mensagem usa {faltando.map((c, i) => <span key={c}>{i > 0 && ", "}<code className="rounded bg-secondary px-1 text-foreground">{`{{${c}}}`}</code></span>)}, que os
+          passos antes deste não trazem. Sem o dado, a palavra some da frase. Troque por um campo da lista abaixo ou ponha um
+          texto padrão: <code className="rounded bg-secondary px-1 text-foreground">{`{{${faltando[0]}|…}}`}</code>. {link}
+        </span>
+      </div>
+    );
+  }
+  return (
+    <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+      <Check className="h-3.5 w-3.5 shrink-0 text-primary" />
+      {usados.size ? `As ${usados.size} variável(is) da mensagem chegam até aqui.` : "A mensagem não usa variáveis."} {link}
+    </p>
+  );
+}
+
 function ParametrosDoFluxo({ variaveisFlow }: { variaveisFlow: VariavelEntrada[] }) {
   const declaradas = variaveisFlow.filter((v) => v.chave);
   return (
@@ -262,7 +331,7 @@ function CamposGatilhoManual({ config, set }: CamposProps) {
               onChange={(e) => atualizar(i, { chave: e.target.value.replace(/[^a-zA-Z0-9_]/g, "") })}
               placeholder="chave (ex: cidade)"
             />
-            <Button type="button" variant="ghost" size="icon" onClick={() => remover(i)}><X className="h-3.5 w-3.5" /></Button>
+            <Button aria-label="Remover parâmetro" title="Remover parâmetro" type="button" variant="ghost" size="icon" onClick={() => remover(i)}><X className="h-3.5 w-3.5" /></Button>
           </div>
           <Input value={v.label} onChange={(e) => atualizar(i, { label: e.target.value })} placeholder="Rótulo (opcional)" />
           <Input value={v.padrao} onChange={(e) => atualizar(i, { padrao: e.target.value })} placeholder="Valor padrão" />
@@ -703,6 +772,17 @@ function CamposDisparoWhatsapp({ config, set }: CamposProps) {
           </SelectContent>
         </Select>
       </Campo>
+      <Campo label="Enviar para">
+        <Select value={String(config.telefoneDestino || "padrao")} onValueChange={(v) => set({ telefoneDestino: v })}>
+          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectContent>
+            {DESTINOS_TELEFONE.map((d) => <SelectItem key={d.id} value={d.id}>{d.rotulo}</SelectItem>)}
+          </SelectContent>
+        </Select>
+      </Campo>
+      {config.telefoneDestino && config.telefoneDestino !== "padrao" && (
+        <p className="text-xs text-muted-foreground">Quem não tiver esse telefone não é inscrito e sai por &quot;Falhou&quot;, se estiver ligada.</p>
+      )}
       <p className="text-xs text-muted-foreground">
         Este módulo só inscreve os leads na campanha. O texto das mensagens fica nas etapas da própria campanha, em{" "}
         <strong className="text-foreground">Disparo</strong>. Veja abaixo os campos que a mensagem pode usar.
@@ -975,6 +1055,9 @@ export function FlowNodeConfigPanel({
       )}
 
       {/* Referência, não campo: fica recolhida e depois dos campos do nó. */}
+      {meta.categoria === "disparo" && typeof config.campaignId === "string" && config.campaignId && (
+        <ConferenciaVariaveis tipo={node.tipo} campaignId={config.campaignId} tipos={anteriores.tipos} viaRamo={anteriores.viaRamo} />
+      )}
       {meta.categoria === "disparo" && <CamposDaMensagem tipos={anteriores.tipos} viaRamo={anteriores.viaRamo} />}
       {meta.categoria !== "gatilho" && meta.categoria !== "disparo" && <ParametrosDoFluxo variaveisFlow={variaveisFlow} />}
 

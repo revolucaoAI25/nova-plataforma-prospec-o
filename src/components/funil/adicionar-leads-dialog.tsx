@@ -224,7 +224,7 @@ export function AdicionarLeadsDialog({
           <CardTitle className="text-base">Adicionar leads — {colunaNome}</CardTitle>
           <CardDescription>Um lead avulso, colar texto, upload de planilha, ou puxar de uma pesquisa do histórico.</CardDescription>
         </div>
-        <Button variant="ghost" size="icon" onClick={onFechar}><X className="h-4 w-4" /></Button>
+        <Button aria-label="Fechar" title="Fechar" variant="ghost" size="icon" onClick={onFechar}><X className="h-4 w-4" /></Button>
       </CardHeader>
       <CardContent className="flex flex-col gap-5">
         {erro && <Alert variant="destructive"><AlertDescription>{erro}</AlertDescription></Alert>}
@@ -359,7 +359,7 @@ export function AdicionarLeadsDialog({
                     <TableCell><Input className="h-8" value={l.telefone} onChange={(e) => atualizarLinha(i, "telefone", e.target.value)} /></TableCell>
                     <TableCell><Input className="h-8" value={l.email} onChange={(e) => atualizarLinha(i, "email", e.target.value)} /></TableCell>
                     <TableCell>
-                      <Button type="button" variant="ghost" size="icon" onClick={() => removerLinha(i)}>
+                      <Button aria-label="Remover" title="Remover" type="button" variant="ghost" size="icon" onClick={() => removerLinha(i)}>
                         <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
                     </TableCell>

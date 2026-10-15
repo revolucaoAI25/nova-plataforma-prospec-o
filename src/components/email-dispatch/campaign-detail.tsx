@@ -380,7 +380,7 @@ export function CampaignDetail({
                   indice={e.ordem - 1}
                 />
               </div>
-              <Button variant="ghost" size="icon" onClick={() => removerEtapa(e.id)} className="shrink-0">
+              <Button aria-label="Remover etapa" title="Remover etapa" variant="ghost" size="icon" onClick={() => removerEtapa(e.id)} className="shrink-0">
                 <Trash2 className="h-4 w-4 text-destructive" />
               </Button>
             </div>
@@ -419,7 +419,7 @@ export function CampaignDetail({
 
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="assunto">Assunto</Label>
-              <Input id="assunto" value={assunto} onChange={(e) => setAssunto(e.target.value)} placeholder="Use {{nome}} para inserir o nome do lead" />
+              <Input id="assunto" value={assunto} onChange={(e) => setAssunto(e.target.value)} placeholder="Ex.: {{primeiro_nome}}, uma pergunta rápida" />
             </div>
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="corpo">Corpo</Label>
@@ -430,7 +430,7 @@ export function CampaignDetail({
                 placeholder="Ex.: Oi {{primeiro_nome}}, tudo bem? Vi que a {{empresa|sua empresa}}…"
                 rows={4}
               />
-              <DicaVariaveis extras={["uf", "cnpj", "enriquecimento_resumo"]} />
+              <DicaVariaveis extras={["uf", "cnpj", "enriquecimento_resumo"]} texto={[assunto && `Assunto: ${assunto}`, corpo].filter(Boolean).join("\n\n")} leads={targets.filter((t) => t.status !== "removido").slice(0, 20).map((t) => t.lead_snapshot)} />
             </div>
 
             <Button type="submit" disabled={addingStep} className="self-start">
