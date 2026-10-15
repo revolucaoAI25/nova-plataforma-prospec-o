@@ -150,7 +150,7 @@ export function AdminUsersTable({ users, currentUserId }: { users: UserStatsRow[
           <TableHead>Disparo E-mail</TableHead>
           <TableHead>Disparo LinkedIn</TableHead>
           <TableHead>Enriq. IA</TableHead>
-          <TableHead>Enriq. BigDataCorp</TableHead>
+          <TableHead>Celular do sócio</TableHead>
           <TableHead>Buscas</TableHead>
           <TableHead>Leads</TableHead>
           <TableHead className="text-right">Ações</TableHead>

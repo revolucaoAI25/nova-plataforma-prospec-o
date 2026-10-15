@@ -57,15 +57,13 @@ function dataRelativa(opcoes: { dias?: number; anos?: number }): string {
 
 export function CnpjSearchForm({
   bigdatacorpDisponivel,
-  celularSocio = false,
   custos,
   publicos = [],
   temPerfil = false,
   precisaAtualizar = false,
 }: {
+  /** Celular do sócio liberado para a conta e configurado na plataforma. */
   bigdatacorpDisponivel: boolean;
-  /** A consulta encontra o celular do sócio (não só o contato da empresa). */
-  celularSocio?: boolean;
   custos: Record<string, number>;
   publicos?: PublicoSugerido[];
   temPerfil?: boolean;
@@ -402,19 +400,11 @@ export function CnpjSearchForm({
                 <hr className="divider-fade" />
                 <FieldGroup>
                   <FieldRow
-                    label={
-                      <span className="flex items-center gap-1.5">
-                        <Database className="h-3.5 w-3.5" /> {celularSocio ? "Buscar o celular do sócio" : "Enriquecer com sócios e contato"}
-                      </span>
-                    }
-                    info={
-                      celularSocio
-                        ? "Depois da busca, acha o celular pessoal (com WhatsApp) do sócio de cada empresa, em segundo plano. Ele aparece na coluna \"Celular do sócio\" dos resultados e é o número usado no disparo de WhatsApp desta pesquisa."
-                        : "Depois da busca, consulta cada CNPJ encontrado em background — sócios/quadro societário e telefone/e-mail registrados. Acompanhe em Enriquecimento → Sócios e Contato."
-                    }
+                    label={<span className="flex items-center gap-1.5"><Database className="h-3.5 w-3.5" /> Buscar o celular do sócio</span>}
+                    info="Depois da busca, acha o celular pessoal (com WhatsApp) do sócio de cada empresa, em segundo plano. Ele aparece na coluna &quot;Celular do sócio&quot; dos resultados e é o número usado no disparo de WhatsApp desta pesquisa."
                     control={<Switch checked={enriquecerBigDataCorp} onCheckedChange={setEnriquecerBigDataCorp} />}
                   />
-                  {celularSocio && enriquecerBigDataCorp && (
+                  {enriquecerBigDataCorp && (
                     <RadioGroup value={sociosModo} onValueChange={(v) => setSociosModo(v as "administrador" | "todos")} className="flex flex-wrap gap-4 p-3.5">
                       {([
                         ["administrador", "Só o administrador"],
@@ -453,7 +443,7 @@ export function CnpjSearchForm({
               (custos.cnpj || 0) +
               (mapsModo !== "nao_usar" ? custos.cnpj_maps_extra || 0 : 0) +
               (bigdatacorpDisponivel && enriquecerBigDataCorp
-                ? (custos.bigdatacorp || 0) + (celularSocio ? (custos.socio_celular || 0) * (sociosModo === "todos" ? 2 : 1) : 0)
+                ? (custos.bigdatacorp || 0) + (custos.socio_celular || 0) * (sociosModo === "todos" ? 2 : 1)
                 : 0)
             }
             unidade="empresa"

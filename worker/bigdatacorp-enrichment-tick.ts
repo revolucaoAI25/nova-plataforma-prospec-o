@@ -1,5 +1,4 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { consultarEmpresaBigDataCorp, bigDataCorpConfigurado } from "../src/lib/integrations/bigdatacorp";
 import { directDataConfigurado, ErroDirectData } from "../src/lib/integrations/direct-data";
 import { consultarSociosDaEmpresa, normalizarOpcoesCelularSocio } from "../src/lib/celular-socio";
 import { custoAcao, debitarCreditos } from "../src/lib/credits";
@@ -7,10 +6,11 @@ import { emParalelo } from "../src/lib/paralelo";
 import type { BigDataCorpEnrichmentRunRow } from "../src/lib/database.types";
 
 /**
- * Processa execuções de Enriquecimento por CNPJ (BigDataCorp) pendentes —
- * mesmo padrão assíncrono do enriquecimento via IA (worker/enrichment-tick.ts):
- * roda em background, não na requisição HTTP, porque cada lote pode ter
- * várias consultas pagas em sequência.
+ * Processa execuções do enriquecimento "Sócios e Contato" (celular do sócio,
+ * pela Direct Data) pendentes — mesmo padrão assíncrono do enriquecimento
+ * via IA (worker/enrichment-tick.ts): roda em background, não na requisição
+ * HTTP, porque cada lote tem várias consultas pagas em sequência. As
+ * tabelas mantêm o prefixo `bigdatacorp_` do fornecedor anterior.
  */
 /**
  * Se o worker reiniciar (deploy, crash) com uma execução em `processando`,
@@ -46,12 +46,9 @@ export async function tickBigDataCorpEnrichment(sb: SupabaseClient, log: (msg: s
     .maybeSingle();
   if (!run) return;
 
-  log(`Execução BigDataCorp ${run.id}: iniciando (${run.total} CNPJ(s))`);
+  log(`Execução ${run.id} (celular do sócio): iniciando (${run.total} CNPJ(s))`);
 
-  // Fornecedor: Direct Data (acha o celular do sócio) quando o token está
-  // cadastrado; senão a BigDataCorp, que só traz o contato da empresa.
-  const usarDirectData = await directDataConfigurado();
-  if (!usarDirectData && !(await bigDataCorpConfigurado())) {
+  if (!(await directDataConfigurado())) {
     await sb
       .from("bigdatacorp_enrichment_runs")
       .update({ status: "erro", erro: "Consulta de sócios e contato não configurada na plataforma.", concluido_em: new Date().toISOString() })
@@ -75,71 +72,7 @@ export async function tickBigDataCorpEnrichment(sb: SupabaseClient, log: (msg: s
       .eq("id", run.id);
     return;
   }
-  const custoPorConsulta = await custoAcao(sb, "bigdatacorp");
-  let saldo = Number(perfil.creditos) || 0;
-
-  if (usarDirectData) {
-    await processarComDirectData(sb, run as BigDataCorpEnrichmentRunRow, saldo, log);
-    return;
-  }
-
-  const { data: leadRows } = await sb
-    .from("bigdatacorp_enrichment_leads")
-    .select("*")
-    .eq("run_id", run.id)
-    .eq("status", "pendente")
-    .order("created_at", { ascending: true });
-
-  let processados = 0;
-  let encontrados = 0;
-  let naoEncontrados = 0;
-  let erros = 0;
-
-  for (const leadRow of leadRows ?? []) {
-    if (saldo < custoPorConsulta) {
-      await sb.from("bigdatacorp_enrichment_leads").update({ status: "erro", erro: "Créditos insuficientes." }).eq("id", leadRow.id);
-      processados += 1;
-      erros += 1;
-      continue;
-    }
-    try {
-      const resultado = await consultarEmpresaBigDataCorp(leadRow.cnpj_entrada);
-      await sb
-        .from("bigdatacorp_enrichment_leads")
-        .update({
-          status: resultado.encontrado ? "concluido" : "nao_encontrado",
-          razao_social: resultado.razaoSocial || null,
-          socios: resultado.socios,
-          telefone: resultado.telefone || null,
-          email: resultado.email || null,
-          endereco: resultado.endereco || null,
-          extras: resultado.bruto as never,
-        })
-        .eq("id", leadRow.id);
-      processados += 1;
-      if (resultado.encontrado) encontrados += 1;
-      else naoEncontrados += 1;
-      // Cobrado na tentativa de consulta (achado ou não), não só quando
-      // encontra — a BigDataCorp cobra por chamada feita, não por match
-      // (diferente da busca de leads, cobrada pelo que foi encontrado).
-      await debitarCreditos(sb, run.user_id, "bigdatacorp", 1);
-      saldo -= custoPorConsulta;
-    } catch (e) {
-      await sb.from("bigdatacorp_enrichment_leads").update({ status: "erro", erro: (e as Error).message }).eq("id", leadRow.id);
-      processados += 1;
-      erros += 1;
-    }
-
-    // Atualiza o contador a cada CNPJ — dá o efeito de "barra de
-    // progresso" pra quem está com a tela aberta (polling).
-    await sb
-      .from("bigdatacorp_enrichment_runs")
-      .update({ processados, encontrados, nao_encontrados: naoEncontrados, erros })
-      .eq("id", run.id);
-  }
-
-  await sb.from("bigdatacorp_enrichment_runs").update({ status: "concluido", concluido_em: new Date().toISOString() }).eq("id", run.id);
-  log(`Execução BigDataCorp ${run.id}: concluída (${encontrados} encontrado(s), ${naoEncontrados} não encontrado(s), ${erros} erro(s))`);
+  await processarComDirectData(sb, run as BigDataCorpEnrichmentRunRow, Number(perfil.creditos) || 0, log);
 }
 
 /**

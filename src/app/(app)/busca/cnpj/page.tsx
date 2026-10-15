@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { getProfile, custosVisiveis } from "@/lib/credits";
-import { celularDoSocioDisponivel, sociosEContatoConfigurado } from "@/lib/bigdatacorp-enrichment-db";
+import { sociosEContatoConfigurado } from "@/lib/bigdatacorp-enrichment-db";
 import { CnpjSearchForm } from "@/components/search/cnpj-search-form";
 import { PageHeader } from "@/components/layout/page-header";
 import { sugestoesDaBusca } from "@/lib/onboarding/publicos";
@@ -14,7 +14,6 @@ export default async function BuscaCnpjPage() {
   const bigdatacorpDisponivel = Boolean(
     (await sociosEContatoConfigurado()) && profile && (profile.bigdatacorp_enrichment_habilitado || profile.role === "admin"),
   );
-  const celularSocio = bigdatacorpDisponivel && (await celularDoSocioDisponivel());
   const custos = await custosVisiveis(supabase, ["cnpj", "cnpj_maps_extra", "bigdatacorp", "socio_celular"]);
 
   const sugestoes = await sugestoesDaBusca(user?.id, "cnpj");
@@ -25,7 +24,7 @@ export default async function BuscaCnpjPage() {
         title="Busca por CNPJ"
         description="Empresas ativas na Receita Federal. Créditos são debitados pelo que for encontrado, não pelo que for pedido."
       />
-      <CnpjSearchForm bigdatacorpDisponivel={bigdatacorpDisponivel} celularSocio={celularSocio} custos={custos} publicos={sugestoes.publicos} temPerfil={sugestoes.temPerfil} precisaAtualizar={sugestoes.precisaAtualizar} />
+      <CnpjSearchForm bigdatacorpDisponivel={bigdatacorpDisponivel} custos={custos} publicos={sugestoes.publicos} temPerfil={sugestoes.temPerfil} precisaAtualizar={sugestoes.precisaAtualizar} />
     </div>
   );
 }

@@ -16,7 +16,7 @@ const FEATURE_FLAG_LABELS: Record<keyof PlanFeatureFlags, string> = {
   instagram_visible: "Busca Instagram",
   linkedin_visible: "Busca LinkedIn",
   enriquecimento_ia_habilitado: "Enriquecimento via IA",
-  bigdatacorp_enrichment_habilitado: "Enriquecimento por CNPJ (BigDataCorp)",
+  bigdatacorp_enrichment_habilitado: "Celular do sócio (Sócios e Contato)",
   email_disparo_habilitado: "Disparo e-mail",
   linkedin_disparo_habilitado: "Disparo LinkedIn",
 };

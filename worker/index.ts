@@ -3,7 +3,7 @@
  * como um segundo serviço Railway apontando pro mesmo repositório (comando
  * de start diferente: `npm run worker`). Roda os fluxos de automação, as
  * filas de disparo (WhatsApp, e-mail, LinkedIn) e os enriquecimentos em
- * background (IA e BigDataCorp).
+ * background (IA e celular do sócio).
  *
  * Não depende de nada do Next.js — só do cliente Supabase service-role e
  * dos módulos de integração em src/lib, que são puro TypeScript.
@@ -73,7 +73,7 @@ async function main() {
       "enriquecimento IA a cada 10s, fluxos a cada 20s, disparo e-mail a cada 20s, " +
       "sheet-watch/auto-trigger e-mail a cada 120s, disparo LinkedIn a cada 30s, " +
       "sheet-watch/auto-trigger LinkedIn a cada 120s, poll de aceite de convite a cada 2h, " +
-      "enriquecimento BigDataCorp a cada 10s, planos do onboarding a cada 10s.",
+      "celular do sócio a cada 10s, planos do onboarding a cada 10s.",
   );
 
   // Aguarda um pouco no início, mesma cautela do produto atual (deixa o

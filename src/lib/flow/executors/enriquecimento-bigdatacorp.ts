@@ -33,7 +33,7 @@ export async function executarEnriquecimentoBigDataCorp(ctx: FlowExecutorContext
   const runIdExistente = contexto.bigdatacorpRunId as string | undefined;
   if (runIdExistente) {
     const { data: run } = await sb.from("bigdatacorp_enrichment_runs").select("*").eq("id", runIdExistente).single();
-    if (!run) return { status: "erro", erro: "Execução de enriquecimento BigDataCorp não encontrada." };
+    if (!run) return { status: "erro", erro: "Execução do celular do sócio não encontrada." };
     if (run.status === "concluido") {
       const { data: bigdatacorpLeads } = await sb.from("bigdatacorp_enrichment_leads").select("*").eq("run_id", runIdExistente);
       const opcoes = normalizarOpcoesCelularSocio((run as BigDataCorpEnrichmentRunRow).opcoes);
@@ -57,7 +57,7 @@ export async function executarEnriquecimentoBigDataCorp(ctx: FlowExecutorContext
       };
     }
     if (run.status === "erro") {
-      return { status: "erro", erro: run.erro || "Enriquecimento BigDataCorp falhou.", detalhe: { bigdatacorpRunId: runIdExistente } };
+      return { status: "erro", erro: run.erro || "A busca do celular do sócio falhou.", detalhe: { bigdatacorpRunId: runIdExistente } };
     }
     return { status: "aguardando_subprocesso", detalhe: { bigdatacorpRunId: runIdExistente, processados: run.processados, total: run.total } };
   }
@@ -84,7 +84,7 @@ export async function executarEnriquecimentoBigDataCorp(ctx: FlowExecutorContext
     .insert({ user_id: userId, status: "pendente", total: itens.length, origem: "fluxo", opcoes: normalizarOpcoesCelularSocio(node.config) })
     .select()
     .single();
-  if (runError || !run) return { status: "erro", erro: "Não foi possível criar a execução de enriquecimento BigDataCorp." };
+  if (runError || !run) return { status: "erro", erro: "Não foi possível criar a execução do celular do sócio." };
 
   const linhas = itens.map((item) => ({
     run_id: run.id, user_id: userId, cnpj_entrada: item.cnpj, nome_lead: item.nomeLead || null, status: "pendente" as const,
@@ -92,7 +92,7 @@ export async function executarEnriquecimentoBigDataCorp(ctx: FlowExecutorContext
   const { error: leadsError } = await sb.from("bigdatacorp_enrichment_leads").insert(linhas);
   if (leadsError) {
     await sb.from("bigdatacorp_enrichment_runs").delete().eq("id", run.id);
-    return { status: "erro", erro: "Não foi possível salvar os CNPJs da execução de enriquecimento BigDataCorp." };
+    return { status: "erro", erro: "Não foi possível salvar os CNPJs da execução do celular do sócio." };
   }
 
   return {

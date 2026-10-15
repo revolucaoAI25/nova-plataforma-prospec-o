@@ -3,11 +3,11 @@ import { getProfile } from "@/lib/credits";
 import type {
   BigDataCorpEnrichmentRunRow, BigDataCorpEnrichmentLeadRow, BigDataCorpRunOrigem, OpcoesCelularSocio, Profile,
 } from "@/lib/database.types";
-import { bigDataCorpConfigurado } from "@/lib/integrations/bigdatacorp";
 import { directDataConfigurado } from "@/lib/integrations/direct-data";
 import { normalizarOpcoesCelularSocio } from "@/lib/celular-socio";
 
-// CRUD do enriquecimento por CNPJ via BigDataCorp — mirror estrutural do
+// CRUD do enriquecimento "Sócios e Contato" (celular do sócio, Direct Data;
+// as tabelas guardam o prefixo do fornecedor anterior) — mirror estrutural do
 // enriquecimento via IA (enrichment_runs/enrichment_leads em db.ts), mas
 // com tabelas próprias (bigdatacorp_enrichment_runs/leads,
 // supabase/migrations/0012_bigdatacorp_enrichment.sql) porque a entrada
@@ -17,13 +17,8 @@ const LIMITE_LOTE = 50;
 /** A busca por CNPJ manda todos os resultados (o worker vai no ritmo dele). */
 export const LIMITE_LOTE_BUSCA = 2000;
 
-/** Algum fornecedor de sócios e contato configurado na plataforma. */
-export async function sociosEContatoConfigurado(): Promise<boolean> {
-  return (await directDataConfigurado()) || (await bigDataCorpConfigurado());
-}
-
-/** O celular do sócio só sai pela Direct Data. */
-export function celularDoSocioDisponivel(): Promise<boolean> {
+/** Token da Direct Data cadastrado (é ela que acha o celular do sócio). */
+export function sociosEContatoConfigurado(): Promise<boolean> {
   return directDataConfigurado();
 }
 

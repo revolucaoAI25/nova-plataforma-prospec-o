@@ -105,76 +105,10 @@ indisponível/com erro amigável se faltar, o resto da plataforma funciona norma
   `UNIPILE_WEBHOOK_SECRET` (opcional) protege esses endpoints públicos com
   um segredo na própria URL; em branco, os webhooks aceitam as chamadas sem
   essa verificação — ver "Decisões de arquitetura".
-- `BIGDATACORP_TOKEN_ID` / `BIGDATACORP_ACCESS_TOKEN` — enriquecimento de
-  leads por CNPJ (sócios/quadro societário + telefone/e-mail registrados),
-  disponível em `/enriquecimento` → aba "Sócios e Contato", como extra
-  opcional na busca CNPJ e como nó no construtor de fluxos. Chave única da
-  plataforma (custo absorvido pela plataforma, não por usuário) — ver
-  "Decisões de arquitetura".
-
-Enriquecimento de Leads via IA não tem variável de ambiente nenhuma: fica
-desativado por padrão, admin libera por usuário (`/admin`), e cada usuário
-cadastra a própria chave OpenAI em Configurações — o custo da IA é do
-usuário, não da plataforma. Roda em background pelo worker (não na mesma
-requisição HTTP da busca), então também depende do worker estar rodando
-(ver seção "Deploy" abaixo).
-
-Busca por LinkedIn também fica desativada por padrão (mesmo padrão do
-Enriquecimento via IA — admin libera por usuário em `/admin`) e reaproveita a
-mesma chave Apify já usada pelo Instagram; não precisa de credencial
-própria. Usa o ator `harvestapi/linkedin-profile-search` em modo `Full`
-(sem busca de e-mail, que custa 2.5x mais e não é garantida) — schema de
-input/output conferido direto no Apify Console, ver comentário no topo de
-`src/lib/integrations/linkedin.ts`.
-
-Essas chaves de fornecedor (Casa dos Dados, Google Maps, Apify) são sempre da
-plataforma: cadastradas em `/admin` → Chaves da plataforma, com a variável de
-ambiente como fallback (`src/lib/platform-keys.ts`). O usuário final só
-configura a chave da OpenAI, em Conexões.
-
-### 3. Crie o primeiro usuário admin
-
-Sem cadastro público, o primeiro usuário precisa ser criado direto no Supabase:
-**Authentication → Users → Add user** (marque "Auto Confirm User"), depois em
-**Table Editor → profiles**, edite a linha criada pelo trigger e mude `role` para
-`admin`. A partir daí, esse admin cria os demais usuários por `/admin`.
-
-### Recuperação de senha
-
-A tela de login tem "Esqueci minha senha" (`/redefinir-senha`). O link
-enviado pelo Supabase volta por `/auth/confirmar`, então cadastre
-`{NEXT_PUBLIC_APP_URL}/auth/confirmar` em Authentication → URL
-Configuration → Redirect URLs. Para produção, configure um SMTP próprio
-em Authentication → Emails (o envio padrão do Supabase tem limite baixo
-por hora).
-
-### 4. Rodar localmente
-
-```bash
-npm install
-npm run dev       # app Next.js em http://localhost:3000
-npm run worker    # worker de automações/disparo (opcional pra testar essas duas features)
-```
-
-## Deploy (Railway)
-
-São **dois serviços Railway** apontando pro mesmo repositório:
-
-1. **App web** — `railway.toml` já configura build (`npm run build`) e start
-   (`npm run start`). Cole todas as variáveis de ambiente aqui.
-2. **Worker** — crie um segundo serviço no mesmo projeto Railway, mesmo repo,
-   mesma branch, mas sobrescreva o **Start Command** nas configurações do serviço
-   para `npm run worker` (o build command pode continuar `npm run build`, o
-   worker não depende dele, mas rodá-lo não tem custo). Cole as mesmas variáveis
-   de ambiente — o worker só usa `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`
-   e as chaves de integração (não usa a anon key nem `NEXT_PUBLIC_APP_URL`).
-
-Sem o worker rodando, tudo funciona **exceto** automações agendadas e o envio de
-fato das mensagens de disparo (a UI de criar campanha/cadência/instância funciona,
-mas nada é processado — é só fila).
-
-## Decisões de arquitetura (e incertezas herdadas do produto atual)
-
+- `DIRECTD_TOKEN` — Direct Data, celular do sócio (enriquecimento "Sócios e
+  Contato"): `/enriquecimento`, opção na busca CNPJ e nó no construtor de
+  fluxos. Chave única da plataforma, também cadastrável em /admin → Chaves da
+  plataforma — ver "Celular do sócio" em "Decisões de arquitetura".
 - **Google Maps — endpoint legado**: por decisão explícita nesta reconstrução,
   `src/lib/integrations/google-maps.ts` replica o comportamento já validado do
   produto atual (Places API legada) em vez de migrar já para `v1/places:searchText`.
@@ -470,7 +404,7 @@ mas nada é processado — é só fila).
   mais `tipo_acao: "convite"` fixo quando a campanha estava inativa e a
   etapa real do alvo era "mensagem" (`worker/linkedin-dispatch-tick.ts`,
   corrigido computando a etapa antes de checar se a campanha está ativa).
-- **Enriquecimento de leads por CNPJ (BigDataCorp)**: terceira via de
+- **Enriquecimento de leads por CNPJ (BigDataCorp — histórico; substituído pela Direct Data, ver "Celular do sócio")**: terceira via de
   enriquecimento, ao lado da IA — em vez de partir de nome/e-mail/telefone
   e buscar na web de forma especulativa (IA), consulta o CNPJ direto em
   bases de registro (Receita Federal e outras fontes via BigDataCorp):
@@ -1398,15 +1332,16 @@ mas nada é processado — é só fila).
   em `geocodificacoes`; endereço que não acha a rua cai no bairro e, por fim,
   no centro da cidade, com peso menor no calor.
 - **Celular do sócio (Direct Data)** — o enriquecimento "Sócios e Contato"
-  ganhou outro fornecedor: com `DIRECTD_TOKEN` (ou a chave em /admin), o
+  trocou de fornecedor (a BigDataCorp saiu do código): com `DIRECTD_TOKEN`
+  (ou a chave em /admin), o
   worker consulta a empresa pelo CNPJ (sócios com CPF completo e cargo) e
   depois cada sócio escolhido pelo CPF (celulares com indicação de WhatsApp e
   de bloqueio de telemarketing), nas consultas "Básica" de R$ 0,16 cada
   (`src/lib/integrations/direct-data.ts`, `src/lib/celular-socio.ts`). Sem o
-  token, continua a BigDataCorp. Opções por execução: só o administrador
+  token, a execução termina em "não configurada". Opções por execução: só o administrador
   (padrão; sem administrador, o primeiro sócio pessoa física) ou até N sócios,
   só celular com WhatsApp e respeitar o bloqueio de telemarketing (ambos
-  ligados por padrão). Cobrança: "bigdatacorp" por empresa e "socio_celular"
+  ligados por padrão). Cobrança (32 créditos cada, no banco): "bigdatacorp" por empresa e "socio_celular"
   por sócio consultado, achando ou não, conferindo o saldo antes de cada
   consulta. Cache de 90 dias em `consultas_cadastrais` (só o servidor lê; é o
   único lugar com o CPF completo — no resultado da execução ele fica

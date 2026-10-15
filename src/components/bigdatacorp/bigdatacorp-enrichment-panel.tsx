@@ -17,12 +17,9 @@ const POLL_MS = 2500;
 
 export function BigDataCorpEnrichmentPanel({
   configurado,
-  celularSocio = false,
   custos = {},
 }: {
   configurado: boolean;
-  /** A consulta acha o celular do sócio (não só o contato da empresa). */
-  celularSocio?: boolean;
   custos?: Record<string, number>;
 }) {
   const [leads, setLeads] = useState<BigDataCorpLeadStaged[]>([]);
@@ -73,7 +70,7 @@ export function BigDataCorpEnrichmentPanel({
     const resp = await fetch("/api/bigdatacorp-enrichment", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ itens: leads.slice(0, LIMITE_LOTE), ...(celularSocio ? { opcoes } : {}) }),
+      body: JSON.stringify({ itens: leads.slice(0, LIMITE_LOTE), opcoes }),
     });
     const data = await resp.json();
     setEnviando(false);
@@ -97,8 +94,7 @@ export function BigDataCorpEnrichmentPanel({
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <BigDataCorpLeadStagingEditor leads={leads} onChange={setLeads} />
-        {celularSocio && (
-          <FieldGroup>
+        <FieldGroup>
             <div className="flex flex-col gap-2 p-3.5">
               <p className="text-sm font-medium">De quais sócios buscar o celular</p>
               <RadioGroup
@@ -131,17 +127,16 @@ export function BigDataCorpEnrichmentPanel({
               info="Descarta números cadastrados no bloqueio de telemarketing (Não Me Perturbe)."
               control={<Switch checked={opcoes.respeitarBloqueio} onCheckedChange={(v) => mudar({ respeitarBloqueio: v })} />}
             />
-          </FieldGroup>
-        )}
+        </FieldGroup>
         <div className="flex flex-col gap-2 self-start">
           <Button type="submit" size="lg" disabled={!leads.length || enviando || !configurado}>
             {enviando ? <Loader2 className="h-4 w-4 animate-spin" /> : <Database className="h-4 w-4" />}
-            {enviando ? "Enviando…" : celularSocio ? "Buscar celular do sócio" : "Enriquecer"}
+            {enviando ? "Enviando…" : "Buscar celular do sócio"}
           </Button>
           <CreditoEstimado
-            custoPorUnidade={(custos.bigdatacorp || 0) + (celularSocio ? (custos.socio_celular || 0) * sociosConsultados : 0)}
+            custoPorUnidade={(custos.bigdatacorp || 0) + (custos.socio_celular || 0) * sociosConsultados}
             unidade="empresa"
-            nota={celularSocio ? "no máximo; cada consulta é cobrada, achando o celular ou não" : "cobrado por consulta feita"}
+            nota="no máximo; cada consulta é cobrada, achando o celular ou não"
           />
         </div>
       </form>

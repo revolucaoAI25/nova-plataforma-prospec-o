@@ -217,8 +217,6 @@ export type PlatformSettingKey =
   | "unipile_dsn"
   | "unipile_api_key"
   | "unipile_webhook_secret"
-  | "bigdatacorp_token_id"
-  | "bigdatacorp_access_token"
   | "directd_token"
   | "asaas_api_key"
   | "asaas_webhook_token"
@@ -328,7 +326,7 @@ export interface UserStatsRow {
 export type EnrichmentRunStatus = "pendente" | "processando" | "concluido" | "erro";
 export type EnrichmentLeadStatus = "pendente" | "concluido" | "nao_encontrado" | "erro";
 
-// ── Enriquecimento via BigDataCorp (por CNPJ) ───────────────────────────
+// ── Sócios e Contato: celular do sócio (Direct Data; tabelas bigdatacorp_*) ──
 
 export type BigDataCorpRunStatus = "pendente" | "processando" | "concluido" | "erro";
 export type BigDataCorpLeadStatus = "pendente" | "concluido" | "nao_encontrado" | "erro";

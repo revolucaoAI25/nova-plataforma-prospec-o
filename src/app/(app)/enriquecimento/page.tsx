@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { BrainCircuit, Database } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
-import { celularDoSocioDisponivel, sociosEContatoConfigurado } from "@/lib/bigdatacorp-enrichment-db";
+import { sociosEContatoConfigurado } from "@/lib/bigdatacorp-enrichment-db";
 import { custosVisiveis, getProfile } from "@/lib/credits";
 import { PageHeader } from "@/components/layout/page-header";
 import { EnrichmentPanel } from "@/components/enrichment/enrichment-panel";
@@ -24,7 +24,6 @@ export default async function EnriquecimentoPage() {
   // No teste grátis a página abre em modo de visualização (PortaoTesteGratis).
   if (!profile || (!podeIa && !podeBigDataCorp && !emTesteGratis(profile))) redirect("/");
   const bigDataCorpDisponivel = await sociosEContatoConfigurado();
-  const celularSocio = bigDataCorpDisponivel && (await celularDoSocioDisponivel());
   const custos = await custosVisiveis(supabase, ["bigdatacorp", "socio_celular"]);
 
   return (
@@ -44,13 +43,13 @@ export default async function EnriquecimentoPage() {
             <EnrichmentPanel openaiKeyConfigurada={Boolean(profile.openai_api_key)} />
           </TabsContent>
           <TabsContent value="bigdatacorp">
-            <BigDataCorpEnrichmentPanel configurado={bigDataCorpDisponivel} celularSocio={celularSocio} custos={custos} />
+            <BigDataCorpEnrichmentPanel configurado={bigDataCorpDisponivel} custos={custos} />
           </TabsContent>
         </Tabs>
       ) : podeIa ? (
         <EnrichmentPanel openaiKeyConfigurada={Boolean(profile.openai_api_key)} />
       ) : (
-        <BigDataCorpEnrichmentPanel configurado={bigDataCorpDisponivel} celularSocio={celularSocio} custos={custos} />
+        <BigDataCorpEnrichmentPanel configurado={bigDataCorpDisponivel} custos={custos} />
       )}
     </div>
   );
