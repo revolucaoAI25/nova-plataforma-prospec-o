@@ -10,7 +10,7 @@ const ROTULO_RECURSO: Record<keyof PlanFeatureFlags, string> = {
   instagram_visible: "Leads do Instagram",
   linkedin_visible: "Leads do LinkedIn",
   enriquecimento_ia_habilitado: "Enriquecimento com IA",
-  bigdatacorp_enrichment_habilitado: "Contato do decisor (enriquecimento avançado)",
+  bigdatacorp_enrichment_habilitado: "Celular do sócio (WhatsApp de quem decide)",
 };
 
 /** Créditos de uma empresa com contato conferido: busca por CNPJ + verificação no Maps. */

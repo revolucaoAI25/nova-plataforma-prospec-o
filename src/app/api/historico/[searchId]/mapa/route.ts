@@ -6,12 +6,13 @@ import { emParalelo } from "@/lib/paralelo";
 
 export const maxDuration = 60;
 
-const CAMPOS = "id, nome, telefone, endereco, bairro, municipio, uf, cidade_busca, estado_busca, avaliacao, total_avaliacoes, site, latitude, longitude, geo_precisao";
+const CAMPOS = "id, cnpj, nome, telefone, endereco, bairro, municipio, uf, cidade_busca, estado_busca, avaliacao, total_avaliacoes, site, latitude, longitude, geo_precisao";
 // Por chamada: o navegador vai pedindo lotes até acabar e o mapa enche aos poucos.
 const LOTE_GEOCODIFICACAO = 30;
 
 interface LinhaMapa {
   id: string;
+  cnpj: string | null;
   nome: string | null;
   telefone: string | null;
   endereco: string | null;
@@ -72,6 +73,17 @@ async function contexto(searchId: string) {
   return { supabase };
 }
 
+/** Uma empresa = um ponto (com "vários sócios", cada sócio é um lead da mesma empresa). */
+function umPorEmpresa(linhas: LinhaMapa[]): LinhaMapa[] {
+  const vistos = new Set<string>();
+  return linhas.filter((l) => {
+    const chave = l.cnpj?.replace(/\D/g, "") || l.id;
+    if (vistos.has(chave)) return false;
+    vistos.add(chave);
+    return true;
+  });
+}
+
 async function contarPendentes(supabase: Awaited<ReturnType<typeof createClient>>, searchId: string) {
   const { count } = await supabase.from("leads").select("id", { count: "exact", head: true }).eq("search_id", searchId).is("geo_precisao", null);
   return count ?? 0;
@@ -84,7 +96,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ sea
   if ("erro" in ctx) return ctx.erro;
   const { data } = await ctx.supabase.from("leads").select(CAMPOS).eq("search_id", searchId).limit(5000);
   return NextResponse.json({
-    pontos: ((data ?? []) as LinhaMapa[]).map(paraPonto),
+    pontos: umPorEmpresa((data ?? []) as LinhaMapa[]).map(paraPonto),
     pendentes: await contarPendentes(ctx.supabase, searchId),
   });
 }
@@ -97,7 +109,7 @@ export async function POST(_request: Request, { params }: { params: Promise<{ se
 
   const { data } = await ctx.supabase
     .from("leads").select(CAMPOS).eq("search_id", searchId).is("geo_precisao", null).limit(LOTE_GEOCODIFICACAO);
-  const linhas = (data ?? []) as LinhaMapa[];
+  const linhas = umPorEmpresa((data ?? []) as LinhaMapa[]);
   const cache = createAdminClient();
 
   // Para de começar endereços novos perto do limite da requisição; o que
@@ -111,7 +123,9 @@ export async function POST(_request: Request, { params }: { params: Promise<{ se
       municipio: l.municipio || l.cidade_busca,
       uf: l.uf || l.estado_busca,
     });
-    await ctx.supabase.from("leads").update({ latitude: c.latitude, longitude: c.longitude, geo_precisao: c.precisao }).eq("id", l.id);
+    // Grava em todos os leads da mesma empresa na pesquisa (um por sócio).
+    const alvo = ctx.supabase.from("leads").update({ latitude: c.latitude, longitude: c.longitude, geo_precisao: c.precisao });
+    await (l.cnpj ? alvo.eq("search_id", searchId).eq("cnpj", l.cnpj) : alvo.eq("id", l.id));
     return paraPonto({ ...l, latitude: c.latitude, longitude: c.longitude, geo_precisao: c.precisao });
   });
 

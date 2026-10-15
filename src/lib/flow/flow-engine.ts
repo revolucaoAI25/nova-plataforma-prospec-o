@@ -444,7 +444,15 @@ export async function reexecutarRun(sb: SupabaseClient, runId: string): Promise<
   return !error && Boolean(data);
 }
 
-/** Avança cada `flow_runs` ativa em 1 nó. */
+/**
+ * Runs com um passo rodando agora neste processo. O tick roda a cada 20 s
+ * sem esperar o anterior, e um passo pode levar minutos (extração do Maps,
+ * busca grande por CNPJ): sem isto, o tick seguinte pegava a mesma run
+ * ainda em "executando" e repetia o passo — extração e cobrança em dobro.
+ */
+const runsEmAndamento = new Set<string>();
+
+/** Avança cada `flow_runs` ativa em 1 nó (as que já estão com um passo rodando ficam para o próximo tick). */
 export async function avancarRuns(sb: SupabaseClient, log: (m: string) => void): Promise<void> {
   const agora = new Date().toISOString();
   // Pega as runs em andamento de sempre + as que estão esperando retry cujo
@@ -457,11 +465,15 @@ export async function avancarRuns(sb: SupabaseClient, log: (m: string) => void):
   const runs = (data as FlowRunRow[]) || [];
 
   for (const run of runs) {
+    if (runsEmAndamento.has(run.id)) continue;
+    runsEmAndamento.add(run.id);
     try {
       await avancarRun(sb, run, log);
     } catch (e) {
       log(`Run ${run.id}: erro fatal: ${(e as Error).message}`);
       await tratarErro(sb, run, (e as Error).message);
+    } finally {
+      runsEmAndamento.delete(run.id);
     }
   }
 }

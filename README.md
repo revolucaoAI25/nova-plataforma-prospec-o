@@ -65,7 +65,8 @@ No [painel do Supabase](https://supabase.com/dashboard), crie um projeto novo
     campanhas, log do "Criar com IA" e coordenadas dos leads para o mapa.
     `0040_celular_socio.sql`: opções e contagem do celular do sócio nas
     execuções de "Sócios e Contato", `leads.celular_socio`, cache
-    `consultas_cadastrais` e o custo "socio_celular".
+    `consultas_cadastrais` e o custo "socio_celular". `0041`: origem dos
+    leads sem nome de fornecedor (Maps, CNPJ, Instagram, LinkedIn).
     Rode-as **antes** do deploy desta versão (o código novo grava colunas
     que elas criam). Todas podem ser rodadas de
     novo sem erro (usam `if not exists` / `create or replace`).

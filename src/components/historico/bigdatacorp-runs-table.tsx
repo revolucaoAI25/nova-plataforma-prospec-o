@@ -19,6 +19,8 @@ const STATUS_LABEL: Record<string, { label: string; variant: "success" | "outlin
   erro: { label: "Erro", variant: "destructive" },
 };
 
+const ORIGEM: Record<string, string> = { manual: "Enriquecimento", busca_cnpj: "Busca por CNPJ", fluxo: "Automação" };
+
 export function BigDataCorpRunsTable({ runs }: { runs: BigDataCorpEnrichmentRunRow[] }) {
   const router = useRouter();
   const confirmar = useConfirm();
@@ -52,7 +54,7 @@ export function BigDataCorpRunsTable({ runs }: { runs: BigDataCorpEnrichmentRunR
         <TableRow>
           <TableHead>Status</TableHead>
           <TableHead>CNPJs</TableHead>
-          <TableHead>Encontrados</TableHead>
+          <TableHead>Com celular do sócio</TableHead>
           <TableHead>Origem</TableHead>
           <TableHead>Data</TableHead>
           <TableHead className="text-right">Ações</TableHead>
@@ -65,8 +67,8 @@ export function BigDataCorpRunsTable({ runs }: { runs: BigDataCorpEnrichmentRunR
             <TableRow key={r.id}>
               <TableCell><Badge variant={status.variant}>{status.label}</Badge></TableCell>
               <TableCell>{r.total}</TableCell>
-              <TableCell>{r.encontrados}</TableCell>
-              <TableCell className="capitalize">{r.origem.replace("_", " ")}</TableCell>
+              <TableCell>{r.com_celular ?? 0}</TableCell>
+              <TableCell>{ORIGEM[r.origem] ?? r.origem}</TableCell>
               <TableCell>{formatarDataHora(r.created_at)}</TableCell>
               <TableCell>
                 <div className="flex justify-end gap-1">

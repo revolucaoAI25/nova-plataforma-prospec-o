@@ -484,7 +484,8 @@ export function CnpjSearchForm({
                 : 0)
             }
             unidade="empresa"
-          />
+            nota={bigdatacorpDisponivel && enriquecerBigDataCorp ? "no máximo: o celular do sócio é cobrado por consulta, achando ou não" : undefined}
+            />
         </div>
       </form>
 

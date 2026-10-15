@@ -101,10 +101,13 @@ async function processarComDirectData(
     erros: run.erros, comCelular: run.com_celular ?? 0,
   };
   let erroFatal: string | null = null;
+  // `processando_desde` renovado a cada empresa: requeueTravados só devolve
+  // para a fila a execução parada há 10 min, não uma busca grande que ainda
+  // está andando (senão dois ticks consultariam e cobrariam a mesma empresa).
   const gravarContagem = () =>
     sb.from("bigdatacorp_enrichment_runs").update({
       processados: cont.processados, encontrados: cont.encontrados, nao_encontrados: cont.naoEncontrados,
-      erros: cont.erros, com_celular: cont.comCelular,
+      erros: cont.erros, com_celular: cont.comCelular, processando_desde: new Date().toISOString(),
     }).eq("id", run.id);
 
   await emParalelo(leadRows ?? [], 3, async (leadRow) => {

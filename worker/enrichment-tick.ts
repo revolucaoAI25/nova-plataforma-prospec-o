@@ -119,7 +119,9 @@ export async function tickEnrichment(sb: SupabaseClient, log: (msg: string) => v
     // progresso" pra quem está com a tela de enriquecimento aberta (polling).
     await sb
       .from("enrichment_runs")
-      .update({ processados, encontrados, nao_encontrados: naoEncontrados, erros })
+      // processando_desde renovado a cada lead: um lote longo (a pesquisa
+      // por IA leva dezenas de segundos por lead) não é tomado por travado.
+      .update({ processados, encontrados, nao_encontrados: naoEncontrados, erros, processando_desde: new Date().toISOString() })
       .eq("id", run.id);
   }
 
