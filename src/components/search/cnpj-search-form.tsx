@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { MultiSelect, type MultiSelectOption } from "@/components/search/multi-select";
 import { LimiteSlider } from "@/components/search/limite-slider";
 import { CreditoEstimado } from "@/components/search/credito-estimado";
+import { CidadesVizinhas } from "@/components/search/cidades-vizinhas";
 import { ResultsTable } from "@/components/search/results-table";
 import { ResultsSummary, buildGeneralMetrics } from "@/components/search/results-summary";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -74,6 +75,9 @@ export function CnpjSearchForm({
   const [cnaeTipo, setCnaeTipo] = useState<CnaeTipo>("principal");
   const [uf, setUf] = useState<string[]>([]);
   const [municipio, setMunicipio] = useState("");
+  const [raioVizinhosKm, setRaioVizinhosKm] = useState(0);
+  const [bairros, setBairros] = useState("");
+  const [ceps, setCeps] = useState("");
   const [porte, setPorte] = useState<string[]>([]);
   const [matrizFilial, setMatrizFilial] = useState<"" | "MATRIZ" | "FILIAL">("");
   const [simples, setSimples] = useState<"indiferente" | "apenas" | "excluir">("indiferente");
@@ -100,6 +104,8 @@ export function CnpjSearchForm({
   const [leads, setLeads] = useState<Lead[] | null>(null);
   const [searchId, setSearchId] = useState<string | null>(null);
   const [total, setTotal] = useState(0);
+
+  const municipiosLista = useMemo(() => municipio.split(",").map((m) => m.trim()).filter(Boolean), [municipio]);
 
   const cnaesCodigos = useMemo(() => {
     const manual = cnaeManual.split(",").map((c) => c.trim()).filter(Boolean);
@@ -134,7 +140,10 @@ export function CnpjSearchForm({
         body: JSON.stringify({
           cnaes: cnaesCodigos,
           uf,
-          municipio: municipio.split(",").map((m) => m.trim()).filter(Boolean),
+          municipio: municipiosLista,
+          raioVizinhosKm: municipiosLista.length ? raioVizinhosKm : 0,
+          bairro: bairros.split(",").map((b) => b.trim()).filter(Boolean),
+          cep: ceps.split(",").map((c) => c.trim()).filter(Boolean),
           porte,
           matrizFilial,
           simplesOptante: simples === "apenas" ? true : null,
@@ -255,6 +264,25 @@ export function CnpjSearchForm({
                 placeholder="Ex: São Paulo, Campinas, Santos"
               />
               <p className="text-xs text-muted-foreground">Separe múltiplos municípios por vírgula. Deixe vazio para buscar no estado inteiro.</p>
+            </div>
+
+            <CidadesVizinhas municipios={municipiosLista} ufs={uf} km={raioVizinhosKm} onKmChange={setRaioVizinhosKm} />
+
+            <div className="flex flex-col gap-2">
+              <FieldGroupLabel>Filtrar dentro da cidade (opcional)</FieldGroupLabel>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="bairros">Bairros</Label>
+                  <Input id="bairros" value={bairros} onChange={(e) => setBairros(e.target.value)} placeholder="Ex: Centro, Vila Assunção" />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="ceps">CEPs</Label>
+                  <Input id="ceps" value={ceps} onChange={(e) => setCeps(e.target.value)} placeholder="Ex: 09015-000, 09020-120" inputMode="numeric" />
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Separe por vírgula. Só entram empresas registradas nesses bairros ou CEPs exatos — deixe vazio para a cidade inteira.
+              </p>
             </div>
               </TabsContent>
 

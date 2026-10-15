@@ -1354,6 +1354,21 @@ indisponível/com erro amigável se faltar, o resto da plataforma funciona norma
   plataforma (token, saldo na Direct Data) interrompe a execução sem cobrar
   o que faltou. Tabelas e o nó mantêm o nome `bigdatacorp_*` por
   compatibilidade.
+- **Raio e vizinhança nas buscas** — sem descartar nada que foi buscado e
+  pago: (1) busca por CNPJ ganha "Incluir cidades vizinhas" (0–60 km): a
+  base de CNPJ não aceita raio, então o raio vira a lista de municípios cuja
+  sede fica a até X km da sede de cada cidade escolhida, pelas coordenadas
+  do IBGE (`src/lib/data/municipios.ts`, gerado de
+  kelvins/municipios-brasileiros, MIT; cálculo em `src/lib/vizinhos.ts`,
+  prévia em `/api/localidades/vizinhas`). Vizinha do outro lado da divisa
+  leva o estado dela junto. Também aceita bairros e CEPs exatos (campos
+  `bairro`/`cep` da API). (2) Google Maps ganha "Raio a partir de um
+  endereço" (1–50 km): o endereço vira coordenada pelo Photon (camadas
+  rua/bairro/cidade primeiro, para não casar com prédios de nome parecido;
+  conferido no formulário por `/api/localidades/endereco`) e o extrator
+  recebe `customGeolocation` (círculo) no lugar de `locationQuery`
+  (`src/lib/raio-maps.ts`). As duas opções existem também nos nós de
+  extração do fluxo e a IA de fluxos sabe usá-las.
 
 ## Estrutura
 

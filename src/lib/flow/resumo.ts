@@ -55,7 +55,8 @@ export function resumoDoNo(tipo: FlowNodeTipo, config: unknown): string | null {
       const cnaes = lista(c.cnaes);
       return juntar([
         c.recuperacaoJudicial ? "Recuperação judicial" : resumirLista(cnaes, "CNAE", "CNAEs"),
-        resumirLista(lista(c.uf), "estado", "estados", 3),
+        resumirLista(lista(c.municipio), "cidade", "cidades") ?? resumirLista(lista(c.uf), "estado", "estados", 3),
+        lista(c.municipio).length && num(c.raioVizinhosKm) ? `+ vizinhas até ${num(c.raioVizinhosKm)} km` : null,
         num(c.aberturaUltimosDias) && `abertas há ≤ ${num(c.aberturaUltimosDias)} dias`,
         num(c.limite) && `até ${num(c.limite)}`,
       ]);
@@ -63,7 +64,9 @@ export function resumoDoNo(tipo: FlowNodeTipo, config: unknown): string | null {
     case "extracao_maps":
       return juntar([
         texto(c.queryCustom) || texto(c.nicho),
-        resumirLista(lista(c.cidades), "cidade", "cidades") ?? resumirLista(lista(c.estados), "estado", "estados", 3),
+        texto(c.raioEndereco) && num(c.raioKm)
+          ? `${num(c.raioKm)} km de ${texto(c.raioEndereco)}`
+          : resumirLista(lista(c.cidades), "cidade", "cidades") ?? resumirLista(lista(c.estados), "estado", "estados", 3),
         num(c.limite) && `até ${num(c.limite)}`,
       ]);
     case "extracao_instagram":

@@ -17,11 +17,16 @@ import {
   criarRunBigDataCorp, LIMITE_LOTE_BUSCA, perfilComBigDataCorpEnrichmentHabilitado, sociosEContatoConfigurado,
 } from "@/lib/bigdatacorp-enrichment-db";
 import { emTesteGratis, MSG_TESTE_GRATIS_SEM_CREDITOS } from "@/lib/teste-gratis";
+import { localizacaoCnpj, RAIO_VIZINHOS_MAX_KM } from "@/lib/vizinhos";
 
 const bodySchema = z.object({
   cnaes: z.array(z.string()),
   uf: z.array(z.string()).min(1),
   municipio: z.array(z.string()).default([]),
+  /** Inclui as cidades a até X km de cada município escolhido (0 = só elas). */
+  raioVizinhosKm: z.number().min(0).max(RAIO_VIZINHOS_MAX_KM).default(0),
+  bairro: z.array(z.string()).default([]),
+  cep: z.array(z.string()).default([]),
   porte: z.array(z.string()).default([]),
   matrizFilial: z.enum(["", "MATRIZ", "FILIAL"]).default(""),
   simplesOptante: z.boolean().nullable().default(null),
@@ -116,13 +121,17 @@ export async function POST(request: Request) {
     excludeCnpjs = existentes.cnpjs;
   }
 
+  const loc = localizacaoCnpj(filtros.uf, filtros.municipio, filtros.raioVizinhosKm);
+
   let resultados;
   try {
     resultados = await buscarCnpj({
       apiKey: cddApiKey,
       cnaes: filtros.cnaes,
-      uf: filtros.uf,
-      municipio: filtros.municipio,
+      uf: loc.ufs,
+      municipio: loc.municipios,
+      bairro: filtros.bairro,
+      cep: filtros.cep,
       porte: filtros.porte.length ? filtros.porte : null,
       matrizFilial: filtros.matrizFilial,
       simplesOptante: filtros.simplesOptante,
@@ -205,7 +214,7 @@ export async function POST(request: Request) {
     }
   }
 
-  const localidade = filtros.municipio.length ? filtros.municipio.join(", ") : filtros.uf.join(", ");
+  const localidade = loc.descricao;
   const nichoLabel = filtros.cnaes.length ? CODIGO_PARA_DESC[filtros.cnaes[0]] || filtros.cnaes[0] : "Recuperação Judicial";
 
   const searchId = await salvarPesquisa(supabase, user.id, {
@@ -257,6 +266,6 @@ export async function POST(request: Request) {
     total: resultados.length,
     leads: resultados,
     bigdatacorpRunId,
-    avisos: [avisoSaldo, avisoMaps, avisoHistorico, avisoSheets, avisoBigDataCorp].filter(Boolean),
+    avisos: [loc.aviso, avisoSaldo, avisoMaps, avisoHistorico, avisoSheets, avisoBigDataCorp].filter(Boolean),
   });
 }

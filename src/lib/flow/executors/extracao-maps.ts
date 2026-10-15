@@ -7,6 +7,7 @@ import { ESTADOS } from "@/lib/data/estados";
 import type { Json } from "@/lib/database.types";
 import type { Lead } from "@/lib/types";
 import type { FlowExecutorContext, FlowExecutorOutcome } from "../executor-types";
+import { resolverRaioMaps } from "@/lib/raio-maps";
 
 /** Espelha /api/search/maps/route.ts (catálogo de nichos + múltiplas cidades/estados). */
 export async function executarExtracaoMaps(ctx: FlowExecutorContext): Promise<FlowExecutorOutcome> {
@@ -27,13 +28,25 @@ export async function executarExtracaoMaps(ctx: FlowExecutorContext): Promise<Fl
   const queryBase = (nichoInfo?.query || queryCustom).trim();
   if (!queryBase) return { status: "erro", erro: "Escolha um nicho do catálogo ou informe um termo de busca personalizado." };
 
-  if (cidades.length && estados.length !== 1) {
+  // Raio a partir de um endereço tem prioridade sobre cidades/estados.
+  const raioEndereco = String(config.raioEndereco || "").trim();
+  const raio = raioEndereco.length >= 3
+    ? await resolverRaioMaps({
+      endereco: raioEndereco,
+      km: Math.min(Math.max(Number(config.raioKm) || 5, 1), 50),
+      lat: typeof config.raioLat === "number" ? config.raioLat : undefined,
+      lng: typeof config.raioLng === "number" ? config.raioLng : undefined,
+    })
+    : null;
+  if (raioEndereco.length >= 3 && !raio) return { status: "erro", erro: `Não encontramos o endereço do raio ("${raioEndereco}").` };
+
+  if (!raio && cidades.length && estados.length !== 1) {
     return { status: "erro", erro: "Selecione vários estados só quando 'cidades' estiver vazio. Com cidade(s), informe exatamente um estado." };
   }
   const localidades = cidades.length
     ? cidades.map((c) => `${c}, ${ESTADOS[estados[0]] ?? estados[0]}`)
     : estados.map((uf) => ESTADOS[uf] ?? uf);
-  if (!localidades.length) return { status: "erro", erro: "Informe ao menos uma cidade ou um estado." };
+  if (!raio && !localidades.length) return { status: "erro", erro: "Informe ao menos uma cidade ou um estado." };
 
   const profile = await getProfile(sb, userId);
   if (!profile) return { status: "erro", erro: "Perfil não encontrado." };
@@ -48,7 +61,8 @@ export async function executarExtracaoMaps(ctx: FlowExecutorContext): Promise<Fl
   if (!apiKey) return { status: "erro", erro: "Extração indisponível no momento (chave da plataforma não configurada)." };
 
   const params = {
-    queryBase, localidade: localidades, limite,
+    queryBase, localidade: raio ? raio.descricao : localidades, limite,
+    ...(raio ? { raio, cidade: raio.cidade, estado: raio.uf } : {}),
     nicho: nicho || queryBase, subnicho,
     excludePhones: telefones, showPhone, showRating,
   };
@@ -61,7 +75,7 @@ export async function executarExtracaoMaps(ctx: FlowExecutorContext): Promise<Fl
   }
 
   const total = resultados.length;
-  const localidadeLabel = localidades.join(", ");
+  const localidadeLabel = raio ? raio.descricao : localidades.join(", ");
   const searchId = await salvarPesquisa(sb, userId, {
     fonte: "google_maps",
     nicho: nicho || queryBase,

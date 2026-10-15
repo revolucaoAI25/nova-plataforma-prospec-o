@@ -29,7 +29,15 @@ function montarVariacoes(queryBase: string, subnicho: string, cidade: string): s
   return escolhidos.map((m) => (m ? `${query} ${m}`.trim() : query));
 }
 
+/** Círculo da busca por raio: o extrator varre só essa área (sem cidade/estado). */
+export interface RaioBusca {
+  lat: number;
+  lng: number;
+  km: number;
+}
+
 interface BuscarUmaLocalidadeParams {
+  raio?: RaioBusca;
   queryBase: string;
   localidade: string;
   limite: number;
@@ -45,13 +53,19 @@ interface BuscarUmaLocalidadeParams {
 }
 
 async function buscarUmaLocalidade(p: BuscarUmaLocalidadeParams): Promise<Lead[]> {
-  const searchStrings = montarVariacoes(p.queryBase, p.subnicho, p.cidade);
+  // No raio a área já está definida: variações como "zona norte" não fazem
+  // sentido, vai só o termo (o extrator divide o círculo em partes sozinho).
+  const searchStrings = p.raio
+    ? [p.subnicho ? `${p.queryBase} ${p.subnicho}`.trim() : p.queryBase]
+    : montarVariacoes(p.queryBase, p.subnicho, p.cidade);
   const cotaPorVariacao = Math.max(1, Math.ceil(p.limite / searchStrings.length));
   p.log(0, p.limite, `[Apify] Iniciando busca: ${searchStrings.length} variações em ${p.localidade}…`);
 
   const payload = {
     searchStringsArray: searchStrings,
-    locationQuery: p.localidade,
+    ...(p.raio
+      ? { customGeolocation: { type: "Point", coordinates: [p.raio.lng, p.raio.lat], radiusKm: p.raio.km } }
+      : { locationQuery: p.localidade }),
     maxCrawledPlacesPerSearch: cotaPorVariacao,
     // País e idioma explícitos: a localização ("Cidade, Estado") é resolvida
     // direto no Brasil, sem ambiguidade, e os dados voltam em português.
@@ -123,6 +137,8 @@ export interface BuscarApifyMapsParams {
   excludePhones?: Set<string>;
   showPhone?: boolean;
   showRating?: boolean;
+  /** Busca num círculo em vez de cidade/estado; `localidade` vira só o rótulo. */
+  raio?: RaioBusca;
 }
 
 export async function buscarApifyMaps(p: BuscarApifyMapsParams): Promise<Lead[]> {
@@ -135,7 +151,7 @@ export async function buscarApifyMaps(p: BuscarApifyMapsParams): Promise<Lead[]>
   const log = p.onProgress ?? (() => {});
   const vistosTel = new Set(p.excludePhones ?? []);
   const resultados: Lead[] = [];
-  const multiplas = localidades.length > 1;
+  const multiplas = !p.raio && localidades.length > 1;
 
   function localizar(loc: string): [string, string] {
     if (!multiplas && (p.cidade || p.estado)) return [p.cidade ?? "", p.estado ?? ""];
@@ -162,6 +178,7 @@ export async function buscarApifyMaps(p: BuscarApifyMapsParams): Promise<Lead[]>
       excludePhones: vistosTel,
       showPhone: p.showPhone ?? true,
       showRating: p.showRating ?? true,
+      raio: p.raio,
     });
     for (const r of parcial) {
       const d = apenasDigitos(r.telefone);

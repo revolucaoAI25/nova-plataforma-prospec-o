@@ -7,6 +7,7 @@ import { CODIGO_PARA_DESC } from "@/lib/data/cnaes";
 import type { Json } from "@/lib/database.types";
 import type { FlowExecutorContext, FlowExecutorOutcome } from "../executor-types";
 import { dataISOBrasil } from "@/lib/datas";
+import { localizacaoCnpj } from "@/lib/vizinhos";
 
 /**
  * Espelha /api/search/cnpj/route.ts (mesmos filtros e mesma lógica de
@@ -21,6 +22,8 @@ export async function executarExtracaoCnpj(ctx: FlowExecutorContext): Promise<Fl
   const cnaesTodos = Array.from(new Set([...cnaes, ...cnaeManual]));
   const uf = Array.isArray(config.uf) ? (config.uf as string[]) : [];
   const municipio = Array.isArray(config.municipio) ? (config.municipio as string[]) : [];
+  const lista = (v: unknown) => (Array.isArray(v) ? (v as string[]) : []);
+  const loc = localizacaoCnpj(uf, municipio, Number(config.raioVizinhosKm ?? 0));
   const porte = Array.isArray(config.porte) ? (config.porte as string[]) : [];
   const matrizFilial = (config.matrizFilial as "" | "MATRIZ" | "FILIAL") || "";
   const simples = (config.simplesOptante as "indiferente" | "apenas" | "excluir") || "indiferente";
@@ -69,8 +72,10 @@ export async function executarExtracaoCnpj(ctx: FlowExecutorContext): Promise<Fl
     resultados = await buscarCnpj({
       apiKey: cddApiKey,
       cnaes: cnaesTodos,
-      uf,
-      municipio,
+      uf: loc.ufs,
+      municipio: loc.municipios,
+      bairro: lista(config.bairro),
+      cep: lista(config.cep),
       porte: porte.length ? porte : null,
       matrizFilial,
       simplesOptante: simples === "apenas" ? true : null,
@@ -140,7 +145,7 @@ export async function executarExtracaoCnpj(ctx: FlowExecutorContext): Promise<Fl
     subnicho: cnaesTodos.join(", "),
     cidade: municipio.join(", "),
     estado: uf.join(", "),
-    localidade: municipio.length ? municipio.join(", ") : uf.join(", "),
+    localidade: loc.descricao,
     totalResults: total,
     filtros: config as Json,
   });
@@ -154,7 +159,7 @@ export async function executarExtracaoCnpj(ctx: FlowExecutorContext): Promise<Fl
   return {
     status: "concluido",
     leadsSaida: total,
-    detalhe: { searchId: searchId || null, mapsVerificados },
+    detalhe: { searchId: searchId || null, mapsVerificados, ...(loc.aviso ? { aviso: loc.aviso } : {}) },
     contextoPatch: { searchId: searchId || undefined, lote: resultados as unknown as Record<string, unknown>[] },
   };
 }

@@ -72,6 +72,11 @@ const extracaoCnpjConfigSchema = z
     cnaeTipo: z.enum(["principal", "secundario", "ambos"]).default("principal"),
     uf: z.array(z.string()).default([]),
     municipio: z.array(z.string()).default([]),
+    // Cidades a até X km de cada município (0 = só os municípios) e filtros
+    // extras dentro da cidade — ver src/lib/vizinhos.ts.
+    raioVizinhosKm: z.number().min(0).max(60).default(0),
+    bairro: z.array(z.string()).default([]),
+    cep: z.array(z.string()).default([]),
     porte: z.array(z.string()).default([]),
     matrizFilial: z.enum(["", "MATRIZ", "FILIAL"]).default(""),
     simplesOptante: z.enum(["indiferente", "apenas", "excluir"]).default("indiferente"),
@@ -108,13 +113,18 @@ const extracaoMapsConfigSchema = z
     subnicho: z.string().default(""),
     cidades: z.array(z.string()).default([]),
     estados: z.array(z.string()).default([]),
+    // Raio a partir de um endereço (no lugar de cidades/estados) — ver src/lib/raio-maps.ts.
+    raioEndereco: z.string().default(""),
+    raioKm: z.number().min(1).max(50).default(5),
+    raioLat: z.number().nullable().default(null),
+    raioLng: z.number().nullable().default(null),
     showPhone: z.boolean().default(true),
     showRating: z.boolean().default(true),
     apenasNovos: z.boolean().default(true),
     limite: z.number().int().min(1).max(500).default(60),
   })
-  .refine((v) => v.cidades.length > 0 || v.estados.length > 0, {
-    message: "Informe ao menos uma cidade ou um estado.",
+  .refine((v) => v.cidades.length > 0 || v.estados.length > 0 || v.raioEndereco.trim().length >= 3, {
+    message: "Informe uma cidade, um estado ou o endereço do raio.",
     path: ["estados"],
   })
   .refine((v) => (v.nicho.trim() || v.queryCustom.trim()), {

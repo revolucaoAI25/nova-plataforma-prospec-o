@@ -14,6 +14,8 @@ import { FieldGroup, FieldRow } from "@/components/ui/field-group";
 import { MultiSelect, type MultiSelectOption } from "@/components/search/multi-select";
 import { LimiteSlider } from "@/components/search/limite-slider";
 import { CreditoEstimado } from "@/components/search/credito-estimado";
+import { RaioEndereco, type PontoRaio } from "@/components/search/raio-endereco";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { ResultsTable } from "@/components/search/results-table";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ResultsSummary, buildGeneralMetrics } from "@/components/search/results-summary";
@@ -49,6 +51,8 @@ export function MapsSearchForm({
   const [cidadeInput, setCidadeInput] = useState("");
   const [cidades, setCidades] = useState<string[]>([]);
   const [estados, setEstados] = useState<string[]>([]);
+  const [modoLocal, setModoLocal] = useState<"cidade" | "raio">("cidade");
+  const [raio, setRaio] = useState<{ endereco: string; km: number; ponto: PontoRaio | null }>({ endereco: "", km: 5, ponto: null });
   const [limite, setLimite] = useState(60);
   const [showPhone, setShowPhone] = useState(true);
   const [showRating, setShowRating] = useState(true);
@@ -84,11 +88,16 @@ export function MapsSearchForm({
     setError(null);
     setAvisos([]);
 
-    if (!cidades.length && !estados.length) {
+    const porRaio = modoLocal === "raio";
+    if (porRaio && raio.endereco.trim().length < 3) {
+      setError("Informe o endereço de referência do raio.");
+      return;
+    }
+    if (!porRaio && !cidades.length && !estados.length) {
       setError("Informe ao menos uma cidade ou um estado.");
       return;
     }
-    if (cidades.length && estados.length !== 1) {
+    if (!porRaio && cidades.length && estados.length !== 1) {
       setError(
         "Selecione vários estados só quando o campo Cidades estiver vazio (busca ampla). Com cidade(s) preenchida(s), escolha exatamente um estado.",
       );
@@ -114,7 +123,10 @@ export function MapsSearchForm({
           nicho,
           queryCustom,
           subnicho,
-          localidades: locs,
+          localidades: porRaio ? [] : locs,
+          ...(porRaio
+            ? { raio: { endereco: raio.endereco.trim(), km: raio.km, ...(raio.ponto ? { lat: raio.ponto.lat, lng: raio.ponto.lng, cidade: raio.ponto.cidade, uf: raio.ponto.uf } : {}) } }
+            : {}),
           limite,
           showPhone,
           showRating,
@@ -194,6 +206,24 @@ export function MapsSearchForm({
               </div>
             ) : null}
 
+            <div className="flex flex-col gap-2">
+              <Label>Onde buscar</Label>
+              <RadioGroup value={modoLocal} onValueChange={(v) => setModoLocal(v as "cidade" | "raio")} className="flex flex-wrap gap-5">
+                {([
+                  ["cidade", "Cidade ou estado"],
+                  ["raio", "Raio a partir de um endereço"],
+                ] as const).map(([value, label]) => (
+                  <label key={value} className="flex items-center gap-2 text-sm">
+                    <RadioGroupItem value={value} id={`local-${value}`} />
+                    {label}
+                  </label>
+                ))}
+              </RadioGroup>
+            </div>
+
+            {modoLocal === "raio" ? (
+              <RaioEndereco endereco={raio.endereco} km={raio.km} ponto={raio.ponto} onChange={setRaio} />
+            ) : (
             <div className="grid gap-5 sm:grid-cols-2">
               <div className="flex flex-col gap-2">
                 <Label htmlFor="cidade">Cidades (opcional)</Label>
@@ -235,6 +265,7 @@ export function MapsSearchForm({
                 </p>
               </div>
             </div>
+            )}
           </CardContent>
         </Card>
 

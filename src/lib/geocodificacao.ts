@@ -117,3 +117,61 @@ export async function geocodificar(sb: SupabaseClient, e: EnderecoLead): Promise
   const r = await tentativa(sb, `cidade:${normalizar(local)}`, local, municipio, "cidade", { osm_tag: "place" });
   return r ?? { latitude: null, longitude: null, precisao: "nao_encontrado" };
 }
+
+export interface PontoEndereco {
+  lat: number;
+  lng: number;
+  cidade: string;
+  uf: string;
+  /** Como o endereço foi entendido (rua, bairro, cidade), para mostrar à pessoa. */
+  rotulo: string;
+}
+
+const SIGLA_UF: Record<string, string> = {
+  acre: "AC", alagoas: "AL", amapa: "AP", amazonas: "AM", bahia: "BA", ceara: "CE", "distrito federal": "DF",
+  "espirito santo": "ES", goias: "GO", maranhao: "MA", "mato grosso": "MT", "mato grosso do sul": "MS",
+  "minas gerais": "MG", para: "PA", paraiba: "PB", parana: "PR", pernambuco: "PE", piaui: "PI",
+  "rio de janeiro": "RJ", "rio grande do norte": "RN", "rio grande do sul": "RS", rondonia: "RO", roraima: "RR",
+  "santa catarina": "SC", "sao paulo": "SP", sergipe: "SE", tocantins: "TO",
+};
+
+/**
+ * Centro da busca por raio do Google Maps: endereço livre ("Av. Industrial,
+ * Santo André") → coordenada, pelo mesmo Photon do mapa (sem custo). Só
+ * aceita resultado no Brasil.
+ */
+export async function localizarEndereco(texto: string): Promise<PontoEndereco | null> {
+  const q = texto.trim();
+  if (!q) return null;
+  // Primeiro só ruas, bairros e cidades: sem isso "Centro, São Bernardo"
+  // casava com um prédio chamado "Centro Universitário…". Se nada vier,
+  // tenta de novo sem restrição (número de casa, ponto conhecido).
+  for (const camadas of [["street", "district", "locality", "city"], []]) {
+    const params = new URLSearchParams({ q: /brasil|brazil/i.test(q) ? q : `${q}, Brasil`, limit: "5" });
+    for (const c of camadas) params.append("layer", c);
+    const ponto = await primeiroNoBrasil(params);
+    if (ponto) return ponto;
+  }
+  return null;
+}
+
+async function primeiroNoBrasil(params: URLSearchParams): Promise<PontoEndereco | null> {
+  try {
+    const resp = await fetch(`${BASE}/api/?${params}`, {
+      headers: { "User-Agent": "Leadmatic/1.0 (busca por raio)" },
+      signal: AbortSignal.timeout(TIMEOUT_MS),
+    });
+    if (!resp.ok) return null;
+    const json = (await resp.json()) as { features?: Array<FeaturePhoton & { properties?: { countrycode?: string; street?: string } }> };
+    const f = (json.features ?? []).find((x) => x.properties?.countrycode === "BR" && x.geometry?.coordinates);
+    if (!f) return null;
+    const p = f.properties ?? {};
+    const cidade = p.city || (p.type === "city" ? p.name : "") || p.county || "";
+    const uf = SIGLA_UF[normalizar(p.state)] ?? "";
+    const rotulo = Array.from(new Set([p.name, p.street, p.district, cidade, uf].filter(Boolean))).join(", ");
+    const [lng, lat] = f.geometry!.coordinates!;
+    return { lat, lng, cidade, uf, rotulo };
+  } catch {
+    return null;
+  }
+}

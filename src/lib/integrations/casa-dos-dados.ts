@@ -22,6 +22,9 @@ export interface CasaDosDadosParams {
   cnaes: string[];
   uf: string | string[];
   municipio?: string | string[];
+  /** Filtros extras dentro da cidade (opcionais). */
+  bairro?: string[];
+  cep?: string[];
   porte?: string[] | null;
   matrizFilial?: "" | "MATRIZ" | "FILIAL";
   simplesOptante?: boolean | null;
@@ -82,6 +85,11 @@ function montarBody(params: CasaDosDadosParams, pagina: number, limitePagina: nu
 
   const municipios = toList(params.municipio);
   if (municipios.length) body.municipio = municipios.map(normalizarMunicipio);
+
+  const bairros = (params.bairro ?? []).map(normalizarMunicipio).filter(Boolean);
+  if (bairros.length) body.bairro = bairros;
+  const ceps = (params.cep ?? []).map((c) => c.replace(/\D/g, "")).filter((c) => c.length === 8);
+  if (ceps.length) body.cep = ceps;
 
   if (params.porte?.length) body.porte_empresa = { codigos: params.porte };
 

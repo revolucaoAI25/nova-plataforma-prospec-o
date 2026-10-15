@@ -8,12 +8,15 @@ import { NICHOS } from "@/lib/data/nichos";
 import { salvarPesquisa, salvarLeads, buscarIdentificadoresExistentes } from "@/lib/db";
 import { autoExportarSheetsSeConfigurado } from "@/lib/auto-export";
 import { emTesteGratis, MSG_TESTE_GRATIS_SEM_CREDITOS } from "@/lib/teste-gratis";
+import { raioMapsSchema, resolverRaioMaps } from "@/lib/raio-maps";
 
 const bodySchema = z.object({
   nicho: z.string().default(""),
   queryCustom: z.string().default(""),
   subnicho: z.string().default(""),
-  localidades: z.array(z.string()).min(1),
+  localidades: z.array(z.string()).default([]),
+  /** Busca num raio a partir de um endereço (no lugar de cidade/estado). */
+  raio: raioMapsSchema.optional(),
   limite: z.number().int().min(1).max(500).default(60),
   showPhone: z.boolean().default(true),
   showRating: z.boolean().default(true),
@@ -32,6 +35,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Filtros inválidos.", detalhes: parsed.error.flatten() }, { status: 400 });
   }
   const filtros = parsed.data;
+  if (!filtros.raio && !filtros.localidades.length) {
+    return NextResponse.json({ error: "Informe uma cidade/estado ou um endereço para o raio." }, { status: 400 });
+  }
 
   const nichoInfo = NICHOS[filtros.nicho];
   const queryBase = (nichoInfo?.query || filtros.queryCustom).trim();
@@ -75,11 +81,18 @@ export async function POST(request: Request) {
   }
 
   marca("deduplicação");
+  const raio = filtros.raio ? await resolverRaioMaps(filtros.raio) : null;
+  if (filtros.raio && !raio) {
+    return NextResponse.json({ error: "Não encontramos o endereço do raio. Tente com a cidade junto (ex.: Av. Industrial, Santo André)." }, { status: 400 });
+  }
   let resultados;
   try {
     resultados = await buscarApifyMaps({
       queryBase,
-      localidade: filtros.localidades,
+      localidade: raio ? raio.descricao : filtros.localidades,
+      raio: raio ?? undefined,
+      cidade: raio?.cidade,
+      estado: raio?.uf,
       limite,
       apiKey,
       nicho: filtros.nicho || queryBase,
@@ -95,7 +108,7 @@ export async function POST(request: Request) {
   }
   marca("provedor");
 
-  const localidade = filtros.localidades.join(", ");
+  const localidade = raio ? raio.descricao : filtros.localidades.join(", ");
   const searchId = await salvarPesquisa(supabase, user.id, {
     fonte: "google_maps",
     nicho: filtros.nicho || queryBase,

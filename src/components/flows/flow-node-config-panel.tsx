@@ -10,6 +10,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Collapsible } from "@/components/ui/collapsible";
+import { CidadesVizinhas } from "@/components/search/cidades-vizinhas";
+import { RaioEndereco } from "@/components/search/raio-endereco";
 import { MultiSelect, type MultiSelectOption } from "@/components/search/multi-select";
 import { FLOW_NODE_TYPES, FLOW_NODE_TYPES_LIST, FLOW_NODE_CATEGORIAS, FILTRO_OPERADORES, type SaidaDoNo, type VariavelEntrada } from "@/lib/flow/node-types";
 import { cn } from "@/lib/utils";
@@ -315,6 +317,25 @@ function CamposExtracaoCnpj({ config, set }: CamposProps) {
         <MultiSelect options={UF_OPTIONS} selected={uf} onChange={(v) => set({ uf: v })} placeholder="Buscar estado…" />
       </Campo>
       <ListaField label="Municípios (opcional, separados por vírgula)" valor={municipio} onChange={(v) => set({ municipio: v })} placeholder="São Paulo, Campinas" />
+      <CidadesVizinhas
+        municipios={municipio}
+        ufs={uf}
+        km={Number(config.raioVizinhosKm ?? 0)}
+        onKmChange={(km) => set({ raioVizinhosKm: km })}
+        idPrefixo={`vizinhas-fluxo`}
+      />
+      <ListaField
+        label="Bairros (opcional, separados por vírgula)"
+        valor={Array.isArray(config.bairro) ? (config.bairro as string[]) : []}
+        onChange={(v) => set({ bairro: v })}
+        placeholder="Centro, Vila Assunção"
+      />
+      <ListaField
+        label="CEPs (opcional, separados por vírgula)"
+        valor={Array.isArray(config.cep) ? (config.cep as string[]) : []}
+        onChange={(v) => set({ cep: v })}
+        placeholder="09015-000"
+      />
 
       <Campo label="Porte">
         <MultiSelect options={PORTE_OPTIONS} selected={porte} onChange={(v) => set({ porte: v })} placeholder="Todos os portes" />
@@ -396,6 +417,8 @@ function CamposExtracaoCnpj({ config, set }: CamposProps) {
 }
 
 function CamposExtracaoMaps({ config, set }: CamposProps) {
+  // Modo raio = há algo em raioEndereco (um espaço marca "raio escolhido, endereço ainda vazio").
+  const porRaio = String(config.raioEndereco || "").length > 0;
   const cidades = Array.isArray(config.cidades) ? (config.cidades as string[]) : [];
   const estados = Array.isArray(config.estados) ? (config.estados as string[]) : [];
   return (
@@ -416,11 +439,31 @@ function CamposExtracaoMaps({ config, set }: CamposProps) {
       )}
       <Campo label="Subnicho (opcional)"><Input value={String(config.subnicho || "")} onChange={(e) => set({ subnicho: e.target.value })} /></Campo>
 
-      <ListaField label="Cidades (opcional, separadas por vírgula)" valor={cidades} onChange={(v) => set({ cidades: v })} placeholder="São Paulo, Campinas" />
-      <Campo label="Estado(s) (UF)">
-        <MultiSelect options={UF_OPTIONS} selected={estados} onChange={(v) => set({ estados: v })} placeholder="Buscar estado…" />
-      </Campo>
-      <p className="text-xs text-muted-foreground">Com cidade(s) preenchida(s), selecione exatamente 1 estado. Sem cidade, pode escolher vários estados (busca ampla).</p>
+      <CampoRadio
+        label="Onde buscar"
+        value={porRaio ? "raio" : "cidade"}
+        onChange={(v) => set(v === "raio" ? { raioEndereco: String(config.raioEndereco || "") || " " } : { raioEndereco: "", raioLat: null, raioLng: null })}
+        opcoes={[["cidade", "Cidade ou estado"], ["raio", "Raio de um endereço"]]}
+      />
+      {porRaio ? (
+        <RaioEndereco
+          idPrefixo="raio-fluxo"
+          endereco={String(config.raioEndereco || "").trimStart()}
+          km={Number(config.raioKm ?? 5)}
+          ponto={typeof config.raioLat === "number" && typeof config.raioLng === "number"
+            ? { lat: config.raioLat, lng: config.raioLng, cidade: "", uf: "", rotulo: String(config.raioEndereco || "") }
+            : null}
+          onChange={({ endereco, km, ponto }) => set({ raioEndereco: endereco || " ", raioKm: km, raioLat: ponto?.lat ?? null, raioLng: ponto?.lng ?? null })}
+        />
+      ) : (
+        <>
+          <ListaField label="Cidades (opcional, separadas por vírgula)" valor={cidades} onChange={(v) => set({ cidades: v })} placeholder="São Paulo, Campinas" />
+          <Campo label="Estado(s) (UF)">
+            <MultiSelect options={UF_OPTIONS} selected={estados} onChange={(v) => set({ estados: v })} placeholder="Buscar estado…" />
+          </Campo>
+          <p className="text-xs text-muted-foreground">Com cidade(s) preenchida(s), selecione exatamente 1 estado. Sem cidade, pode escolher vários estados (busca ampla).</p>
+        </>
+      )}
 
       <CampoCheckbox checked={config.showPhone !== false} onCheckedChange={(c) => set({ showPhone: c })}>Buscar telefone e site</CampoCheckbox>
       <CampoCheckbox checked={config.showRating !== false} onCheckedChange={(c) => set({ showRating: c })}>Incluir avaliação</CampoCheckbox>
