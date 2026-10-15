@@ -29,7 +29,7 @@ export async function resendConfigurado(): Promise<boolean> {
 
 async function req(path: string, init?: RequestInit) {
   const resp = await fetch(`${baseUrl()}${path}`, { ...init, headers: await headers() });
-  if (!resp.ok) throw new Error(`Resend HTTP ${resp.status}: ${(await resp.text()).slice(0, 300)}`);
+  if (!resp.ok) throw new Error(`Serviço de e-mail respondeu ${resp.status}: ${(await resp.text()).slice(0, 300)}`);
   return resp.json();
 }
 

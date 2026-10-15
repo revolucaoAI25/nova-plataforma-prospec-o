@@ -13,7 +13,7 @@ import type { SearchRow } from "@/lib/database.types";
 import { formatarDataHora } from "@/lib/datas";
 import { ExportarSheetsButton } from "@/components/historico/exportar-sheets-button";
 
-const FONTE_LABEL: Record<string, string> = { cnpj: "CNPJ", google_maps: "Google Maps", instagram: "Instagram", linkedin: "LinkedIn" };
+const FONTE_LABEL: Record<string, string> = { cnpj: "CNPJ", google_maps: "Maps", instagram: "Instagram", linkedin: "LinkedIn" };
 
 export function HistoricoTable({ pesquisas }: { pesquisas: SearchRow[] }) {
   const router = useRouter();

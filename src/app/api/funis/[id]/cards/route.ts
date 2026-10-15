@@ -3,6 +3,7 @@ import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { getProfile } from "@/lib/credits";
 import { buscarLeadsDaPesquisa } from "@/lib/db";
+import { preferirCelularDoSocio } from "@/lib/phone";
 import { funilPertenceAoUsuario, colunaPertenceAoFunil, adicionarLeadsAoFunil } from "@/lib/funil-db";
 
 const leadManualSchema = z.object({
@@ -47,7 +48,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   if (parsed.data.searchId) {
     // RLS de `searches` já restringe ao dono — pesquisa de outro usuário
     // simplesmente não retorna leads aqui.
-    leads = (await buscarLeadsDaPesquisa(supabase, parsed.data.searchId)) as unknown as Array<Record<string, unknown>>;
+    // Com celular do sócio, o card leva o celular dele (cada sócio vira um card).
+    leads = (await buscarLeadsDaPesquisa(supabase, parsed.data.searchId)).map(preferirCelularDoSocio) as unknown as Array<Record<string, unknown>>;
     if (!leads.length) return NextResponse.json({ error: "Nenhum lead encontrado nessa pesquisa." }, { status: 404 });
   } else {
     leads = parsed.data.leads!.filter((l) => l.nome.trim() || l.telefone.trim() || l.email.trim());

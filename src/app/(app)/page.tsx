@@ -16,7 +16,7 @@ import { Button } from "@/components/ui/button";
 import { emTesteGratis } from "@/lib/teste-gratis-regras";
 import { formatarDataHora } from "@/lib/datas";
 
-const FONTE_LABEL: Record<string, string> = { cnpj: "CNPJ", google_maps: "Google Maps", instagram: "Instagram", linkedin: "LinkedIn" };
+const FONTE_LABEL: Record<string, string> = { cnpj: "CNPJ", google_maps: "Maps", instagram: "Instagram", linkedin: "LinkedIn" };
 const FONTE_ICON: Record<string, typeof Building2> = { cnpj: Building2, google_maps: MapPin, instagram: AtSign, linkedin: UserSearch };
 
 export default async function DashboardPage() {

@@ -41,7 +41,7 @@ async function req<T>(path: string, init?: RequestInit): Promise<T> {
       ...init?.headers,
     },
   });
-  if (!resp.ok) throw new Error(`Asaas ${path} HTTP ${resp.status}: ${(await resp.text()).slice(0, 300)}`);
+  if (!resp.ok) throw new Error(`Serviço de pagamento (${path}) respondeu ${resp.status}: ${(await resp.text()).slice(0, 300)}`);
   return resp.json();
 }
 
@@ -159,7 +159,7 @@ export async function cancelarAssinatura(subscriptionId: string): Promise<void> 
     headers: { "Content-Type": "application/json", access_token: chave, "User-Agent": "RevolucaoAI-ProspeccaoAtiva" },
   });
   if (!resp.ok && resp.status !== 404) {
-    throw new Error(`Asaas /subscriptions/${subscriptionId} HTTP ${resp.status}: ${(await resp.text()).slice(0, 300)}`);
+    throw new Error(`Serviço de pagamento (assinatura) respondeu ${resp.status}: ${(await resp.text()).slice(0, 300)}`);
   }
 }
 

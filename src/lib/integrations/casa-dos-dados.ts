@@ -201,7 +201,7 @@ function mapearLead(item: any): Lead {
   lead.capital_social = String(item.capital_social ?? "");
   lead.cidade_busca = end.municipio || "";
   lead.estado_busca = (end.uf || "").toUpperCase();
-  lead.fonte = "Casa dos Dados";
+  lead.fonte = "CNPJ";
 
   return lead;
 }
@@ -251,7 +251,7 @@ export async function buscarCnpj(params: CasaDosDadosParams): Promise<Lead[]> {
         body: JSON.stringify(body),
       });
     } catch (e) {
-      throw new CasaDosDadosError(`Erro de conexão com Casa dos Dados: ${(e as Error).message}`);
+      throw new CasaDosDadosError(`Erro de conexão com a base de CNPJ: ${(e as Error).message}`);
     }
 
     if (!resp.ok) {
@@ -262,7 +262,7 @@ export async function buscarCnpj(params: CasaDosDadosParams): Promise<Lead[]> {
       } catch {
         msg = await resp.text().catch(() => "");
       }
-      throw new CasaDosDadosError(`Erro HTTP ${resp.status} na API Casa dos Dados: ${msg.slice(0, 200)}`);
+      throw new CasaDosDadosError(`Erro ${resp.status} na base de CNPJ: ${msg.slice(0, 200)}`);
     }
 
     const data = await resp.json();

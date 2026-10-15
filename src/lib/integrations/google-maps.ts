@@ -222,7 +222,7 @@ async function buscarUmaLocalidade(p: BuscarUmaLocalidadeParams): Promise<Lead[]
       lead.subnicho_busca = p.subnicho;
       lead.cidade_busca = p.cidade;
       lead.estado_busca = p.estado;
-      lead.fonte = "Google Maps";
+      lead.fonte = "Maps";
       resultados.push(lead);
 
       p.log(resultados.length, p.limite, `${p.showPhone ? "Detalhes" : "Resultados"}: ${resultados.length}/${p.limite}`);

@@ -1,3 +1,4 @@
+import { rotuloFonte } from "@/lib/fonte";
 import { ExternalLink } from "lucide-react";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import type { Lead } from "@/lib/types";
@@ -40,7 +41,7 @@ export function ResultsTable({ leads }: { leads: Lead[] }) {
               </TableCell>
               <TableCell>{lead.avaliacao !== "" ? `${lead.avaliacao} (${lead.total_avaliacoes || 0})` : "—"}</TableCell>
               <TableCell>{lead.cnpj || "—"}</TableCell>
-              <TableCell>{lead.fonte || "—"}</TableCell>
+              <TableCell>{rotuloFonte(lead.fonte) || "—"}</TableCell>
             </TableRow>
           ))}
         </TableBody>

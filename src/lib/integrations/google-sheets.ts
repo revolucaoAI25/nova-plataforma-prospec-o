@@ -1,4 +1,5 @@
 import { google } from "googleapis";
+import { rotuloFonte } from "@/lib/fonte";
 import type { LeadRow } from "@/lib/database.types";
 import type { GoogleSheetsCreds } from "@/lib/database.types";
 import { configPlataforma } from "@/lib/platform-settings";
@@ -251,7 +252,7 @@ export async function exportar(
   modo: "substituir" | "acrescentar" = "substituir",
 ): Promise<{ ok: boolean; msg: string }> {
   const cabecalho = COLUNAS_EXPORT.map(([, label]) => label);
-  const linhas = resultados.map((r) => COLUNAS_EXPORT.map(([col]) => String(r[col] ?? "")));
+  const linhas = resultados.map((r) => COLUNAS_EXPORT.map(([col]) => (col === "fonte" ? rotuloFonte(r[col]) : String(r[col] ?? ""))));
   return escreverPlanilha(creds, sheetId, abaNome, modo, cabecalho, linhas);
 }
 
@@ -271,7 +272,7 @@ export async function exportarGenerico(
   modo: "substituir" | "acrescentar" = "substituir",
 ): Promise<{ ok: boolean; msg: string }> {
   const cabecalho = colunas.map((c) => c.label);
-  const linhas = linhasObjeto.map((r) => colunas.map((c) => String(r[c.chave] ?? "")));
+  const linhas = linhasObjeto.map((r) => colunas.map((c) => (c.chave === "fonte" ? rotuloFonte(r[c.chave]) : String(r[c.chave] ?? ""))));
   return escreverPlanilha(creds, sheetId, abaNome, modo, cabecalho, linhas);
 }
 

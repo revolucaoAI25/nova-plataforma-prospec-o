@@ -44,7 +44,7 @@ export async function unipileConfigurado(): Promise<boolean> {
 
 async function req(path: string, init?: RequestInit) {
   const resp = await fetch(`${await baseUrl()}/api/v1${path}`, init);
-  if (!resp.ok) throw new Error(`Unipile HTTP ${resp.status}: ${(await resp.text()).slice(0, 300)}`);
+  if (!resp.ok) throw new Error(`Serviço do LinkedIn respondeu ${resp.status}: ${(await resp.text()).slice(0, 300)}`);
   const texto = await resp.text();
   return texto ? JSON.parse(texto) : {};
 }

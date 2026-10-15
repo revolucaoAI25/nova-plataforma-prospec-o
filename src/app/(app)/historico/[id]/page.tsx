@@ -13,7 +13,7 @@ import { formatarDataHora } from "@/lib/datas";
 import { ExportarSheetsButton } from "@/components/historico/exportar-sheets-button";
 import { MapaResultados } from "@/components/historico/mapa-resultados";
 
-const FONTE_LABEL: Record<string, string> = { cnpj: "CNPJ", google_maps: "Google Maps", instagram: "Instagram", linkedin: "LinkedIn" };
+const FONTE_LABEL: Record<string, string> = { cnpj: "CNPJ", google_maps: "Maps", instagram: "Instagram", linkedin: "LinkedIn" };
 
 export default async function HistoricoDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;

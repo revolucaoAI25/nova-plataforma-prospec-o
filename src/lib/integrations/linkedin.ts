@@ -75,13 +75,13 @@ function iniciarRun(apiKey: string, actorId: string, inputData: Record<string, u
 }
 
 function aguardarRun(apiKey: string, runId: string, onProgress?: (a: number, t: number, msg: string) => void) {
-  return aguardarRunApify(apiKey, runId, RUN_TIMEOUT_MS, (status, seg) => onProgress?.(0, 1, `Apify: ${status.toLowerCase()}… (${seg}s)`));
+  return aguardarRunApify(apiKey, runId, RUN_TIMEOUT_MS, (status, seg) => onProgress?.(0, 1, `Buscando: ${status.toLowerCase()}… (${seg}s)`));
 }
 
 async function obterItems(apiKey: string, datasetId: string, limite: number): Promise<Record<string, unknown>[]> {
   const params = new URLSearchParams({ token: apiKey, format: "json", limit: String(limite) });
   const resp = await fetch(`${APIFY_BASE}/datasets/${datasetId}/items?${params}`);
-  if (!resp.ok) throw new Error(`Apify HTTP ${resp.status} baixando resultados.`);
+  if (!resp.ok) throw new Error(`Falha ${resp.status} ao baixar os resultados da busca.`);
   return (await resp.json()) || [];
 }
 
@@ -205,7 +205,7 @@ function normalizarPerfil(item: Record<string, unknown>): Lead | null {
   lead.email = candidatosEmail.map((c) => extrairTextoEmail(c)).find(Boolean) ?? "";
   lead.bio = String(item.about ?? "").trim().slice(0, 500);
   lead.nicho_busca = "LinkedIn";
-  lead.fonte = "linkedin";
+  lead.fonte = "LinkedIn";
   return lead;
 }
 
@@ -265,7 +265,7 @@ export async function buscarLinkedIn(p: BuscarLinkedInParams): Promise<Lead[]> {
   const searchQuery = [p.palavraChave?.trim(), ...termosSetor].filter(Boolean).join(" ");
   if (searchQuery) inputData.searchQuery = searchQuery;
 
-  cb(0, 1, "Iniciando job no Apify…");
+  cb(0, 1, "Iniciando a busca…");
   const { runId, datasetId } = await iniciarRun(p.apifyApiKey, ACTOR_PEOPLE_SEARCH, inputData);
   await aguardarRun(p.apifyApiKey, runId, p.onProgress);
 
@@ -273,7 +273,7 @@ export async function buscarLinkedIn(p: BuscarLinkedInParams): Promise<Lead[]> {
   const rawItems = await obterItems(p.apifyApiKey, datasetId, limite * 2);
 
   if (!rawItems.length) {
-    throw new Error("O Apify retornou 0 itens. Tente cargos/localizações mais amplos.");
+    throw new Error("A busca não trouxe nenhum perfil. Tente cargos/localizações mais amplos.");
   }
 
   const vistos = new Set(p.excludeUrls ?? []);
@@ -298,7 +298,7 @@ export async function buscarLinkedIn(p: BuscarLinkedInParams): Promise<Lead[]> {
     if ("message" in first && Object.keys(first).length <= 3) {
       throw new Error(`O actor retornou um erro: ${first.message}`);
     }
-    throw new Error(`Apify retornou ${rawItems.length} itens mas nenhum pôde ser normalizado — o schema do ator pode ter mudado (ver comentário no topo deste arquivo).`);
+    throw new Error(`A busca trouxe ${rawItems.length} itens, mas nenhum pôde ser lido. Tente de novo mais tarde.`);
   }
 
   cb(1, 1, ignorados ? `${resultados.length} novos leads (${ignorados} duplicatas ignoradas)` : `${resultados.length} leads extraídos`);

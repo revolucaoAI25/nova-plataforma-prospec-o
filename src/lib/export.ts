@@ -1,6 +1,7 @@
 import ExcelJS from "exceljs";
 import type { LeadRow, EnrichmentLeadRow } from "@/lib/database.types";
 import { carimboBrasil } from "@/lib/datas";
+import { rotuloFonte } from "@/lib/fonte";
 
 // Exportação Excel/CSV — portado de modules/export.py.
 export const COLUNAS_PADRAO: Array<[keyof LeadRow, string]> = [
@@ -62,6 +63,7 @@ function linkSeguro(valor: string): string | null {
 
 function cell(lead: LeadRow, col: keyof LeadRow): string {
   const v = lead[col];
+  if (col === "fonte") return rotuloFonte(v);
   return v === null || v === undefined ? "" : String(v);
 }
 

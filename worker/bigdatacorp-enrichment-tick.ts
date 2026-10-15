@@ -177,21 +177,44 @@ async function processarComDirectData(
   log(`Execução ${run.id} (celular do sócio): ${cont.comCelular} com celular de ${cont.processados} empresa(s), ${cont.erros} erro(s)`);
 }
 
-/** Busca por CNPJ com a opção ligada: o celular e o nome do sócio voltam para os leads da pesquisa. */
+/**
+ * Busca por CNPJ com a opção ligada: o celular e o nome do sócio voltam
+ * para os leads da pesquisa. No modo "vários sócios", o primeiro sócio com
+ * celular fica no lead da empresa e cada sócio a mais com celular vira um
+ * lead novo na mesma pesquisa (mesma empresa, outro contato) — é o que o
+ * disparo e o histórico enxergam.
+ */
 async function gravarNaPesquisa(sb: SupabaseClient, run: BigDataCorpEnrichmentRunRow): Promise<void> {
   const { data } = await sb
     .from("bigdatacorp_enrichment_leads")
-    .select("cnpj_entrada, socio_nome, socio_celular")
+    .select("cnpj_entrada, socio_nome, socio_celular, socios")
     .eq("run_id", run.id)
     .not("socio_celular", "is", null);
   if (!data?.length) return;
+  const varios = normalizarOpcoesCelularSocio(run.opcoes).socios === "todos";
   const porCnpj = new Map(data.map((r) => [r.cnpj_entrada as string, r]));
-  const { data: leads } = await sb.from("leads").select("id, cnpj").eq("search_id", run.search_id!).not("cnpj", "is", null);
-  for (const lead of leads ?? []) {
+  const { data: leads } = await sb.from("leads").select("*").eq("search_id", run.search_id!).not("cnpj", "is", null);
+  const novos: Array<Record<string, unknown>> = [];
+  for (const lead of (leads ?? []) as Array<Record<string, unknown>>) {
     const r = porCnpj.get(String(lead.cnpj).replace(/\D/g, ""));
     if (!r) continue;
     await sb.from("leads")
       .update({ celular_socio: r.socio_celular, ...(r.socio_nome ? { socio_principal: r.socio_nome } : {}) })
       .eq("id", lead.id);
+    if (!varios) continue;
+    const extras = (Array.isArray(r.socios) ? (r.socios as Array<{ nome: string; celular?: string | null }>) : [])
+      .filter((s) => s.celular && s.celular !== r.socio_celular);
+    for (const s of extras) {
+      const copia: Record<string, unknown> = { ...lead, celular_socio: s.celular, socio_principal: s.nome };
+      delete copia.id;
+      delete copia.created_at;
+      novos.push(copia);
+    }
+  }
+  for (let i = 0; i < novos.length; i += 500) await sb.from("leads").insert(novos.slice(i, i + 500));
+  if (novos.length) {
+    // O total da pesquisa no Histórico acompanha os leads novos.
+    const { count } = await sb.from("leads").select("id", { count: "exact", head: true }).eq("search_id", run.search_id!);
+    if (count != null) await sb.from("searches").update({ total_results: count }).eq("id", run.search_id!);
   }
 }

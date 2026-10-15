@@ -51,6 +51,7 @@ const bodySchema = z.object({
   enriquecerBigDataCorp: z.boolean().default(false),
   /** Celular do sócio: só o administrador ou vários sócios por empresa. */
   sociosModo: z.enum(["administrador", "todos"]).default("administrador"),
+  maxSocios: z.number().int().min(1).max(5).default(2),
 });
 
 export async function POST(request: Request) {
@@ -252,7 +253,7 @@ export async function POST(request: Request) {
     } else {
       const itens = resultados.filter((r) => r.cnpj).map((r) => ({ cnpj: r.cnpj, nomeLead: r.nome }));
       const run = await criarRunBigDataCorp(supabase, user.id, itens, "busca_cnpj", {
-        searchId: searchId ?? undefined, limite: LIMITE_LOTE_BUSCA, opcoes: { socios: filtros.sociosModo },
+        searchId: searchId ?? undefined, limite: LIMITE_LOTE_BUSCA, opcoes: { socios: filtros.sociosModo, maxSocios: filtros.maxSocios },
       });
       if (run) {
         bigdatacorpRunId = run.id;

@@ -96,7 +96,8 @@ export function CnpjSearchForm({
   const [mapsModo, setMapsModo] = useState<MapsModo>("nao_usar");
   const [minAvaliacoes, setMinAvaliacoes] = useState(0);
   const [enriquecerBigDataCorp, setEnriquecerBigDataCorp] = useState(false);
-  const [sociosModo, setSociosModo] = useState<"administrador" | "todos">("administrador");
+  // 1 = só o administrador; 2 ou 3 = até N sócios por empresa (um lead por sócio).
+  const [sociosQtd, setSociosQtd] = useState(1);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -166,7 +167,8 @@ export function CnpjSearchForm({
           mapsModo,
           minAvaliacoes,
           enriquecerBigDataCorp: bigdatacorpDisponivel && enriquecerBigDataCorp,
-          sociosModo,
+          sociosModo: sociosQtd > 1 ? "todos" : "administrador",
+          maxSocios: sociosQtd,
         }),
       });
 
@@ -433,10 +435,12 @@ export function CnpjSearchForm({
                     control={<Switch checked={enriquecerBigDataCorp} onCheckedChange={setEnriquecerBigDataCorp} />}
                   />
                   {enriquecerBigDataCorp && (
-                    <RadioGroup value={sociosModo} onValueChange={(v) => setSociosModo(v as "administrador" | "todos")} className="flex flex-wrap gap-4 p-3.5">
+                    <div className="flex flex-col gap-1 p-3.5">
+                    <RadioGroup value={String(sociosQtd)} onValueChange={(v) => setSociosQtd(Number(v))} className="flex flex-wrap gap-4">
                       {([
-                        ["administrador", "Só o administrador"],
-                        ["todos", "Até 2 sócios por empresa"],
+                        ["1", "Só o administrador"],
+                        ["2", "Até 2 sócios"],
+                        ["3", "Até 3 sócios"],
                       ] as const).map(([value, label]) => (
                         <label key={value} className="flex items-center gap-2 text-sm">
                           <RadioGroupItem value={value} id={`socios-${value}`} />
@@ -444,6 +448,11 @@ export function CnpjSearchForm({
                         </label>
                       ))}
                     </RadioGroup>
+                    <p className="text-xs text-muted-foreground">
+                      {sociosQtd > 1 ? "Cada sócio com celular vira um lead na pesquisa. " : ""}
+                      A empresa custa {custos.bigdatacorp || 0} créditos e cada sócio consultado mais {custos.socio_celular || 0}, achando o celular ou não.
+                    </p>
+                    </div>
                   )}
                 </FieldGroup>
               </>
@@ -471,7 +480,7 @@ export function CnpjSearchForm({
               (custos.cnpj || 0) +
               (mapsModo !== "nao_usar" ? custos.cnpj_maps_extra || 0 : 0) +
               (bigdatacorpDisponivel && enriquecerBigDataCorp
-                ? (custos.bigdatacorp || 0) + (custos.socio_celular || 0) * (sociosModo === "todos" ? 2 : 1)
+                ? (custos.bigdatacorp || 0) + (custos.socio_celular || 0) * sociosQtd
                 : 0)
             }
             unidade="empresa"

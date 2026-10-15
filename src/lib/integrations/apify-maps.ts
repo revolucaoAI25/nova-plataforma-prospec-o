@@ -17,7 +17,7 @@ const ESPERA_MS = 560_000;
 async function buscarItems(token: string, datasetId: string): Promise<Record<string, unknown>[]> {
   const params = new URLSearchParams({ token, format: "json", clean: "true" });
   const resp = await fetch(`${BASE}/datasets/${datasetId}/items?${params}`);
-  if (!resp.ok) throw new Error(`Apify HTTP ${resp.status}`);
+  if (!resp.ok) throw new Error(`Falha ${resp.status} ao baixar os resultados da busca no Maps.`);
   return await resp.json();
 }
 
@@ -59,7 +59,7 @@ async function buscarUmaLocalidade(p: BuscarUmaLocalidadeParams): Promise<Lead[]
     ? [p.subnicho ? `${p.queryBase} ${p.subnicho}`.trim() : p.queryBase]
     : montarVariacoes(p.queryBase, p.subnicho, p.cidade);
   const cotaPorVariacao = Math.max(1, Math.ceil(p.limite / searchStrings.length));
-  p.log(0, p.limite, `[Apify] Iniciando busca: ${searchStrings.length} variações em ${p.localidade}…`);
+  p.log(0, p.limite, `Iniciando busca: ${searchStrings.length} variações em ${p.localidade}…`);
 
   const payload = {
     searchStringsArray: searchStrings,
@@ -74,9 +74,9 @@ async function buscarUmaLocalidade(p: BuscarUmaLocalidadeParams): Promise<Lead[]
   };
 
   const { runId, datasetId } = await iniciarRunApify(p.apiKey, ACTOR_ID, payload, RUN_TIMEOUT_S);
-  p.log(0, p.limite, "[Apify] Run iniciado. Aguardando resultados…");
-  await aguardarRunApify(p.apiKey, runId, ESPERA_MS, (status, seg) => p.log(0, 1, `[Apify] Aguardando… (${status}, ${seg}s)`));
-  p.log(0, p.limite, "[Apify] Coletando resultados…");
+  p.log(0, p.limite, "Run iniciado. Aguardando resultados…");
+  await aguardarRunApify(p.apiKey, runId, ESPERA_MS, (status, seg) => p.log(0, 1, `Aguardando… (${status}, ${seg}s)`));
+  p.log(0, p.limite, "Coletando resultados…");
 
   const items = await buscarItems(p.apiKey, datasetId);
   const resultados: Lead[] = [];
@@ -108,7 +108,7 @@ async function buscarUmaLocalidade(p: BuscarUmaLocalidadeParams): Promise<Lead[]
     lead.subnicho_busca = p.subnicho;
     lead.cidade_busca = p.cidade;
     lead.estado_busca = p.estado;
-    lead.fonte = "Apify Maps";
+    lead.fonte = "Maps";
     const local = item.location as { lat?: unknown; lng?: unknown } | undefined;
     if (typeof local?.lat === "number" && typeof local?.lng === "number") {
       lead.latitude = local.lat;
@@ -117,10 +117,10 @@ async function buscarUmaLocalidade(p: BuscarUmaLocalidadeParams): Promise<Lead[]
     if (typeof item.neighborhood === "string") lead.bairro = item.neighborhood;
     if (typeof item.city === "string" && !lead.municipio) lead.municipio = item.city;
     resultados.push(lead);
-    p.log(resultados.length, p.limite, `[Apify] ${resultados.length}/${p.limite}`);
+    p.log(resultados.length, p.limite, `${resultados.length}/${p.limite}`);
   }
 
-  p.log(resultados.length, p.limite, `[Apify] '${p.localidade}': ${resultados.length} resultados.`);
+  p.log(resultados.length, p.limite, `'${p.localidade}': ${resultados.length} resultados.`);
   return resultados;
 }
 
@@ -142,7 +142,7 @@ export interface BuscarApifyMapsParams {
 }
 
 export async function buscarApifyMaps(p: BuscarApifyMapsParams): Promise<Lead[]> {
-  if (!p.apiKey) throw new Error("Chave de API do Apify não configurada.");
+  if (!p.apiKey) throw new Error("Busca no Maps indisponível no momento (chave da plataforma não configurada).");
 
   const localidades = (Array.isArray(p.localidade) ? p.localidade : [p.localidade]).map((l) => l.trim()).filter(Boolean);
   if (!localidades.length) throw new Error("Informe ao menos uma cidade ou estado.");
@@ -191,7 +191,7 @@ export async function buscarApifyMaps(p: BuscarApifyMapsParams): Promise<Lead[]>
     const cotaBase = Math.max(1, Math.floor(limite / localidades.length));
     for (let i = 0; i < localidades.length; i++) {
       if (resultados.length >= limite) break;
-      log(resultados.length, limite, `[Apify] [${i + 1}/${localidades.length}] Buscando em ${localidades[i]}…`);
+      log(resultados.length, limite, `[${i + 1}/${localidades.length}] Buscando em ${localidades[i]}…`);
       await buscarLoc(localidades[i], Math.min(cotaBase, limite - resultados.length));
     }
     for (const loc of localidades) {
@@ -202,6 +202,6 @@ export async function buscarApifyMaps(p: BuscarApifyMapsParams): Promise<Lead[]>
     await buscarLoc(localidades[0], limite);
   }
 
-  log(resultados.length, limite, `[Apify] Concluído: ${resultados.length} resultados.`);
+  log(resultados.length, limite, `Concluído: ${resultados.length} resultados.`);
   return resultados.slice(0, limite);
 }
