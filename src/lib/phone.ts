@@ -25,3 +25,13 @@ export function formatarExibicao(numeroE164: string): string {
   if (d.length === 10) return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`;
   return numeroE164;
 }
+
+/**
+ * Lead com celular do sócio (busca por CNPJ com "Buscar o celular do
+ * sócio"): o disparo vai para o celular dele e o telefone da empresa fica
+ * guardado em `telefone_empresa`. Sem celular do sócio, o lead não muda.
+ */
+export function preferirCelularDoSocio<T extends { telefone?: string | null; celular_socio?: string | null }>(lead: T): T {
+  if (!lead.celular_socio) return lead;
+  return { ...lead, telefone: lead.celular_socio, telefone_empresa: lead.telefone ?? "" };
+}

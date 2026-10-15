@@ -13,8 +13,9 @@ import { enriquecerComMaps, QuotaExceededError, MapsAccessError } from "@/lib/in
 import { salvarPesquisa, salvarLeads, buscarIdentificadoresExistentes } from "@/lib/db";
 import { autoExportarSheetsSeConfigurado } from "@/lib/auto-export";
 import { CODIGO_PARA_DESC } from "@/lib/data/cnaes";
-import { criarRunBigDataCorp, perfilComBigDataCorpEnrichmentHabilitado } from "@/lib/bigdatacorp-enrichment-db";
-import { bigDataCorpConfigurado } from "@/lib/integrations/bigdatacorp";
+import {
+  criarRunBigDataCorp, LIMITE_LOTE_BUSCA, perfilComBigDataCorpEnrichmentHabilitado, sociosEContatoConfigurado,
+} from "@/lib/bigdatacorp-enrichment-db";
 import { emTesteGratis, MSG_TESTE_GRATIS_SEM_CREDITOS } from "@/lib/teste-gratis";
 
 const bodySchema = z.object({
@@ -43,6 +44,8 @@ const bodySchema = z.object({
   mapsModo: z.enum(["nao_usar", "enriquecer", "filtrar", "filtrar_enriquecer"]).default("nao_usar"),
   minAvaliacoes: z.number().int().min(0).default(0),
   enriquecerBigDataCorp: z.boolean().default(false),
+  /** Celular do sócio: só o administrador ou vários sócios por empresa. */
+  sociosModo: z.enum(["administrador", "todos"]).default("administrador"),
 });
 
 export async function POST(request: Request) {
@@ -233,16 +236,18 @@ export async function POST(request: Request) {
   let bigdatacorpRunId: string | null = null;
   let avisoBigDataCorp: string | null = null;
   if (filtros.enriquecerBigDataCorp && resultados.length) {
-    if (!(await bigDataCorpConfigurado())) {
+    if (!(await sociosEContatoConfigurado())) {
       avisoBigDataCorp = "Enriquecimento por CNPJ (sócios/contato) não configurado nesta plataforma — etapa não rodou.";
     } else if (!(await perfilComBigDataCorpEnrichmentHabilitado(supabase, user.id))) {
       avisoBigDataCorp = "Enriquecimento por CNPJ (sócios/contato) não habilitado para sua conta — etapa não rodou.";
     } else {
       const itens = resultados.filter((r) => r.cnpj).map((r) => ({ cnpj: r.cnpj, nomeLead: r.nome }));
-      const run = await criarRunBigDataCorp(supabase, user.id, itens, "busca_cnpj");
+      const run = await criarRunBigDataCorp(supabase, user.id, itens, "busca_cnpj", {
+        searchId: searchId ?? undefined, limite: LIMITE_LOTE_BUSCA, opcoes: { socios: filtros.sociosModo },
+      });
       if (run) {
         bigdatacorpRunId = run.id;
-        avisoBigDataCorp = `Enriquecimento por CNPJ (sócios/contato) iniciado em background pra ${run.total} empresa(s) — acompanhe em Enriquecimento → Sócios e Contato.`;
+        avisoBigDataCorp = `Buscando o celular do sócio de ${run.total} empresa(s) em segundo plano. Quando terminar, ele aparece nos resultados desta pesquisa (coluna "Celular do sócio") e o detalhe fica em Enriquecimento → Sócios e Contato.`;
       }
     }
   }

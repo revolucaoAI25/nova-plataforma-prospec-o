@@ -1,6 +1,19 @@
-import type { BigDataCorpEnrichmentLeadRow } from "@/lib/database.types";
+import type { BigDataCorpEnrichmentLeadRow, BigDataCorpEnrichmentRunRow } from "@/lib/database.types";
+import { normalizarOpcoesCelularSocio } from "@/lib/celular-socio";
 import { mesclarBigDataCorpNoLote } from "../enrichment-merge";
 import type { FlowExecutorContext, FlowExecutorOutcome } from "../executor-types";
+
+/**
+ * Saída "Sem celular" ligada: quem não teve o celular do sócio encontrado
+ * (ou nem tinha CNPJ) vai por ela. Sem ligação, todo mundo segue pelo
+ * caminho principal, com o telefone que já tinha.
+ */
+function separarPorCelular(lote: Array<Record<string, unknown>>, saidasConectadas: string[]) {
+  if (!saidasConectadas.includes("sem_celular")) return { principal: lote, saidas: undefined };
+  const comCelular = lote.filter((l) => l.socio_celular);
+  const semCelular = lote.filter((l) => !l.socio_celular);
+  return { principal: comCelular, saidas: { sem_celular: semCelular } };
+}
 
 /**
  * Nó assíncrono, mesmo padrão de executarEnriquecimentoIa: na primeira vez
@@ -14,7 +27,7 @@ import type { FlowExecutorContext, FlowExecutorOutcome } from "../executor-types
  * pro disparo por e-mail: sem o dado necessário, o nó não inventa.
  */
 export async function executarEnriquecimentoBigDataCorp(ctx: FlowExecutorContext): Promise<FlowExecutorOutcome> {
-  const { sb, userId, contexto } = ctx;
+  const { sb, userId, contexto, node, saidasConectadas } = ctx;
   const lote = contexto.lote || [];
 
   const runIdExistente = contexto.bigdatacorpRunId as string | undefined;
@@ -23,15 +36,24 @@ export async function executarEnriquecimentoBigDataCorp(ctx: FlowExecutorContext
     if (!run) return { status: "erro", erro: "Execução de enriquecimento BigDataCorp não encontrada." };
     if (run.status === "concluido") {
       const { data: bigdatacorpLeads } = await sb.from("bigdatacorp_enrichment_leads").select("*").eq("run_id", runIdExistente);
-      const loteEnriquecido = mesclarBigDataCorpNoLote(lote, (bigdatacorpLeads as BigDataCorpEnrichmentLeadRow[]) || []);
+      const opcoes = normalizarOpcoesCelularSocio((run as BigDataCorpEnrichmentRunRow).opcoes);
+      const loteEnriquecido = mesclarBigDataCorpNoLote(lote, (bigdatacorpLeads as BigDataCorpEnrichmentLeadRow[]) || [], {
+        umLeadPorSocio: opcoes.socios === "todos",
+      });
+      const { principal, saidas } = separarPorCelular(loteEnriquecido, saidasConectadas);
       return {
         status: "concluido",
         leadsEntrada: lote.length,
-        leadsSaida: lote.length,
-        detalhe: { bigdatacorpRunId: runIdExistente, encontrados: run.encontrados, naoEncontrados: run.nao_encontrados, erros: run.erros },
+        leadsSaida: principal.length,
+        detalhe: {
+          bigdatacorpRunId: runIdExistente, encontrados: run.encontrados, naoEncontrados: run.nao_encontrados, erros: run.erros,
+          comCelular: run.com_celular ?? 0,
+          ...(run.erros ? { aviso: `${run.erros} empresa(s) com erro na consulta${run.erro ? `: ${run.erro}` : ""}.` } : {}),
+        },
         // Limpa a marca: outro nó de enriquecimento mais adiante (ou num
         // ramo que herdou este contexto) precisa criar a própria execução.
-        contextoPatch: { lote: loteEnriquecido, bigdatacorpRunId: undefined },
+        contextoPatch: { lote: principal, bigdatacorpRunId: undefined },
+        saidas,
       };
     }
     if (run.status === "erro") {
@@ -48,15 +70,18 @@ export async function executarEnriquecimentoBigDataCorp(ctx: FlowExecutorContext
   // erro: o lote segue como está, sem gastar crédito, e o aviso aparece no
   // histórico. Antes isso virava erro e a execução tentava de novo 3 vezes.
   if (!itens.length) {
+    const { principal, saidas } = separarPorCelular(lote, saidasConectadas);
     return {
-      status: "concluido", leadsEntrada: lote.length, leadsSaida: lote.length,
+      status: "concluido", leadsEntrada: lote.length, leadsSaida: principal.length,
       detalhe: { aviso: "Nenhum lead tinha CNPJ: o lote seguiu sem enriquecer." },
+      contextoPatch: { lote: principal },
+      saidas,
     };
   }
 
   const { data: run, error: runError } = await sb
     .from("bigdatacorp_enrichment_runs")
-    .insert({ user_id: userId, status: "pendente", total: itens.length, origem: "fluxo" })
+    .insert({ user_id: userId, status: "pendente", total: itens.length, origem: "fluxo", opcoes: normalizarOpcoesCelularSocio(node.config) })
     .select()
     .single();
   if (runError || !run) return { status: "erro", erro: "Não foi possível criar a execução de enriquecimento BigDataCorp." };

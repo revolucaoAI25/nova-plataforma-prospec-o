@@ -34,7 +34,7 @@ function colunasParaLote(lote: Array<Record<string, unknown>>): Array<{ chave: s
   const outras = [...chavesExtras].filter((c) => !c.startsWith("enriquecimento_") && !c.startsWith("bigdatacorp_")).sort();
   for (const chave of enriquecimento) colunas.push({ chave, label: ENRIQUECIMENTO_LABELS[chave] || humanizarChave(chave) });
   for (const chave of bigdatacorp) colunas.push({ chave, label: BIGDATACORP_LABELS[chave] || humanizarChave(chave) });
-  for (const chave of outras) colunas.push({ chave, label: humanizarChave(chave) });
+  for (const chave of outras) colunas.push({ chave, label: BIGDATACORP_LABELS[chave] || humanizarChave(chave) });
 
   return colunas;
 }

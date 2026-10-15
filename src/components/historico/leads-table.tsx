@@ -2,9 +2,12 @@ import { ExternalLink, Users } from "lucide-react";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { EmptyState } from "@/components/ui/empty-state";
 import type { LeadRow } from "@/lib/database.types";
+import { formatarExibicao } from "@/lib/phone";
 
 export function LeadsTable({ leads }: { leads: LeadRow[] }) {
   if (!leads.length) return <EmptyState icon={Users} title="Nenhum lead salvo nesta pesquisa" />;
+  // Coluna só aparece quando a busca rodou com "Buscar o celular do sócio".
+  const comCelularSocio = leads.some((l) => l.celular_socio);
 
   return (
     <div className="flex flex-col gap-2">
@@ -13,6 +16,7 @@ export function LeadsTable({ leads }: { leads: LeadRow[] }) {
           <TableRow>
             <TableHead>Nome</TableHead>
             <TableHead>Telefone</TableHead>
+            {comCelularSocio && <TableHead>Celular do sócio</TableHead>}
             <TableHead>Cidade/UF</TableHead>
             <TableHead>E-mail</TableHead>
             <TableHead>Site</TableHead>
@@ -24,6 +28,16 @@ export function LeadsTable({ leads }: { leads: LeadRow[] }) {
             <TableRow key={lead.id}>
               <TableCell className="max-w-[220px] truncate font-medium">{lead.nome || "—"}</TableCell>
               <TableCell>{lead.telefone || lead.telefone2 || "—"}</TableCell>
+              {comCelularSocio && (
+                <TableCell className="whitespace-nowrap">
+                  {lead.celular_socio ? (
+                    <span className="flex flex-col">
+                      <span className="font-medium">{formatarExibicao(lead.celular_socio)}</span>
+                      {lead.socio_principal && <span className="max-w-[180px] truncate text-xs text-muted-foreground">{lead.socio_principal}</span>}
+                    </span>
+                  ) : "—"}
+                </TableCell>
+              )}
               <TableCell>{[lead.municipio, lead.uf].filter(Boolean).join(" / ") || "—"}</TableCell>
               <TableCell className="max-w-[180px] truncate">{lead.email || "—"}</TableCell>
               <TableCell className="max-w-[160px] truncate">

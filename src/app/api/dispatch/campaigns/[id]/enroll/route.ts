@@ -3,6 +3,7 @@ import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { enrollTargets, atualizarCampanha, perfilComDisparoHabilitado } from "@/lib/dispatch-db";
 import { buscarLeadsDaPesquisa } from "@/lib/db";
+import { preferirCelularDoSocio } from "@/lib/phone";
 
 const bodySchema = z.object({
   searchId: z.string().uuid().optional(),
@@ -27,7 +28,8 @@ export async function POST(
   let leads: Array<{ nome?: string | null; telefone?: string | null }> = [];
   if (parsed.data.searchId) {
     const rows = await buscarLeadsDaPesquisa(supabase, parsed.data.searchId);
-    leads = rows.map((r) => ({ ...r, nome: r.nome, telefone: r.telefone }));
+    // Busca com "celular do sócio": o envio vai para o celular dele.
+    leads = rows.map((r) => preferirCelularDoSocio({ ...r, nome: r.nome, telefone: r.telefone }));
   } else if (parsed.data.leads) {
     leads = parsed.data.leads;
   } else {

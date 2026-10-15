@@ -81,7 +81,7 @@ const texto = (v: unknown) => (v === null || v === undefined ? "" : String(v).tr
 
 /** Campos calculados a partir do lead — não sobrescrevem um campo de mesmo nome que já exista no lead. */
 export function variaveisDerivadas(lead: Record<string, unknown>): Record<string, string> {
-  const socio = texto(lead.bigdatacorp_socio_nome) || texto(lead.socio_principal);
+  const socio = texto(lead.socio_nome) || texto(lead.bigdatacorp_socio_nome) || texto(lead.socio_principal);
   // Pessoa: LinkedIn/Instagram trazem o nome da pessoa em `nome`/`nome_completo`;
   // em CNPJ/Maps `nome` é a empresa, então só o sócio vira primeiro nome.
   const pessoa = texto(lead.nome_completo) || (lead.linkedin_url || lead.username ? texto(lead.nome) : "") || socio;

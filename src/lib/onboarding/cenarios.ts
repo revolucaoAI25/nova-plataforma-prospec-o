@@ -212,7 +212,8 @@ const instagram = (p: ParametrosCenario): Passo => ({
   },
 });
 
-const socios: Passo = { tipo: "enriquecimento_bigdatacorp", config: {} };
+// Celular do sócio: só o administrador, só WhatsApp, respeitando bloqueio.
+const socios: Passo = { tipo: "enriquecimento_bigdatacorp", config: { socios: "administrador", maxSocios: 2, soWhatsapp: true, respeitarBloqueio: true } };
 
 const ia = (p: ParametrosCenario): Passo => ({
   tipo: "enriquecimento_ia",
@@ -254,7 +255,7 @@ const linkedinDisparo = (a: AlvosMontagem): Passo => ({
 // (src/lib/mensagem.ts): nome sem LTDA/caixa alta, primeiro nome do sócio ou
 // da pessoa, município formatado. São as que a IA deve preferir.
 const VARS_CNPJ = ["empresa", "cidade", "primeiro_nome", "uf", "porte", "socio_principal"];
-const VARS_SOCIOS = [...VARS_CNPJ, "bigdatacorp_socio_nome"];
+const VARS_SOCIOS = [...VARS_CNPJ, "socio_nome", "socio_cargo"];
 const VARS_MAPS = ["empresa", "cidade", "uf", "avaliacao", "site"];
 const VARS_LINKEDIN = ["primeiro_nome", "empresa", "cargo", "cidade"];
 const VARS_IA = ["enriquecimento_resumo", "enriquecimento_empresa", "enriquecimento_extra_<campo>"];
@@ -288,11 +289,11 @@ export const CENARIOS: Record<CenarioId, Cenario> = {
   },
   cnpj_decisor_whatsapp: {
     id: "cnpj_decisor_whatsapp",
-    nome: "CNPJ + sócio e contato validado → WhatsApp",
-    resumo: "Mesma base de CNPJ, mas com o sócio identificado e um telefone validado antes de abordar.",
+    nome: "CNPJ + celular do sócio → WhatsApp",
+    resumo: "Mesma base de CNPJ, mas a mensagem vai para o celular pessoal (com WhatsApp) do sócio administrador.",
     fonte: "cnpj",
     canais: ["whatsapp"],
-    acoesPorLead: ["cnpj", "bigdatacorp"],
+    acoesPorLead: ["cnpj", "bigdatacorp", "socio_celular"],
     usaOpenai: false,
     recursos: ["disparo_habilitado", "bigdatacorp_enrichment_habilitado"],
     idealPara: [
@@ -339,7 +340,7 @@ export const CENARIOS: Record<CenarioId, Cenario> = {
     resumo: "E-mail validado do sócio/empresa antes de entrar na sequência.",
     fonte: "cnpj",
     canais: ["email"],
-    acoesPorLead: ["cnpj", "bigdatacorp"],
+    acoesPorLead: ["cnpj", "bigdatacorp", "socio_celular"],
     usaOpenai: false,
     recursos: ["email_disparo_habilitado", "bigdatacorp_enrichment_habilitado"],
     idealPara: [
@@ -358,7 +359,7 @@ export const CENARIOS: Record<CenarioId, Cenario> = {
     resumo: "O mesmo lead recebe WhatsApp e, alguns dias depois, e-mail — máxima chance de contato.",
     fonte: "cnpj",
     canais: ["whatsapp", "email"],
-    acoesPorLead: ["cnpj", "bigdatacorp"],
+    acoesPorLead: ["cnpj", "bigdatacorp", "socio_celular"],
     usaOpenai: false,
     recursos: ["disparo_habilitado", "email_disparo_habilitado", "bigdatacorp_enrichment_habilitado"],
     idealPara: [
@@ -420,7 +421,7 @@ export const CENARIOS: Record<CenarioId, Cenario> = {
     resumo: "Empresas em recuperação judicial, com sócio identificado, em abordagem formal por e-mail.",
     fonte: "cnpj",
     canais: ["email"],
-    acoesPorLead: ["cnpj", "bigdatacorp"],
+    acoesPorLead: ["cnpj", "bigdatacorp", "socio_celular"],
     usaOpenai: false,
     recursos: ["email_disparo_habilitado", "bigdatacorp_enrichment_habilitado"],
     idealPara: ["advocacia empresarial, consultoria financeira/reestruturação, compra de ativos"],
@@ -577,7 +578,7 @@ export const CENARIOS: Record<CenarioId, Cenario> = {
     resumo: "Sua lista com CNPJ ganha sócio e telefone validado antes de ser abordada.",
     fonte: "base_propria",
     canais: ["whatsapp"],
-    acoesPorLead: ["bigdatacorp"],
+    acoesPorLead: ["bigdatacorp", "socio_celular"],
     usaOpenai: false,
     recursos: ["disparo_habilitado", "bigdatacorp_enrichment_habilitado"],
     idealPara: ["base com CNPJ, mas com telefones ruins ou sem saber quem é o decisor"],
@@ -593,7 +594,7 @@ export const CENARIOS: Record<CenarioId, Cenario> = {
     resumo: "Empresas com sócio e contato validado chegando no funil, pro seu time abordar do jeito dele.",
     fonte: "cnpj",
     canais: [],
-    acoesPorLead: ["cnpj", "bigdatacorp"],
+    acoesPorLead: ["cnpj", "bigdatacorp", "socio_celular"],
     usaOpenai: false,
     recursos: ["bigdatacorp_enrichment_habilitado"],
     idealPara: [

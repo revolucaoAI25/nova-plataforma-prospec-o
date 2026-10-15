@@ -14,6 +14,12 @@ export async function GET() {
 
 const bodySchema = z.object({
   itens: z.array(z.object({ cnpj: z.string().min(11), nomeLead: z.string().optional() })).min(1).max(50),
+  opcoes: z.object({
+    socios: z.enum(["administrador", "todos"]).optional(),
+    maxSocios: z.number().int().min(1).max(5).optional(),
+    soWhatsapp: z.boolean().optional(),
+    respeitarBloqueio: z.boolean().optional(),
+  }).optional(),
 });
 
 export async function POST(request: Request) {
@@ -27,7 +33,7 @@ export async function POST(request: Request) {
   const parsed = bodySchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "Dados inválidos.", detalhes: parsed.error.flatten() }, { status: 400 });
 
-  const run = await criarRunBigDataCorp(supabase, user.id, parsed.data.itens, "manual");
+  const run = await criarRunBigDataCorp(supabase, user.id, parsed.data.itens, "manual", { opcoes: parsed.data.opcoes });
   if (!run) return NextResponse.json({ error: "Nenhum CNPJ válido no lote (esperado 14 dígitos)." }, { status: 400 });
 
   // O worker (tickBigDataCorpEnrichment, a cada ~10s) pega execuções

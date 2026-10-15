@@ -12,9 +12,11 @@ import { Coins } from "lucide-react";
 export function CreditoEstimado({
   custoPorUnidade,
   unidade = "resultado",
+  nota = "cobrado só pelo que for encontrado",
 }: {
   custoPorUnidade: number;
   unidade?: string;
+  nota?: string;
 }) {
   if (custoPorUnidade <= 0) return null;
 
@@ -23,7 +25,7 @@ export function CreditoEstimado({
       <Coins className="h-3.5 w-3.5 shrink-0 text-primary" />
       <span className="font-semibold text-foreground">{custoPorUnidade}</span>{" "}
       {custoPorUnidade === 1 ? "crédito" : "créditos"} por {unidade}
-      <span className="text-muted-2">— cobrado só pelo que for encontrado</span>
+      <span className="text-muted-2">— {nota}</span>
     </p>
   );
 }

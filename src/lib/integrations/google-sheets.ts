@@ -120,6 +120,7 @@ const COLUNAS_EXPORT: Array<[keyof LeadRow, string]> = [
   // Campos de Instagram e LinkedIn no fim, para não desalinhar planilhas que
   // já recebem exportações no modo "acrescentar".
   ["username", "Usuário Instagram"], ["linkedin_url", "LinkedIn"], ["cargo", "Cargo"], ["empresa_atual", "Empresa (LinkedIn)"],
+  ["celular_socio", "Celular do Sócio"],
 ];
 
 async function garantirLinhas(

@@ -539,6 +539,30 @@ function CamposEnriquecimentoMaps({ config, set }: CamposProps) {
   );
 }
 
+function CamposSociosContato({ config, set }: CamposProps) {
+  const modo = config.socios === "todos" ? String(config.maxSocios ?? 2) : "administrador";
+  return (
+    <>
+      <Campo label="De quais sócios buscar o celular">
+        <Select value={modo} onValueChange={(v) => set(v === "administrador" ? { socios: "administrador" } : { socios: "todos", maxSocios: Number(v) })}>
+          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="administrador">Só o administrador</SelectItem>
+            <SelectItem value="2">Até 2 sócios (um lead por sócio)</SelectItem>
+            <SelectItem value="3">Até 3 sócios (um lead por sócio)</SelectItem>
+          </SelectContent>
+        </Select>
+      </Campo>
+      <CampoCheckbox checked={config.soWhatsapp !== false} onCheckedChange={(c) => set({ soWhatsapp: c })}>Só celular com WhatsApp</CampoCheckbox>
+      <CampoCheckbox checked={config.respeitarBloqueio !== false} onCheckedChange={(c) => set({ respeitarBloqueio: c })}>Respeitar bloqueio de telemarketing</CampoCheckbox>
+      <p className="text-xs text-muted-foreground">
+        Só funciona em leads com CNPJ. Quando acha, o celular do sócio vira o telefone do lead (o da empresa fica em {"{{telefone_empresa}}"}).
+        Cobra a consulta da empresa e cada sócio consultado.
+      </p>
+    </>
+  );
+}
+
 // ── Controle de fluxo ─────────────────────────────────────────────
 
 function CamposFiltroLeads({ config, set }: CamposProps) {
@@ -858,6 +882,7 @@ function CamposDoNo({ node, config, set }: { node: FlowNode } & CamposProps) {
     case "fonte_historico": return <CamposFonteHistorico config={config} set={set} />;
     case "enriquecimento_ia": return <CamposEnriquecimentoIa config={config} set={set} />;
     case "enriquecimento_maps": return <CamposEnriquecimentoMaps config={config} set={set} />;
+    case "enriquecimento_bigdatacorp": return <CamposSociosContato config={config} set={set} />;
     case "filtro_leads": return <CamposFiltroLeads config={config} set={set} />;
     case "limitar_lote": return <CamposLimitarLote config={config} set={set} />;
     case "espera": return <CamposEspera config={config} set={set} />;

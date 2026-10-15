@@ -79,8 +79,10 @@ export function resumoDoNo(tipo: FlowNodeTipo, config: unknown): string | null {
     }
     case "enriquecimento_maps":
       return c.filtrar ? `Só quem está no Maps${num(c.minAvaliacoes) ? ` com ${num(c.minAvaliacoes)}+ avaliações` : ""}` : "Completa telefone, site e avaliação";
-    case "enriquecimento_bigdatacorp":
-      return "Sócio, telefone e e-mail pelo CNPJ";
+    case "enriquecimento_bigdatacorp": {
+      const quem = c.socios === "todos" ? `até ${num(c.maxSocios) || 2} sócios` : "administrador";
+      return `Celular do ${quem}${c.soWhatsapp === false ? "" : " com WhatsApp"}`;
+    }
     case "filtro_leads": {
       if (!texto(c.campo)) return null;
       const op = String(c.operador ?? "");

@@ -84,7 +84,8 @@ export type AcaoCredito =
   | "maps"
   | "instagram"
   | "linkedin"
-  | "bigdatacorp";
+  | "bigdatacorp"
+  | "socio_celular";
 
 export interface CreditCostRow {
   acao: AcaoCredito;
@@ -218,6 +219,7 @@ export type PlatformSettingKey =
   | "unipile_webhook_secret"
   | "bigdatacorp_token_id"
   | "bigdatacorp_access_token"
+  | "directd_token"
   | "asaas_api_key"
   | "asaas_webhook_token"
   | "google_client_id"
@@ -280,6 +282,7 @@ export interface LeadRow {
   mei_optante: string | null;
   situacao_especial: string | null;
   socio_principal: string | null;
+  celular_socio: string | null;
   porte: string | null;
   nicho: string | null;
   subnicho: string | null;
@@ -333,8 +336,26 @@ export type BigDataCorpRunOrigem = "manual" | "busca_cnpj" | "fluxo";
 
 export interface BigDataCorpSocioRow {
   nome: string;
+  /** CPF/CNPJ do sócio. Nas consultas novas vem mascarado (o completo só fica no cache do servidor). */
   documento: string;
   qualificacao: string;
+  /** Celular escolhido para o sócio (só quando ele foi consultado pelo CPF). */
+  celular?: string | null;
+  whatsapp?: boolean;
+  /** Outros celulares do sócio, na ordem de preferência. */
+  outros?: string[];
+}
+
+/** Opções do enriquecimento "Sócios e Contato" (celular do sócio). */
+export interface OpcoesCelularSocio {
+  /** Consultar só o administrador (padrão) ou vários sócios. */
+  socios: "administrador" | "todos";
+  /** No modo "todos", quantos sócios no máximo por empresa. */
+  maxSocios: number;
+  /** Só aceita celular marcado com WhatsApp. */
+  soWhatsapp: boolean;
+  /** Descarta números com bloqueio de telemarketing. */
+  respeitarBloqueio: boolean;
 }
 
 export interface BigDataCorpEnrichmentRunRow {
@@ -351,6 +372,9 @@ export interface BigDataCorpEnrichmentRunRow {
   created_at: string;
   concluido_em: string | null;
   processando_desde: string | null;
+  opcoes: Partial<OpcoesCelularSocio> | Json;
+  search_id: string | null;
+  com_celular: number;
 }
 
 export interface BigDataCorpEnrichmentLeadRow {
@@ -368,6 +392,10 @@ export interface BigDataCorpEnrichmentLeadRow {
   extras: Json | null;
   erro: string | null;
   created_at: string;
+  socio_nome: string | null;
+  socio_cargo: string | null;
+  socio_celular: string | null;
+  socio_whatsapp: boolean | null;
 }
 export type NivelRaciocinio = "rapido" | "equilibrado" | "profundo";
 

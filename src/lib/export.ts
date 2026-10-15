@@ -38,6 +38,9 @@ export const COLUNAS_PADRAO: Array<[keyof LeadRow, string]> = [
   ["cidade_busca", "Cidade Buscada"],
   ["estado_busca", "Estado Buscado"],
   ["fonte", "Fonte"],
+  // No fim: o destino Planilha do fluxo acrescenta linhas em planilhas que
+  // já existem, e coluna nova no meio desalinharia as antigas.
+  ["celular_socio", "Celular do Sócio"],
 ];
 
 /**

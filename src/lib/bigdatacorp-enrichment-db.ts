@@ -1,8 +1,11 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getProfile } from "@/lib/credits";
 import type {
-  BigDataCorpEnrichmentRunRow, BigDataCorpEnrichmentLeadRow, BigDataCorpRunOrigem, Profile,
+  BigDataCorpEnrichmentRunRow, BigDataCorpEnrichmentLeadRow, BigDataCorpRunOrigem, OpcoesCelularSocio, Profile,
 } from "@/lib/database.types";
+import { bigDataCorpConfigurado } from "@/lib/integrations/bigdatacorp";
+import { directDataConfigurado } from "@/lib/integrations/direct-data";
+import { normalizarOpcoesCelularSocio } from "@/lib/celular-socio";
 
 // CRUD do enriquecimento por CNPJ via BigDataCorp — mirror estrutural do
 // enriquecimento via IA (enrichment_runs/enrichment_leads em db.ts), mas
@@ -11,6 +14,18 @@ import type {
 // (CNPJ) e a saída (sócios/telefone/e-mail cadastrados) são diferentes.
 
 const LIMITE_LOTE = 50;
+/** A busca por CNPJ manda todos os resultados (o worker vai no ritmo dele). */
+export const LIMITE_LOTE_BUSCA = 2000;
+
+/** Algum fornecedor de sócios e contato configurado na plataforma. */
+export async function sociosEContatoConfigurado(): Promise<boolean> {
+  return (await directDataConfigurado()) || (await bigDataCorpConfigurado());
+}
+
+/** O celular do sócio só sai pela Direct Data. */
+export function celularDoSocioDisponivel(): Promise<boolean> {
+  return directDataConfigurado();
+}
 
 /** Perfil só se `bigdatacorp_enrichment_habilitado` (ou admin) — gate usado por toda rota de API desse enriquecimento. */
 export async function perfilComBigDataCorpEnrichmentHabilitado(sb: SupabaseClient, userId: string): Promise<Profile | null> {
@@ -37,7 +52,9 @@ export interface CnpjParaEnriquecer {
  */
 export async function criarRunBigDataCorp(
   sb: SupabaseClient, userId: string, itens: CnpjParaEnriquecer[], origem: BigDataCorpRunOrigem,
+  extras: { opcoes?: Partial<OpcoesCelularSocio>; searchId?: string; limite?: number } = {},
 ): Promise<BigDataCorpEnrichmentRunRow | null> {
+  const limite = extras.limite ?? LIMITE_LOTE;
   const vistos = new Set<string>();
   const lote: CnpjParaEnriquecer[] = [];
   for (const item of itens) {
@@ -45,13 +62,16 @@ export async function criarRunBigDataCorp(
     if (doc.length !== 14 || vistos.has(doc)) continue;
     vistos.add(doc);
     lote.push({ cnpj: doc, nomeLead: item.nomeLead });
-    if (lote.length >= LIMITE_LOTE) break;
+    if (lote.length >= limite) break;
   }
   if (!lote.length) return null;
 
   const { data: run } = await sb
     .from("bigdatacorp_enrichment_runs")
-    .insert({ user_id: userId, status: "pendente", total: lote.length, origem })
+    .insert({
+      user_id: userId, status: "pendente", total: lote.length, origem,
+      opcoes: normalizarOpcoesCelularSocio(extras.opcoes), search_id: extras.searchId ?? null,
+    })
     .select("*")
     .single();
   if (!run) return null;

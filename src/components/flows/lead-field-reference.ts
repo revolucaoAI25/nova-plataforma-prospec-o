@@ -30,6 +30,7 @@ const CNPJ: GrupoCampos = {
   grupo: "Da busca por CNPJ",
   campos: [
     { chave: "socio_principal", label: "Nome completo do sócio principal (o administrador, quando há)" },
+    { chave: "celular_socio", label: "Celular do sócio (quando a busca pediu)" },
     { chave: "socios", label: "Todos os sócios" },
     { chave: "telefone", label: "Telefone" },
     { chave: "email", label: "E-mail" },
@@ -71,9 +72,12 @@ const INSTAGRAM: GrupoCampos = {
 };
 
 const SOCIOS: GrupoCampos = {
-  grupo: "De Sócios e Contato",
+  grupo: "Do Celular do sócio",
   campos: [
-    { chave: "bigdatacorp_socio_nome", label: "Sócio principal" },
+    { chave: "socio_nome", label: "Nome completo do sócio encontrado" },
+    { chave: "socio_cargo", label: "Cargo do sócio" },
+    { chave: "socio_celular", label: "Celular do sócio (também vira o telefone do lead)" },
+    { chave: "telefone_empresa", label: "Telefone da empresa" },
     { chave: "bigdatacorp_socios", label: "Todos os sócios" },
   ],
 };

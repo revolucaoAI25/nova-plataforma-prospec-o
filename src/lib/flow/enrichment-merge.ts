@@ -84,6 +84,11 @@ export function mesclarEnriquecimentoNoLote(
 }
 
 export const BIGDATACORP_LABELS: Record<string, string> = {
+  socio_nome: "Sócio — Nome",
+  socio_cargo: "Sócio — Cargo",
+  socio_celular: "Sócio — Celular",
+  socio_whatsapp: "Sócio — Tem WhatsApp",
+  telefone_empresa: "Telefone da empresa",
   bigdatacorp_status: "Sócios e Contato — Status",
   bigdatacorp_razao_social: "Sócios e Contato — Razão social",
   bigdatacorp_socios: "Sócios e Contato — Sócios",
@@ -95,19 +100,21 @@ export const BIGDATACORP_LABELS: Record<string, string> = {
 
 /**
  * Mescla os resultados de uma execução de enriquecimento por CNPJ
- * (`bigdatacorp_enrichment_leads`) de volta no lote — casando por CNPJ
- * (chave exata, ao contrário do enriquecimento via IA que precisa de
- * heurística por e-mail/telefone/nome: aqui o CNPJ já é o identificador
- * único usado na consulta). Também sobrescreve `telefone`/`email` do
- * próprio lead quando a consulta trouxe um — é o contato validado e pago,
- * então tem prioridade sobre o da base pública de CNPJ (que costuma estar
- * desatualizado); sem resultado, o original é mantido. É isso que deixa o
- * contato do sócio pronto pro disparo sem exigir que quem monta o fluxo
- * saiba que existe um campo `bigdatacorp_telefone` separado.
+ * (`bigdatacorp_enrichment_leads`) de volta no lote, casando por CNPJ.
+ *
+ * Telefone: quando achou o celular do sócio, ele vira o `telefone` do lead
+ * (é para ele que o disparo de WhatsApp deve ir) e o da empresa fica em
+ * `telefone_empresa`. Sem celular do sócio, vale o telefone que o lead já
+ * tinha e, na falta, o da empresa trazido pela consulta.
+ *
+ * `umLeadPorSocio`: no modo "vários sócios", cada sócio com celular vira um
+ * lead (mesma empresa, contato diferente). Empresa sem nenhum celular
+ * continua como um lead só.
  */
 export function mesclarBigDataCorpNoLote(
   lote: Array<Record<string, unknown>>,
   bigdatacorpLeads: BigDataCorpEnrichmentLeadRow[],
+  opcoes: { umLeadPorSocio?: boolean } = {},
 ): Array<Record<string, unknown>> {
   const porCnpj = new Map<string, BigDataCorpEnrichmentLeadRow>();
   for (const bl of bigdatacorpLeads) {
@@ -115,25 +122,42 @@ export function mesclarBigDataCorpNoLote(
     if (doc) porCnpj.set(doc, bl);
   }
 
-  return lote.map((lead) => {
+  return lote.flatMap((lead) => {
     const doc = apenasDigitos(String(lead.cnpj || ""));
     const resultado = doc ? porCnpj.get(doc) : undefined;
-    if (!resultado) return lead;
+    if (!resultado) return [lead];
 
     const socios = Array.isArray(resultado.socios) ? (resultado.socios as BigDataCorpSocioRow[]) : [];
     const sociosTexto = socios.map((s) => s.nome + (s.qualificacao ? ` (${s.qualificacao})` : "")).join("; ");
+    const telefoneOriginal = String(lead.telefone || "") || resultado.telefone || "";
 
-    return {
+    const base: Record<string, unknown> = {
       ...lead,
-      telefone: resultado.telefone || lead.telefone || "",
       email: resultado.email || lead.email || "",
       bigdatacorp_status: resultado.status,
       bigdatacorp_razao_social: resultado.razao_social || "",
       bigdatacorp_socios: sociosTexto,
-      bigdatacorp_socio_nome: socios[0]?.nome || "",
       bigdatacorp_telefone: resultado.telefone || "",
       bigdatacorp_email: resultado.email || "",
       bigdatacorp_endereco: resultado.endereco || "",
     };
+    const comSocio = (nome: string, cargo: string, celular: string, whatsapp: boolean) => ({
+      ...base,
+      telefone: celular || telefoneOriginal,
+      telefone_empresa: telefoneOriginal,
+      socio_nome: nome,
+      socio_cargo: cargo,
+      socio_celular: celular,
+      socio_whatsapp: celular ? (whatsapp ? "sim" : "não") : "",
+      // Nome antigo do campo: mensagens e fluxos já salvos usam este.
+      bigdatacorp_socio_nome: nome,
+      socio_principal: nome || lead.socio_principal || "",
+    });
+
+    if (opcoes.umLeadPorSocio) {
+      const comCelular = socios.filter((s) => s.celular);
+      if (comCelular.length) return comCelular.map((s) => comSocio(s.nome, s.qualificacao, s.celular || "", Boolean(s.whatsapp)));
+    }
+    return [comSocio(resultado.socio_nome || socios[0]?.nome || "", resultado.socio_cargo || "", resultado.socio_celular || "", Boolean(resultado.socio_whatsapp))];
   });
 }

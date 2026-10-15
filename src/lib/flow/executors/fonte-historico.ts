@@ -1,4 +1,5 @@
 import { buscarLeadsDaPesquisa } from "@/lib/db";
+import { preferirCelularDoSocio } from "@/lib/phone";
 import type { FlowExecutorContext, FlowExecutorOutcome } from "../executor-types";
 
 /** Usa uma pesquisa já existente do Histórico como ponto de partida do fluxo, sem nova extração. */
@@ -24,6 +25,7 @@ export async function executarFonteHistorico(ctx: FlowExecutorContext): Promise<
     status: "concluido",
     leadsSaida: leads.length,
     detalhe: { searchId },
-    contextoPatch: { searchId, lote: leads as unknown as Record<string, unknown>[] },
+    // Pesquisa que rodou com o celular do sócio: o disparo vai para ele.
+    contextoPatch: { searchId, lote: leads.map(preferirCelularDoSocio) as unknown as Record<string, unknown>[] },
   };
 }

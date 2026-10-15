@@ -64,6 +64,7 @@ export const PLATFORM_SETTINGS_META: Record<
   unipile_webhook_secret: { grupo: "Unipile (LinkedIn)", label: "Segredo do webhook", envFallback: "UNIPILE_WEBHOOK_SECRET", secreto: true },
   bigdatacorp_token_id: { grupo: "BigDataCorp (enriquecimento)", label: "Token ID", envFallback: "BIGDATACORP_TOKEN_ID", secreto: true },
   bigdatacorp_access_token: { grupo: "BigDataCorp (enriquecimento)", label: "Access Token", envFallback: "BIGDATACORP_ACCESS_TOKEN", secreto: true },
+  directd_token: { grupo: "Direct Data (celular do sócio)", label: "Token", envFallback: "DIRECTD_TOKEN", secreto: true },
   asaas_api_key: { grupo: "Asaas (pagamentos)", label: "API Key", envFallback: "ASAAS_API_KEY", secreto: true },
   asaas_webhook_token: { grupo: "Asaas (pagamentos)", label: "Token do webhook", envFallback: "ASAAS_WEBHOOK_TOKEN", secreto: true },
   google_client_id: { grupo: "Google Sheets (OAuth)", label: "Client ID", envFallback: "GOOGLE_CLIENT_ID", secreto: false },

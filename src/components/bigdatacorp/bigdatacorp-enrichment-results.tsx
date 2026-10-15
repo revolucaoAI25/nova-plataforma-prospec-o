@@ -1,12 +1,23 @@
 "use client";
 
 import { useState } from "react";
-import { Building2, CheckCircle2, CircleDashed, AlertTriangle, ChevronDown, ChevronUp, Phone, Mail, Users2 } from "lucide-react";
+import { Building2, CheckCircle2, CircleDashed, AlertTriangle, ChevronDown, ChevronUp, Phone, Mail, Users2, Smartphone } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { ResultsSummary, type SummaryMetric } from "@/components/search/results-summary";
 import type { BigDataCorpEnrichmentLeadRow, BigDataCorpEnrichmentRunRow, BigDataCorpSocioRow } from "@/lib/database.types";
+import { formatarExibicao } from "@/lib/phone";
+
+function CelularSocio({ numero, whatsapp }: { numero: string; whatsapp?: boolean | null }) {
+  return (
+    <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
+      {formatarExibicao(numero)}
+      {/* span, não Badge (div): aparece dentro de <p> */}
+      {whatsapp && <span className="rounded-full bg-success px-1.5 text-[10px] font-semibold text-success-foreground">WhatsApp</span>}
+    </span>
+  );
+}
 
 const STATUS_BADGE: Record<string, { label: string; variant: "success" | "outline" | "destructive" | "secondary" }> = {
   pendente: { label: "Na fila…", variant: "outline" },
@@ -50,7 +61,12 @@ function LeadCard({ lead }: { lead: BigDataCorpEnrichmentLeadRow }) {
             <div className="flex flex-col gap-1 text-sm">
               {lead.status === "concluido" ? (
                 <>
-                  {lead.telefone && <p className="flex items-center gap-1.5"><Phone className="h-3.5 w-3.5 text-muted-foreground" /> {lead.telefone}</p>}
+                  {lead.socio_celular && (
+                    <p className="flex flex-wrap items-center gap-1.5 font-medium">
+                      <Smartphone className="h-3.5 w-3.5 text-primary" /> {lead.socio_nome}: <CelularSocio numero={lead.socio_celular} whatsapp={lead.socio_whatsapp} />
+                    </p>
+                  )}
+                  {lead.telefone && <p className="flex items-center gap-1.5"><Phone className="h-3.5 w-3.5 text-muted-foreground" /> Empresa: {formatarExibicao(lead.telefone)}</p>}
                   {lead.email && <p className="flex items-center gap-1.5"><Mail className="h-3.5 w-3.5 text-muted-foreground" /> {lead.email}</p>}
                   {!lead.telefone && !lead.email && <p className="text-muted-foreground">Empresa encontrada, sem telefone/e-mail cadastrado.</p>}
                   {socios.length > 0 && (
@@ -58,11 +74,16 @@ function LeadCard({ lead }: { lead: BigDataCorpEnrichmentLeadRow }) {
                       <p className="flex items-center gap-1.5 text-muted-foreground"><Users2 className="h-3.5 w-3.5" /> Sócios/quadro societário:</p>
                       <ul className="ml-5 list-disc">
                         {socios.map((s, i) => (
-                          <li key={i}>{s.nome}{s.qualificacao ? ` — ${s.qualificacao}` : ""}</li>
+                          <li key={i}>
+                            {s.nome}{s.qualificacao ? ` — ${s.qualificacao}` : ""}
+                            {s.celular ? <> · <CelularSocio numero={s.celular} whatsapp={s.whatsapp} /></> : s.celular === null ? " · sem celular" : ""}
+                            {s.outros?.length ? <span className="text-muted-foreground"> (outros: {s.outros.map(formatarExibicao).join(", ")})</span> : null}
+                          </li>
                         ))}
                       </ul>
                     </div>
                   )}
+                  {lead.erro && <p className="text-xs text-muted-foreground">{lead.erro}</p>}
                 </>
               ) : lead.status === "erro" ? (
                 <p className="text-destructive">{lead.erro || "Erro desconhecido ao consultar esse CNPJ."}</p>
@@ -80,12 +101,22 @@ function LeadCard({ lead }: { lead: BigDataCorpEnrichmentLeadRow }) {
 }
 
 export function BigDataCorpResults({ run, leads }: { run: BigDataCorpEnrichmentRunRow; leads: BigDataCorpEnrichmentLeadRow[] }) {
-  const metrics: SummaryMetric[] = [
-    { icon: Building2, label: "Total processados", value: run.processados, hint: `de ${run.total}`, tone: "primary" },
-    { icon: CheckCircle2, label: "Encontrados", value: run.encontrados, tone: "info" },
-    { icon: CircleDashed, label: "Não encontrados", value: run.nao_encontrados, tone: "violet" },
-    { icon: AlertTriangle, label: "Erros", value: run.erros, tone: "destructive" },
-  ];
+  // Execuções do celular do sócio mostram o que importa: quantas empresas
+  // saíram com o celular. As antigas (só contato da empresa) não têm isso.
+  const comCelular = leads.some((l) => l.socio_celular || l.socio_nome) || run.com_celular > 0;
+  const metrics: SummaryMetric[] = comCelular
+    ? [
+        { icon: Building2, label: "Empresas processadas", value: run.processados, hint: `de ${run.total}`, tone: "primary" },
+        { icon: Smartphone, label: "Com celular do sócio", value: run.com_celular, tone: "info" },
+        { icon: CircleDashed, label: "Sem celular", value: Math.max(run.processados - run.com_celular - run.erros, 0), tone: "violet" },
+        { icon: AlertTriangle, label: "Erros", value: run.erros, tone: "destructive" },
+      ]
+    : [
+        { icon: Building2, label: "Total processados", value: run.processados, hint: `de ${run.total}`, tone: "primary" },
+        { icon: CheckCircle2, label: "Encontrados", value: run.encontrados, tone: "info" },
+        { icon: CircleDashed, label: "Não encontrados", value: run.nao_encontrados, tone: "violet" },
+        { icon: AlertTriangle, label: "Erros", value: run.erros, tone: "destructive" },
+      ];
 
   return (
     <div className="flex flex-col gap-5">
@@ -102,7 +133,9 @@ export function BigDataCorpResults({ run, leads }: { run: BigDataCorpEnrichmentR
                 <TableHead>CNPJ</TableHead>
                 <TableHead>Razão social</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>Telefone</TableHead>
+                {comCelular && <TableHead>Sócio</TableHead>}
+                {comCelular && <TableHead>Celular do sócio</TableHead>}
+                <TableHead>{comCelular ? "Telefone da empresa" : "Telefone"}</TableHead>
                 <TableHead>E-mail</TableHead>
                 <TableHead>Sócios</TableHead>
               </TableRow>
@@ -116,7 +149,9 @@ export function BigDataCorpResults({ run, leads }: { run: BigDataCorpEnrichmentR
                     <TableCell className="font-medium">{l.cnpj_entrada}</TableCell>
                     <TableCell className="max-w-[200px] truncate">{l.razao_social || "—"}</TableCell>
                     <TableCell><Badge variant={status.variant}>{status.label}</Badge></TableCell>
-                    <TableCell>{l.telefone || "—"}</TableCell>
+                    {comCelular && <TableCell className="max-w-[180px] truncate">{l.socio_nome || "—"}</TableCell>}
+                    {comCelular && <TableCell>{l.socio_celular ? <CelularSocio numero={l.socio_celular} whatsapp={l.socio_whatsapp} /> : "—"}</TableCell>}
+                    <TableCell className="whitespace-nowrap">{l.telefone ? formatarExibicao(l.telefone) : "—"}</TableCell>
                     <TableCell className="max-w-[180px] truncate">{l.email || "—"}</TableCell>
                     <TableCell>{socios.length ? `${socios.length} sócio(s)` : "—"}</TableCell>
                   </TableRow>

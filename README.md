@@ -63,6 +63,9 @@ No [painel do Supabase](https://supabase.com/dashboard), crie um projeto novo
     como `user` (o papel não vem mais do metadata do cadastro). `0036` a
     `0039`: ramos nos fluxos, correção da conferência de dono do canal das
     campanhas, log do "Criar com IA" e coordenadas dos leads para o mapa.
+    `0040_celular_socio.sql`: opções e contagem do celular do sócio nas
+    execuções de "Sócios e Contato", `leads.celular_socio`, cache
+    `consultas_cadastrais` e o custo "socio_celular".
     Rode-as **antes** do deploy desta versão (o código novo grava colunas
     que elas criam). Todas podem ser rodadas de
     novo sem erro (usam `if not exists` / `create or replace`).
@@ -1394,6 +1397,28 @@ mas nada é processado — é só fila).
   segundos por endereço; Google Geocoding descartado por custo. Cache compartilhado
   em `geocodificacoes`; endereço que não acha a rua cai no bairro e, por fim,
   no centro da cidade, com peso menor no calor.
+- **Celular do sócio (Direct Data)** — o enriquecimento "Sócios e Contato"
+  ganhou outro fornecedor: com `DIRECTD_TOKEN` (ou a chave em /admin), o
+  worker consulta a empresa pelo CNPJ (sócios com CPF completo e cargo) e
+  depois cada sócio escolhido pelo CPF (celulares com indicação de WhatsApp e
+  de bloqueio de telemarketing), nas consultas "Básica" de R$ 0,16 cada
+  (`src/lib/integrations/direct-data.ts`, `src/lib/celular-socio.ts`). Sem o
+  token, continua a BigDataCorp. Opções por execução: só o administrador
+  (padrão; sem administrador, o primeiro sócio pessoa física) ou até N sócios,
+  só celular com WhatsApp e respeitar o bloqueio de telemarketing (ambos
+  ligados por padrão). Cobrança: "bigdatacorp" por empresa e "socio_celular"
+  por sócio consultado, achando ou não, conferindo o saldo antes de cada
+  consulta. Cache de 90 dias em `consultas_cadastrais` (só o servidor lê; é o
+  único lugar com o CPF completo — no resultado da execução ele fica
+  mascarado). Onde aparece: aba Enriquecimento; opção "Buscar o celular do
+  sócio" na busca por CNPJ, que grava `leads.celular_socio` e faz o disparo
+  da pesquisa ir para o celular dele (`preferirCelularDoSocio`); nó "Celular
+  do sócio" no fluxo, que troca `telefone` pelo celular (o da empresa vai para
+  `telefone_empresa`), cria um lead por sócio no modo "até N sócios" e tem a
+  saída "Sem celular"; e as IAs de fluxo e de sugestões. Erro de conta da
+  plataforma (token, saldo na Direct Data) interrompe a execução sem cobrar
+  o que faltou. Tabelas e o nó mantêm o nome `bigdatacorp_*` por
+  compatibilidade.
 
 ## Estrutura
 
@@ -1424,5 +1449,5 @@ src/
     funil-db.ts                CRUD do Funil (Kanban)
     flow/                      construtor de fluxos: node-types, flow-engine, executors/
 worker/                        processo de background (automações, disparo, enriquecimento IA, fluxos)
-supabase/migrations/           schema SQL (0001 Fase 0 · 0002 plataforma completa · 0003–0007 incrementais)
+supabase/migrations/           schema SQL (0001 Fase 0 · 0002 plataforma completa · 0003–0040 incrementais)
 ```

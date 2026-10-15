@@ -1,8 +1,8 @@
 import { redirect } from "next/navigation";
 import { BrainCircuit, Database } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
-import { getProfile } from "@/lib/credits";
-import { bigDataCorpConfigurado } from "@/lib/integrations/bigdatacorp";
+import { celularDoSocioDisponivel, sociosEContatoConfigurado } from "@/lib/bigdatacorp-enrichment-db";
+import { custosVisiveis, getProfile } from "@/lib/credits";
 import { PageHeader } from "@/components/layout/page-header";
 import { EnrichmentPanel } from "@/components/enrichment/enrichment-panel";
 import { BigDataCorpEnrichmentPanel } from "@/components/bigdatacorp/bigdatacorp-enrichment-panel";
@@ -23,14 +23,16 @@ export default async function EnriquecimentoPage() {
   const podeBigDataCorp = Boolean(profile && (profile.bigdatacorp_enrichment_habilitado || profile.role === "admin"));
   // No teste grátis a página abre em modo de visualização (PortaoTesteGratis).
   if (!profile || (!podeIa && !podeBigDataCorp && !emTesteGratis(profile))) redirect("/");
-  const bigDataCorpDisponivel = await bigDataCorpConfigurado();
+  const bigDataCorpDisponivel = await sociosEContatoConfigurado();
+  const celularSocio = bigDataCorpDisponivel && (await celularDoSocioDisponivel());
+  const custos = await custosVisiveis(supabase, ["bigdatacorp", "socio_celular"]);
 
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
         eyebrow="Prospecção"
         title="Enriquecimento"
-        description="Transforme leads em dados comerciais mais completos — via IA (nome/e-mail/telefone) ou por CNPJ (sócios e contato)."
+        description="Transforme leads em dados comerciais mais completos — via IA (nome/e-mail/telefone) ou por CNPJ (sócio e celular dele)."
       />
       {podeIa && podeBigDataCorp ? (
         <Tabs defaultValue="ia">
@@ -42,13 +44,13 @@ export default async function EnriquecimentoPage() {
             <EnrichmentPanel openaiKeyConfigurada={Boolean(profile.openai_api_key)} />
           </TabsContent>
           <TabsContent value="bigdatacorp">
-            <BigDataCorpEnrichmentPanel configurado={bigDataCorpDisponivel} />
+            <BigDataCorpEnrichmentPanel configurado={bigDataCorpDisponivel} celularSocio={celularSocio} custos={custos} />
           </TabsContent>
         </Tabs>
       ) : podeIa ? (
         <EnrichmentPanel openaiKeyConfigurada={Boolean(profile.openai_api_key)} />
       ) : (
-        <BigDataCorpEnrichmentPanel configurado={bigDataCorpDisponivel} />
+        <BigDataCorpEnrichmentPanel configurado={bigDataCorpDisponivel} celularSocio={celularSocio} custos={custos} />
       )}
     </div>
   );

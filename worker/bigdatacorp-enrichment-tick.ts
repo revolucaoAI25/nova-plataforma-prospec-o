@@ -1,6 +1,10 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { consultarEmpresaBigDataCorp, bigDataCorpConfigurado } from "../src/lib/integrations/bigdatacorp";
+import { directDataConfigurado, ErroDirectData } from "../src/lib/integrations/direct-data";
+import { consultarSociosDaEmpresa, normalizarOpcoesCelularSocio } from "../src/lib/celular-socio";
 import { custoAcao, debitarCreditos } from "../src/lib/credits";
+import { emParalelo } from "../src/lib/paralelo";
+import type { BigDataCorpEnrichmentRunRow } from "../src/lib/database.types";
 
 /**
  * Processa execuções de Enriquecimento por CNPJ (BigDataCorp) pendentes —
@@ -44,10 +48,13 @@ export async function tickBigDataCorpEnrichment(sb: SupabaseClient, log: (msg: s
 
   log(`Execução BigDataCorp ${run.id}: iniciando (${run.total} CNPJ(s))`);
 
-  if (!(await bigDataCorpConfigurado())) {
+  // Fornecedor: Direct Data (acha o celular do sócio) quando o token está
+  // cadastrado; senão a BigDataCorp, que só traz o contato da empresa.
+  const usarDirectData = await directDataConfigurado();
+  if (!usarDirectData && !(await bigDataCorpConfigurado())) {
     await sb
       .from("bigdatacorp_enrichment_runs")
-      .update({ status: "erro", erro: "Integração com a BigDataCorp não configurada.", concluido_em: new Date().toISOString() })
+      .update({ status: "erro", erro: "Consulta de sócios e contato não configurada na plataforma.", concluido_em: new Date().toISOString() })
       .eq("id", run.id);
     return;
   }
@@ -70,6 +77,11 @@ export async function tickBigDataCorpEnrichment(sb: SupabaseClient, log: (msg: s
   }
   const custoPorConsulta = await custoAcao(sb, "bigdatacorp");
   let saldo = Number(perfil.creditos) || 0;
+
+  if (usarDirectData) {
+    await processarComDirectData(sb, run as BigDataCorpEnrichmentRunRow, saldo, log);
+    return;
+  }
 
   const { data: leadRows } = await sb
     .from("bigdatacorp_enrichment_leads")
@@ -128,4 +140,125 @@ export async function tickBigDataCorpEnrichment(sb: SupabaseClient, log: (msg: s
 
   await sb.from("bigdatacorp_enrichment_runs").update({ status: "concluido", concluido_em: new Date().toISOString() }).eq("id", run.id);
   log(`Execução BigDataCorp ${run.id}: concluída (${encontrados} encontrado(s), ${naoEncontrados} não encontrado(s), ${erros} erro(s))`);
+}
+
+/**
+ * Celular do sócio (Direct Data): por CNPJ, a empresa e os sócios; por CPF,
+ * o celular de cada sócio escolhido nas opções da execução. Cobra a
+ * consulta da empresa ("bigdatacorp") e cada sócio consultado
+ * ("socio_celular"), conferindo o saldo antes de cada uma.
+ */
+async function processarComDirectData(
+  sb: SupabaseClient, run: BigDataCorpEnrichmentRunRow, saldoInicial: number, log: (msg: string) => void,
+): Promise<void> {
+  const opcoes = normalizarOpcoesCelularSocio(run.opcoes);
+  const [custoEmpresa, custoSocio] = await Promise.all([custoAcao(sb, "bigdatacorp"), custoAcao(sb, "socio_celular")]);
+  let saldo = saldoInicial;
+
+  const { data: leadRows } = await sb
+    .from("bigdatacorp_enrichment_leads")
+    .select("id, cnpj_entrada")
+    .eq("run_id", run.id)
+    .eq("status", "pendente")
+    .order("created_at", { ascending: true });
+
+  // Recomeço depois de queda: parte da contagem já está gravada.
+  const cont = {
+    processados: run.processados, encontrados: run.encontrados, naoEncontrados: run.nao_encontrados,
+    erros: run.erros, comCelular: run.com_celular ?? 0,
+  };
+  let erroFatal: string | null = null;
+  const gravarContagem = () =>
+    sb.from("bigdatacorp_enrichment_runs").update({
+      processados: cont.processados, encontrados: cont.encontrados, nao_encontrados: cont.naoEncontrados,
+      erros: cont.erros, com_celular: cont.comCelular,
+    }).eq("id", run.id);
+
+  await emParalelo(leadRows ?? [], 3, async (leadRow) => {
+    if (erroFatal) return;
+    if (saldo < custoEmpresa) {
+      await sb.from("bigdatacorp_enrichment_leads").update({ status: "erro", erro: "Créditos insuficientes." }).eq("id", leadRow.id);
+      cont.processados += 1;
+      cont.erros += 1;
+      await gravarContagem();
+      return;
+    }
+    saldo -= custoEmpresa;
+    try {
+      const r = await consultarSociosDaEmpresa(
+        sb, leadRow.cnpj_entrada, opcoes,
+        () => {
+          if (saldo < custoSocio) return false;
+          saldo -= custoSocio;
+          return true;
+        },
+        () => debitarCreditos(sb, run.user_id, "socio_celular", 1),
+      );
+      await debitarCreditos(sb, run.user_id, "bigdatacorp", 1);
+      await sb.from("bigdatacorp_enrichment_leads").update({
+        status: r.encontrado ? "concluido" : "nao_encontrado",
+        razao_social: r.razaoSocial || null,
+        socios: r.socios as never,
+        telefone: r.telefone || null,
+        email: r.email || null,
+        endereco: r.endereco || null,
+        socio_nome: r.socioNome || null,
+        socio_cargo: r.socioCargo || null,
+        socio_celular: r.socioCelular || null,
+        socio_whatsapp: r.socioCelular ? r.socioWhatsapp : null,
+        erro: r.aviso,
+      }).eq("id", leadRow.id);
+      cont.processados += 1;
+      if (r.encontrado) cont.encontrados += 1;
+      else cont.naoEncontrados += 1;
+      if (r.socioCelular) cont.comCelular += 1;
+    } catch (e) {
+      saldo += custoEmpresa;
+      if (e instanceof ErroDirectData && e.fatal) {
+        erroFatal = e.message;
+        return;
+      }
+      await sb.from("bigdatacorp_enrichment_leads").update({ status: "erro", erro: (e as Error).message }).eq("id", leadRow.id);
+      cont.processados += 1;
+      cont.erros += 1;
+    }
+    await gravarContagem();
+  });
+
+  if (erroFatal) {
+    // Problema da conta da plataforma (token, saldo no fornecedor): os CNPJs
+    // que faltaram ficam sem cobrança e a execução para com o motivo.
+    await sb.from("bigdatacorp_enrichment_leads").update({ status: "erro", erro: "Consulta interrompida." }).eq("run_id", run.id).eq("status", "pendente");
+    const { count } = await sb.from("bigdatacorp_enrichment_leads").select("id", { count: "exact", head: true }).eq("run_id", run.id).eq("status", "erro");
+    await gravarContagem();
+    await sb.from("bigdatacorp_enrichment_runs").update({
+      status: "erro", erro: erroFatal, processados: run.total, erros: count ?? cont.erros, concluido_em: new Date().toISOString(),
+    }).eq("id", run.id);
+    log(`Execução ${run.id} (celular do sócio): interrompida — ${erroFatal}`);
+    return;
+  }
+
+  await gravarContagem();
+  if (run.search_id) await gravarNaPesquisa(sb, run);
+  await sb.from("bigdatacorp_enrichment_runs").update({ status: "concluido", concluido_em: new Date().toISOString() }).eq("id", run.id);
+  log(`Execução ${run.id} (celular do sócio): ${cont.comCelular} com celular de ${cont.processados} empresa(s), ${cont.erros} erro(s)`);
+}
+
+/** Busca por CNPJ com a opção ligada: o celular e o nome do sócio voltam para os leads da pesquisa. */
+async function gravarNaPesquisa(sb: SupabaseClient, run: BigDataCorpEnrichmentRunRow): Promise<void> {
+  const { data } = await sb
+    .from("bigdatacorp_enrichment_leads")
+    .select("cnpj_entrada, socio_nome, socio_celular")
+    .eq("run_id", run.id)
+    .not("socio_celular", "is", null);
+  if (!data?.length) return;
+  const porCnpj = new Map(data.map((r) => [r.cnpj_entrada as string, r]));
+  const { data: leads } = await sb.from("leads").select("id, cnpj").eq("search_id", run.search_id!).not("cnpj", "is", null);
+  for (const lead of leads ?? []) {
+    const r = porCnpj.get(String(lead.cnpj).replace(/\D/g, ""));
+    if (!r) continue;
+    await sb.from("leads")
+      .update({ celular_socio: r.socio_celular, ...(r.socio_nome ? { socio_principal: r.socio_nome } : {}) })
+      .eq("id", lead.id);
+  }
 }

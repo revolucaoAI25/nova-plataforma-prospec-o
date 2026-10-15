@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { colunasOrigemFluxo, type OpcoesInscricao } from "@/lib/origem-fluxo";
-import { normalizarE164 } from "@/lib/phone";
+import { normalizarE164, preferirCelularDoSocio } from "@/lib/phone";
 import { getProfile } from "@/lib/credits";
 import { chaveTelefone } from "@/lib/contatos";
 import { primeiroContatoDaCampanha } from "@/lib/funil-automacao";
@@ -235,6 +235,7 @@ interface LeadFiltroRow {
   site: string | null; maps_url: string | null; avaliacao: number | null; total_avaliacoes: number | null;
   cnpj: string | null; nicho: string | null; subnicho: string | null; fonte: string | null; created_at: string;
   linkedin_url: string | null;
+  socio_principal: string | null; celular_socio: string | null;
 }
 
 /**
@@ -253,7 +254,7 @@ export async function buscarLeadsFiltro(
   for (;;) {
     let q = sb
       .from("leads")
-      .select("nome, telefone, telefone2, email, endereco, municipio, uf, cep, site, maps_url, avaliacao, total_avaliacoes, cnpj, nicho, subnicho, fonte, created_at, linkedin_url")
+      .select("nome, telefone, telefone2, email, endereco, municipio, uf, cep, site, maps_url, avaliacao, total_avaliacoes, cnpj, nicho, subnicho, fonte, created_at, linkedin_url, socio_principal, celular_socio")
       .eq("user_id", userId);
     if (nicho) q = q.ilike("nicho", `%${nicho}%`);
     if (subnicho) q = q.ilike("subnicho", `%${subnicho}%`);
@@ -261,7 +262,7 @@ export async function buscarLeadsFiltro(
     if (desde) q = q.gt("created_at", desde);
     const { data } = await q.order("created_at").range(offset, offset + pageSize - 1);
     const linhas = (data as LeadFiltroRow[]) || [];
-    leads.push(...linhas);
+    leads.push(...linhas.map(preferirCelularDoSocio));
     if (linhas.length < pageSize) break;
     offset += pageSize;
   }

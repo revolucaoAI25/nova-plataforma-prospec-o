@@ -159,9 +159,15 @@ const enriquecimentoMapsConfigSchema = z.object({
   minAvaliacoes: z.number().int().min(0).default(0),
 });
 
-// Sem campos — o nó opera automaticamente em qualquer lead do lote que já
-// tenha `cnpj` preenchido, sem opções de configuração.
-const enriquecimentoBigDataCorpConfigSchema = z.object({});
+// Opera em qualquer lead do lote que já tenha `cnpj`. Opções do celular do
+// sócio (ver src/lib/celular-socio.ts); fluxos antigos sem config caem no
+// padrão (só o administrador, só WhatsApp, respeita bloqueio).
+const enriquecimentoBigDataCorpConfigSchema = z.object({
+  socios: z.enum(["administrador", "todos"]).default("administrador"),
+  maxSocios: z.number().int().min(1).max(5).default(2),
+  soWhatsapp: z.boolean().default(true),
+  respeitarBloqueio: z.boolean().default(true),
+});
 
 const FILTRO_OPERADORES = ["preenchido", "vazio", "contem", "nao_contem", "igual", "diferente", "igual_ao_campo", "diferente_do_campo"] as const;
 const filtroLeadsConfigSchema = z.object({
@@ -255,6 +261,16 @@ export const SAIDAS_DISPARO: SaidaDoNo[] = [
   { id: "falhou", label: "Falhou", descricao: "Não deu para enviar: contato inválido ou o envio deu erro antes da primeira mensagem.", quando: "resultado", tom: "erro" },
   { id: "respondeu", label: "Respondeu", descricao: "O lead respondeu em algum momento da cadência.", quando: "resultado", tom: "info" },
   { id: "sem_resposta", label: "Sem resposta", descricao: "A cadência terminou e o lead não respondeu no prazo definido.", quando: "resultado", tom: "neutro" },
+];
+
+const SAIDAS_SOCIOS: SaidaDoNo[] = [
+  {
+    id: "sem_celular",
+    label: "Sem celular",
+    descricao: "Leads em que não achamos o celular do sócio (ou sem CNPJ). Sem nada ligado aqui, eles seguem pelo caminho principal com o telefone da empresa.",
+    quando: "imediata",
+    tom: "neutro",
+  },
 ];
 
 const SAIDAS_FILTRO: SaidaDoNo[] = [
@@ -364,11 +380,13 @@ export const FLOW_NODE_TYPES: Record<FlowNodeTipo, FlowNodeTypeMeta> = {
   enriquecimento_bigdatacorp: {
     tipo: "enriquecimento_bigdatacorp",
     categoria: "enriquecimento",
-    label: "Sócios e Contato",
-    descricao: "Consulta cada lead com CNPJ: sócios/quadro societário e telefone/e-mail registrados da empresa.",
+    label: "Celular do sócio",
+    descricao: "Acha o celular pessoal (com WhatsApp) do sócio de cada lead com CNPJ. Quem não tem celular encontrado pode seguir por outro caminho.",
     icon: "Database",
     configSchema: enriquecimentoBigDataCorpConfigSchema,
     disponivel: true,
+    rotuloSaidaPrincipal: "Achou celular",
+    saidas: SAIDAS_SOCIOS,
   },
   filtro_leads: {
     tipo: "filtro_leads",
