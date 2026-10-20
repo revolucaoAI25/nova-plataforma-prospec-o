@@ -68,9 +68,12 @@ No [painel do Supabase](https://supabase.com/dashboard), crie um projeto novo
     `consultas_cadastrais` e o custo "socio_celular". `0041`: origem dos
     leads sem nome de fornecedor (Maps, CNPJ, Instagram, LinkedIn).
     `0042`: anotações no negócio do funil (`funil_cards.anotacoes`).
+    `0043`: a pesquisa ligada a uma busca de celular do sócio tem de ser do
+    mesmo dono (fecha gravação em pesquisa de outra conta).
     Rode-as **antes** do deploy desta versão (o código novo grava colunas
-    que elas criam). Todas podem ser rodadas de
-    novo sem erro (usam `if not exists` / `create or replace`).
+    que elas criam). Da `0024` em diante todas podem ser rodadas de novo sem
+    erro (usam `if not exists` / `create or replace`); as anteriores rodam
+    uma única vez, em ordem (a `0029` remove colunas que elas usam).
 
 Em **Authentication → Providers**, deixe E-mail/senha habilitado (é o único método
 usado no login). Contas são criadas pelo admin — não há cadastro público. Em
@@ -1394,6 +1397,22 @@ indisponível/com erro amigável se faltar, o resto da plataforma funciona norma
   lista vira "a, b e c". Os editores de campanha mostram a prévia da
   mensagem com os leads inscritos, e o nó de disparo no fluxo confere as
   variáveis da campanha com os campos que os passos anteriores trazem.
+- **Revisão para usuários reais (segurança e consumo)**: (1) as execuções
+  de "celular do sócio" e de enriquecimento por IA são graváveis pelo dono
+  (RLS) e os workers/executores rodam como admin — o id de execução no
+  contexto do fluxo e a pesquisa ligada à execução passaram a ser
+  conferidos contra o dono (antes dava para ler o resultado pago de outra
+  conta trocando o id no contexto, e gravar numa pesquisa alheia); a
+  `0043` repete a regra no banco. (2) O proxy confere a sessão com
+  `getClaims` (local com as chaves assimétricas do Supabase; cai no
+  `getUser` se falhar) e o `getUser` das páginas é memorizado por
+  requisição (`React.cache` em `src/lib/supabase/server.ts`): menos idas
+  ao servidor de autenticação por navegação. (3) Os ticks do worker não se
+  acumulam (`agendar` em `worker/index.ts`): disparos rodam um por vez;
+  fluxos, enriquecimentos e onboarding aceitam até 3 rodadas simultâneas.
+  (4) Checkout: com a fatura em aberto, `/bem-vindo` e `/assinar` levam a
+  "trocar o plano antes de pagar"; a consulta de status a cada 5 s só
+  roda com a aba visível e não carrega mais a lista de planos.
 
 ## Estrutura
 

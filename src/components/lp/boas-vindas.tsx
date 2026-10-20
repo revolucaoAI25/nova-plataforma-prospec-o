@@ -25,7 +25,10 @@ export function BoasVindas({
   useEffect(() => {
     if (ativa || status !== "pendente") return;
     const id = setInterval(async () => {
-      const resp = await fetch("/api/assinatura", { cache: "no-store" }).catch(() => null);
+      // Aba em segundo plano não consulta: volta a checar quando a pessoa
+      // retorna da fatura (é quando o Pix costuma estar pago).
+      if (document.visibilityState === "hidden") return;
+      const resp = await fetch("/api/assinatura?so=status", { cache: "no-store" }).catch(() => null);
       const data = await resp?.json().catch(() => null);
       const novo = data?.assinatura?.status as AssinaturaStatus | undefined;
       if (novo) setStatus(novo);
@@ -110,6 +113,11 @@ export function BoasVindas({
       </div>
       <p className="mt-4 text-[13px] text-lp-muted-2">
         Pode fechar esta página se preferir: quando o pagamento for confirmado, basta entrar na plataforma com o seu e-mail e senha.
+      </p>
+      <p className="mt-3 text-[13px] text-lp-muted-2">
+        Escolheu o plano errado ou prefere mensal em vez de anual (ou o contrário)?{" "}
+        <Link href="/creditos" className="text-lp-glow underline-offset-4 hover:underline">Trocar o plano antes de pagar</Link>
+        {" "}— a fatura atual é cancelada e uma nova é gerada.
       </p>
     </div>
   );

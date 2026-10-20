@@ -18,7 +18,8 @@ export async function executarEnriquecimentoIa(ctx: FlowExecutorContext): Promis
 
   const runIdExistente = contexto.enrichmentRunId;
   if (runIdExistente) {
-    const { data: run } = await sb.from("enrichment_runs").select("*").eq("id", runIdExistente).single();
+    // Contexto gravável pelo dono + cliente admin: filtra por dono (ver o nó de celular do sócio).
+    const { data: run } = await sb.from("enrichment_runs").select("*").eq("id", runIdExistente).eq("user_id", ctx.userId).maybeSingle();
     if (!run) return { status: "erro", erro: "Execução de enriquecimento não encontrada." };
     if (run.status === "concluido") {
       const { data: enrichmentLeads } = await sb.from("enrichment_leads").select("*").eq("run_id", runIdExistente);

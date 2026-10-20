@@ -188,6 +188,10 @@ async function processarComDirectData(
  * disparo e o histórico enxergam.
  */
 async function gravarNaPesquisa(sb: SupabaseClient, run: BigDataCorpEnrichmentRunRow): Promise<void> {
+  // A execução é gravável pelo dono (RLS) e este worker roda como admin:
+  // só grava na pesquisa se ela for do mesmo dono da execução.
+  const { data: pesquisa } = await sb.from("searches").select("user_id").eq("id", run.search_id!).maybeSingle();
+  if (!pesquisa || pesquisa.user_id !== run.user_id) return;
   const { data } = await sb
     .from("bigdatacorp_enrichment_leads")
     .select("cnpj_entrada, socio_nome, socio_celular, socios")
@@ -196,7 +200,7 @@ async function gravarNaPesquisa(sb: SupabaseClient, run: BigDataCorpEnrichmentRu
   if (!data?.length) return;
   const varios = normalizarOpcoesCelularSocio(run.opcoes).socios === "todos";
   const porCnpj = new Map(data.map((r) => [r.cnpj_entrada as string, r]));
-  const { data: leads } = await sb.from("leads").select("*").eq("search_id", run.search_id!).not("cnpj", "is", null);
+  const { data: leads } = await sb.from("leads").select("*").eq("search_id", run.search_id!).eq("user_id", run.user_id).not("cnpj", "is", null);
   const novos: Array<Record<string, unknown>> = [];
   for (const lead of (leads ?? []) as Array<Record<string, unknown>>) {
     const r = porCnpj.get(String(lead.cnpj).replace(/\D/g, ""));

@@ -58,9 +58,19 @@ export async function updateSession(request: NextRequest) {
     },
   );
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // getClaims (e não getUser): com as chaves assimétricas do Supabase o
+  // token é conferido aqui mesmo, sem uma ida ao servidor de autenticação a
+  // cada request; renova a sessão quando está para vencer igual ao getUser.
+  // Com o segredo simétrico antigo, cai sozinho na consulta ao servidor.
+  // Páginas e APIs continuam chamando getUser (conferência completa).
+  // Se a conferência local falhar (chaves indisponíveis), não desloga
+  // ninguém: confere no servidor como antes.
+  const { data: sessao, error: erroClaims } = await supabase.auth.getClaims();
+  let user: { id: string } | null = sessao?.claims?.sub ? { id: sessao.claims.sub } : null;
+  if (!user && erroClaims) {
+    const { data } = await supabase.auth.getUser();
+    user = data.user ? { id: data.user.id } : null;
+  }
 
   const { pathname } = request.nextUrl;
 

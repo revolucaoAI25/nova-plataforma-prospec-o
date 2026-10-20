@@ -44,7 +44,7 @@ export default async function AssinarPage({ searchParams }: { searchParams: Prom
           <div className="mx-auto max-w-lg rounded-[28px] border border-lp-line bg-lp-surface p-8 text-center">
             <h1 className="font-lp-display text-2xl font-bold tracking-tight">Você já está conectado à sua conta</h1>
             <p className="mt-3 text-lp-muted">
-              Para assinar ou trocar de plano, acesse a área de créditos da plataforma.
+              Para assinar, trocar de plano ou mudar entre mensal e anual (inclusive com a fatura ainda em aberto), acesse a área de planos da plataforma.
             </p>
             <Link
               href="/creditos"

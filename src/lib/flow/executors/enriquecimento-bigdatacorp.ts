@@ -32,7 +32,10 @@ export async function executarEnriquecimentoBigDataCorp(ctx: FlowExecutorContext
 
   const runIdExistente = contexto.bigdatacorpRunId as string | undefined;
   if (runIdExistente) {
-    const { data: run } = await sb.from("bigdatacorp_enrichment_runs").select("*").eq("id", runIdExistente).single();
+    // O contexto da execução do fluxo é gravável pelo dono (RLS de
+    // flow_runs) e aqui o cliente é admin: sem o filtro por dono, trocar o
+    // id no contexto traria para o lote o resultado pago de outra conta.
+    const { data: run } = await sb.from("bigdatacorp_enrichment_runs").select("*").eq("id", runIdExistente).eq("user_id", ctx.userId).maybeSingle();
     if (!run) return { status: "erro", erro: "Execução do celular do sócio não encontrada." };
     if (run.status === "concluido") {
       const { data: bigdatacorpLeads } = await sb.from("bigdatacorp_enrichment_leads").select("*").eq("run_id", runIdExistente);

@@ -6,7 +6,7 @@ import { MSG_CONTA_TESTE_SEM_COMPRA } from "@/lib/conta-teste";
 import { asaasConfigurado } from "@/lib/integrations/asaas";
 import { listarPlanosAtivos, assinarPlano, cancelarPlano, AssinaturaJaPaga } from "@/lib/subscriptions-db";
 
-export async function GET() {
+export async function GET(request: Request) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Não autenticado." }, { status: 401 });
@@ -14,11 +14,11 @@ export async function GET() {
   const profile = await getProfile(supabase, user.id);
   if (!profile) return NextResponse.json({ error: "Perfil não encontrado." }, { status: 404 });
 
+  const assinatura = { status: profile.assinatura_status, planoId: profile.plano_id, ciclo: profile.assinatura_ciclo };
+  // ?so=status: a página de boas-vindas consulta a cada poucos segundos e só precisa do status.
+  if (new URL(request.url).searchParams.get("so") === "status") return NextResponse.json({ assinatura });
   const planos = await listarPlanosAtivos(supabase);
-  return NextResponse.json({
-    planos,
-    assinatura: { status: profile.assinatura_status, planoId: profile.plano_id, ciclo: profile.assinatura_ciclo },
-  });
+  return NextResponse.json({ planos, assinatura });
 }
 
 const bodySchema = z.object({

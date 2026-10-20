@@ -58,6 +58,29 @@ function log(origem: string, msg: string) {
   console.log(`[${new Date().toISOString()}] [${origem}] ${msg}`);
 }
 
+/**
+ * Roda `tick` a cada `ms` sem acumular rodadas: se já há `maxParalelo`
+ * rodadas em andamento (lote grande, API lenta), a próxima é pulada em vez
+ * de abrir mais uma — que só multiplicaria consultas ao banco e disputaria o
+ * mesmo trabalho. Disparos ficam em 1; tarefas longas que atendem vários
+ * clientes (fluxos, enriquecimentos, onboarding) aceitam algumas em
+ * paralelo, para o lote grande de um cliente não segurar os outros.
+ */
+function agendar(nome: string, ms: number, tick: () => Promise<void>, maxParalelo = 1) {
+  let rodando = 0;
+  setInterval(async () => {
+    if (rodando >= maxParalelo) return;
+    rodando += 1;
+    try {
+      await tick();
+    } catch (e) {
+      log(nome, `tick error: ${(e as Error).message}`);
+    } finally {
+      rodando -= 1;
+    }
+  }, ms);
+}
+
 async function main() {
   const required = ["NEXT_PUBLIC_SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY"];
   const faltando = required.filter((k) => !process.env[k]);
@@ -80,49 +103,27 @@ async function main() {
   // resto da infra terminar de subir antes do primeiro tick).
   await new Promise((r) => setTimeout(r, 5_000));
 
-  setInterval(() => {
-    tickDispatch(sb, (m) => log("dispatch", m)).catch((e) => log("dispatch", `tick error: ${e.message}`));
-  }, DISPATCH_TICK_MS);
+  agendar("dispatch", DISPATCH_TICK_MS, () => tickDispatch(sb, (msg) => log("dispatch", msg)));
 
-  setInterval(() => {
-    tickSheetWatchAndAutoTrigger(sb, (m) => log("dispatch/watch", m)).catch((e) => log("dispatch/watch", `tick error: ${e.message}`));
-  }, SHEET_WATCH_TICK_MS);
+  agendar("dispatch/watch", SHEET_WATCH_TICK_MS, () => tickSheetWatchAndAutoTrigger(sb, (msg) => log("dispatch/watch", msg)));
 
-  setInterval(() => {
-    tickEnrichment(sb, (m) => log("enrichment", m)).catch((e) => log("enrichment", `tick error: ${e.message}`));
-  }, ENRICHMENT_TICK_MS);
+  agendar("enrichment", ENRICHMENT_TICK_MS, () => tickEnrichment(sb, (msg) => log("enrichment", msg)), 3);
 
-  setInterval(() => {
-    tickFlows(sb, (m) => log("flows", m)).catch((e) => log("flows", `tick error: ${e.message}`));
-  }, FLOW_TICK_MS);
+  agendar("flows", FLOW_TICK_MS, () => tickFlows(sb, (msg) => log("flows", msg)), 3);
 
-  setInterval(() => {
-    tickEmailDispatch(sb, (m) => log("email-dispatch", m)).catch((e) => log("email-dispatch", `tick error: ${e.message}`));
-  }, EMAIL_DISPATCH_TICK_MS);
+  agendar("email-dispatch", EMAIL_DISPATCH_TICK_MS, () => tickEmailDispatch(sb, (msg) => log("email-dispatch", msg)));
 
-  setInterval(() => {
-    tickEmailSheetWatchAndAutoTrigger(sb, (m) => log("email-dispatch/watch", m)).catch((e) => log("email-dispatch/watch", `tick error: ${e.message}`));
-  }, EMAIL_SHEET_WATCH_TICK_MS);
+  agendar("email-dispatch/watch", EMAIL_SHEET_WATCH_TICK_MS, () => tickEmailSheetWatchAndAutoTrigger(sb, (msg) => log("email-dispatch/watch", msg)));
 
-  setInterval(() => {
-    tickLinkedInDispatch(sb, (m) => log("linkedin-dispatch", m)).catch((e) => log("linkedin-dispatch", `tick error: ${e.message}`));
-  }, LINKEDIN_DISPATCH_TICK_MS);
+  agendar("linkedin-dispatch", LINKEDIN_DISPATCH_TICK_MS, () => tickLinkedInDispatch(sb, (msg) => log("linkedin-dispatch", msg)));
 
-  setInterval(() => {
-    tickLinkedInSheetWatchAndAutoTrigger(sb, (m) => log("linkedin-dispatch/watch", m)).catch((e) => log("linkedin-dispatch/watch", `tick error: ${e.message}`));
-  }, LINKEDIN_SHEET_WATCH_TICK_MS);
+  agendar("linkedin-dispatch/watch", LINKEDIN_SHEET_WATCH_TICK_MS, () => tickLinkedInSheetWatchAndAutoTrigger(sb, (msg) => log("linkedin-dispatch/watch", msg)));
 
-  setInterval(() => {
-    tickLinkedInRelationsPoll(sb, (m) => log("linkedin-dispatch/poll", m)).catch((e) => log("linkedin-dispatch/poll", `tick error: ${e.message}`));
-  }, LINKEDIN_RELATIONS_POLL_MS);
+  agendar("linkedin-dispatch/poll", LINKEDIN_RELATIONS_POLL_MS, () => tickLinkedInRelationsPoll(sb, (msg) => log("linkedin-dispatch/poll", msg)));
 
-  setInterval(() => {
-    tickBigDataCorpEnrichment(sb, (m) => log("bigdatacorp-enrichment", m)).catch((e) => log("bigdatacorp-enrichment", `tick error: ${e.message}`));
-  }, BIGDATACORP_ENRICHMENT_TICK_MS);
+  agendar("bigdatacorp-enrichment", BIGDATACORP_ENRICHMENT_TICK_MS, () => tickBigDataCorpEnrichment(sb, (msg) => log("bigdatacorp-enrichment", msg)), 3);
 
-  setInterval(() => {
-    tickOnboarding(sb, (m) => log("onboarding", m)).catch((e) => log("onboarding", `tick error: ${e.message}`));
-  }, ONBOARDING_TICK_MS);
+  agendar("onboarding", ONBOARDING_TICK_MS, () => tickOnboarding(sb, (msg) => log("onboarding", msg)), 3);
 }
 
 main().catch((e) => {
