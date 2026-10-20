@@ -28,7 +28,7 @@ export function ExportarSheetsButton({ searchId, destino, compacto = false }: { 
   async function carregar() {
     setErroConfig(null);
     const resp = await fetch("/api/integrations/google-sheets/config").catch(() => null);
-    const data = resp?.ok ? ((await resp.json()) as Config) : null;
+    const data = resp?.ok ? ((await resp.json().catch(() => null)) as Config | null) : null;
     if (!data) {
       setErroConfig("Não foi possível carregar as suas planilhas. Tente novamente.");
       return;
@@ -74,7 +74,7 @@ export function ExportarSheetsButton({ searchId, destino, compacto = false }: { 
     <Popover open={aberto} onOpenChange={alternar}>
       <PopoverTrigger asChild>
         {compacto ? (
-          <Button variant="ghost" size="icon" title="Exportar para o Google Sheets">
+          <Button variant="ghost" size="icon" title="Exportar para o Google Sheets" aria-label="Exportar para o Google Sheets">
             <Sheet className="h-4 w-4" />
           </Button>
         ) : (

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Download, Trash2, Eye, Sparkles } from "lucide-react";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
+import { ExportarSheetsButton } from "@/components/historico/exportar-sheets-button";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useConfirm } from "@/components/ui/confirm-provider";
@@ -74,11 +75,14 @@ export function EnrichmentRunsTable({ runs }: { runs: EnrichmentRunRow[] }) {
                     </Link>
                   </Button>
                   {r.status === "concluido" && (
-                    <Button asChild variant="ghost" size="icon" title="Exportar Excel">
-                      <a href={`/api/enrichment/${r.id}/export`}>
-                        <Download className="h-4 w-4" />
-                      </a>
-                    </Button>
+                    <>
+                      <Button asChild variant="ghost" size="icon" title="Exportar Excel" aria-label="Exportar Excel">
+                        <a href={`/api/enrichment/${r.id}/export`}>
+                          <Download className="h-4 w-4" />
+                        </a>
+                      </Button>
+                      <ExportarSheetsButton destino={`/api/enrichment/${r.id}/sheets`} compacto />
+                    </>
                   )}
                   <Button
                     variant="ghost"

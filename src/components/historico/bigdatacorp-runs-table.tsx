@@ -3,7 +3,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Trash2, Eye, Database } from "lucide-react";
+import { Trash2, Eye, Database, Download } from "lucide-react";
+import { ExportarSheetsButton } from "@/components/historico/exportar-sheets-button";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -77,6 +78,16 @@ export function BigDataCorpRunsTable({ runs }: { runs: BigDataCorpEnrichmentRunR
                       <Eye className="h-4 w-4" />
                     </Link>
                   </Button>
+                  {r.processados > 0 && (
+                    <>
+                      <Button asChild variant="ghost" size="icon" title="Exportar Excel" aria-label="Exportar Excel">
+                        <a href={`/api/bigdatacorp-enrichment/${r.id}/export`}>
+                          <Download className="h-4 w-4" />
+                        </a>
+                      </Button>
+                      <ExportarSheetsButton destino={`/api/bigdatacorp-enrichment/${r.id}/sheets`} compacto />
+                    </>
+                  )}
                   <Button
                     variant="ghost"
                     size="icon"
