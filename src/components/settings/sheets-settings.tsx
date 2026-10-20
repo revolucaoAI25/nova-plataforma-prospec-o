@@ -56,26 +56,50 @@ export function SheetsSettings({
     setAbasPorSheet((prev) => ({ ...prev, [sheetId]: data.abas || [] }));
   }
 
-  function adicionarPlanilha() {
+  // A mesma planilha pode entrar mais de uma vez, uma por aba: cada linha
+  // é planilha + aba (as operações abaixo usam a posição na lista, não o id
+  // da planilha, que se repete).
+  async function adicionarPlanilha() {
     const p = disponiveis.find((d) => d.id === novaPlanilha);
-    if (!p || planilhas.some((x) => x.id === p.id)) return;
-    setPlanilhas([...planilhas, { id: p.id, nome: p.name, aba: "Planilha1", modo: "substituir", padrao: planilhas.length === 0 }]);
+    if (!p) return;
     setNovaPlanilha("");
+    let abas = abasPorSheet[p.id];
+    if (!abas) {
+      const resp = await fetch(`/api/integrations/google-sheets/spreadsheets?sheetId=${p.id}`).catch(() => null);
+      const data = resp?.ok ? await resp.json().catch(() => null) : null;
+      abas = (data?.abas as string[] | undefined) ?? [];
+      setAbasPorSheet((prev) => ({ ...prev, [p.id]: abas! }));
+    }
+    setPlanilhas((prev) => {
+      const usadas = new Set(prev.filter((x) => x.id === p.id).map((x) => x.aba));
+      const aba = abas!.find((a) => !usadas.has(a)) ?? abas![0] ?? "Planilha1";
+      return [...prev, { id: p.id, nome: p.name, aba, modo: "substituir", padrao: prev.length === 0 }];
+    });
   }
 
-  function atualizarPlanilha(id: string, campos: Partial<SheetConfig>) {
-    setPlanilhas((prev) => prev.map((p) => (p.id === id ? { ...p, ...campos } : p)));
+  function atualizarPlanilha(indice: number, campos: Partial<SheetConfig>) {
+    setPlanilhas((prev) => prev.map((p, i) => (i === indice ? { ...p, ...campos } : p)));
   }
 
-  function definirPadrao(id: string) {
-    setPlanilhas((prev) => prev.map((p) => ({ ...p, padrao: p.id === id })));
+  function definirPadrao(indice: number) {
+    setPlanilhas((prev) => prev.map((p, i) => ({ ...p, padrao: i === indice })));
   }
 
-  function removerPlanilha(id: string) {
-    setPlanilhas((prev) => prev.filter((p) => p.id !== id));
+  function removerPlanilha(indice: number) {
+    setPlanilhas((prev) => {
+      const resto = prev.filter((_, i) => i !== indice);
+      // Removeu a principal: a primeira que sobrou assume.
+      return resto.length && !resto.some((p) => p.padrao) ? resto.map((p, i) => ({ ...p, padrao: i === 0 })) : resto;
+    });
   }
+
+  const repetidas = planilhas.filter((p, i) => planilhas.findIndex((q) => q.id === p.id && q.aba === p.aba) !== i);
 
   async function salvar() {
+    if (repetidas.length) {
+      setFeedback({ ok: false, msg: `A aba "${repetidas[0].aba}" de "${repetidas[0].nome}" está duas vezes. Troque a aba de uma delas ou remova.` });
+      return;
+    }
     setSaving(true);
     setFeedback(null);
     const resp = await fetch("/api/integrations/google-sheets/config", {
@@ -150,21 +174,21 @@ export function SheetsSettings({
                 {planilhas.length === 0 && (
                   <EmptyState icon={Sheet} title="Nenhuma planilha adicionada ainda" className="py-8" />
                 )}
-                {planilhas.map((p) => (
-                  <div key={p.id} className="flex flex-col gap-2 rounded-xl border border-border p-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium">{p.nome}</span>
-                      <div className="flex items-center gap-1">
-                        <Button type="button" variant={p.padrao ? "default" : "ghost"} size="sm" onClick={() => definirPadrao(p.id)}>
+                {planilhas.map((p, i) => (
+                  <div key={`${p.id}-${i}`} className="flex flex-col gap-2 rounded-xl border border-border p-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="min-w-0 truncate text-sm font-medium">{p.nome}</span>
+                      <div className="flex shrink-0 items-center gap-1">
+                        <Button type="button" variant={p.padrao ? "default" : "ghost"} size="sm" onClick={() => definirPadrao(i)}>
                           <Star className="h-3.5 w-3.5" /> {p.padrao ? "Principal" : "Definir como principal"}
                         </Button>
-                        <Button aria-label="Remover" title="Remover" type="button" variant="ghost" size="icon" onClick={() => removerPlanilha(p.id)}>
+                        <Button aria-label="Remover" title="Remover" type="button" variant="ghost" size="icon" onClick={() => removerPlanilha(i)}>
                           <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
                       </div>
                     </div>
                     <div className="grid gap-2 sm:grid-cols-2">
-                      <Select value={p.aba} onValueChange={(v) => atualizarPlanilha(p.id, { aba: v })} onOpenChange={(open) => open && carregarAbas(p.id)}>
+                      <Select value={p.aba} onValueChange={(v) => atualizarPlanilha(i, { aba: v })} onOpenChange={(open) => open && carregarAbas(p.id)}>
                         <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
                         <SelectContent>
                           {(abasPorSheet[p.id] || [p.aba]).map((aba) => (
@@ -172,7 +196,7 @@ export function SheetsSettings({
                           ))}
                         </SelectContent>
                       </Select>
-                      <Select value={p.modo} onValueChange={(v) => atualizarPlanilha(p.id, { modo: v as SheetConfig["modo"] })}>
+                      <Select value={p.modo} onValueChange={(v) => atualizarPlanilha(i, { modo: v as SheetConfig["modo"] })}>
                         <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
                         <SelectContent>
                           <SelectItem value="substituir">Substituir</SelectItem>
@@ -187,9 +211,14 @@ export function SheetsSettings({
                   <Select value={novaPlanilha} onValueChange={setNovaPlanilha}>
                     <SelectTrigger className="h-9"><SelectValue placeholder={loadingList ? "Carregando…" : "Escolher planilha"} /></SelectTrigger>
                     <SelectContent>
-                      {disponiveis.filter((d) => !planilhas.some((p) => p.id === d.id)).map((d) => (
-                        <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
-                      ))}
+                      {disponiveis.map((d) => {
+                        const abasUsadas = planilhas.filter((p) => p.id === d.id).length;
+                        return (
+                          <SelectItem key={d.id} value={d.id}>
+                            {d.name}{abasUsadas ? ` (já tem ${abasUsadas} aba${abasUsadas > 1 ? "s" : ""}; adicionar outra)` : ""}
+                          </SelectItem>
+                        );
+                      })}
                     </SelectContent>
                   </Select>
                   <Button type="button" variant="outline" onClick={adicionarPlanilha} disabled={!novaPlanilha}>

@@ -20,7 +20,8 @@ export function ExportarSheetsButton({ searchId, destino, compacto = false }: { 
   const [aberto, setAberto] = useState(false);
   const [config, setConfig] = useState<Config | null>(null);
   const [erroConfig, setErroConfig] = useState<string | null>(null);
-  const [planilhaId, setPlanilhaId] = useState<string>("");
+  // Posição na lista (a mesma planilha pode estar mais de uma vez, uma por aba).
+  const [selecionada, setSelecionada] = useState<number>(-1);
   const [modo, setModo] = useState<Modo>("acrescentar");
   const [enviando, setEnviando] = useState(false);
   const [resultado, setResultado] = useState<{ ok: boolean; msg: string } | null>(null);
@@ -36,7 +37,7 @@ export function ExportarSheetsButton({ searchId, destino, compacto = false }: { 
     setConfig(data);
     const padrao = data.planilhas.find((p) => p.padrao) ?? data.planilhas[0];
     if (padrao) {
-      setPlanilhaId(padrao.id);
+      setSelecionada(data.planilhas.indexOf(padrao));
       setModo(padrao.modo);
     }
   }
@@ -50,7 +51,7 @@ export function ExportarSheetsButton({ searchId, destino, compacto = false }: { 
   }
 
   async function exportar() {
-    const planilha = config?.planilhas.find((p) => p.id === planilhaId);
+    const planilha = config?.planilhas[selecionada];
     if (!planilha) return;
     setEnviando(true);
     setResultado(null);
@@ -68,7 +69,7 @@ export function ExportarSheetsButton({ searchId, destino, compacto = false }: { 
     setResultado({ ok: true, msg: `Exportado para "${planilha.nome}", aba ${planilha.aba}.` });
   }
 
-  const planilhaAtual = config?.planilhas.find((p) => p.id === planilhaId);
+  const planilhaAtual = config?.planilhas[selecionada];
 
   return (
     <Popover open={aberto} onOpenChange={alternar}>
@@ -112,23 +113,23 @@ export function ExportarSheetsButton({ searchId, destino, compacto = false }: { 
           {config?.conectado && config.planilhas.length > 0 && (
             <>
               <div className="flex flex-col gap-1" role="radiogroup" aria-label="Planilha">
-                {config.planilhas.map((p) => (
+                {config.planilhas.map((p, i) => (
                   <button
-                    key={p.id}
+                    key={`${p.id}-${p.aba}`}
                     type="button"
                     role="radio"
-                    aria-checked={p.id === planilhaId}
-                    onClick={() => setPlanilhaId(p.id)}
+                    aria-checked={i === selecionada}
+                    onClick={() => setSelecionada(i)}
                     className={cn(
                       "flex items-center justify-between gap-2 rounded-xl border px-3 py-2 text-left",
-                      p.id === planilhaId ? "border-primary/50 bg-accent" : "border-border hover:bg-secondary",
+                      i === selecionada ? "border-primary/50 bg-accent" : "border-border hover:bg-secondary",
                     )}
                   >
                     <span className="min-w-0">
                       <span className="block truncate text-sm font-medium text-foreground">{p.nome}</span>
                       <span className="block text-xs text-muted-foreground">Aba {p.aba}</span>
                     </span>
-                    {p.id === planilhaId && <Check className="h-4 w-4 shrink-0 text-primary" />}
+                    {i === selecionada && <Check className="h-4 w-4 shrink-0 text-primary" />}
                   </button>
                 ))}
               </div>

@@ -47,7 +47,21 @@ export async function PATCH(request: Request) {
   const atual = (profile?.google_sheets_creds as GoogleSheetsCreds) || {};
   if (!atual.oauth) return NextResponse.json({ error: "Google Sheets não conectado." }, { status: 400 });
 
-  const novo: GoogleSheetsCreds = { oauth: atual.oauth, planilhas: parsed.data.planilhas, auto_export: parsed.data.autoExport };
+  // A mesma planilha pode aparecer mais de uma vez, uma por aba; a mesma
+  // aba duas vezes não. Fica uma única principal (a primeira marcada).
+  const vistas = new Set<string>();
+  const planilhas = parsed.data.planilhas.filter((p) => {
+    const chave = `${p.id}\u0000${p.aba}`;
+    if (vistas.has(chave)) return false;
+    vistas.add(chave);
+    return true;
+  });
+  const principal = Math.max(planilhas.findIndex((p) => p.padrao), 0);
+  const novo: GoogleSheetsCreds = {
+    oauth: atual.oauth,
+    planilhas: planilhas.map((p, i) => ({ ...p, padrao: i === principal })),
+    auto_export: parsed.data.autoExport,
+  };
   const { error } = await supabase.from("profiles").update({ google_sheets_creds: novo }).eq("id", user.id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ ok: true });
