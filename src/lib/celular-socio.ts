@@ -12,8 +12,9 @@ import {
  *
  * Cada consulta paga fica no cache `consultas_cadastrais` por 90 dias: o
  * mesmo CNPJ ou CPF não é pago de novo pela plataforma nesse período
- * (quem pede continua sendo cobrado em créditos por consulta, encontrada
- * ou não, com ou sem cache — o preço não muda conforme a sorte).
+ * (quem pede continua sendo cobrado em créditos, com ou sem cache). Só é
+ * cobrada consulta que trouxe cadastro: CNPJ/CPF sem cadastro no
+ * fornecedor, ou sócio sem CPF na empresa (nem é consultado), não debitam.
  */
 
 export const OPCOES_CELULAR_SOCIO_PADRAO: OpcoesCelularSocio = {
@@ -124,6 +125,8 @@ export async function consultarSociosDaEmpresa(
   opcoes: OpcoesCelularSocio,
   podeConsultarPessoa: () => boolean,
   aoConsultarPessoa: () => Promise<void>,
+  /** Devolve a reserva de `podeConsultarPessoa` quando a consulta não rendeu (erro ou CPF sem cadastro). */
+  devolverReserva: () => void = () => {},
 ): Promise<ResultadoSociosEmpresa> {
   const vazio: ResultadoSociosEmpresa = {
     encontrado: false, razaoSocial: "", telefone: "", email: "", endereco: "", socios: [],
@@ -137,19 +140,30 @@ export async function consultarSociosDaEmpresa(
   const celularPorCpf = new Map<string, TelefonePessoa[]>();
   let consultasPessoa = 0;
   let aviso: string | null = null;
+  // Só sócio com CPF completo entra em `escolhidos` (escolherSocios): sem
+  // CPF na resposta da empresa, a 2ª consulta nem acontece. E só é cobrado
+  // o sócio cuja consulta trouxe cadastro — erro ou CPF sem cadastro no
+  // fornecedor devolvem a reserva e não debitam nada.
   for (const socio of escolhidos) {
     if (!podeConsultarPessoa()) {
       aviso = "Créditos insuficientes para consultar o celular do sócio.";
       break;
     }
+    let pessoa: Record<string, unknown> | null;
     try {
-      const pessoa = await comCache(sb, "pf", socio.cpf, () => consultarPessoaBruto(socio.cpf));
-      celularPorCpf.set(socio.cpf, pessoa ? escolherCelulares(lerPessoa(pessoa).telefones, opcoes) : []);
+      pessoa = await comCache(sb, "pf", socio.cpf, () => consultarPessoaBruto(socio.cpf));
     } catch (e) {
+      devolverReserva();
       if (e instanceof ErroDirectData && e.fatal) throw e;
       aviso = `Não deu para consultar ${socio.nome}: ${(e as Error).message}`;
       continue;
     }
+    if (!pessoa) {
+      devolverReserva();
+      celularPorCpf.set(socio.cpf, []);
+      continue;
+    }
+    celularPorCpf.set(socio.cpf, escolherCelulares(lerPessoa(pessoa).telefones, opcoes));
     consultasPessoa += 1;
     await aoConsultarPessoa();
   }

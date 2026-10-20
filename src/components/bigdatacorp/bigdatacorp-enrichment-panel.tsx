@@ -114,7 +114,7 @@ export function BigDataCorpEnrichmentPanel({
                 ))}
               </RadioGroup>
               <p className="text-xs text-muted-foreground">
-                Cada sócio consultado é cobrado à parte. Sem administrador, vale o primeiro sócio pessoa física.
+                Cada sócio consultado é cobrado à parte, só quando o cadastro dele é encontrado; sócio sem CPF na empresa nem é consultado. Sem administrador, vale o primeiro sócio pessoa física.
               </p>
             </div>
             <FieldRow

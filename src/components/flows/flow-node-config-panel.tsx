@@ -669,7 +669,7 @@ function CamposSociosContato({ config, set }: CamposProps) {
       <CampoCheckbox checked={config.respeitarBloqueio !== false} onCheckedChange={(c) => set({ respeitarBloqueio: c })}>Respeitar bloqueio de telemarketing</CampoCheckbox>
       <p className="text-xs text-muted-foreground">
         Só funciona em leads com CNPJ. Quando acha, o celular do sócio vira o telefone do lead (o da empresa fica em {"{{telefone_empresa}}"}).
-        Cobra a consulta da empresa e cada sócio consultado.
+        Cobra a empresa e cada sócio só quando a consulta encontra o cadastro; sócio sem CPF na empresa nem é consultado.
       </p>
     </>
   );

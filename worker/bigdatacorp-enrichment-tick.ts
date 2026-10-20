@@ -79,7 +79,10 @@ export async function tickBigDataCorpEnrichment(sb: SupabaseClient, log: (msg: s
  * Celular do sócio (Direct Data): por CNPJ, a empresa e os sócios; por CPF,
  * o celular de cada sócio escolhido nas opções da execução. Cobra a
  * consulta da empresa ("bigdatacorp") e cada sócio consultado
- * ("socio_celular"), conferindo o saldo antes de cada uma.
+ * ("socio_celular"), conferindo o saldo antes de cada uma — e só quando a
+ * consulta trouxe cadastro: CNPJ ou CPF sem cadastro no fornecedor, ou
+ * sócio sem CPF na resposta da empresa (2ª consulta nem acontece), não
+ * debitam nada.
  */
 async function processarComDirectData(
   sb: SupabaseClient, run: BigDataCorpEnrichmentRunRow, saldoInicial: number, log: (msg: string) => void,
@@ -129,8 +132,13 @@ async function processarComDirectData(
           return true;
         },
         () => debitarCreditos(sb, run.user_id, "socio_celular", 1),
+        () => {
+          saldo += custoSocio;
+        },
       );
-      await debitarCreditos(sb, run.user_id, "bigdatacorp", 1);
+      // CNPJ sem cadastro no fornecedor não é cobrado (não trouxe nada).
+      if (r.encontrado) await debitarCreditos(sb, run.user_id, "bigdatacorp", 1);
+      else saldo += custoEmpresa;
       await sb.from("bigdatacorp_enrichment_leads").update({
         status: r.encontrado ? "concluido" : "nao_encontrado",
         razao_social: r.razaoSocial || null,
