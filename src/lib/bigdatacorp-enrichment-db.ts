@@ -93,9 +93,21 @@ export async function obterRunBigDataCorp(sb: SupabaseClient, runId: string): Pr
   return (data as BigDataCorpEnrichmentRunRow) || null;
 }
 
+/** Em páginas de 1000: execuções da busca por CNPJ vão até 2000 empresas (o teto por consulta do banco é 1000). */
 export async function listarLeadsRunBigDataCorp(sb: SupabaseClient, runId: string): Promise<BigDataCorpEnrichmentLeadRow[]> {
-  const { data } = await sb.from("bigdatacorp_enrichment_leads").select("*").eq("run_id", runId).order("created_at", { ascending: true });
-  return (data as BigDataCorpEnrichmentLeadRow[]) || [];
+  const todos: BigDataCorpEnrichmentLeadRow[] = [];
+  for (let offset = 0; ; offset += 1000) {
+    const { data } = await sb
+      .from("bigdatacorp_enrichment_leads")
+      .select("*")
+      .eq("run_id", runId)
+      .order("created_at", { ascending: true })
+      .order("id", { ascending: true })
+      .range(offset, offset + 999);
+    const pagina = (data as BigDataCorpEnrichmentLeadRow[]) || [];
+    todos.push(...pagina);
+    if (pagina.length < 1000) return todos;
+  }
 }
 
 export async function deletarRunBigDataCorp(sb: SupabaseClient, runId: string): Promise<boolean> {

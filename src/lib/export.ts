@@ -1,5 +1,6 @@
 import ExcelJS from "exceljs";
-import type { LeadRow, EnrichmentLeadRow } from "@/lib/database.types";
+import type { LeadRow, EnrichmentLeadRow, BigDataCorpEnrichmentLeadRow, BigDataCorpSocioRow } from "@/lib/database.types";
+import { formatarExibicao, normalizarE164 } from "@/lib/phone";
 import { carimboBrasil } from "@/lib/datas";
 import { rotuloFonte } from "@/lib/fonte";
 
@@ -191,4 +192,125 @@ export function nomeArquivo(prefixo: string, localidade: string, extensao: strin
   const agora = carimboBrasil();
   const slug = localidade.toLowerCase().replace(/\s+/g, "_").replace(/\//g, "-");
   return `${prefixo}_${slug}_${agora}.${extensao}`;
+}
+
+// ── Tabelas genéricas (colunas + linhas) ─────────────────────────────
+// Base comum do download (CSV/Excel) e do envio ao Google Sheets dos
+// enriquecimentos: a mesma tabela sai nos três formatos.
+
+export interface TabelaExport {
+  colunas: Array<{ chave: string; label: string }>;
+  linhas: Array<Record<string, string>>;
+}
+
+export function csvDeTabela(t: TabelaExport): string {
+  const linhas = [t.colunas.map((c) => celulaCsv(c.label)).join(",")];
+  for (const l of t.linhas) linhas.push(t.colunas.map((c) => celulaCsv(l[c.chave] ?? "")).join(","));
+  return "﻿" + linhas.join("\r\n");
+}
+
+export async function excelDeTabela(t: TabelaExport, aba: string): Promise<Buffer> {
+  const wb = new ExcelJS.Workbook();
+  const ws = wb.addWorksheet(aba);
+  ws.columns = t.colunas.map((c) => ({ header: c.label, key: c.chave, width: 24 }));
+  ws.getRow(1).font = { bold: true, color: { argb: "FFFFFFFF" } };
+  ws.getRow(1).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF1F4E79" } };
+  ws.getRow(1).alignment = { horizontal: "center", vertical: "middle" };
+  ws.views = [{ state: "frozen", ySplit: 1 }];
+  t.linhas.forEach((l, idx) => {
+    const row = ws.addRow(l);
+    if (idx % 2 === 1) {
+      row.eachCell((c) => {
+        c.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFD6E4F0" } };
+      });
+    }
+  });
+  return Buffer.from(await wb.xlsx.writeBuffer());
+}
+
+/** Enriquecimento por IA como tabela (mesmas colunas do download). */
+export function tabelaEnriquecimento(leads: EnrichmentLeadRow[]): TabelaExport {
+  const cols = enriqColunas(leads);
+  return {
+    colunas: cols.map(([chave, label]) => ({ chave, label })),
+    linhas: leads.map((lead) => Object.fromEntries(cols.map(([col]) => [col, enriqValor(lead, col)]))),
+  };
+}
+
+const formatarFone = (n: string | null | undefined) => (n ? formatarExibicao(normalizarE164(n)) || n : "");
+
+const SITUACAO_SOCIOS: Record<string, string> = {
+  concluido: "Empresa encontrada",
+  nao_encontrado: "CNPJ sem cadastro",
+  erro: "Erro na consulta",
+  pendente: "Ainda não processado",
+};
+
+/**
+ * "Sócios e Contato" (celular do sócio) como planilha de contatos: uma
+ * linha por sócio com celular — pronta para importar numa campanha de
+ * disparo — e uma linha por empresa sem celular, com o motivo. Os outros
+ * sócios da empresa vão numa coluna, para quem quiser ligar.
+ */
+export function tabelaSociosContato(leads: BigDataCorpEnrichmentLeadRow[]): TabelaExport {
+  const colunas = [
+    { chave: "empresa", label: "Empresa" },
+    { chave: "cnpj", label: "CNPJ" },
+    { chave: "socio", label: "Sócio" },
+    { chave: "cargo", label: "Cargo" },
+    { chave: "celular", label: "Celular do sócio" },
+    { chave: "whatsapp", label: "WhatsApp" },
+    { chave: "outros_celulares", label: "Outros celulares do sócio" },
+    { chave: "telefone_empresa", label: "Telefone da empresa" },
+    { chave: "email", label: "E-mail" },
+    { chave: "endereco", label: "Endereço" },
+    { chave: "outros_socios", label: "Outros sócios" },
+    { chave: "situacao", label: "Situação" },
+    { chave: "observacao", label: "Observação" },
+  ];
+  const linhas: Array<Record<string, string>> = [];
+  for (const l of leads) {
+    const socios = Array.isArray(l.socios) ? (l.socios as unknown as BigDataCorpSocioRow[]) : [];
+    const base = {
+      empresa: l.razao_social || l.nome_lead || "",
+      cnpj: l.cnpj_entrada,
+      telefone_empresa: formatarFone(l.telefone),
+      email: l.email || "",
+      endereco: l.endereco || "",
+      observacao: l.erro || "",
+    };
+    // Sócios com celular; execuções antigas só têm o principal em socio_*.
+    const comCelular = socios.filter((s) => s.celular);
+    if (!comCelular.length && l.socio_celular) {
+      comCelular.push({ nome: l.socio_nome || "", documento: "", qualificacao: l.socio_cargo || "", celular: l.socio_celular, whatsapp: Boolean(l.socio_whatsapp) });
+    }
+    const resumoOutros = (exceto: string) =>
+      socios.filter((s) => s.nome !== exceto).map((s) => `${s.nome}${s.qualificacao ? ` (${s.qualificacao})` : ""}`).join("; ");
+    if (comCelular.length) {
+      for (const s of comCelular) {
+        linhas.push({
+          ...base,
+          socio: s.nome,
+          cargo: s.qualificacao || "",
+          celular: formatarFone(s.celular),
+          whatsapp: s.whatsapp ? "Sim" : "Não",
+          outros_celulares: (s.outros ?? []).map(formatarFone).join("; "),
+          outros_socios: resumoOutros(s.nome),
+          situacao: "Celular encontrado",
+        });
+      }
+      continue;
+    }
+    linhas.push({
+      ...base,
+      socio: l.socio_nome || "",
+      cargo: l.socio_cargo || "",
+      celular: "",
+      whatsapp: "",
+      outros_celulares: "",
+      outros_socios: resumoOutros(l.socio_nome || ""),
+      situacao: l.status === "concluido" ? "Sem celular do sócio" : SITUACAO_SOCIOS[l.status] ?? l.status,
+    });
+  }
+  return { colunas, linhas };
 }

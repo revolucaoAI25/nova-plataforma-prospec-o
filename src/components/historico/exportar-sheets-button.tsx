@@ -12,10 +12,11 @@ type Config = { conectado: boolean; planilhas: SheetConfig[] };
 type Modo = SheetConfig["modo"];
 
 /**
- * Exporta os leads de uma pesquisa para uma das planilhas configuradas em
- * Conexões (mesma exportação da automática, só que sob demanda).
+ * Exporta para uma das planilhas configuradas em Conexões: os leads de uma
+ * pesquisa (`searchId`) ou, com `destino`, outra rota que recebe o mesmo
+ * pedido (resultado de um enriquecimento).
  */
-export function ExportarSheetsButton({ searchId, compacto = false }: { searchId: string; compacto?: boolean }) {
+export function ExportarSheetsButton({ searchId, destino, compacto = false }: { searchId?: string; destino?: string; compacto?: boolean }) {
   const [aberto, setAberto] = useState(false);
   const [config, setConfig] = useState<Config | null>(null);
   const [erroConfig, setErroConfig] = useState<string | null>(null);
@@ -53,7 +54,7 @@ export function ExportarSheetsButton({ searchId, compacto = false }: { searchId:
     if (!planilha) return;
     setEnviando(true);
     setResultado(null);
-    const resp = await fetch(`/api/export/${searchId}/sheets`, {
+    const resp = await fetch(destino ?? `/api/export/${searchId}/sheets`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ sheetId: planilha.id, aba: planilha.aba, modo }),

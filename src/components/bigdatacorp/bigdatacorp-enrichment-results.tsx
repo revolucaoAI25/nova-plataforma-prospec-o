@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Building2, CheckCircle2, CircleDashed, AlertTriangle, ChevronDown, ChevronUp, Phone, Mail, Users2, Smartphone } from "lucide-react";
+import { Building2, CheckCircle2, CircleDashed, AlertTriangle, ChevronDown, ChevronUp, Phone, Mail, Users2, Smartphone, Download } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { ExportarSheetsButton } from "@/components/historico/exportar-sheets-button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
@@ -123,8 +125,23 @@ export function BigDataCorpResults({ run, leads }: { run: BigDataCorpEnrichmentR
       <ResultsSummary metrics={metrics} />
 
       <Card>
-        <CardHeader>
+        <CardHeader className="flex-row flex-wrap items-center justify-between gap-2">
           <CardTitle className="text-base">Visão geral</CardTitle>
+          {run.processados > 0 && (
+            <div className="flex flex-wrap gap-2">
+              <Button asChild variant="outline" size="sm">
+                <a href={`/api/bigdatacorp-enrichment/${run.id}/export`}>
+                  <Download className="h-4 w-4" /> Excel
+                </a>
+              </Button>
+              <Button asChild variant="outline" size="sm">
+                <a href={`/api/bigdatacorp-enrichment/${run.id}/export?formato=csv`}>
+                  <Download className="h-4 w-4" /> CSV
+                </a>
+              </Button>
+              <ExportarSheetsButton destino={`/api/bigdatacorp-enrichment/${run.id}/sheets`} />
+            </div>
+          )}
         </CardHeader>
         <CardContent>
           <Table>

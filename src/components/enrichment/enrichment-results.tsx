@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Users, CheckCircle2, CircleDashed, AlertTriangle, Download, ChevronDown, ChevronUp, ExternalLink } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { ExportarSheetsButton } from "@/components/historico/exportar-sheets-button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { ResultsSummary, type SummaryMetric } from "@/components/search/results-summary";
@@ -105,7 +106,7 @@ export function EnrichmentResults({ run, leads }: { run: EnrichmentRunRow; leads
       <ResultsSummary metrics={metrics} />
 
       <Card>
-        <CardHeader className="flex flex-wrap items-center justify-between gap-2">
+        <CardHeader className="flex-row flex-wrap items-center justify-between gap-2">
           <CardTitle className="text-base">Visão geral</CardTitle>
           {run.status === "concluido" && (
             <div className="flex gap-2">
@@ -119,6 +120,7 @@ export function EnrichmentResults({ run, leads }: { run: EnrichmentRunRow; leads
                   <Download className="h-4 w-4" /> CSV
                 </a>
               </Button>
+              <ExportarSheetsButton destino={`/api/enrichment/${run.id}/sheets`} />
             </div>
           )}
         </CardHeader>
