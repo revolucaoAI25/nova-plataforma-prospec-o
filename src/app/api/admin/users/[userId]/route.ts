@@ -5,6 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/require-admin";
 import { camposAtivacaoContaTeste } from "@/lib/conta-teste";
 import { dadosClienteSchema, erroValidacao } from "@/lib/dados-cliente";
+import { capturarCondicaoAtual, esquecerCondicao } from "@/lib/condicao-preco";
 
 const patchSchema = dadosClienteSchema.extend({
   role: z.enum(["user", "admin"]).optional(),
@@ -19,6 +20,8 @@ const patchSchema = dadosClienteSchema.extend({
   bigdatacorp_enrichment_habilitado: z.boolean().optional(),
   conta_teste: z.boolean().optional(),
   teste_expira_em: z.string().nullable().optional(),
+  /** Liga: fotografa a tabela de preços de agora para este cliente. Desliga: volta à tabela atual. */
+  manterCondicaoPreco: z.boolean().optional(),
 });
 
 export async function PATCH(
@@ -38,12 +41,16 @@ export async function PATCH(
   if (!parsed.success) return NextResponse.json({ error: erroValidacao(parsed.error), detalhes: parsed.error.flatten() }, { status: 400 });
 
   const admin = createAdminClient();
-  const { data: atual } = await admin.from("profiles").select("conta_teste").eq("id", userId).maybeSingle();
+  const { data: atual } = await admin.from("profiles").select("conta_teste, condicao_preco").eq("id", userId).maybeSingle();
   if (!atual) return NextResponse.json({ error: "Usuário não encontrado." }, { status: 404 });
 
+  const { manterCondicaoPreco, ...resto } = parsed.data;
   let campos: Record<string, unknown> = Object.fromEntries(
-    Object.entries(parsed.data).filter(([, v]) => v !== undefined),
+    Object.entries(resto).filter(([, v]) => v !== undefined),
   );
+  // Ligar de novo não refaz a fotografia: a condição antiga continua valendo.
+  if (manterCondicaoPreco === true && !atual.condicao_preco) campos.condicao_preco = await capturarCondicaoAtual(admin);
+  if (manterCondicaoPreco === false) campos.condicao_preco = null;
   const ficaTeste = parsed.data.conta_teste ?? atual.conta_teste;
   if (parsed.data.conta_teste === true && !atual.conta_teste) {
     campos = { ...campos, ...(await camposAtivacaoContaTeste()) };
@@ -51,7 +58,8 @@ export async function PATCH(
   // Conta de teste nunca tem o canal LinkedIn, mesmo que o admin tente ligar.
   if (ficaTeste) campos.linkedin_disparo_habilitado = false;
 
-  const { error } = await admin.from("profiles").update(campos).eq("id", userId);
+  const { data: salvo, error } = await admin.from("profiles").update(campos).eq("id", userId).select("condicao_preco").maybeSingle();
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ ok: true, telefone: campos.telefone });
+  if (manterCondicaoPreco !== undefined) esquecerCondicao(userId);
+  return NextResponse.json({ ok: true, telefone: campos.telefone, condicaoPreco: salvo?.condicao_preco ?? null });
 }

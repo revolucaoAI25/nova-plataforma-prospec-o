@@ -44,7 +44,7 @@ export async function executarExtracaoCnpj(ctx: FlowExecutorContext): Promise<Fl
   const profile = await getProfile(sb, userId);
   if (!profile) return { status: "erro", erro: "Perfil não encontrado." };
   // Soma a verificação no Maps quando ela vai rodar — ver o mesmo cálculo em /api/search/cnpj.
-  const custoCnpj = (await custoAcao(sb, "cnpj")) + (mapsModo !== "nao_usar" ? await custoAcao(sb, "cnpj_maps_extra") : 0);
+  const custoCnpj = (await custoAcao(sb, "cnpj", userId)) + (mapsModo !== "nao_usar" ? await custoAcao(sb, "cnpj_maps_extra", userId) : 0);
   if (profile.creditos < custoCnpj) return { status: "erro", erro: "Créditos insuficientes." };
 
   const cddApiKey = await chaveCasaDosDados();

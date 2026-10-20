@@ -37,7 +37,7 @@ export async function POST(request: Request) {
   }
 
   const limite = filtros.limite;
-  const custo = await custoAcao(supabase, "linkedin");
+  const custo = await custoAcao(supabase, "linkedin", user.id);
   const saldo = profile.creditos;
   if (saldo < limite * custo) {
     return NextResponse.json(

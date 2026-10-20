@@ -52,7 +52,7 @@ export async function POST(request: Request) {
   // Maps bloqueia de vez quando o saldo é insuficiente — mesmo comportamento
   // do produto atual (app.py, `_maps_err` antes do `buscar_btn`).
   const limite = filtros.limite;
-  const custo = await custoAcao(supabase, "maps");
+  const custo = await custoAcao(supabase, "maps", user.id);
   const saldo = profile.creditos;
   if (saldo < limite * custo && emTesteGratis(profile)) {
     return NextResponse.json({ error: MSG_TESTE_GRATIS_SEM_CREDITOS }, { status: 402 });

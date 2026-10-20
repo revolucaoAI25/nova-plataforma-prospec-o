@@ -84,8 +84,8 @@ export async function POST(request: Request) {
   // sem somar ela aqui, um saldo pequeno liberava centenas de chamadas pagas
   // ao Google sem cobrir o custo.
   const custoCnpj =
-    (await custoAcao(supabase, "cnpj")) +
-    (filtros.mapsModo !== "nao_usar" ? await custoAcao(supabase, "cnpj_maps_extra") : 0);
+    (await custoAcao(supabase, "cnpj", user.id)) +
+    (filtros.mapsModo !== "nao_usar" ? await custoAcao(supabase, "cnpj_maps_extra", user.id) : 0);
   const saldo = profile.creditos;
   if (saldo < custoCnpj) {
     const erro = emTesteGratis(profile) ? MSG_TESTE_GRATIS_SEM_CREDITOS : "Você não tem créditos suficientes. Adquira mais créditos pra continuar.";

@@ -70,6 +70,7 @@ No [painel do Supabase](https://supabase.com/dashboard), crie um projeto novo
     `0042`: anotações no negócio do funil (`funil_cards.anotacoes`).
     `0043`: a pesquisa ligada a uma busca de celular do sócio tem de ser do
     mesmo dono (fecha gravação em pesquisa de outra conta).
+    `0044`: condição de preço travada por cliente (`profiles.condicao_preco`).
     Rode-as **antes** do deploy desta versão (o código novo grava colunas
     que elas criam). Da `0024` em diante todas podem ser rodadas de novo sem
     erro (usam `if not exists` / `create or replace`); as anteriores rodam
@@ -1413,6 +1414,16 @@ indisponível/com erro amigável se faltar, o resto da plataforma funciona norma
   (4) Checkout: com a fatura em aberto, `/bem-vindo` e `/assinar` levam a
   "trocar o plano antes de pagar"; a consulta de status a cada 5 s só
   roda com a aba visível e não carrega mais a lista de planos.
+- **Condição de preço travada por cliente** (`src/lib/condicao-preco.ts`,
+  migration 0044): no admin, em cada usuário, "Manter a condição de preço
+  atual" fotografa a tabela de agora — preço e créditos de cada plano,
+  pacotes avulsos e consumo por ação — e o cliente fica nela mesmo que os
+  preços subam. Vale no consumo de créditos (`custoAcao`/`custosVisiveis`
+  com `userId`), nos créditos de cada renovação, na assinatura e troca de
+  plano e na compra avulsa; a tela de créditos mostra os preços dele.
+  Assinaturas já ativas no Asaas mantêm o valor de quando foram feitas de
+  qualquer jeito; a trava cobre o que é lido da tabela atual. Ligar de novo
+  não refaz a fotografia.
 
 ## Estrutura
 

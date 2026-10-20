@@ -50,7 +50,7 @@ export async function executarExtracaoMaps(ctx: FlowExecutorContext): Promise<Fl
 
   const profile = await getProfile(sb, userId);
   if (!profile) return { status: "erro", erro: "Perfil não encontrado." };
-  const custo = await custoAcao(sb, "maps");
+  const custo = await custoAcao(sb, "maps", userId);
   if (profile.creditos < limite * custo) {
     return { status: "erro", erro: `Créditos insuficientes (${profile.creditos} disponíveis, até ${limite * custo} necessários).` };
   }

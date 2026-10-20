@@ -19,7 +19,7 @@ export async function executarExtracaoLinkedin(ctx: FlowExecutorContext): Promis
   const profile = await getProfile(sb, userId);
   if (!profile) return { status: "erro", erro: "Perfil não encontrado." };
   if (!profile.linkedin_visible) return { status: "erro", erro: "A busca por LinkedIn não está habilitada para sua conta." };
-  const custo = await custoAcao(sb, "linkedin");
+  const custo = await custoAcao(sb, "linkedin", userId);
   if (profile.creditos < limite * custo) {
     return { status: "erro", erro: `Créditos insuficientes (${profile.creditos} disponíveis, até ${limite * custo} necessários).` };
   }

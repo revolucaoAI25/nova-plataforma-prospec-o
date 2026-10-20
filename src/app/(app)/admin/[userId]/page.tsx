@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getProfile } from "@/lib/credits";
 import { creditosContaTeste } from "@/lib/conta-teste";
 import { ContaTesteForm } from "@/components/admin/conta-teste-form";
+import { CondicaoPrecoForm } from "@/components/admin/condicao-preco-form";
 import { DadosClienteForm } from "@/components/perfil/dados-cliente-form";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { PageHeader } from "@/components/layout/page-header";
@@ -42,6 +43,12 @@ export default async function AdminUserPage({ params }: { params: Promise<{ user
           />
         </CardContent>
       </Card>
+      <CondicaoPrecoForm
+        userId={userId}
+        inicial={target.condicao_preco ?? null}
+        nomesPlanos={Object.fromEntries(((await supabase.from("plans").select("id, nome")).data ?? []).map((p) => [p.id, p.nome]))}
+        nomesPacotes={Object.fromEntries(((await supabase.from("credit_packages").select("id, nome")).data ?? []).map((p) => [p.id, p.nome]))}
+      />
       <ContaTesteForm userId={userId} profile={target} creditosTeste={await creditosContaTeste()} />
     </div>
   );

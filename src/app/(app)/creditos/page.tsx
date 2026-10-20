@@ -13,6 +13,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { PacotesGrid } from "@/components/creditos/pacotes-grid";
 import { HistoricoCompras } from "@/components/creditos/historico-compras";
 import { PlanosGrid } from "@/components/creditos/planos-grid";
+import { pacoteNaCondicao, planoNaCondicao } from "@/lib/condicao-preco";
 import { AddonsGrid } from "@/components/creditos/addons-grid";
 import { asaasConfigurado } from "@/lib/integrations/asaas";
 import { redirect } from "next/navigation";
@@ -74,7 +75,7 @@ export default async function CreditosPage() {
         </TabsList>
         <TabsContent value="planos">
           <PlanosGrid
-            planos={planos}
+            planos={planos.map((p) => planoNaCondicao(p, profile.condicao_preco))}
             planoAtualId={profile.plano_id}
             statusAtual={profile.assinatura_status}
             cicloAtual={profile.assinatura_ciclo}
@@ -83,7 +84,7 @@ export default async function CreditosPage() {
           />
         </TabsContent>
         <TabsContent value="avulso" className="flex flex-col gap-6">
-          <PacotesGrid pacotes={pacotes} temCpfCnpj={Boolean(profile.cpf_cnpj)} configurado={podeComprar} />
+          <PacotesGrid pacotes={pacotes.map((p) => pacoteNaCondicao(p, profile.condicao_preco))} temCpfCnpj={Boolean(profile.cpf_cnpj)} configurado={podeComprar} />
           <HistoricoCompras comprasIniciais={compras} />
         </TabsContent>
         {addons.length > 0 && (

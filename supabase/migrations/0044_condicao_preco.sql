@@ -1,0 +1,11 @@
+-- ════════════════════════════════════════════════════════════════════
+-- 0044 — Condição de preço travada por usuário
+--
+-- Ao subir preços, um cliente pode continuar na tabela antiga: o admin liga
+-- "Manter a condição de preço atual" na conta dele e a plataforma guarda
+-- aqui uma fotografia dos preços daquele momento — preço e créditos de
+-- cada plano, preço dos pacotes avulsos e o consumo de créditos por ação.
+-- Nulo = tabela atual. Só o servidor/admin grava (proteger_campos_profile
+-- não libera este campo para o próprio usuário).
+-- ════════════════════════════════════════════════════════════════════
+alter table profiles add column if not exists condicao_preco jsonb;

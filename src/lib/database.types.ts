@@ -1,3 +1,4 @@
+import type { CondicaoPreco } from "@/lib/condicao-preco";
 /**
  * Tipos do schema Supabase (supabase/migrations/*.sql), escritos à mão —
  * não há projeto Supabase vivo nesta sessão para rodar
@@ -75,6 +76,8 @@ export interface Profile {
 
   created_at: string;
   updated_at: string;
+  /** Condição de preço travada (migration 0044); nulo = tabela atual. */
+  condicao_preco?: CondicaoPreco | null;
 }
 
 /** Chaves de `credit_costs.acao` — cada ação que consome o pool único de créditos. */

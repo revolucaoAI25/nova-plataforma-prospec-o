@@ -24,7 +24,7 @@ export default async function EnriquecimentoPage() {
   // No teste grátis a página abre em modo de visualização (PortaoTesteGratis).
   if (!profile || (!podeIa && !podeBigDataCorp && !emTesteGratis(profile))) redirect("/");
   const bigDataCorpDisponivel = await sociosEContatoConfigurado();
-  const custos = await custosVisiveis(supabase, ["bigdatacorp", "socio_celular"]);
+  const custos = await custosVisiveis(supabase, ["bigdatacorp", "socio_celular"], user.id);
 
   return (
     <div className="flex flex-col gap-6">

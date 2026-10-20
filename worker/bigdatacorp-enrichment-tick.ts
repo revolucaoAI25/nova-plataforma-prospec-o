@@ -88,7 +88,7 @@ async function processarComDirectData(
   sb: SupabaseClient, run: BigDataCorpEnrichmentRunRow, saldoInicial: number, log: (msg: string) => void,
 ): Promise<void> {
   const opcoes = normalizarOpcoesCelularSocio(run.opcoes);
-  const [custoEmpresa, custoSocio] = await Promise.all([custoAcao(sb, "bigdatacorp"), custoAcao(sb, "socio_celular")]);
+  const [custoEmpresa, custoSocio] = await Promise.all([custoAcao(sb, "bigdatacorp", run.user_id), custoAcao(sb, "socio_celular", run.user_id)]);
   let saldo = saldoInicial;
 
   const { data: leadRows } = await sb

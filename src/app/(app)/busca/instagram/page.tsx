@@ -18,7 +18,7 @@ export default async function BuscaInstagramPage() {
   // No teste grátis a página abre em modo de visualização (PortaoTesteGratis).
   if (!profile?.instagram_visible && !emTesteGratis(profile)) redirect("/");
   // No teste grátis a página é só visualização: o custo em créditos não aparece.
-  const custoPorResultado = emTesteGratis(profile) ? 0 : (await custosVisiveis(supabase, ["instagram"])).instagram;
+  const custoPorResultado = emTesteGratis(profile) ? 0 : (await custosVisiveis(supabase, ["instagram"], user.id)).instagram;
 
   const sugestoes = await sugestoesDaBusca(user.id, "instagram");
   return (

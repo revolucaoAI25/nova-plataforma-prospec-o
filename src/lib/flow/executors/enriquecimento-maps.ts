@@ -24,7 +24,7 @@ export async function executarEnriquecimentoMaps(ctx: FlowExecutorContext): Prom
   const profile = await getProfile(sb, userId);
   if (!profile) return { status: "erro", erro: "Perfil não encontrado." };
 
-  const custoTotal = lote.length * (await custoAcao(sb, "cnpj_maps_extra"));
+  const custoTotal = lote.length * (await custoAcao(sb, "cnpj_maps_extra", userId));
   if (profile.creditos < custoTotal) {
     return { status: "erro", erro: `Créditos insuficientes: verificar ${lote.length} leads no Maps custa ${custoTotal} créditos e o saldo é ${profile.creditos}.` };
   }

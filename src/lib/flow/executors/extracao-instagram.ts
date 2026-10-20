@@ -18,7 +18,7 @@ export async function executarExtracaoInstagram(ctx: FlowExecutorContext): Promi
   const profile = await getProfile(sb, userId);
   if (!profile) return { status: "erro", erro: "Perfil não encontrado." };
   if (!profile.instagram_visible) return { status: "erro", erro: "A busca por Instagram não está habilitada para sua conta." };
-  const custo = await custoAcao(sb, "instagram");
+  const custo = await custoAcao(sb, "instagram", userId);
   if (profile.creditos < limite * custo) {
     return { status: "erro", erro: `Créditos insuficientes (${profile.creditos} disponíveis, até ${limite * custo} necessários).` };
   }

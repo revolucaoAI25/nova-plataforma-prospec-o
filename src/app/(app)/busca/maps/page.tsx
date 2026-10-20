@@ -9,7 +9,7 @@ export const metadata = { title: "Busca por Google Maps" };
 export default async function BuscaMapsPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  const [custos, sugestoes] = await Promise.all([custosVisiveis(supabase, ["maps"]), sugestoesDaBusca(user?.id, "maps")]);
+  const [custos, sugestoes] = await Promise.all([custosVisiveis(supabase, ["maps"], user?.id), sugestoesDaBusca(user?.id, "maps")]);
 
   return (
     <div className="flex flex-col gap-6">

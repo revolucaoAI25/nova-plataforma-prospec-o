@@ -6,6 +6,7 @@ import { MSG_CONTA_TESTE_SEM_COMPRA } from "@/lib/conta-teste";
 import { emTesteGratis, MSG_TESTE_GRATIS_ASSINAR } from "@/lib/teste-gratis";
 import { asaasConfigurado } from "@/lib/integrations/asaas";
 import { criarCompra } from "@/lib/credit-purchases-db";
+import { pacoteNaCondicao } from "@/lib/condicao-preco";
 
 const bodySchema = z.object({
   packageId: z.string().uuid(),
@@ -41,7 +42,8 @@ export async function POST(request: Request) {
   if (!pacote) return NextResponse.json({ error: "Pacote não encontrado." }, { status: 404 });
 
   try {
-    const { invoiceUrl } = await criarCompra(profile, pacote, parsed.data.cpfCnpj || null);
+    // Cliente com condição de preço travada compra pelo preço da fotografia.
+    const { invoiceUrl } = await criarCompra(profile, pacoteNaCondicao(pacote, profile.condicao_preco), parsed.data.cpfCnpj || null);
     return NextResponse.json({ invoiceUrl });
   } catch (err) {
     console.error("[creditos/comprar]", err);

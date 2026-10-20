@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getProfile } from "@/lib/credits";
 import { MSG_CONTA_TESTE_SEM_COMPRA } from "@/lib/conta-teste";
 import { asaasConfigurado } from "@/lib/integrations/asaas";
+import { planoNaCondicao } from "@/lib/condicao-preco";
 import { listarPlanosAtivos, assinarPlano, cancelarPlano, AssinaturaJaPaga } from "@/lib/subscriptions-db";
 
 export async function GET(request: Request) {
@@ -17,7 +18,7 @@ export async function GET(request: Request) {
   const assinatura = { status: profile.assinatura_status, planoId: profile.plano_id, ciclo: profile.assinatura_ciclo };
   // ?so=status: a página de boas-vindas consulta a cada poucos segundos e só precisa do status.
   if (new URL(request.url).searchParams.get("so") === "status") return NextResponse.json({ assinatura });
-  const planos = await listarPlanosAtivos(supabase);
+  const planos = (await listarPlanosAtivos(supabase)).map((p) => planoNaCondicao(p, profile.condicao_preco));
   return NextResponse.json({ planos, assinatura });
 }
 

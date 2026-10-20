@@ -34,7 +34,7 @@ export async function POST(request: Request) {
   }
 
   const limite = filtros.limite;
-  const custo = await custoAcao(supabase, "instagram");
+  const custo = await custoAcao(supabase, "instagram", user.id);
   const saldo = profile.creditos;
   if (saldo < limite * custo) {
     return NextResponse.json(

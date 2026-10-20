@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { AcaoCredito, Profile } from "@/lib/database.types";
+import { condicaoDoUsuario } from "@/lib/condicao-preco";
 
 // Lógica de créditos — portada de modules/database.py do produto atual. Ver seção 5.5 do plano:
 // créditos são debitados pelo que foi ENCONTRADO, não pelo que foi
@@ -23,7 +24,15 @@ export async function getProfile(
 const cacheCusto = new Map<AcaoCredito, { valor: number; expiraEm: number }>();
 const CACHE_TTL_MS = 60_000;
 
-export async function custoAcao(supabase: SupabaseClient, acao: AcaoCredito): Promise<number> {
+/**
+ * Com `userId`, respeita a condição de preço travada do usuário (custo da
+ * fotografia, se a ação existia nela) — ver src/lib/condicao-preco.ts.
+ */
+export async function custoAcao(supabase: SupabaseClient, acao: AcaoCredito, userId?: string): Promise<number> {
+  if (userId) {
+    const travado = (await condicaoDoUsuario(supabase, userId))?.custos?.[acao];
+    if (typeof travado === "number") return travado;
+  }
   const cached = cacheCusto.get(acao);
   if (cached && cached.expiraEm > Date.now()) return cached.valor;
 
@@ -42,11 +51,16 @@ export async function custoAcao(supabase: SupabaseClient, acao: AcaoCredito): Pr
 export async function custosVisiveis(
   supabase: SupabaseClient,
   acoes: AcaoCredito[],
+  userId?: string,
 ): Promise<Record<string, number>> {
-  const { data } = await supabase.from("credit_costs").select("acao, custo").in("acao", acoes);
+  const [{ data }, condicao] = await Promise.all([
+    supabase.from("credit_costs").select("acao, custo").in("acao", acoes),
+    userId ? condicaoDoUsuario(supabase, userId) : Promise.resolve(null),
+  ]);
   const mapa: Record<string, number> = {};
   for (const acao of acoes) mapa[acao] = 1;
   for (const row of data ?? []) mapa[row.acao] = row.custo;
+  for (const acao of acoes) if (typeof condicao?.custos?.[acao] === "number") mapa[acao] = condicao.custos[acao];
   return mapa;
 }
 
@@ -58,6 +72,6 @@ export async function debitarCreditos(
   quantidade: number,
 ): Promise<void> {
   if (quantidade <= 0) return;
-  const custo = await custoAcao(supabase, acao);
+  const custo = await custoAcao(supabase, acao, userId);
   await supabase.rpc("decrement_creditos", { p_user_id: userId, p_delta: quantidade * custo });
 }

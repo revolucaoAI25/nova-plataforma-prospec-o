@@ -4,6 +4,7 @@ import { obterOuCriarClienteAsaas } from "@/lib/credit-purchases-db";
 import { criarAssinatura, cancelarAssinatura, obterPrimeiraFaturaAssinatura } from "@/lib/integrations/asaas";
 import { PLAN_FEATURE_FLAG_KEYS, type AssinaturaCiclo, type PlanRow, type Profile } from "@/lib/database.types";
 import { dataISOBrasil } from "@/lib/datas";
+import { planoNaCondicao, type CondicaoPreco } from "@/lib/condicao-preco";
 
 // Assinatura recorrente de plano via Asaas — ver comentário de topo de
 // supabase/migrations/0018_asaas_subscriptions.sql pro desenho geral.
@@ -59,6 +60,8 @@ export async function assinarPlano(
   }
 
   const customerId = await obterOuCriarClienteAsaas(profile, cpfCnpj || profile.cpf_cnpj || "");
+  // Cliente com condição de preço travada assina pelo preço da fotografia.
+  plano = planoNaCondicao(plano, profile.condicao_preco);
 
   const valorCentavos = ciclo === "anual" ? (plano.preco_anual_centavos ?? plano.preco_centavos * 12) : plano.preco_centavos;
 
@@ -118,13 +121,14 @@ export async function processarPagamentoAssinatura(asaasSubscriptionId: string, 
 
   const { data: dono } = await sbAdmin
     .from("profiles")
-    .select("id, plano_id, assinatura_status, assinatura_ciclo")
+    .select("id, plano_id, assinatura_status, assinatura_ciclo, condicao_preco")
     .eq("asaas_subscription_id", asaasSubscriptionId)
     .maybeSingle();
   if (!dono) return false; // não é uma assinatura de PLANO conhecida — deixa o caller tentar add-on.
 
   const { data: planoData } = await sbAdmin.from("plans").select("*").eq("id", dono.plano_id).maybeSingle();
-  const plano = planoData as PlanRow | null;
+  // Créditos do plano pela condição travada do cliente, se houver.
+  const plano = planoData ? planoNaCondicao(planoData as PlanRow, dono.condicao_preco as CondicaoPreco | null) : null;
   const creditosMensais = plano?.creditos_mensais ?? 0;
   // Anual só recebe 1 evento de pagamento por ANO (não por mês) — credita
   // os 12 meses de uma vez no momento da confirmação, em vez de tentar
