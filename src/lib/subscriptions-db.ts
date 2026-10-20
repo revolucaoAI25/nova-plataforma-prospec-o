@@ -11,6 +11,16 @@ import { dataISOBrasil } from "@/lib/datas";
 // chamadas pela rota do usuário usam o cliente autenticado (RLS), a que
 // processa o webhook usa sempre o cliente admin.
 
+/** Status de cobrança já paga no Asaas (mesma lista do webhook). */
+const STATUS_PAGO = new Set(["CONFIRMED", "RECEIVED", "RECEIVED_IN_CASH"]);
+
+/** A fatura da assinatura pendente já foi paga — falta só o aviso do Asaas chegar; não dá para trocar. */
+export class AssinaturaJaPaga extends Error {
+  constructor() {
+    super("O pagamento desta assinatura já foi feito e está sendo confirmado. Em instantes seu plano fica ativo; depois disso dá para trocar.");
+  }
+}
+
 export async function listarPlanosAtivos(sb: SupabaseClient): Promise<PlanRow[]> {
   const { data } = await sb.from("plans").select("*").eq("ativo", true).order("ordem");
   return (data as PlanRow[]) ?? [];
@@ -31,6 +41,23 @@ export async function assinarPlano(
   cpfCnpj: string | null,
   ciclo: AssinaturaCiclo = "mensal",
 ): Promise<{ invoiceUrl: string }> {
+  // Assinatura aguardando o 1º pagamento: a pessoa voltou da fatura para
+  // trocar de plano ou de ciclo (mensal ↔ anual). Mesmo plano e ciclo
+  // reabre a fatura que já existe; outra escolha cancela a pendente no
+  // Asaas antes de criar a nova — sem isso ela ficava órfã, cobrando.
+  if (profile.assinatura_status === "pendente" && profile.asaas_subscription_id) {
+    const faturaAtual = await obterPrimeiraFaturaAssinatura(profile.asaas_subscription_id).catch(() => null);
+    if (faturaAtual && STATUS_PAGO.has(faturaAtual.status)) throw new AssinaturaJaPaga();
+    if (profile.plano_id === plano.id && (profile.assinatura_ciclo ?? "mensal") === ciclo && faturaAtual) {
+      return { invoiceUrl: faturaAtual.invoiceUrl };
+    }
+    await cancelarAssinatura(profile.asaas_subscription_id);
+    await createAdminClient()
+      .from("profiles")
+      .update({ asaas_subscription_id: null, assinatura_status: "sem_assinatura" })
+      .eq("id", profile.id);
+  }
+
   const customerId = await obterOuCriarClienteAsaas(profile, cpfCnpj || profile.cpf_cnpj || "");
 
   const valorCentavos = ciclo === "anual" ? (plano.preco_anual_centavos ?? plano.preco_centavos * 12) : plano.preco_centavos;
@@ -58,10 +85,17 @@ export async function assinarPlano(
 /** Cancela no Asaas e limpa o vínculo — mantém `plano_id` como referência histórica ("seu último plano"), mas `asaas_subscription_id` some pra permitir assinar de novo depois sem colidir. */
 export async function cancelarPlano(profile: Profile): Promise<void> {
   if (!profile.asaas_subscription_id) return;
+  // Desistir de uma assinatura que nunca foi paga não é "cancelar o plano":
+  // a pessoa volta para "sem assinatura", como se não tivesse começado.
+  const nuncaPaga = profile.assinatura_status === "pendente";
+  if (nuncaPaga) {
+    const fatura = await obterPrimeiraFaturaAssinatura(profile.asaas_subscription_id).catch(() => null);
+    if (fatura && STATUS_PAGO.has(fatura.status)) throw new AssinaturaJaPaga();
+  }
   await cancelarAssinatura(profile.asaas_subscription_id);
   await createAdminClient()
     .from("profiles")
-    .update({ asaas_subscription_id: null, assinatura_status: "cancelada" })
+    .update({ asaas_subscription_id: null, assinatura_status: nuncaPaga ? "sem_assinatura" : "cancelada" })
     .eq("id", profile.id);
 }
 

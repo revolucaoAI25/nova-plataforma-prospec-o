@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getProfile } from "@/lib/credits";
 import { MSG_CONTA_TESTE_SEM_COMPRA } from "@/lib/conta-teste";
 import { asaasConfigurado } from "@/lib/integrations/asaas";
-import { listarPlanosAtivos, assinarPlano, cancelarPlano } from "@/lib/subscriptions-db";
+import { listarPlanosAtivos, assinarPlano, cancelarPlano, AssinaturaJaPaga } from "@/lib/subscriptions-db";
 
 export async function GET() {
   const supabase = await createClient();
@@ -41,7 +41,9 @@ export async function POST(request: Request) {
 
   if (profile.conta_teste) return NextResponse.json({ error: MSG_CONTA_TESTE_SEM_COMPRA }, { status: 403 });
 
-  if (profile.assinatura_status === "ativa" || profile.assinatura_status === "pendente" || profile.assinatura_status === "inadimplente") {
+  // "pendente" (fatura aberta, ainda não paga) pode trocar de plano/ciclo:
+  // `assinarPlano` cancela a pendente no Asaas antes de criar a nova.
+  if (profile.assinatura_status === "ativa" || profile.assinatura_status === "inadimplente") {
     // Inclui "inadimplente" de propósito: `assinarPlano` sobrescreve
     // `asaas_subscription_id` com o novo id, e a assinatura antiga (ainda
     // ativa no Asaas, só com cobrança vencida) nunca é cancelada — fica
@@ -50,7 +52,7 @@ export async function POST(request: Request) {
     // com nenhuma compra avulsa, então some silenciosamente. Cancelar
     // antes de assinar de novo (DELETE já chama cancelarAssinatura no
     // Asaas) evita esse órfão.
-    return NextResponse.json({ error: "Você já tem uma assinatura em aberto (ativa ou com pagamento pendente). Cancele antes de assinar outro plano." }, { status: 409 });
+    return NextResponse.json({ error: "Você já tem uma assinatura ativa. Cancele antes de assinar outro plano." }, { status: 409 });
   }
 
   const parsed = bodySchema.safeParse(await request.json().catch(() => null));
@@ -67,6 +69,7 @@ export async function POST(request: Request) {
     const { invoiceUrl } = await assinarPlano(supabase, profile, plano, parsed.data.cpfCnpj || null, parsed.data.ciclo);
     return NextResponse.json({ invoiceUrl });
   } catch (err) {
+    if (err instanceof AssinaturaJaPaga) return NextResponse.json({ error: err.message }, { status: 409 });
     console.error("[assinatura POST]", err);
     return NextResponse.json({ error: "Não foi possível iniciar a assinatura. Tente novamente em instantes." }, { status: 502 });
   }
@@ -84,6 +87,7 @@ export async function DELETE() {
     await cancelarPlano(profile);
     return NextResponse.json({ ok: true });
   } catch (err) {
+    if (err instanceof AssinaturaJaPaga) return NextResponse.json({ error: err.message }, { status: 409 });
     console.error("[assinatura DELETE]", err);
     return NextResponse.json({ error: "Não foi possível cancelar a assinatura agora. Tente novamente." }, { status: 502 });
   }

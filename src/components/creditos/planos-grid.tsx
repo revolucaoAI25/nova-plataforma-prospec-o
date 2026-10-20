@@ -48,7 +48,11 @@ export function PlanosGrid({
   const confirmar = useConfirm();
   const [status, setStatus] = useState(statusAtual);
   const [planoId, setPlanoId] = useState(planoAtualId);
-  const [ciclo, setCiclo] = useState<AssinaturaCiclo>("mensal");
+  // Ciclo da assinatura que existe (para o selo e para saber qual card é o
+  // "atual") e o ciclo escolhido no seletor — separados para dar para trocar
+  // de mensal para anual (e vice-versa) com a fatura ainda em aberto.
+  const [cicloAssinado, setCicloAssinado] = useState<AssinaturaCiclo>(cicloAtual);
+  const [ciclo, setCiclo] = useState<AssinaturaCiclo>(statusAtual === "pendente" ? cicloAtual : "mensal");
   const [assinando, setAssinando] = useState<string | null>(null);
   const [cancelando, setCancelando] = useState(false);
   const [planoPendenteCpf, setPlanoPendenteCpf] = useState<PlanRow | null>(null);
@@ -57,6 +61,10 @@ export function PlanosGrid({
   const [aviso, setAviso] = useState<string | null>(null);
 
   const temAssinaturaAtiva = status === "ativa" || status === "pendente" || status === "inadimplente";
+  // Só ativa/inadimplente travam a troca. Pendente (fatura aberta, não paga)
+  // deixa escolher outro plano ou ciclo: o servidor cancela a pendente.
+  const trocaTravada = status === "ativa" || status === "inadimplente";
+  const pendente = status === "pendente";
   const statusInfo = STATUS_LABEL[status];
 
   async function iniciarAssinatura(plano: PlanRow, cpfCnpjInformado?: string) {
@@ -75,9 +83,14 @@ export function PlanosGrid({
         return;
       }
       window.open(data.invoiceUrl, "_blank", "noopener,noreferrer");
-      setAviso("Fatura aberta em uma nova aba. Assim que o primeiro pagamento for confirmado, seu plano fica ativo automaticamente.");
+      const trocou = pendente && (plano.id !== planoId || ciclo !== cicloAssinado);
+      setAviso(
+        (trocou ? "Plano trocado — a fatura anterior foi cancelada. " : "") +
+        "Fatura aberta em uma nova aba. Assim que o primeiro pagamento for confirmado, seu plano fica ativo automaticamente.",
+      );
       setStatus("pendente");
       setPlanoId(plano.id);
+      setCicloAssinado(ciclo);
       setPlanoPendenteCpf(null);
       setCpfCnpj("");
     } catch {
@@ -105,7 +118,11 @@ export function PlanosGrid({
   }
 
   async function cancelar() {
-    if (!(await confirmar({
+    if (!(await confirmar(pendente ? {
+      title: "Desistir desta assinatura?",
+      description: "A fatura em aberto é cancelada e nada é cobrado. Você pode assinar outro plano quando quiser.",
+      destructive: true,
+    } : {
       title: "Cancelar sua assinatura?",
       description: "Encerra a recorrência imediatamente — você mantém os créditos que já tem, mas não recebe mais a renovação mensal.",
       destructive: true,
@@ -119,8 +136,8 @@ export function PlanosGrid({
       setErro(data.error || "Não foi possível cancelar.");
       return;
     }
-    setStatus("cancelada");
-    setAviso("Assinatura cancelada.");
+    setStatus(pendente ? "sem_assinatura" : "cancelada");
+    setAviso(pendente ? "Fatura cancelada. Escolha outro plano quando quiser." : "Assinatura cancelada.");
   }
 
   return (
@@ -147,22 +164,25 @@ export function PlanosGrid({
             <span className="text-muted-foreground">Sua assinatura:</span>
             <Badge variant={statusInfo.variant}>{statusInfo.label}</Badge>
             {temAssinaturaAtiva && (
-              <Badge variant="outline">{cicloAtual === "anual" ? "Anual" : "Mensal"}</Badge>
+              <Badge variant="outline">{cicloAssinado === "anual" ? "Anual" : "Mensal"}</Badge>
+            )}
+            {pendente && (
+              <span className="text-xs text-muted-foreground">Quer outro plano ou trocar entre mensal e anual? É só escolher abaixo — a fatura atual é cancelada.</span>
             )}
             {status === "inadimplente" && (
               <span className="text-xs text-muted-foreground">A última cobrança não foi confirmada — verifique a fatura mais recente.</span>
             )}
           </div>
-          {(status === "ativa" || status === "inadimplente") && (
+          {temAssinaturaAtiva && (
             <Button variant="outline" size="sm" onClick={cancelar} disabled={cancelando}>
               {cancelando ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
-              Cancelar assinatura
+              {pendente ? "Desistir desta assinatura" : "Cancelar assinatura"}
             </Button>
           )}
         </div>
       )}
 
-      {!temAssinaturaAtiva && (
+      {!trocaTravada && (
         <div className="inline-flex w-fit items-center gap-1 rounded-xl border border-border bg-secondary/30 p-1">
           <button
             type="button"
@@ -184,7 +204,9 @@ export function PlanosGrid({
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {planos.map((plano, i) => {
           const destaque = i === 1 && planos.length > 1;
-          const ehPlanoAtual = plano.id === planoId && temAssinaturaAtiva;
+          const ehPlanoAtual = plano.id === planoId && trocaTravada;
+          // Fatura em aberto deste plano neste ciclo: o botão reabre a fatura.
+          const ehPendenteEscolhido = pendente && plano.id === planoId && ciclo === cicloAssinado;
           const precoAnual = plano.preco_anual_centavos ?? plano.preco_centavos * 10;
           const precoExibido = ciclo === "anual" ? precoAnual : plano.preco_centavos;
           return (
@@ -222,12 +244,13 @@ export function PlanosGrid({
                 ) : (
                   <Button
                     onClick={() => clicarAssinar(plano)}
-                    disabled={!configurado || assinando === plano.id || temAssinaturaAtiva}
+                    disabled={!configurado || assinando !== null || trocaTravada}
+                    variant={ehPendenteEscolhido ? "outline" : "default"}
                     className="w-full"
-                    title={temAssinaturaAtiva ? "Cancele sua assinatura atual antes de trocar de plano" : undefined}
+                    title={trocaTravada ? "Cancele sua assinatura atual antes de trocar de plano" : undefined}
                   >
-                    {assinando === plano.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Crown className="h-4 w-4" />}
-                    {assinando === plano.id ? "Abrindo…" : "Assinar"}
+                    {assinando === plano.id ? <Loader2 className="h-4 w-4 animate-spin" /> : ehPendenteEscolhido ? <ExternalLink className="h-4 w-4" /> : <Crown className="h-4 w-4" />}
+                    {assinando === plano.id ? "Abrindo…" : ehPendenteEscolhido ? "Abrir fatura" : pendente ? "Trocar para este" : "Assinar"}
                   </Button>
                 )}
               </CardContent>
