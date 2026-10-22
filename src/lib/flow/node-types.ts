@@ -28,7 +28,8 @@ export type LucideIconName =
   | "Send"
   | "Mail"
   | "Database"
-  | "Kanban";
+  | "Kanban"
+  | "Webhook";
 
 // ── Schemas de config por tipo de nó ──────────────────────────────
 
@@ -238,6 +239,29 @@ const destinoFunilConfigSchema = z.object({
   colunaId: z.string().uuid(),
 });
 
+// Ver src/lib/flow/executors/requisicao-http.ts. A URL pode começar com um
+// {{variaveis.x}} do gatilho manual; o resto é conferido na hora de enviar.
+const requisicaoHttpConfigSchema = z.object({
+  metodo: z.enum(["POST", "PUT", "PATCH", "GET", "DELETE"]).default("POST"),
+  url: z
+    .string()
+    .trim()
+    .min(1, "Informe a URL.")
+    .max(2000)
+    .refine((v) => /^https?:\/\//i.test(v) || v.startsWith("{{"), "A URL precisa começar com http:// ou https://."),
+  cabecalhos: z
+    .array(z.object({
+      nome: z.string().trim().regex(/^[A-Za-z0-9!#$%&'*+.^_`|~-]+$/, "Nome de cabeçalho inválido (sem espaços nem acentos)."),
+      valor: z.string().max(4000).default(""),
+    }))
+    .max(20)
+    .default([]),
+  // por_lead = uma chamada para cada lead; lote = uma chamada com vários leads.
+  modo: z.enum(["por_lead", "lote"]).default("por_lead"),
+  tamanhoLote: z.number().int().min(1).max(1000).default(100),
+  corpo: z.string().max(20_000).default(""),
+});
+
 // ── Metadados por tipo ─────────────────────────────────────────────
 
 /**
@@ -282,6 +306,16 @@ const SAIDAS_SOCIOS: SaidaDoNo[] = [
     descricao: "Leads em que não achamos o celular do sócio (ou sem CNPJ). Sem nada ligado aqui, eles seguem pelo caminho principal com o telefone da empresa.",
     quando: "imediata",
     tom: "neutro",
+  },
+];
+
+const SAIDAS_HTTP: SaidaDoNo[] = [
+  {
+    id: "falhou",
+    label: "Falhou",
+    descricao: "Leads cuja chamada não deu certo (erro de conexão ou resposta fora da faixa 200). Sem nada ligado aqui, eles param neste passo.",
+    quando: "imediata",
+    tom: "erro",
   },
 ];
 
@@ -479,6 +513,17 @@ export const FLOW_NODE_TYPES: Record<FlowNodeTipo, FlowNodeTypeMeta> = {
     icon: "Kanban",
     configSchema: destinoFunilConfigSchema,
     disponivel: true,
+  },
+  requisicao_http: {
+    tipo: "requisicao_http",
+    categoria: "destino",
+    label: "Requisição HTTP",
+    descricao: "Envia os leads para outro sistema por uma chamada HTTP (webhook, CRM, outra plataforma de disparo), um por um ou em lotes.",
+    icon: "Webhook",
+    configSchema: requisicaoHttpConfigSchema,
+    disponivel: true,
+    rotuloSaidaPrincipal: "Deu certo",
+    saidas: SAIDAS_HTTP,
   },
 };
 

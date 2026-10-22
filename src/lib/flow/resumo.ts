@@ -116,6 +116,17 @@ export function resumoDoNo(tipo: FlowNodeTipo, config: unknown): string | null {
       return juntar([texto(c.aba) && `Aba "${texto(c.aba)}"`, c.modo === "substituir" ? "substitui" : "acrescenta"]);
     case "destino_funil":
       return texto(c.colunaId) ? "Coluna escolhida" : null;
+    case "requisicao_http": {
+      const url = texto(c.url);
+      if (!url) return null;
+      let host = url;
+      try {
+        host = new URL(url).host;
+      } catch {
+        // URL com {{variável}}: mostra como está.
+      }
+      return juntar([`${texto(c.metodo) || "POST"} ${host}`, c.modo === "lote" ? "em lotes" : "um por lead"]);
+    }
     default:
       return null;
   }

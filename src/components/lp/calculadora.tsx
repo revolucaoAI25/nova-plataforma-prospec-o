@@ -28,7 +28,35 @@ function Faixa({ rotulo, min, max, total, destaque }: { rotulo: string; min: num
   );
 }
 
-function Controle({ rotulo, valor, children }: { rotulo: string; valor?: string; children: React.ReactNode }) {
+/** "Qual o ticket médio?" com um "?" que explica, para quem não conhece o termo. */
+function TicketRotulo() {
+  const [aberto, setAberto] = useState(false);
+  return (
+    <span className="flex flex-col gap-1.5">
+      <span className="flex items-center gap-2">
+        Qual o ticket médio do seu produto ou serviço?
+        <button
+          type="button"
+          aria-expanded={aberto}
+          aria-controls="ajuda-ticket"
+          aria-label="O que é ticket médio?"
+          onClick={() => setAberto((a) => !a)}
+          className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-lp-line-2 font-lp-mono text-[12px] text-lp-muted transition-colors hover:border-lp-accent/60 hover:text-lp-text"
+        >
+          ?
+        </button>
+      </span>
+      {aberto && (
+        <span id="ajuda-ticket" className="text-[13px] leading-relaxed text-lp-muted">
+          É quanto um cliente novo paga, em média, a cada venda. Se você cobra mensalidade, use o valor mensal e marque &quot;Receita
+          mensal recorrente&quot;.
+        </span>
+      )}
+    </span>
+  );
+}
+
+function Controle({ rotulo, valor, children }: { rotulo: React.ReactNode; valor?: string; children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-baseline justify-between gap-3">
@@ -102,11 +130,11 @@ export function Calculadora({ planos, creditosPorLead }: { planos: PlanoLP[]; cr
 
         <div ref={ref} className="mt-12 grid grid-cols-1 gap-5 lg:mt-16 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
           <div className="flex flex-col gap-8 rounded-[28px] border border-lp-line bg-lp-surface p-6 sm:p-8">
-            <Controle rotulo="Quanto vale um cliente novo?">
+            <Controle rotulo={<TicketRotulo />}>
               <div className="flex items-center rounded-2xl border border-lp-line-2 bg-lp-bg/60 px-4 focus-within:border-lp-accent/60">
                 <span className="text-lp-muted">R$</span>
                 <input
-                  type="number" inputMode="numeric" min={0} step={50} value={ticket} aria-label="Valor de um cliente novo em reais"
+                  type="number" inputMode="numeric" min={0} step={50} value={ticket} aria-label="Ticket médio do seu produto ou serviço, em reais"
                   onChange={(e) => setTicket(Math.max(0, Number(e.target.value) || 0))}
                   className="lp-numero h-14 w-full min-w-0 bg-transparent px-2 font-lp-display text-2xl font-bold text-lp-text outline-none"
                 />

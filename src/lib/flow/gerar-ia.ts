@@ -112,6 +112,7 @@ Como o fluxo funciona:
 - enriquecimento_bigdatacorp (Celular do sócio) acha o celular pessoal com WhatsApp do sócio de cada lead com CNPJ e o coloca no campo telefone (o da empresa vai para telefone_empresa). É o jeito de falar direto com o dono. Saídas: "principal" (achou celular) e "sem_celular" (não achou ou sem CNPJ; se não ligar, esses seguem pela principal com o telefone da empresa). Padrão para economizar: disparo no telefone da empresa → "falhou" ou "sem_resposta" → enriquecimento_bigdatacorp → disparo de novo (só paga o celular de quem não deu certo). Para falar com o dono desde o início: extracao_cnpj → enriquecimento_bigdatacorp → disparo, e "sem_celular" → disparo no telefone da empresa.
 - Leads que saem por "falhou" trazem o campo contato_que_falhou. Depois do enriquecimento_bigdatacorp, um filtro_leads com campo "telefone", operador "diferente_do_campo", valor "contato_que_falhou" garante que o novo disparo vai para um número diferente.
 - Sem resposta num canal → disparo em outro canal é um bom padrão multicanal.
+- requisicao_http manda os leads para outro sistema (webhook, CRM, outra plataforma de disparo). Use só quando o usuário pedir integração com outra ferramenta. Campos do lead entram como {{campo}} na URL, cabeçalhos e corpo (ex.: corpo {"nome": "{{nome}}", "telefone": "{{telefone}}"}). Se o usuário não der a URL, deixe url vazia e diga em oQueFalta para preencher a URL e a chave de acesso. Nunca invente chaves ou tokens nos cabeçalhos. Saídas: "principal" (deu certo) e "falhou".
 
 Dados que você precisa saber:
 - extracao_cnpj: CNAEs com 7 dígitos sem pontuação (ex.: "5611201" restaurantes, "5611203" lanchonetes, "5611205" bares, "5620104" delivery/marmitaria, "1091102" padarias). "municipio" é a lista de nomes de cidades por extenso, com acento (ex.: ["Santo André","São Bernardo do Campo"]), junto com "uf" (ex.: ["SP"]). Para uma região (ex.: ABC Paulista), prefira uma cidade central + "raioVizinhosKm" (ex.: ["Santo André"] + 15 inclui São Bernardo, São Caetano, Diadema, Mauá e Ribeirão Pires). "bairro"/"cep" só quando o usuário pedir bairros ou CEPs específicos. Porte: "01" microempresa, "03" empresa de pequeno porte, "05" demais. Para disparo por WhatsApp prefira tipoTelefone "celular". meiOptante "excluir" quando o público tem que ter verba. Use limite coerente com o volume pedido.
@@ -185,6 +186,14 @@ function sanearConfig(tipo: FlowNodeTipo, bruto: Record<string, unknown>, r: Rec
     c.funilId = funil?.id ?? null;
     c.colunaId = funil?.colunas.some((col) => col.id === c.colunaId) ? c.colunaId : null;
     if (!c.colunaId) faltas.push("Escolher o funil e a coluna no módulo Adicionar ao Funil.");
+  }
+  if (tipo === "requisicao_http") {
+    // Cabeçalho com chave de acesso só a pessoa preenche.
+    c.cabecalhos = [];
+    if (!/^https?:\/\/\S+/i.test(String(c.url ?? ""))) {
+      c.url = "";
+      faltas.push("Preencher a URL (e a chave de acesso, se o outro sistema pedir) no módulo Requisição HTTP.");
+    }
   }
   if (tipo === "destino_sheets" || tipo === "gatilho_planilha") {
     if (!r.planilhas.some((p) => p.id === c.sheetId)) {

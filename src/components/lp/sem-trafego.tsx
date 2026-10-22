@@ -1,22 +1,29 @@
 import { Check, Crosshair, Megaphone, X } from "lucide-react";
 import { Revela } from "./revela";
+import { brl } from "./dados";
 
+// Lado a lado: cada item da esquerda tem o seu correspondente na direita.
 const TRAFEGO = [
-  "O custo por lead sobe a cada leilão, e o orçamento precisa crescer junto.",
+  "Muitos contatos curiosos, poucos com perfil e poder de compra.",
+  "Lead caro: em B2B, o custo por cadastro no anúncio pode passar de R$ 20, e sobe a cada leilão.",
   "O algoritmo decide quem vê o seu anúncio, não você.",
   "Uma conta bloqueada ou um anúncio reprovado paralisa a captação.",
-  "Muitos contatos curiosos, poucos com perfil e poder de compra.",
 ];
 
-const ATIVA = [
-  "Você escolhe quem será abordado: atividade, porte, região e tempo de empresa.",
-  "Custo previsível, baseado em créditos, sem leilão e sem verba de anúncio.",
-  "Nenhuma dependência de aprovação de anúncios ou de mudanças de algoritmo.",
-  "Leads qualificados desde o primeiro contato: o perfil é filtrado antes da mensagem.",
-];
+function ativa(custoEmpresa: number | null) {
+  return [
+    "Leads qualificados desde o primeiro contato: o perfil é filtrado antes da mensagem.",
+    custoEmpresa
+      ? `Mais barato por contato: cada empresa com o telefone conferido sai a partir de ${brl(custoEmpresa, 2)} nos planos, sem leilão.`
+      : "Mais barato por contato: custo previsível em créditos, sem leilão e sem verba de anúncio.",
+    "Você escolhe quem será abordado: atividade, porte, região e tempo de empresa.",
+    "Nenhuma dependência de aprovação de anúncios ou de mudanças de algoritmo.",
+  ];
+}
 
 /** Contraste entre depender de tráfego pago e ter uma prospecção ativa própria. */
-export function SemTrafego() {
+export function SemTrafego({ custoEmpresa }: { custoEmpresa: number | null }) {
+  const ATIVA = ativa(custoEmpresa);
   return (
     <section className="relative border-y border-lp-line bg-lp-bg-2 py-20 sm:py-28">
       <div className="mx-auto max-w-6xl px-4 sm:px-6">

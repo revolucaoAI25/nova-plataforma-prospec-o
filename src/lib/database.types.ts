@@ -846,7 +846,8 @@ export type FlowNodeTipo =
   | "disparo_email"
   | "disparo_linkedin"
   | "destino_sheets"
-  | "destino_funil";
+  | "destino_funil"
+  | "requisicao_http";
 
 export interface FlowNode {
   id: string;

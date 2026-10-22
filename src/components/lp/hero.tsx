@@ -119,8 +119,7 @@ export function Hero() {
             </span>
           </h1>
           <p className="lp-entra mx-auto mt-7 max-w-2xl text-[17px] leading-relaxed text-lp-muted sm:text-lg [animation-delay:160ms]">
-            O Leadmatic encontra leads qualificados com o perfil do seu cliente ideal, identifica e enriquece o contato de quem decide,
-            conduz a abordagem com uma sequência de mensagens e avisa quando alguém responde. Você entra na conversa quando ela já está aquecida.
+            O Leadmatic encontra leads qualificados com o perfil do seu cliente ideal, contata o lead e deixa ele pronto para o seu comercial.
           </p>
           <div className="lp-entra mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row [animation-delay:240ms]">
             <a
@@ -140,9 +139,8 @@ export function Hero() {
           </div>
           <p className="lp-entra mt-5 text-[13px] text-lp-muted-2 [animation-delay:300ms]">
             <Link href="/teste-gratis" className="-my-2 inline-block py-2 text-lp-muted underline decoration-lp-line-2 underline-offset-4 transition-colors hover:text-lp-text">
-              Teste grátis, sem cartão
+              Teste grátis por 7 dias, sem cartão
             </Link>
-            {" · "}Garantia de 7 dias · Plano mensal sem fidelidade
           </p>
         </div>
 

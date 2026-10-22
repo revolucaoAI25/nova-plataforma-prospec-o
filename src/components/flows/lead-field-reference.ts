@@ -118,6 +118,14 @@ const RAMO_DISPARO: GrupoCampos = {
   ],
 };
 
+const HTTP: GrupoCampos = {
+  grupo: "Da Requisição HTTP",
+  campos: [
+    { chave: "http_status", label: "Código da resposta (ex.: 200)" },
+    { chave: "http_resposta", label: "Resposta do outro sistema (até 1.000 caracteres)" },
+  ],
+};
+
 const POR_TIPO: Partial<Record<FlowNodeTipo, GrupoCampos>> = {
   extracao_cnpj: CNPJ,
   gatilho_filtro_leads: CNPJ,
@@ -128,6 +136,7 @@ const POR_TIPO: Partial<Record<FlowNodeTipo, GrupoCampos>> = {
   enriquecimento_bigdatacorp: SOCIOS,
   enriquecimento_ia: IA,
   enriquecimento_maps: MAPS_ENRIQ,
+  requisicao_http: HTTP,
 };
 
 /** Grupos de campos que existem num ponto do fluxo, dados os módulos anteriores. */

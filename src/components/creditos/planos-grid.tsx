@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Crown, Loader2, ExternalLink, Check, Coins } from "lucide-react";
+import { Crown, Loader2, ExternalLink, Check, Coins, MessageCircle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,6 +13,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
 import type { PlanRow, AssinaturaStatus, AssinaturaCiclo } from "@/lib/database.types";
+import { linkWhatsApp } from "@/components/lp/dados";
 
 const STATUS_LABEL: Record<AssinaturaStatus, { label: string; variant: "success" | "outline" | "destructive" | "secondary" } | null> = {
   sem_assinatura: null,
@@ -258,6 +259,18 @@ export function PlanosGrid({
           );
         })}
       </div>
+
+      <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
+        Precisa de mais volume do que o Business?
+        <a
+          href={linkWhatsApp("Olá! Uso o Leadmatic e tenho uma demanda maior de prospecção. Gostaria de um plano personalizado.")}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1 font-medium text-primary underline-offset-4 hover:underline"
+        >
+          <MessageCircle className="h-3.5 w-3.5" /> Fale com a gente sobre um plano personalizado
+        </a>
+      </p>
 
       <Dialog open={planoPendenteCpf !== null} onOpenChange={(open) => !open && setPlanoPendenteCpf(null)}>
         {planoPendenteCpf && (

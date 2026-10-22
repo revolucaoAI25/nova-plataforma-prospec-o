@@ -134,18 +134,25 @@ function TokenChip({ token, titulo }: { token: string; titulo?: string }) {
  * - Parâmetros do FLUXO (`{{variaveis.x}}`), declarados no gatilho de
  *   execução manual e digitados em campos de texto dos módulos.
  */
-function CamposDaMensagem({ tipos, viaRamo }: { tipos: FlowNodeTipo[]; viaRamo: boolean }) {
+function CamposDaMensagem({ tipos, viaRamo, naRequisicao = false }: { tipos: FlowNodeTipo[]; viaRamo: boolean; naRequisicao?: boolean }) {
   const { grupos, dePlanilha } = camposDisponiveis(tipos, viaRamo);
   return (
     <Collapsible
       className="rounded-lg border border-dashed border-border bg-secondary/20 p-2.5"
-      trigger={<span className="text-xs font-semibold text-foreground">Campos para usar na mensagem</span>}
+      trigger={<span className="text-xs font-semibold text-foreground">{naRequisicao ? "Campos do lead para usar aqui" : "Campos para usar na mensagem"}</span>}
     >
       <div className="flex flex-col gap-2.5 pt-2.5">
-        <p className="text-[11px] leading-snug text-muted-foreground">
-          Escreva estes campos no texto das etapas da campanha (não aqui). Cada lead recebe com os próprios dados. Com
-          barra, vira um texto padrão quando o campo vier vazio: <code className="rounded bg-secondary px-1">{"Oi {{primeiro_nome|tudo bem}}"}</code>.
-        </p>
+        {naRequisicao ? (
+          <p className="text-[11px] leading-snug text-muted-foreground">
+            Use na URL, nos cabeçalhos e no corpo. Cada chamada leva os dados do próprio lead. Com barra, vira um texto padrão
+            quando o campo vier vazio: <code className="rounded bg-secondary px-1">{"{{email|sem e-mail}}"}</code>.
+          </p>
+        ) : (
+          <p className="text-[11px] leading-snug text-muted-foreground">
+            Escreva estes campos no texto das etapas da campanha (não aqui). Cada lead recebe com os próprios dados. Com
+            barra, vira um texto padrão quando o campo vier vazio: <code className="rounded bg-secondary px-1">{"Oi {{primeiro_nome|tudo bem}}"}</code>.
+          </p>
+        )}
         {grupos.map((g) => (
           <div key={g.grupo} className="flex flex-col gap-1.5">
             <p className="text-[11px] font-medium text-muted-foreground">{g.grupo}</p>
@@ -992,6 +999,99 @@ function SaidasDoNo({
   );
 }
 
+const EXEMPLO_CORPO = `{
+  "nome": "{{nome}}",
+  "telefone": "{{telefone}}",
+  "empresa": "{{empresa}}"
+}`;
+
+function CamposRequisicaoHttp({ config, set }: CamposProps) {
+  const metodo = String(config.metodo || "POST");
+  const modo = String(config.modo || "por_lead");
+  const cabecalhos = (Array.isArray(config.cabecalhos) ? config.cabecalhos : []) as { nome: string; valor: string }[];
+  const setCab = (lista: { nome: string; valor: string }[]) => set({ cabecalhos: lista });
+  const semCorpo = metodo === "GET" || metodo === "DELETE";
+  return (
+    <>
+      <Campo label="URL">
+        <Input value={String(config.url || "")} onChange={(e) => set({ url: e.target.value })} placeholder="https://sua-plataforma.com/webhook" />
+      </Campo>
+      <Campo label="Método">
+        <Select value={metodo} onValueChange={(v) => set({ metodo: v })}>
+          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectContent>
+            {["POST", "PUT", "PATCH", "GET", "DELETE"].map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}
+          </SelectContent>
+        </Select>
+      </Campo>
+      <Campo label="Como enviar">
+        <Select value={modo} onValueChange={(v) => set({ modo: v })}>
+          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="por_lead">Uma chamada para cada lead</SelectItem>
+            <SelectItem value="lote">Vários leads por chamada</SelectItem>
+          </SelectContent>
+        </Select>
+      </Campo>
+      {modo === "lote" && (
+        <Campo label="Leads por chamada">
+          <Input type="number" min={1} max={1000} value={Number(config.tamanhoLote ?? 100)} onChange={(e) => set({ tamanhoLote: Number(e.target.value) })} />
+        </Campo>
+      )}
+      <Campo label="Cabeçalhos">
+        <div className="flex flex-col gap-2">
+          {cabecalhos.map((c, i) => (
+            <div key={i} className="flex flex-col gap-1.5 rounded-lg border border-border p-2">
+              <div className="flex items-center gap-1.5">
+                <Input
+                  aria-label="Nome do cabeçalho"
+                  value={c.nome}
+                  onChange={(e) => setCab(cabecalhos.map((x, j) => (j === i ? { ...x, nome: e.target.value } : x)))}
+                  placeholder="Nome, ex.: Authorization"
+                />
+                <Button variant="ghost" size="icon" aria-label="Remover cabeçalho" onClick={() => setCab(cabecalhos.filter((_, j) => j !== i))}>
+                  <Trash2 className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+              <Input
+                aria-label="Valor do cabeçalho"
+                value={c.valor}
+                onChange={(e) => setCab(cabecalhos.map((x, j) => (j === i ? { ...x, valor: e.target.value } : x)))}
+                placeholder="Valor, ex.: Bearer sua-chave"
+              />
+            </div>
+          ))}
+          {cabecalhos.length < 20 && (
+            <Button variant="outline" size="sm" className="self-start" onClick={() => setCab([...cabecalhos, { nome: "", valor: "" }])}>
+              <Plus className="h-3.5 w-3.5" /> Adicionar cabeçalho
+            </Button>
+          )}
+        </div>
+      </Campo>
+      {!semCorpo && (
+        <Campo label="Corpo (opcional)">
+          <Textarea
+            value={String(config.corpo || "")}
+            onChange={(e) => set({ corpo: e.target.value })}
+            placeholder={modo === "lote" ? '{ "contatos": {{leads}} }' : EXEMPLO_CORPO}
+            rows={6}
+            className="font-mono text-xs"
+          />
+        </Campo>
+      )}
+      <p className="text-xs text-muted-foreground">
+        {semCorpo
+          ? "Sem corpo: passe os dados do lead na própria URL, ex. ?telefone={{telefone}}."
+          : modo === "lote"
+            ? <>Vazio, envia <code className="rounded bg-secondary px-1">{'{"leads": [...]}'}</code> com todos os campos. No seu modelo, <code className="rounded bg-secondary px-1">{"{{leads}}"}</code> vira a lista de leads.</>
+            : "Vazio, envia o lead inteiro em JSON. O corpo vai como JSON, a não ser que você troque o Content-Type nos cabeçalhos."}
+        {" "}Quem recebe resposta 200 a 299 segue por <strong className="text-foreground">Deu certo</strong>; o resto sai por{" "}
+        <strong className="text-foreground">Falhou</strong> se ela estiver ligada. Chaves de acesso dos cabeçalhos ficam salvas no fluxo.
+      </p>
+    </>
+  );
+}
+
 function CamposDoNo({ node, config, set }: { node: FlowNode } & CamposProps) {
   switch (node.tipo) {
     case "gatilho_agendado": return <CamposGatilhoAgendado config={config} set={set} />;
@@ -1014,6 +1114,7 @@ function CamposDoNo({ node, config, set }: { node: FlowNode } & CamposProps) {
     case "disparo_linkedin": return <CamposDisparoLinkedin config={config} set={set} />;
     case "destino_sheets": return <CamposDestinoSheets config={config} set={set} />;
     case "destino_funil": return <CamposDestinoFunil config={config} set={set} />;
+    case "requisicao_http": return <CamposRequisicaoHttp config={config} set={set} />;
     default: return null;
   }
 }
@@ -1059,6 +1160,7 @@ export function FlowNodeConfigPanel({
         <ConferenciaVariaveis tipo={node.tipo} campaignId={config.campaignId} tipos={anteriores.tipos} viaRamo={anteriores.viaRamo} />
       )}
       {meta.categoria === "disparo" && <CamposDaMensagem tipos={anteriores.tipos} viaRamo={anteriores.viaRamo} />}
+      {node.tipo === "requisicao_http" && <CamposDaMensagem tipos={anteriores.tipos} viaRamo={anteriores.viaRamo} naRequisicao />}
       {meta.categoria !== "gatilho" && meta.categoria !== "disparo" && <ParametrosDoFluxo variaveisFlow={variaveisFlow} />}
 
       <Button variant="outline" size="sm" onClick={onDelete} className="mt-auto text-destructive hover:border-destructive">

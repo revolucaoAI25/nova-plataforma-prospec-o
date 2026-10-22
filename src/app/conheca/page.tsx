@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { carregarPlanosPublicos } from "@/lib/planos-publicos";
 import { Cabecalho } from "@/components/lp/cabecalho";
 import { Hero } from "@/components/lp/hero";
-import { Manifesto } from "@/components/lp/manifesto";
 import { Historia } from "@/components/lp/historia";
 import { Semana } from "@/components/lp/semana";
 import { Calculadora } from "@/components/lp/calculadora";
@@ -14,6 +13,8 @@ import { Comparativo } from "@/components/lp/comparativo";
 import { Clientes } from "@/components/lp/clientes";
 import { ChamadaFinal, Duvidas, PERGUNTAS, Rodape } from "@/components/lp/fechamento";
 import { PausaForaDaTela } from "@/components/lp/pausa-fora-da-tela";
+import { ChamadaMeio } from "@/components/lp/chamada-meio";
+import { linkWhatsApp } from "@/components/lp/dados";
 import { FONTES_LP } from "./fontes";
 import "./lp.css";
 
@@ -34,6 +35,9 @@ export const metadata: Metadata = {
 
 export default async function ConhecaPage() {
   const { planos, creditosPorLead } = await carregarPlanosPublicos();
+  // Menor custo, nos planos, de uma empresa com o telefone conferido (para o comparativo com o tráfego pago).
+  const custos = planos.filter((p) => p.creditosMes > 0).map((p) => (p.precoMes / p.creditosMes) * creditosPorLead);
+  const custoEmpresa = custos.length ? Math.min(...custos) : null;
   const faqJsonLd = {
     "@context": "https://schema.org",
     "@type": "FAQPage",
@@ -46,12 +50,30 @@ export default async function ConhecaPage() {
       <Cabecalho />
       <main>
         <Hero />
-        <Manifesto />
-        <SemTrafego />
+        <SemTrafego custoEmpresa={custoEmpresa} />
+        <div className="py-12 sm:py-16">
+          <ChamadaMeio
+            frase="Comece a prospectar sem depender de anúncio."
+            principal={{ rotulo: "Ver planos", href: "#planos" }}
+            secundario={{ rotulo: "Testar grátis", href: "/teste-gratis" }}
+          />
+        </div>
         <Historia />
         <Enriquecimento />
-        <Semana />
+        <ChamadaMeio
+          frase="Quanto isso pode render para a sua empresa?"
+          principal={{ rotulo: "Simular meu resultado", href: "#conta" }}
+          secundario={{ rotulo: "Ver planos", href: "#planos" }}
+        />
         <Calculadora planos={planos} creditosPorLead={creditosPorLead} />
+        <Semana />
+        <div className="py-12 sm:py-16">
+          <ChamadaMeio
+            frase="Quer essa semana na sua empresa?"
+            principal={{ rotulo: "Começar agora", href: "#planos" }}
+            secundario={{ rotulo: "Falar no WhatsApp", href: linkWhatsApp(), externo: true }}
+          />
+        </div>
         <Recursos />
         <Comparativo planos={planos} />
         <Clientes />

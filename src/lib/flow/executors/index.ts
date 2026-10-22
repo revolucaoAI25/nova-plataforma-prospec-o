@@ -16,6 +16,7 @@ import { executarDisparoEmail } from "./disparo-email";
 import { executarDisparoLinkedin } from "./disparo-linkedin";
 import { executarDestinoSheets } from "./destino-sheets";
 import { executarDestinoFunil } from "./destino-funil";
+import { executarRequisicaoHttp } from "./requisicao-http";
 
 /**
  * Registro de executores por tipo de nó — só os tipos que aparecem DEPOIS
@@ -41,4 +42,5 @@ export const FLOW_NODE_EXECUTORS: Partial<Record<FlowNodeTipo, FlowNodeExecutor>
   disparo_linkedin: executarDisparoLinkedin,
   destino_sheets: executarDestinoSheets,
   destino_funil: executarDestinoFunil,
+  requisicao_http: executarRequisicaoHttp,
 };

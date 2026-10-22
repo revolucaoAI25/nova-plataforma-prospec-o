@@ -71,6 +71,8 @@ No [painel do Supabase](https://supabase.com/dashboard), crie um projeto novo
     `0043`: a pesquisa ligada a uma busca de celular do sócio tem de ser do
     mesmo dono (fecha gravação em pesquisa de outra conta).
     `0044`: condição de preço travada por cliente (`profiles.condicao_preco`).
+    `0045`: tabela de preços nova (ligue a condição travada de quem fica na
+    tabela antiga **antes** de rodá-la).
     Rode-as **antes** do deploy desta versão (o código novo grava colunas
     que elas criam). Da `0024` em diante todas podem ser rodadas de novo sem
     erro (usam `if not exists` / `create or replace`); as anteriores rodam
@@ -1424,6 +1426,32 @@ indisponível/com erro amigável se faltar, o resto da plataforma funciona norma
   Assinaturas já ativas no Asaas mantêm o valor de quando foram feitas de
   qualquer jeito; a trava cobre o que é lido da tabela atual. Ligar de novo
   não refaz a fotografia.
+- **Tabela de preços nova** (migration `0045_precos_2026.sql`): Starter
+  R$147/mês · 6.000 créditos, Pro R$397/mês · 25.000 créditos, Business
+  R$997/mês · 100.000 créditos; anual = 10× o mensal. Pacotes avulsos: P
+  2.000 por R$57, M 10.000 por R$237, G 50.000 por R$947. Antes de rodar,
+  ligue "Manter a condição de preço atual" em quem fica na tabela antiga (a
+  fotografia é tirada na hora em que a opção é ligada). Na página de vendas
+  e em `/creditos` há um contato por WhatsApp para plano personalizado
+  (`linkWhatsApp`, número em `NEXT_PUBLIC_LP_WHATSAPP`).
+- **Módulo "Requisição HTTP" nas automações** (`requisicao_http`,
+  `src/lib/flow/executors/requisicao-http.ts`): manda os leads para outro
+  sistema (webhook, CRM, outra plataforma de disparo), uma chamada por lead
+  (até 1.000 por execução, 8 em paralelo) ou em lotes de N leads. Método,
+  URL, cabeçalhos e corpo aceitam `{{campo}}` do lead (resolvido lead a lead;
+  o motor não interpola a config deste nó antes) e `{{variaveis.x}}`; no
+  modo lote, `{{leads}}` vira a lista em JSON. O valor é escapado conforme o
+  lugar (URL, JSON, formulário). Corpo vazio envia o lead (ou
+  `{"leads": [...]}`) em JSON. Resposta 2xx segue pela saída principal com
+  `http_status`/`http_resposta` no lead; o resto sai por "Falhou" (se nada
+  estiver ligado ali e nenhuma chamada der certo, o passo fica com erro).
+  Segurança (`src/lib/http-seguro.ts`): só http/https, recusa endereços de
+  rede interna, local, link-local (metadados da nuvem) e reservados,
+  conferidos no `lookup` da própria conexão (DNS que troca de resposta não
+  passa); não segue redirecionamento; 10 s de tempo limite, resposta
+  cortada em 64 KB; cabeçalhos sem quebra de linha e sem Host/Content-Length.
+  429/5xx/erro de rede tentam mais uma vez; 10 falhas de rede seguidas sem
+  nenhum sucesso encerram o resto do lote como "Falhou". Não cobra créditos.
 
 ## Estrutura
 

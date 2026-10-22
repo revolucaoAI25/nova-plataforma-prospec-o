@@ -139,6 +139,25 @@ export function Planos({ planos }: { planos: PlanoLP[] }) {
         )}
 
         {planos.length > 0 && (
+          <Revela className="mx-auto mt-10 max-w-4xl">
+            <div className="flex flex-col items-center gap-4 rounded-[28px] border border-lp-line bg-lp-surface px-6 py-6 text-center sm:flex-row sm:justify-between sm:px-8 sm:text-left">
+              <div>
+                <p className="font-lp-display text-lg font-bold tracking-tight">Precisa de mais volume?</p>
+                <p className="mt-1 text-[15px] text-lp-muted">Para uma demanda maior de prospecção, montamos um plano personalizado para a sua empresa.</p>
+              </div>
+              <a
+                href={linkWhatsApp("Olá! Tenho uma demanda maior de prospecção e gostaria de um plano personalizado do Leadmatic.")}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex h-12 shrink-0 items-center justify-center gap-2 rounded-full border border-lp-accent/60 px-6 text-[15px] font-semibold text-lp-glow transition-colors hover:bg-lp-accent-soft"
+              >
+                Pedir plano personalizado <ArrowUpRight className="h-4 w-4" />
+              </a>
+            </div>
+          </Revela>
+        )}
+
+        {planos.length > 0 && (
           <Revela className="mx-auto mt-10 flex max-w-3xl flex-col items-center gap-5 text-center">
             <div className="flex flex-col items-center gap-3 rounded-2xl border border-lp-line bg-lp-surface px-6 py-5 sm:flex-row sm:text-left">
               <ShieldCheck className="h-8 w-8 shrink-0 text-lp-accent" />
@@ -149,7 +168,7 @@ export function Planos({ planos }: { planos: PlanoLP[] }) {
             <p className="text-[15px] text-lp-muted">
               Prefere conhecer antes?{" "}
               <Link href="/teste-gratis" className="-my-2 inline-block py-2 font-semibold text-lp-glow underline-offset-4 hover:underline">
-                Faça o teste grátis, sem cartão
+                Faça o teste grátis por 7 dias, sem cartão
               </Link>
             </p>
             <p className="flex items-center justify-center gap-2 text-[13px] text-lp-muted-2">

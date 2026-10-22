@@ -119,7 +119,7 @@ export function ChamadaFinal() {
         </div>
         <p className="mt-6 text-sm text-lp-muted-2">
           Prefere conhecer antes?{" "}
-          <Link href="/teste-gratis" className="-my-2 inline-block py-2 text-lp-muted underline-offset-4 hover:text-lp-text hover:underline">Teste grátis, sem cartão</Link>
+          <Link href="/teste-gratis" className="-my-2 inline-block py-2 text-lp-muted underline-offset-4 hover:text-lp-text hover:underline">Teste grátis por 7 dias, sem cartão</Link>
           <span aria-hidden="true"> · </span>
           Já é cliente?{" "}
           <Link href="/login" className="-my-2 inline-block py-2 text-lp-muted underline-offset-4 hover:text-lp-text hover:underline">Entrar na plataforma</Link>

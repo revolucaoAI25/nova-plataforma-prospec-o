@@ -372,8 +372,9 @@ async function avancarRun(sb: SupabaseClient, run: FlowRunRow, log: (m: string) 
   await upsertStep(sb, run.id, node, "executando");
   // Interpola {{variaveis.x}}/{{lead.campo}} na config ANTES de passar pro
   // executor — nenhum executor precisa saber que isso existe, eles sempre
-  // recebem valores já resolvidos.
-  const noResolvido: FlowNode = {
+  // recebem valores já resolvidos. Exceção: a Requisição HTTP resolve os
+  // campos lead a lead (aqui sairia o primeiro lead para todos).
+  const noResolvido: FlowNode = node.tipo === "requisicao_http" ? node : {
     ...node,
     config: interpolarConfig((node.config || {}) as Record<string, unknown>, {
       variaveis: (contexto.variaveis as Record<string, string>) || {},
