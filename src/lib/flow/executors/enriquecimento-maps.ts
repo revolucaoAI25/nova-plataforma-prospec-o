@@ -1,6 +1,6 @@
 import { getProfile, debitarCreditos, custoAcao } from "@/lib/credits";
-import { chaveGoogleMaps } from "@/lib/platform-keys";
-import { enriquecerComMaps, QuotaExceededError, MapsAccessError } from "@/lib/integrations/google-maps";
+import { QuotaExceededError, MapsAccessError } from "@/lib/integrations/google-maps";
+import { verificarNoMaps, verificacaoMapsDisponivel } from "@/lib/integrations/verificacao-maps";
 import type { Lead } from "@/lib/types";
 import type { FlowExecutorContext, FlowExecutorOutcome } from "../executor-types";
 
@@ -29,19 +29,15 @@ export async function executarEnriquecimentoMaps(ctx: FlowExecutorContext): Prom
     return { status: "erro", erro: `Créditos insuficientes: verificar ${lote.length} leads no Maps custa ${custoTotal} créditos e o saldo é ${profile.creditos}.` };
   }
 
-  const apiKey = await chaveGoogleMaps();
-  if (!apiKey) return { status: "erro", erro: "Verificação no Google Maps indisponível no momento (chave da plataforma não configurada)." };
+  if (!(await verificacaoMapsDisponivel())) return { status: "erro", erro: "Verificação no Google Maps indisponível no momento." };
 
-  const stats = { text_search_calls: 0, contact_data_calls: 0 };
   let resultados: Lead[];
   try {
-    resultados = await enriquecerComMaps({
+    resultados = await verificarNoMaps({
       resultados: lote as unknown as Lead[],
-      apiKey,
       showPhone,
       filtrar,
       minAvaliacoes,
-      stats,
     });
   } catch (e) {
     if (e instanceof QuotaExceededError || e instanceof MapsAccessError) return { status: "erro", erro: e.message };

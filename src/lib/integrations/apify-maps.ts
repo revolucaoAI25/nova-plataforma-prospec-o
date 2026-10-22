@@ -205,3 +205,59 @@ export async function buscarApifyMaps(p: BuscarApifyMapsParams): Promise<Lead[]>
   log(resultados.length, limite, `Concluído: ${resultados.length} resultados.`);
   return resultados.slice(0, limite);
 }
+
+// ── Verificação de empresas já conhecidas (busca por CNPJ e "Enriquecimento via Maps")
+
+export interface PerfilMaps {
+  telefone: string;
+  site: string;
+  mapsUrl: string;
+  avaliacao: number | null;
+  totalAvaliacoes: number;
+  latitude: number | null;
+  longitude: number | null;
+  bairro: string;
+}
+
+const VERIFICACAO_RUN_TIMEOUT_S = 540;
+const VERIFICACAO_ESPERA_MS = 560_000;
+
+/**
+ * Procura cada consulta ("nome cidade UF") no Maps e devolve o primeiro
+ * perfil de cada uma. Tudo numa execução só: o ator responde por
+ * `searchString`, que é como cada perfil volta para a consulta que o achou.
+ * Consulta sem resultado não aparece no mapa devolvido.
+ */
+export async function perfisMapsApify(apiKey: string, consultas: string[]): Promise<Map<string, PerfilMaps>> {
+  const unicas = [...new Set(consultas.map((c) => c.trim()).filter(Boolean))];
+  const perfis = new Map<string, PerfilMaps>();
+  if (!unicas.length) return perfis;
+
+  const payload = {
+    searchStringsArray: unicas,
+    maxCrawledPlacesPerSearch: 1,
+    countryCode: "br",
+    language: "pt-BR",
+  };
+  const { runId, datasetId } = await iniciarRunApify(apiKey, ACTOR_ID, payload, VERIFICACAO_RUN_TIMEOUT_S);
+  await aguardarRunApify(apiKey, runId, VERIFICACAO_ESPERA_MS);
+  const items = await buscarItems(apiKey, datasetId);
+
+  for (const item of items) {
+    const consulta = String(item.searchString ?? "").trim();
+    if (!consulta || perfis.has(consulta)) continue;
+    const local = item.location as { lat?: unknown; lng?: unknown } | undefined;
+    const nota = Number(item.totalScore);
+    perfis.set(consulta, {
+      telefone: String(item.phone ?? ""),
+      site: String(item.website ?? ""),
+      mapsUrl: String(item.url ?? ""),
+      avaliacao: Number.isFinite(nota) && item.totalScore != null ? nota : null,
+      totalAvaliacoes: Number(item.reviewsCount ?? 0) || 0,
+      latitude: typeof local?.lat === "number" ? local.lat : null,
+      longitude: typeof local?.lng === "number" ? local.lng : null,
+      bairro: typeof item.neighborhood === "string" ? item.neighborhood : "",
+    });
+  }
+  return perfis;
+}

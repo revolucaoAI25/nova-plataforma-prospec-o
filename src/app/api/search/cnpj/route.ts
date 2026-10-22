@@ -2,14 +2,15 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { getProfile, debitarCreditos, custoAcao } from "@/lib/credits";
-import { chaveCasaDosDados, chaveGoogleMaps } from "@/lib/platform-keys";
+import { chaveCasaDosDados } from "@/lib/platform-keys";
 import {
   buscarCnpj,
   removerDuplicadosLote,
   CasaDosDadosError,
   type BuscaTextual,
 } from "@/lib/integrations/casa-dos-dados";
-import { enriquecerComMaps, QuotaExceededError, MapsAccessError } from "@/lib/integrations/google-maps";
+import { QuotaExceededError, MapsAccessError } from "@/lib/integrations/google-maps";
+import { verificarNoMaps, verificacaoMapsDisponivel, MapsIndisponivelError } from "@/lib/integrations/verificacao-maps";
 import { salvarPesquisa, salvarLeads, buscarIdentificadoresExistentes } from "@/lib/db";
 import { autoExportarSheetsSeConfigurado } from "@/lib/auto-export";
 import { CODIGO_PARA_DESC } from "@/lib/data/cnaes";
@@ -173,23 +174,18 @@ export async function POST(request: Request) {
   const usarMaps = filtros.mapsModo !== "nao_usar" && resultados.length > 0;
 
   if (usarMaps) {
-    const mapsApiKey = await chaveGoogleMaps();
-    if (!mapsApiKey) {
+    if (!(await verificacaoMapsDisponivel())) {
       avisoMaps = "A verificação no Google Maps está temporariamente indisponível — os leads de CNPJ foram mantidos, só essa etapa não rodou.";
     } else {
       const filtrar = filtros.mapsModo === "filtrar" || filtros.mapsModo === "filtrar_enriquecer";
       const enriquecer = filtros.mapsModo === "enriquecer" || filtros.mapsModo === "filtrar_enriquecer";
       const nVerificados = resultados.length;
-      const stats = { text_search_calls: 0, contact_data_calls: 0 };
-
       try {
-        resultados = await enriquecerComMaps({
+        resultados = await verificarNoMaps({
           resultados,
-          apiKey: mapsApiKey,
           showPhone: enriquecer,
           filtrar,
           minAvaliacoes: filtros.minAvaliacoes,
-          stats,
         });
         mapsVerificados = nVerificados;
 
@@ -200,6 +196,9 @@ export async function POST(request: Request) {
         if (e instanceof QuotaExceededError) {
           avisoMaps = "Cota Google Maps esgotada no meio do processo — parte das empresas pode não ter sido verificada. Os leads de CNPJ já buscados foram mantidos normalmente.";
           mapsVerificados = nVerificados;
+        } else if (e instanceof MapsIndisponivelError) {
+          // Nada foi verificado: mantém os leads como vieram e não cobra a verificação.
+          avisoMaps = "A verificação no Google Maps não rodou agora. Os leads de CNPJ foram mantidos e essa etapa não foi cobrada.";
         } else if (e instanceof MapsAccessError) {
           return NextResponse.json({ error: e.message }, { status: 400 });
         } else {

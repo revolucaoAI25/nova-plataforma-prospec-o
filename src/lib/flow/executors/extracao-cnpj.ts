@@ -1,7 +1,8 @@
 import { getProfile, debitarCreditos, custoAcao } from "@/lib/credits";
-import { chaveCasaDosDados, chaveGoogleMaps } from "@/lib/platform-keys";
+import { chaveCasaDosDados } from "@/lib/platform-keys";
 import { buscarCnpj, removerDuplicadosLote, CasaDosDadosError, type BuscaTextual } from "@/lib/integrations/casa-dos-dados";
-import { enriquecerComMaps, QuotaExceededError, MapsAccessError } from "@/lib/integrations/google-maps";
+import { QuotaExceededError, MapsAccessError } from "@/lib/integrations/google-maps";
+import { verificarNoMaps, verificacaoMapsDisponivel, MapsIndisponivelError } from "@/lib/integrations/verificacao-maps";
 import { salvarPesquisa, salvarLeads, buscarIdentificadoresExistentes } from "@/lib/db";
 import { CODIGO_PARA_DESC } from "@/lib/data/cnaes";
 import type { Json } from "@/lib/database.types";
@@ -111,18 +112,18 @@ export async function executarExtracaoCnpj(ctx: FlowExecutorContext): Promise<Fl
 
   let mapsVerificados = 0;
   if (mapsModo !== "nao_usar" && resultados.length > 0) {
-    const mapsApiKey = await chaveGoogleMaps();
-    if (mapsApiKey) {
+    if (await verificacaoMapsDisponivel()) {
       const filtrar = mapsModo === "filtrar" || mapsModo === "filtrar_enriquecer";
       const enriquecer = mapsModo === "enriquecer" || mapsModo === "filtrar_enriquecer";
       const nVerificados = resultados.length;
-      const stats = { text_search_calls: 0, contact_data_calls: 0 };
       try {
-        resultados = await enriquecerComMaps({ resultados, apiKey: mapsApiKey, showPhone: enriquecer, filtrar, minAvaliacoes, stats });
+        resultados = await verificarNoMaps({ resultados, showPhone: enriquecer, filtrar, minAvaliacoes });
         mapsVerificados = nVerificados;
       } catch (e) {
         if (e instanceof QuotaExceededError) {
           mapsVerificados = nVerificados;
+        } else if (e instanceof MapsIndisponivelError) {
+          ctx.log(e.message);
         } else if (e instanceof MapsAccessError) {
           return { status: "erro", erro: e.message };
         } else {

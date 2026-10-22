@@ -1452,6 +1452,15 @@ indisponível/com erro amigável se faltar, o resto da plataforma funciona norma
   cortada em 64 KB; cabeçalhos sem quebra de linha e sem Host/Content-Length.
   429/5xx/erro de rede tentam mais uma vez; 10 falhas de rede seguidas sem
   nenhum sucesso encerram o resto do lote como "Falhou". Não cobra créditos.
+- **Verificação no Google Maps pelo extrator primeiro**
+  (`src/lib/integrations/verificacao-maps.ts`): a busca por CNPJ com Maps
+  ligado, o módulo "Extração CNPJ" e o "Enriquecimento via Maps" usam
+  sempre o extrator do Maps (mesma chave da busca Maps), mesmo com a chave
+  do Google configurada. Cada empresa vira uma consulta "nome cidade UF" e o
+  lote vai em execuções de 200 (até 3 ao mesmo tempo); o perfil volta pela
+  consulta que o achou. A API do Google (`GOOGLE_MAPS_API_KEY`) só entra
+  quando o extrator falha num pedaço do lote. Sem nenhum dos dois, a busca
+  por CNPJ mantém os leads, avisa e não cobra a verificação.
 
 ## Estrutura
 
