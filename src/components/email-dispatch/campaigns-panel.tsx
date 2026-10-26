@@ -89,7 +89,7 @@ export function CampaignsPanel({
         <form onSubmit={criar} className="flex flex-wrap gap-2">
           <Input value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Nome da campanha" className="flex-1 min-w-[180px]" />
           <Select value={senderId} onValueChange={setSenderId}>
-            <SelectTrigger className="w-56"><SelectValue placeholder="Remetente" /></SelectTrigger>
+            <SelectTrigger className="w-full sm:w-56"><SelectValue placeholder="Remetente" /></SelectTrigger>
             <SelectContent>
               {senders.map((s) => (
                 <SelectItem key={s.id} value={s.id}>{s.nome}</SelectItem>

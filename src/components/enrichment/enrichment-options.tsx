@@ -41,10 +41,10 @@ export function EnrichmentOptions({ value, onChange }: { value: OpcoesUI; onChan
       <CardContent className="px-4">
         <Collapsible
           trigger={
-            <div className="flex items-center gap-2.5 py-0.5">
+            <div className="flex min-w-0 items-center gap-2.5 py-0.5">
               <SlidersHorizontal className="h-4 w-4 shrink-0 text-primary" />
-              <span className="text-sm font-medium">Opções avançadas</span>
-              <span className="truncate text-xs text-muted-foreground">
+              <span className="shrink-0 text-sm font-medium">Opções avançadas</span>
+              <span className="min-w-0 truncate text-xs text-muted-foreground">
                 — {NIVEIS_RACIOCINIO[value.nivelRaciocinio].label.split(" (")[0]} · {resumoExtras(value)}
               </span>
             </div>

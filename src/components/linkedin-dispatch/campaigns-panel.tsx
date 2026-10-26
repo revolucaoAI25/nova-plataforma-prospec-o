@@ -89,7 +89,7 @@ export function CampaignsPanel({
         <form onSubmit={criar} className="flex flex-wrap gap-2">
           <Input value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Nome da campanha" className="flex-1 min-w-[180px]" />
           <Select value={accountId} onValueChange={setAccountId}>
-            <SelectTrigger className="w-56"><SelectValue placeholder="Conta LinkedIn" /></SelectTrigger>
+            <SelectTrigger className="w-full sm:w-56"><SelectValue placeholder="Conta LinkedIn" /></SelectTrigger>
             <SelectContent>
               {contas.map((c) => (
                 <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>

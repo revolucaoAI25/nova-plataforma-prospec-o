@@ -173,7 +173,7 @@ export function ConectarOficial({
           <h2 className="text-lg font-semibold text-foreground">A API oficial faz parte dos planos Pro e Business</h2>
           <p className="text-sm text-muted-foreground">
             No plano Starter, ative o add-on <strong className="text-foreground">WhatsApp API oficial</strong>: você conecta o seu número aqui
-            mesmo, em poucos minutos, sem risco de bloqueio.
+            mesmo, em poucos minutos.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -201,7 +201,7 @@ export function ConectarOficial({
         <div className="flex flex-col gap-2 rounded-xl border border-border bg-secondary/40 p-4 text-sm">
           <p className="font-semibold text-foreground">Antes de disparar</p>
           <p className="text-muted-foreground">
-            1. Cadastre um cartão na sua conta do WhatsApp na Meta: é por ele que a Meta cobra as mensagens.{" "}
+            1. Cadastre uma forma de pagamento na sua conta do WhatsApp na Meta (as mensagens da API oficial são cobradas pela Meta conforme o uso).{" "}
             <a href={GUIA_PAGAMENTO} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 font-medium text-primary hover:underline">
               Como fazer <ExternalLink className="h-3 w-3" />
             </a>
@@ -269,8 +269,7 @@ export function ConectarOficial({
       </div>
 
       <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-        <ShieldCheck className="h-3.5 w-3.5 text-primary" /> O número fica na conta da sua empresa na Meta. A Meta cobra as mensagens à parte, no
-        cartão cadastrado por você.
+        <ShieldCheck className="h-3.5 w-3.5 text-primary" /> O número fica na conta da sua empresa na Meta.
       </p>
     </div>
   );

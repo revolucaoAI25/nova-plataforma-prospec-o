@@ -8,16 +8,14 @@ type Tema = "light" | "dark";
 
 function temaEfetivo(): Tema {
   const salvo = document.documentElement.getAttribute("data-theme");
-  if (salvo === "light" || salvo === "dark") return salvo;
-  return window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+  return salvo === "dark" ? "dark" : "light";
 }
 
 /**
  * Alterna entre claro/escuro e persiste a escolha em localStorage — o
  * script inline em src/app/layout.tsx lê esse mesmo valor antes do 1º
- * paint pra não piscar (FOUC). Antes de qualquer clique, o app segue a
- * preferência do sistema operacional (ver @media prefers-color-scheme em
- * globals.css); depois do 1º clique, a escolha do usuário manda sempre.
+ * paint pra não piscar (FOUC). Antes de qualquer clique, o app fica no
+ * modo claro; depois do 1º clique, a escolha do usuário manda sempre.
  */
 export function ThemeToggle() {
   const [tema, setTema] = useState<Tema | null>(null);

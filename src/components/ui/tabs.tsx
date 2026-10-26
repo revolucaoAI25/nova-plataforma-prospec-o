@@ -13,7 +13,8 @@ const TabsList = React.forwardRef<
   <TabsPrimitive.List
     ref={ref}
     className={cn(
-      "inline-flex h-11 items-center justify-center gap-1 rounded-full border border-border bg-secondary/60 p-1 text-muted-foreground",
+      // max-w-full + rolagem: no celular, muitas abas rolam dentro da barra em vez de estourar a tela.
+      "inline-flex h-11 max-w-full items-center justify-start gap-1 overflow-x-auto rounded-full border border-border bg-secondary/60 p-1 text-muted-foreground [scrollbar-width:none] sm:justify-center [&::-webkit-scrollbar]:hidden",
       className,
     )}
     {...props}

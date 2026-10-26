@@ -17,11 +17,12 @@ export const metadata: Metadata = {
   description: "Plataforma de prospecção ativa multicanal — extração de leads por CNPJ, Google Maps e Instagram.",
 };
 
-// Aplica o tema salvo (localStorage) em <html> ANTES do 1º paint — sem
-// isso, a página nasce no tema padrão (escuro) e "pisca" pro claro um
-// instante depois, no primeiro useEffect do lado cliente (FOUC). Roda
-// como script inline síncrono no <head>, não um componente React (que só
-// executaria depois da hidratação, tarde demais pra evitar o flash).
+// O padrão é o modo claro (data-theme="light" já vem no HTML); o escuro só
+// quando a pessoa escolhe no botão de tema (fica salvo no localStorage).
+// O script aplica a escolha salva em <html> ANTES do 1º paint — sem isso a
+// página nasceria clara e "piscaria" para o escuro (FOUC). Roda como script
+// inline síncrono no <head>, não um componente React (que só executaria
+// depois da hidratação, tarde demais pra evitar o flash).
 const NO_FOUC_THEME_SCRIPT = `
 try {
   var t = localStorage.getItem("theme");
@@ -33,7 +34,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     // suppressHydrationWarning: o script anti-FOUC muda data-theme no <html>
     // antes da hidratação, de propósito — sem isso o React acusa divergência.
-    <html lang="pt-BR" className={`${inter.variable} h-full antialiased`} suppressHydrationWarning>
+    <html lang="pt-BR" data-theme="light" className={`${inter.variable} h-full antialiased`} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: NO_FOUC_THEME_SCRIPT }} />
       </head>

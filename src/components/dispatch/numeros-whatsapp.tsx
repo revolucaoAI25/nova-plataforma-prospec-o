@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, ArrowRight, BadgeCheck, Check, Loader2, QrCode, RefreshCw, Smartphone, Trash2 } from "lucide-react";
+import { ArrowRight, BadgeCheck, Check, Loader2, QrCode, RefreshCw, Smartphone, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -174,7 +174,7 @@ function ConectarQr({
 }
 
 function OpcaoConexao({
-  icone: Icone, titulo, selo, seloOficial, texto, pontos, alerta, acao,
+  icone: Icone, titulo, selo, seloOficial, texto, pontos, acao,
 }: {
   icone: typeof QrCode;
   titulo: string;
@@ -182,7 +182,6 @@ function OpcaoConexao({
   seloOficial?: boolean;
   texto: string;
   pontos: string[];
-  alerta?: string;
   acao: React.ReactNode;
 }) {
   return (
@@ -199,9 +198,6 @@ function OpcaoConexao({
         {pontos.map((p) => (
           <li key={p} className="flex items-start gap-2 text-foreground"><Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" /> {p}</li>
         ))}
-        {alerta && (
-          <li className="flex items-start gap-2 text-muted-foreground"><AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" /> {alerta}</li>
-        )}
       </ul>
       <div className="mt-auto pt-1">{acao}</div>
     </section>
@@ -258,8 +254,7 @@ export function NumerosWhatsapp({
           titulo="WhatsApp pelo QR Code"
           selo="Não oficial"
           texto="Conecte qualquer número em 1 minuto, escaneando um QR Code com o celular."
-          pontos={["Conexão na hora, sem aprovação", "Sem custo por mensagem"]}
-          alerta="Há risco de bloqueio se o número enviar muito: use um número aquecido e respeite o limite diário."
+          pontos={["Conexão na hora, sem aprovação", "Usa o WhatsApp que você já tem"]}
           acao={
             <Button onClick={() => setQrAberto({ existente: null })} className="w-full sm:w-auto">
               <QrCode className="h-4 w-4" /> Conectar pelo QR Code
@@ -271,9 +266,8 @@ export function NumerosWhatsapp({
           titulo="API oficial do WhatsApp"
           selo="Oficial · Meta"
           seloOficial
-          texto="O seu número conectado direto à Meta, pela conta da sua empresa. Pode ser o número que você já usa no WhatsApp Business."
-          pontos={["Sem risco de bloqueio do número", "Status de entrega e leitura", "Mensagens com templates aprovados pela Meta"]}
-          alerta="A Meta cobra cada conversa iniciada, no cartão da sua conta."
+          texto="A conexão oficial da Meta para empresas, pela conta da sua empresa. Pode ser o número que você já usa no WhatsApp Business."
+          pontos={["Conexão oficial da Meta", "Status de entrega e leitura", "Mensagens com templates aprovados"]}
           acao={
             !oficial.disponivel ? (
               <Button asChild variant="outline" className="w-full sm:w-auto">

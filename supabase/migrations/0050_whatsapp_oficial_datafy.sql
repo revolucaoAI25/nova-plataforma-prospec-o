@@ -40,8 +40,13 @@ alter table addons add constraint addons_feature_flag_check check (feature_flag 
 
 insert into addons (nome, preco_centavos, feature_flag, ordem, descricao) values
     ('WhatsApp API oficial', 9700, 'whatsapp_oficial_habilitado', 2,
-     'Conecte o seu número à API oficial do WhatsApp, sem risco de bloqueio. A Meta cobra as mensagens à parte, no cartão da sua conta. Já incluso nos planos Pro e Business.')
+     'Conecte o seu número à API oficial do WhatsApp, a conexão oficial da Meta para empresas. Já incluso nos planos Pro e Business.')
 on conflict (nome) do nothing;
+
+-- Texto mais leve para quem já rodou a versão anterior desta migration.
+update addons
+set descricao = 'Conecte o seu número à API oficial do WhatsApp, a conexão oficial da Meta para empresas. Já incluso nos planos Pro e Business.'
+where nome = 'WhatsApp API oficial' and descricao like '%sem risco de bloqueio%';
 
 create table if not exists datafy_canais (
     id              uuid primary key default gen_random_uuid(),

@@ -75,7 +75,7 @@ export function ReportsPanel({ campanhasIniciais }: { campanhasIniciais: Dispatc
       <CardContent className="flex flex-col gap-5">
         <div className="flex flex-wrap items-center gap-3">
           <Select value={campaignId} onValueChange={setCampaignId}>
-            <SelectTrigger className="w-full sm:w-80"><SelectValue placeholder="Escolher campanha" /></SelectTrigger>
+            <SelectTrigger className="w-full sm:w-96"><SelectValue placeholder="Escolher campanha" /></SelectTrigger>
             <SelectContent>
               {campanhasIniciais.map((c) => (
                 <SelectItem key={c.id} value={c.id}>

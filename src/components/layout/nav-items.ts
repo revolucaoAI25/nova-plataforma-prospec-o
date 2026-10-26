@@ -119,12 +119,13 @@ function montarSecoes({
       label: "Prospecção",
       items: [
         { type: "group", label: "Busca", icon: Search, children: buscaChildren },
-        { type: "link", href: "/historico", label: "Histórico", icon: History },
-        { type: "link", href: "/funil", label: "Funil", icon: Kanban },
-        { type: "link", href: "/automacoes", label: "Automações", icon: CalendarClock },
+        // Enriquecimento logo depois da busca: é o passo seguinte com a lista na mão.
         ...(enriquecimentoIaHabilitado || bigdatacorpEnrichmentHabilitado || isAdmin
           ? [{ type: "link" as const, href: "/enriquecimento", label: "Enriquecimento", icon: BrainCircuit }]
           : []),
+        { type: "link", href: "/historico", label: "Histórico", icon: History },
+        { type: "link", href: "/funil", label: "Funil", icon: Kanban },
+        { type: "link", href: "/automacoes", label: "Automações", icon: CalendarClock },
       ],
     },
   ];

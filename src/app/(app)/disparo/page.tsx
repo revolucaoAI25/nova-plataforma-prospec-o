@@ -56,7 +56,7 @@ export default async function DisparoPage() {
           <CampaignsPanel campanhasIniciais={campanhas} instancias={instancias} />
         </TabsContent>
         <TabsContent value="templates">
-          <TemplatesPanel templatesIniciais={templates} instanciasOficiais={instancias.filter((i) => i.canal === "oficial")} />
+          <TemplatesPanel templatesIniciais={templates} instanciasOficiais={instancias.filter((i) => i.canal === "oficial" && i.status === "conectado")} />
         </TabsContent>
         <TabsContent value="relatorios">
           <ReportsPanel campanhasIniciais={campanhas} />

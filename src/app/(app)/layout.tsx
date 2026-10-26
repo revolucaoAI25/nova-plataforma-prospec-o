@@ -86,7 +86,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           empurra a página inteira pro lado em vez de rolar só por dentro. */}
       <div className="flex min-w-0 flex-1 flex-col transition-[padding-left] duration-200 md:pl-[var(--app-sidebar-w)]">
         <Topbar profile={perfilParaTela(profile)} diasRestantesTeste={teste?.diasRestantes ?? null} />
-        <main className="min-w-0 flex-1 p-4 pb-[max(1rem,var(--guia-espaco,0px))] md:p-8 md:pb-[max(2rem,var(--guia-espaco,0px))]">
+        <main className="min-w-0 flex-1 overflow-x-clip p-4 pb-[max(1rem,var(--guia-espaco,0px))] md:p-8 md:pb-[max(2rem,var(--guia-espaco,0px))]">
           {alertas.length > 0 && <AlertasAdmin alertas={alertas} />}
           {testeGratis && teste ? (
             <PortaoTesteGratis creditos={profile.creditos} teste={teste} precoMinimo={precoMinimo}>{children}</PortaoTesteGratis>

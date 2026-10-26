@@ -139,11 +139,7 @@ export function SheetsSettings({
           {!oauthConfigured ? (
             <Alert>
               <AlertDescription>
-                Integração com Google Sheets ainda não configurada nesta plataforma. Peça ao administrador para
-                adicionar <code>GOOGLE_CLIENT_ID</code>, <code>GOOGLE_CLIENT_SECRET</code> e{" "}
-                <code>NEXT_PUBLIC_APP_URL</code> nas variáveis de ambiente (Google Cloud Console → APIs e serviços →
-                Credenciais → ID do cliente OAuth 2.0, com o URI de redirecionamento{" "}
-                <code>{"{NEXT_PUBLIC_APP_URL}"}/api/integrations/google-sheets/callback</code> autorizado).
+                A integração com o Google Sheets ainda não está disponível. Fale com o suporte para ativar.
               </AlertDescription>
             </Alert>
           ) : !conectado ? (

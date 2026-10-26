@@ -31,7 +31,8 @@ const DialogContent = React.forwardRef<
     <DialogPrimitive.Content
       ref={ref}
       className={cn(
-        "animate-dialog-in fixed left-1/2 top-1/2 z-50 w-full max-w-md rounded-3xl border border-border-strong bg-card p-6 text-card-foreground shadow-[var(--elevation-lg)]",
+        // Margem nas bordas no celular e rolagem própria quando o conteúdo passa da altura da tela.
+        "animate-dialog-in fixed left-1/2 top-1/2 z-50 max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-md overflow-y-auto rounded-3xl border border-border-strong bg-card p-6 text-card-foreground shadow-[var(--elevation-lg)]",
         className,
       )}
       {...props}

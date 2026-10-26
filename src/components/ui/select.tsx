@@ -16,14 +16,15 @@ const SelectTrigger = React.forwardRef<
   <SelectPrimitive.Trigger
     ref={ref}
     className={cn(
-      "flex h-10 w-full items-center justify-between rounded-xl border border-border bg-secondary px-3.5 py-2 text-sm text-foreground shadow-sm transition-colors focus:outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/30 disabled:cursor-not-allowed disabled:opacity-40",
+      // Texto longo (nome de campanha, número…) fica numa linha só, com reticências, sem vazar do botão.
+      "flex h-10 w-full min-w-0 items-center justify-between gap-2 rounded-xl border border-border bg-secondary px-3.5 py-2 text-left text-sm text-foreground shadow-sm transition-colors focus:outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/30 disabled:cursor-not-allowed disabled:opacity-40 [&>span]:min-w-0 [&>span]:truncate",
       className,
     )}
     {...props}
   >
     {children}
     <SelectPrimitive.Icon asChild>
-      <ChevronDown className="h-4 w-4 text-muted-foreground" />
+      <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
     </SelectPrimitive.Icon>
   </SelectPrimitive.Trigger>
 ));
@@ -38,7 +39,7 @@ const SelectContent = React.forwardRef<
       ref={ref}
       position={position}
       className={cn(
-        "relative z-50 max-h-96 min-w-[8rem] overflow-hidden rounded-xl border border-border-strong bg-popover text-popover-foreground shadow-lg",
+        "relative z-50 max-h-96 min-w-[var(--radix-select-trigger-width)] max-w-[min(92vw,36rem)] overflow-y-auto rounded-xl border border-border-strong bg-popover text-popover-foreground shadow-lg",
         position === "popper" && "translate-y-1",
         className,
       )}
