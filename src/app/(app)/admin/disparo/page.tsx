@@ -6,6 +6,9 @@ import { AdminOficialRequests } from "@/components/dispatch/admin-oficial-reques
 import { PageHeader } from "@/components/layout/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { dadosWebhookOficial } from "@/lib/integrations/whatsapp-oficial";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { parceiroDatafyConfigurado } from "@/lib/integrations/datafy-parceiro";
+import { AdminConectarOficial, type ClienteOpcao } from "@/components/dispatch/admin-conectar-oficial";
 
 export const metadata = { title: "Disparo — canal oficial" };
 
@@ -16,7 +19,12 @@ export default async function AdminDisparoPage() {
   const profile = await getProfile(supabase, user.id);
   if (!profile || profile.role !== "admin") redirect("/");
 
-  const [solicitacoes, webhook] = await Promise.all([listarSolicitacoesOficial(supabase), dadosWebhookOficial()]);
+  const [solicitacoes, webhook, parceiro, { data: clientesData }] = await Promise.all([
+    listarSolicitacoesOficial(supabase),
+    dadosWebhookOficial(),
+    parceiroDatafyConfigurado(),
+    createAdminClient().from("profiles").select("id, email, nome, empresa").order("created_at", { ascending: false }).limit(3000),
+  ]);
 
   return (
     <div className="flex flex-col gap-6">
@@ -24,8 +32,9 @@ export default async function AdminDisparoPage() {
         backHref="/admin"
         eyebrow="Administração"
         title="Canal oficial"
-        description="Solicitações de conexão e provisionamento manual de instâncias oficiais."
+        description="Conexão do WhatsApp oficial dos clientes, solicitações antigas e o webhook do canal oficial."
       />
+      <AdminConectarOficial clientes={(clientesData ?? []) as ClienteOpcao[]} parceiroConfigurado={parceiro} />
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Webhook do canal oficial</CardTitle>

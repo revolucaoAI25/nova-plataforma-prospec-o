@@ -3,11 +3,13 @@
  * - assinados de quem perdeu o recurso (cancelou o add-on, saiu do plano)
  *   ou o acesso (plano encerrado, pagamento recusado): a assinatura do canal
  *   é cancelada (a conexão do número fica, para reativar depois);
+ * - conectados fora da página (link enviado ao cliente, janela fechada antes
+ *   do aviso): confirmados aqui, consultando a Datafy;
  * - criados e nunca conectados há mais de 3 dias: apagados na Datafy.
  */
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { cancelarCanalOficial, podeUsarOficial, type CanalOficialRow } from "../src/lib/whatsapp-oficial-canal";
-import { cancelarCanal, deletarCanal, parceiroDatafyConfigurado } from "../src/lib/integrations/datafy-parceiro";
+import { cancelarCanalOficial, confirmarConexaoOficial, podeUsarOficial, type CanalOficialRow } from "../src/lib/whatsapp-oficial-canal";
+import { cancelarCanal, consultarCanal, deletarCanal, parceiroDatafyConfigurado } from "../src/lib/integrations/datafy-parceiro";
 
 export async function tickCanaisOficiais(sb: SupabaseClient, log: (msg: string) => void): Promise<void> {
   if (!(await parceiroDatafyConfigurado())) return;
@@ -36,6 +38,17 @@ export async function tickCanaisOficiais(sb: SupabaseClient, log: (msg: string) 
   }
 
   const limite = Date.now() - 3 * 86_400_000;
+  for (const canal of canais.filter((c) => !c.conectado_em && c.instance_id && new Date(c.criado_em).getTime() >= limite)) {
+    try {
+      const situacao = await consultarCanal(canal.channel_id);
+      if (!situacao.phone_number_id) continue;
+      await confirmarConexaoOficial(canal.user_id, canal.instance_id!, { porAdmin: true });
+      log(`canal ${canal.channel_id} conectado (confirmado pelo worker)`);
+    } catch (e) {
+      log(`não confirmou o canal ${canal.channel_id}: ${(e as Error).message}`);
+    }
+  }
+
   for (const canal of canais.filter((c) => !c.conectado_em && new Date(c.criado_em).getTime() < limite)) {
     try {
       if (canal.assinado) await cancelarCanal(canal.channel_id).catch(() => undefined);

@@ -94,18 +94,35 @@ function soDigitos(telefone: string | null | undefined): string | null {
   return d || null;
 }
 
-/** "Conectar WhatsApp oficial": devolve o link da janela de conexão, ou reativa um canal já conectado. */
-export async function iniciarConexaoOficial(userId: string): Promise<{ url: string; instanceId: string } | { reativado: true; numero: string | null }> {
+/**
+ * "Conectar WhatsApp oficial": devolve o link da janela de conexão, ou reativa um canal já conectado.
+ * `porAdmin`: o admin conecta pelo painel para um cliente (libera o recurso para ele e não limita a um número).
+ */
+export async function iniciarConexaoOficial(
+  userId: string,
+  opcoes: { porAdmin?: boolean } = {},
+): Promise<{ url: string; instanceId: string } | { reativado: true; numero: string | null }> {
   const p = await perfil(userId);
-  if (!podeUsarOficial(p)) throw new ErroCanalOficial(403, MSG_SEM_RECURSO);
+  if (!p) throw new ErroCanalOficial(404, "Cliente não encontrado.");
   const sb = createAdminClient();
+  if (opcoes.porAdmin) {
+    // O admin decidiu dar o canal a este cliente: o recurso fica liberado (sem isso o worker cancelaria o canal).
+    if (!p.whatsapp_oficial_habilitado && p.role !== "admin") await sb.from("profiles").update({ whatsapp_oficial_habilitado: true }).eq("id", userId);
+  } else if (!podeUsarOficial(p)) {
+    throw new ErroCanalOficial(403, MSG_SEM_RECURSO);
+  }
+  const semLimite = opcoes.porAdmin || p.role === "admin";
   const { data } = await sb.from("datafy_canais").select("*").eq("user_id", userId).is("cancelado_em", null).order("criado_em", { ascending: false });
   const canais = (data ?? []) as CanalOficialRow[];
 
-  // Já conectado: reativa (voltou a ter o recurso) ou avisa que já existe.
-  const conectado = canais.find((c) => c.conectado_em);
-  if (conectado && p!.role !== "admin") {
-    if (conectado.assinado) throw new ErroCanalOficial(409, "Você já tem um número oficial conectado. Para trocar, remova o atual na lista de números.");
+  // Já conectado: reativa (voltou a ter o recurso) ou avisa que já existe
+  // (o admin pode conectar mais de um número; o cliente, um).
+  const pausado = canais.find((c) => c.conectado_em && !c.assinado);
+  if (!semLimite && canais.some((c) => c.conectado_em && c.assinado)) {
+    throw new ErroCanalOficial(409, "Você já tem um número oficial conectado. Para trocar, remova o atual na lista de números.");
+  }
+  if (pausado) {
+    const conectado = pausado;
     await assinarOuAvisar(conectado);
     await sb.from("datafy_canais").update({ assinado: true }).eq("id", conectado.id);
     const { data: inst } = await sb
@@ -132,7 +149,7 @@ export async function iniciarConexaoOficial(userId: string): Promise<{ url: stri
   }
 
   if (!canal) {
-    const criado = await criarCanal(`Leadmatic · ${p!.email}`, `Usuário ${userId}`);
+    const criado = await criarCanal(`Leadmatic · ${p.email}`, `Usuário ${userId}`);
     const { data: inst, error } = await sb
       .from("whatsapp_instances")
       .insert({ user_id: userId, nome: "WhatsApp oficial", canal: "oficial", status: "conectando", token_oficial: criado.token })
@@ -160,13 +177,16 @@ export async function iniciarConexaoOficial(userId: string): Promise<{ url: stri
 }
 
 /** Confere na Datafy se o número foi conectado; se foi, assina o canal e libera a instância. */
-export async function confirmarConexaoOficial(userId: string, instanceId: string): Promise<{ conectado: boolean; numero: string | null }> {
+export async function confirmarConexaoOficial(
+  userId: string,
+  instanceId: string,
+  opcoes: { porAdmin?: boolean } = {},
+): Promise<{ conectado: boolean; numero: string | null }> {
   const sb = createAdminClient();
   const { data } = await sb.from("datafy_canais").select("*").eq("instance_id", instanceId).eq("user_id", userId).maybeSingle();
   const canal = data as CanalOficialRow | null;
   if (!canal) throw new ErroCanalOficial(404, "Canal não encontrado.");
-  const p = await perfil(userId);
-  if (!podeUsarOficial(p)) throw new ErroCanalOficial(403, MSG_SEM_RECURSO);
+  if (!opcoes.porAdmin && !podeUsarOficial(await perfil(userId))) throw new ErroCanalOficial(403, MSG_SEM_RECURSO);
 
   const situacao = await consultarCanal(canal.channel_id);
   if (!situacao.phone_number_id) return { conectado: false, numero: null };
