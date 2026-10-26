@@ -11,6 +11,7 @@ import { SheetsSettings } from "@/components/settings/sheets-settings";
 import { OpenAiSettings } from "@/components/settings/openai-settings";
 import { PageHeader } from "@/components/layout/page-header";
 import { oauthDisponivel } from "@/lib/integrations/google-sheets";
+import { perfilParaTela } from "@/lib/perfil-tela";
 
 export const metadata = { title: "Conexões" };
 
@@ -76,7 +77,7 @@ export default async function ConexoesPage({ searchParams }: { searchParams: Pro
 
       <section id="sheets" className="flex scroll-mt-24 flex-col gap-3">
         <h2 className="text-lg font-semibold text-foreground">Google Sheets</h2>
-        <SheetsSettings profile={profile} initialFeedback={sheets} oauthConfigured={sheetsOauthConfigurado} />
+        <SheetsSettings profile={perfilParaTela(profile)} initialFeedback={sheets} oauthConfigured={sheetsOauthConfigurado} />
       </section>
 
       {openaiDisponivel && (

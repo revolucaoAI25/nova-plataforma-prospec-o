@@ -1,7 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-import { apiBloqueadaNoTeste, emTesteGratis, MSG_TESTE_GRATIS } from "@/lib/teste-gratis-regras";
-import type { Profile } from "@/lib/database.types";
+import { acaoViaGet, apiBloqueadaNoTeste, emTesteGratis, MSG_TESTE_GRATIS } from "@/lib/teste-gratis-regras";
+import { apiConfereAcesso, COLUNAS_ACESSO, motivoBloqueio, MSG_ACESSO_BLOQUEADO, type PerfilAcesso } from "@/lib/acesso-regras";
 
 // Não importa o polyfill de WebSocket (src/lib/supabase/websocket-polyfill)
 // aqui: este arquivo roda no Edge Runtime (proxy.ts, sem `runtime` explícito
@@ -24,6 +24,7 @@ const PUBLIC_PATHS = [
   "/api/retomada/sair",
   "/login",
   "/redefinir-senha",
+  "/api/senha",
   "/auth",
   "/api/email-dispatch/unsubscribe",
   "/api/linkedin-dispatch/webhooks",
@@ -91,17 +92,26 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // Teste grátis: ações em recursos pagos sem flag própria no perfil
-  // (fluxos, funil, estratégia por IA, conexões). Só essas chamadas pagam a
-  // consulta extra ao perfil.
-  if (user && apiBloqueadaNoTeste(pathname, request.method)) {
-    const { data: perfil } = await supabase
-      .from("profiles")
-      .select("teste_gratis, assinatura_status, role")
-      .eq("id", user.id)
-      .maybeSingle();
-    if (emTesteGratis(perfil as Pick<Profile, "teste_gratis" | "assinatura_status" | "role"> | null)) {
+  // Chamadas que criam, alteram ou enviam algo conferem o acesso: quem não
+  // pagou, cancelou (depois do período pago) ou está com o pagamento
+  // recusado não usa a plataforma; no teste grátis, os recursos pagos sem
+  // flag própria no perfil (fluxos, funil, estratégia por IA, conexões)
+  // ficam fechados. Leituras (GET) não pagam a consulta extra ao perfil.
+  const bloqueadaNoTeste = apiBloqueadaNoTeste(pathname, request.method);
+  if (user && (bloqueadaNoTeste || apiConfereAcesso(pathname, request.method, acaoViaGet(pathname)))) {
+    const consulta = await supabase.from("profiles").select(COLUNAS_ACESSO).eq("id", user.id).maybeSingle();
+    // Sem a migration 0047 (coluna acesso_ate), vale só a regra do teste grátis.
+    const semMigration = Boolean(consulta.error);
+    const { data } = semMigration
+      ? await supabase.from("profiles").select("role, teste_gratis, assinatura_status").eq("id", user.id).maybeSingle()
+      : consulta;
+    const perfil = data as unknown as PerfilAcesso | null;
+    if (bloqueadaNoTeste && emTesteGratis(perfil)) {
       return NextResponse.json({ error: MSG_TESTE_GRATIS, testeGratis: true }, { status: 403 });
+    }
+    const motivo = semMigration ? null : motivoBloqueio(perfil);
+    if (motivo) {
+      return NextResponse.json({ error: MSG_ACESSO_BLOQUEADO[motivo], acessoBloqueado: motivo }, { status: 403 });
     }
   }
 

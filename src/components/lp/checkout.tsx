@@ -19,7 +19,7 @@ export function mascararTelefone(valor: string): string {
 
 const ETAPAS = [
   ["Crie a sua conta", "Preencha os dados do formulário. Leva menos de um minuto."],
-  ["Conclua o pagamento", "No cartão de crédito, em ambiente seguro. A liberação é na hora."],
+  ["Conclua o pagamento", "Em ambiente seguro. A liberação é na hora."],
   ["Comece a prospectar", "Com o pagamento confirmado, os créditos são liberados e a IA monta a sua estratégia."],
 ] as const;
 
@@ -253,7 +253,7 @@ export function Checkout({
           </ol>
 
           <p className="flex items-center gap-2 text-[12.5px] text-lp-muted-2">
-            <Lock className="h-3.5 w-3.5 shrink-0" /> Pagamento seguro no cartão de crédito.
+            <Lock className="h-3.5 w-3.5 shrink-0" /> Pagamento seguro. Acesso liberado assim que o pagamento é aprovado.
           </p>
         </div>
       </aside>

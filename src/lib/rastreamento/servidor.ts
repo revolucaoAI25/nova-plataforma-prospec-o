@@ -11,6 +11,7 @@ import { createHash } from "node:crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { configPlataforma } from "@/lib/platform-settings";
 import { urlBaseApp } from "@/lib/webhook-token";
+import { PIXEL_PADRAO } from "@/lib/rastreamento/config";
 import type { RastreamentoConta } from "@/lib/database.types";
 
 const COOKIE_VISITANTE = "lm_vid";
@@ -119,7 +120,7 @@ export interface EventoConversao {
 export async function enviarConversaoMeta(ev: EventoConversao): Promise<void> {
   try {
     const [pixel, token, codigoTeste] = await Promise.all([
-      configPlataforma("meta_pixel_id", process.env.META_PIXEL_ID),
+      configPlataforma("meta_pixel_id", process.env.META_PIXEL_ID || PIXEL_PADRAO),
       configPlataforma("meta_capi_token", process.env.META_CAPI_TOKEN),
       configPlataforma("meta_test_event_code", process.env.META_TEST_EVENT_CODE),
     ]);

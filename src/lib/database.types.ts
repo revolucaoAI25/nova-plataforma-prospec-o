@@ -26,8 +26,9 @@ export interface GoogleSheetsCreds {
     token: string;
     refresh_token?: string;
     token_uri: string;
-    client_id: string;
-    client_secret: string;
+    /** Legado: as credenciais do app agora vêm das chaves da plataforma (migration 0047 apaga as antigas). */
+    client_id?: string;
+    client_secret?: string;
     scopes: string[];
   } | null;
   planilhas?: SheetConfig[];
@@ -85,6 +86,8 @@ export interface Profile {
   /** Etapas já enviadas da sequência de e-mails de retomada (migration 0046). */
   emails_retomada?: Record<string, string> | null;
   emails_retomada_off?: boolean;
+  /** Fim do período pago (último pagamento + ciclo); a regra de acesso fica em acesso-regras.ts (migration 0047). */
+  acesso_ate?: string | null;
 }
 
 /** Gravado no cadastro (teste grátis ou contratação) a partir dos cookies da página de vendas. */

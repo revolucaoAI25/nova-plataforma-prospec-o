@@ -24,17 +24,32 @@ function PedirLink() {
     e.preventDefault();
     setEnviando(true);
     setErro(null);
-    const supabase = createClient();
-    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-      redirectTo: `${window.location.origin}/auth/confirmar?next=/redefinir-senha/nova`,
-    });
-    setEnviando(false);
-    // Limite de envios do Supabase é o único erro que vale mostrar; para o
-    // resto, a mesma resposta, sem revelar se o e-mail tem conta.
-    if (error && /rate|limit|seconds/i.test(error.message)) {
-      setErro("Muitos pedidos seguidos. Aguarde um minuto e tente novamente.");
+    // O nosso e-mail (em português, abre em qualquer aparelho); sem o
+    // remetente da plataforma configurado, o envio padrão do Supabase.
+    const resp = await fetch("/api/senha/esqueci", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: email.trim() }),
+    }).catch(() => null);
+    const json = await resp?.json().catch(() => null);
+    if (resp && !resp.ok) {
+      setEnviando(false);
+      setErro(json?.error ?? "Não foi possível enviar agora. Tente novamente em instantes.");
       return;
     }
+    if (!resp || json?.usarPadrao) {
+      const { error } = await createClient().auth.resetPasswordForEmail(email.trim(), {
+        redirectTo: `${window.location.origin}/auth/confirmar?next=/redefinir-senha/nova`,
+      });
+      // Limite de envios do Supabase é o único erro que vale mostrar; para o
+      // resto, a mesma resposta, sem revelar se o e-mail tem conta.
+      if (error && /rate|limit|seconds/i.test(error.message)) {
+        setEnviando(false);
+        setErro("Muitos pedidos seguidos. Aguarde um minuto e tente novamente.");
+        return;
+      }
+    }
+    setEnviando(false);
     setEnviado(true);
   }
 

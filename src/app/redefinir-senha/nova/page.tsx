@@ -25,16 +25,22 @@ export default function NovaSenhaPage() {
     if (senha.length < 8) return setErro("A senha precisa ter pelo menos 8 caracteres.");
     if (senha !== confirmacao) return setErro("As senhas não são iguais.");
     setSalvando(true);
-    const { error } = await createClient().auth.updateUser({ password: senha });
+    const supabase = createClient();
+    const { error } = await supabase.auth.updateUser({ password: senha });
     setSalvando(false);
     if (error) {
       setErro(
         /session|jwt|auth/i.test(error.message)
           ? "Este link expirou. Peça um novo link de recuperação."
-          : "Não foi possível salvar a nova senha. Tente outra senha.",
+          : /different|same/i.test(error.message)
+            ? "A nova senha precisa ser diferente da anterior."
+            : "Não foi possível salvar a nova senha. Tente outra senha.",
       );
       return;
     }
+    // Quem pediu a recuperação pode ter a conta aberta em outro aparelho
+    // (ou alguém pode ter a senha antiga): encerra as outras sessões.
+    await supabase.auth.signOut({ scope: "others" }).catch(() => undefined);
     router.replace("/");
     router.refresh();
   }

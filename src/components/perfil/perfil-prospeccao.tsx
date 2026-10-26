@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
 import { DadosClienteForm, type DadosClienteValores } from "@/components/perfil/dados-cliente-form";
+import { AlterarSenha } from "@/components/perfil/alterar-senha";
 import { CampoPergunta, respondida, type Valor } from "@/components/onboarding/questionario-wizard";
 import {
   ETAPAS_QUESTIONARIO, pendenciasParaGerar, perguntaVisivel, type RespostasOnboarding,
@@ -128,6 +129,8 @@ export function PerfilProspeccao({
         </div>
         <DadosClienteForm inicial={dadosCliente} endpoint="/api/perfil" />
       </section>
+
+      <AlterarSenha />
 
       {nuncaComecou ? (
         <div className="flex flex-col items-start gap-4 rounded-2xl border border-primary/40 bg-card p-6">

@@ -54,19 +54,20 @@ export async function gerarUrlAuth(redirectUri: string, state: string): Promise<
 export async function trocarCodigo(redirectUri: string, code: string): Promise<OAuthCreds> {
   const client = await criarClient(redirectUri);
   const { tokens } = await client.getToken(code);
-  const { clientId, clientSecret } = await credenciaisOAuth();
+  // Só os tokens do usuário vão para o perfil: o client_id/client_secret são
+  // da plataforma e ficam nas chaves do admin (o perfil é legível pelo
+  // próprio usuário no navegador).
   return {
     token: tokens.access_token || "",
     refresh_token: tokens.refresh_token || undefined,
     token_uri: "https://oauth2.googleapis.com/token",
-    client_id: clientId,
-    client_secret: clientSecret,
     scopes: (tokens.scope || SCOPES.join(" ")).split(" "),
   };
 }
 
 async function credsClient(creds: OAuthCreds) {
-  const client = new google.auth.OAuth2(creds.client_id, creds.client_secret);
+  const { clientId, clientSecret } = await credenciaisOAuth();
+  const client = new google.auth.OAuth2(clientId, clientSecret);
   client.setCredentials({ access_token: creds.token, refresh_token: creds.refresh_token });
   if (creds.refresh_token) {
     try {

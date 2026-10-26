@@ -31,8 +31,13 @@ const ACOES_VIA_GET = ["/api/integrations/google-sheets/connect", "/api/integrat
 
 const casa = (pathname: string, prefixo: string) => pathname === prefixo || pathname.startsWith(`${prefixo}/`);
 
+/** GETs que iniciam uma ação (o login com o Google). */
+export function acaoViaGet(pathname: string): boolean {
+  return ACOES_VIA_GET.some((p) => casa(pathname, p));
+}
+
 export function apiBloqueadaNoTeste(pathname: string, metodo: string): boolean {
-  if (ACOES_VIA_GET.some((p) => casa(pathname, p))) return true;
+  if (acaoViaGet(pathname)) return true;
   return metodo.toUpperCase() !== "GET" && APIS_BLOQUEADAS.some((p) => casa(pathname, p));
 }
 

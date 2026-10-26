@@ -41,7 +41,11 @@ function LoginForm() {
       setError(
         error.message === "Invalid login credentials"
           ? "E-mail ou senha incorretos."
-          : error.message,
+          : /rate|limit|too many/i.test(error.message)
+            ? "Muitas tentativas seguidas. Aguarde alguns minutos e tente novamente."
+            : /not confirmed/i.test(error.message)
+              ? "Confirme o seu e-mail pelo link que enviamos antes de entrar."
+              : "Não foi possível entrar agora. Tente novamente em instantes.",
       );
       setLoading(false);
       return;

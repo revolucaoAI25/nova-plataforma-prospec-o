@@ -7,6 +7,7 @@ import { PLAN_FEATURE_FLAG_KEYS, type AssinaturaCiclo, type PlanRow, type Profil
 import { dataISOBrasil } from "@/lib/datas";
 import { planoNaCondicao, type CondicaoPreco } from "@/lib/condicao-preco";
 import { enviarConversaoMeta, registrarEventoServidor } from "@/lib/rastreamento/servidor";
+import { fimDoPeriodo } from "@/lib/acesso-regras";
 
 // Assinatura recorrente de plano via Asaas — ver comentário de topo de
 // supabase/migrations/0018_asaas_subscriptions.sql pro desenho geral.
@@ -150,7 +151,11 @@ export async function processarPagamentoAssinatura(asaasSubscriptionId: string, 
     console.error("[processarPagamentoAssinatura] falha ao registrar pagamento", asaasPaymentId, error);
     throw new Error(`Falha ao registrar pagamento de assinatura: ${error.message}`);
   }
-  if (!registrado) return true; // conflito de unique (evento repetido) — não credita de novo, mas já sabemos que era um plano.
+  // Conflito de unique (evento repetido, como o PAYMENT_RECEIVED que chega
+  // ~30 dias depois do CONFIRMED no cartão): não credita nem reativa nada.
+  // A exceção é a 1ª ativação que falhou na entrega anterior (o perfil
+  // continua "pendente"): aí refaz só a atualização do perfil.
+  if (!registrado && dono.assinatura_status !== "pendente") return true;
 
   const campos: Record<string, unknown> = {
     assinatura_status: "ativa",
@@ -170,7 +175,18 @@ export async function processarPagamentoAssinatura(asaasSubscriptionId: string, 
     }
   }
 
-  await sbAdmin.from("profiles").update(campos).eq("id", dono.id);
+  // Fim do período pago por este pagamento (regra de acesso em acesso-regras.ts).
+  campos.acesso_ate = fimDoPeriodo(dono.assinatura_ciclo as AssinaturaCiclo | null);
+  const { error: erroPerfil } = await sbAdmin.from("profiles").update(campos).eq("id", dono.id);
+  if (erroPerfil && /acesso_ate/.test(erroPerfil.message)) {
+    // Sem a migration 0047: ativa o plano mesmo assim.
+    delete campos.acesso_ate;
+    const { error } = await sbAdmin.from("profiles").update(campos).eq("id", dono.id);
+    if (error) throw new Error(`Falha ao ativar o plano no perfil: ${error.message}`);
+  } else if (erroPerfil) {
+    // 500 no webhook: o Asaas reentrega e a ativação é refeita (o crédito não repete).
+    throw new Error(`Falha ao ativar o plano no perfil: ${erroPerfil.message}`);
+  }
 
   // 1º pagamento de uma assinatura nova (estava aguardando pagamento): é a
   // venda. Renovações e reativações de inadimplência não contam de novo.
@@ -215,3 +231,25 @@ export async function marcarAssinaturaInadimplente(asaasSubscriptionId: string):
     .maybeSingle();
   return Boolean(data);
 }
+
+/**
+ * Assinatura removida ou desativada direto no Asaas (pelo painel, não pelo
+ * cancelamento da plataforma, que já limpa o vínculo): o perfil deixa de
+ * contar com ela. Quem já pagou fica "cancelada" e usa até o fim do período
+ * pago (acesso_ate); quem nunca pagou volta para "sem_assinatura".
+ */
+export async function encerrarAssinaturaRemovida(asaasSubscriptionId: string): Promise<void> {
+  const sbAdmin = createAdminClient();
+  const { data: dono } = await sbAdmin
+    .from("profiles")
+    .select("id, assinatura_status")
+    .eq("asaas_subscription_id", asaasSubscriptionId)
+    .maybeSingle();
+  if (!dono) return;
+  const { error } = await sbAdmin
+    .from("profiles")
+    .update({ asaas_subscription_id: null, assinatura_status: dono.assinatura_status === "pendente" ? "sem_assinatura" : "cancelada" })
+    .eq("id", dono.id);
+  if (error) throw new Error(`Falha ao encerrar a assinatura no perfil: ${error.message}`);
+}
+

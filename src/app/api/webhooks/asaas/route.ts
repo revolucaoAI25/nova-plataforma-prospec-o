@@ -1,10 +1,10 @@
 import { timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
 import { marcarCompraPaga } from "@/lib/credit-purchases-db";
-import { processarPagamentoAssinatura, marcarAssinaturaInadimplente } from "@/lib/subscriptions-db";
+import { processarPagamentoAssinatura, marcarAssinaturaInadimplente, encerrarAssinaturaRemovida } from "@/lib/subscriptions-db";
 import { processarPagamentoAddon, marcarAddonInadimplente } from "@/lib/addons-db";
 import { configPlataforma } from "@/lib/platform-settings";
-import { obterCobranca } from "@/lib/integrations/asaas";
+import { obterAssinatura, obterCobranca } from "@/lib/integrations/asaas";
 
 // Rota PÚBLICA (sem auth de usuário) — recebida pelo Asaas quando o
 // status de uma cobrança muda. Configurada manualmente no dashboard do
@@ -22,11 +22,33 @@ import { obterCobranca } from "@/lib/integrations/asaas";
 // pagamento). O campo `payment.subscription` é o que diferencia uma
 // renovação de assinatura de uma compra avulsa de créditos — só cobranças
 // geradas por uma assinatura carregam esse campo.
+// Também SUBSCRIPTION_DELETED e SUBSCRIPTION_INACTIVATED: assinatura
+// removida ou desativada direto no painel do Asaas encerra o plano.
 
 const EVENTOS_PAGO = new Set(["PAYMENT_CONFIRMED", "PAYMENT_RECEIVED"]);
 
 // Status do Asaas que significam dinheiro recebido.
 const STATUS_PAGO = new Set(["CONFIRMED", "RECEIVED", "RECEIVED_IN_CASH"]);
+
+const EVENTOS_ASSINATURA_ENCERRADA = new Set(["SUBSCRIPTION_DELETED", "SUBSCRIPTION_INACTIVATED"]);
+
+/** Confere no Asaas se a assinatura foi mesmo removida ou desativada antes de encerrar o plano. */
+async function encerrarAssinatura(assinaturaId: string | undefined) {
+  if (!assinaturaId) return NextResponse.json({ ok: true });
+  try {
+    const encerrada = await obterAssinatura(assinaturaId)
+      .then((a) => Boolean(a.deleted) || a.status !== "ACTIVE")
+      .catch((err: Error) => {
+        if (/respondeu 404/.test(err.message)) return true;
+        throw err;
+      });
+    if (encerrada) await encerrarAssinaturaRemovida(assinaturaId);
+  } catch (err) {
+    console.error("[webhooks/asaas] falha ao encerrar a assinatura", assinaturaId, err);
+    return NextResponse.json({ error: "Falha ao processar o evento." }, { status: 500 });
+  }
+  return NextResponse.json({ ok: true });
+}
 
 function tokenConfere(recebido: string | null, esperado: string): boolean {
   if (!recebido) return false;
@@ -45,6 +67,8 @@ export async function POST(request: Request) {
 
   const body = await request.json().catch(() => null);
   if (!body?.event) return NextResponse.json({ ok: true });
+
+  if (EVENTOS_ASSINATURA_ENCERRADA.has(body.event)) return encerrarAssinatura(body.subscription?.id);
 
   const paymentId: string | undefined = body.payment?.id;
   const ehPago = EVENTOS_PAGO.has(body.event);

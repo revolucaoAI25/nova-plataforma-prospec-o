@@ -172,7 +172,7 @@ export function Planos({ planos }: { planos: PlanoLP[] }) {
               </Link>
             </p>
             <p className="flex items-center justify-center gap-2 text-[13px] text-lp-muted-2">
-              <Lock className="h-3.5 w-3.5 shrink-0" /> Pagamento seguro no cartão de crédito. Acesso liberado assim que o pagamento é aprovado.
+              <Lock className="h-3.5 w-3.5 shrink-0" /> Pagamento seguro. Acesso liberado assim que o pagamento é aprovado.
             </p>
           </Revela>
         )}

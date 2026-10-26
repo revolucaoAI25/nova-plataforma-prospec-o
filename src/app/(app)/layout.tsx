@@ -8,6 +8,9 @@ import { PortaoTesteGratis } from "@/components/layout/portao-teste-gratis";
 import { emTesteGratis } from "@/lib/teste-gratis-regras";
 import { situacaoTeste } from "@/lib/teste-gratis";
 import { TourPlataforma, type PublicoTour } from "@/components/onboarding/tour-plataforma";
+import { PortaoAcesso } from "@/components/layout/acesso-bloqueado";
+import { motivoBloqueio } from "@/lib/acesso-regras";
+import { perfilParaTela } from "@/lib/perfil-tela";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
@@ -36,6 +39,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   }
 
   const testeGratis = emTesteGratis(profile);
+  // Quem não pagou, cancelou (passado o período pago) ou teve o pagamento
+  // recusado só vê os planos e o perfil. Sem a migration 0047 (acesso_ate
+  // ainda não existe no perfil), ninguém é bloqueado por aqui.
+  const bloqueio = profile.acesso_ate === undefined ? null : motivoBloqueio(profile);
   // Teste grátis: prazo e o preço de entrada que aparecem nas ofertas.
   const [teste, precoMinimo] = testeGratis
     ? await Promise.all([
@@ -53,7 +60,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   // Tour guiado: um para o teste grátis (conhecer e assinar), outro para quem
   // já é cliente (começar pela estratégia). Quem ainda não pagou a assinatura
   // vê a fatura antes, não o tour.
-  const publicoTour: PublicoTour | null = testeGratis ? "teste" : profile.assinatura_status === "pendente" ? null : "assinante";
+  const publicoTour: PublicoTour | null = testeGratis ? "teste" : bloqueio || profile.assinatura_status === "pendente" ? null : "assinante";
 
   return (
     <div className="flex min-h-screen bg-background">
@@ -73,17 +80,19 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           abaixo do conteúdo intrínseco — uma tabela larga (leads, usuários)
           empurra a página inteira pro lado em vez de rolar só por dentro. */}
       <div className="flex min-w-0 flex-1 flex-col transition-[padding-left] duration-200 md:pl-[var(--app-sidebar-w)]">
-        <Topbar profile={profile} diasRestantesTeste={teste?.diasRestantes ?? null} />
+        <Topbar profile={perfilParaTela(profile)} diasRestantesTeste={teste?.diasRestantes ?? null} />
         <main className="min-w-0 flex-1 p-4 pb-[max(1rem,var(--guia-espaco,0px))] md:p-8 md:pb-[max(2rem,var(--guia-espaco,0px))]">
           {testeGratis && teste ? (
             <PortaoTesteGratis creditos={profile.creditos} teste={teste} precoMinimo={precoMinimo}>{children}</PortaoTesteGratis>
+          ) : bloqueio ? (
+            <PortaoAcesso motivo={bloqueio}>{children}</PortaoAcesso>
           ) : (
             children
           )}
         </main>
       </div>
       {/* O guia leva à estratégia por IA, que fica bloqueada no teste grátis. */}
-      {!testeGratis && <GuiaFlutuante />}
+      {!testeGratis && !bloqueio && <GuiaFlutuante />}
       {publicoTour && (
         <TourPlataforma
           publico={publicoTour}

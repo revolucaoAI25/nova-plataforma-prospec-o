@@ -185,3 +185,23 @@ export async function obterPrimeiraFaturaAssinatura(subscriptionId: string): Pro
   const lista = await req<{ data: AsaasCobranca[] }>(`/subscriptions/${subscriptionId}/payments`);
   return lista.data?.[0] ?? null;
 }
+
+/** Fatura em aberto de uma assinatura (vencida antes, depois a próxima a vencer): o link para o cliente pagar. */
+export async function obterFaturaEmAberto(subscriptionId: string): Promise<AsaasCobranca | null> {
+  for (const status of ["OVERDUE", "PENDING"]) {
+    const lista = await req<{ data: AsaasCobranca[] }>(`/subscriptions/${encodeURIComponent(subscriptionId)}/payments?status=${status}`);
+    if (lista.data?.[0]) return lista.data[0];
+  }
+  return null;
+}
+
+export interface AsaasAssinaturaDetalhe {
+  id: string;
+  status: string;
+  deleted?: boolean;
+}
+
+/** Assinatura como o Asaas a vê agora (status ACTIVE, INACTIVE ou EXPIRED; `deleted` quando removida). */
+export async function obterAssinatura(subscriptionId: string): Promise<AsaasAssinaturaDetalhe> {
+  return req<AsaasAssinaturaDetalhe>(`/subscriptions/${encodeURIComponent(subscriptionId)}`);
+}

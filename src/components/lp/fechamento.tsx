@@ -7,7 +7,7 @@ import { Revela } from "./revela";
 export const PERGUNTAS: [string, string][] = [
   [
     "Como funciona a contratação?",
-    "Você escolhe o plano, cria a sua conta e conclui o pagamento no cartão de crédito. Assim que o pagamento é aprovado, os créditos e os recursos do plano são liberados e o onboarding começa.",
+    "Você escolhe o plano, cria a sua conta e conclui o pagamento. Assim que o pagamento é aprovado, os créditos e os recursos do plano são liberados e o onboarding começa.",
   ],
   [
     "Posso testar antes de assinar?",
