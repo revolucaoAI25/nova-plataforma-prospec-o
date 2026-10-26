@@ -24,6 +24,7 @@ function UserRow({ user, isSelf }: { user: UserStatsRow; isSelf: boolean }) {
   const [linkedinDisparoHabilitado, setLinkedinDisparoHabilitado] = useState(user.linkedin_disparo_habilitado);
   const [enriquecimentoIa, setEnriquecimentoIa] = useState(user.enriquecimento_ia_habilitado);
   const [bigdatacorpEnrichment, setBigdatacorpEnrichment] = useState(user.bigdatacorp_enrichment_habilitado);
+  const [whatsappOficial, setWhatsappOficial] = useState(Boolean(user.whatsapp_oficial_habilitado));
   const [role, setRole] = useState(user.role);
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
@@ -50,6 +51,7 @@ function UserRow({ user, isSelf }: { user: UserStatsRow; isSelf: boolean }) {
         linkedin_disparo_habilitado: linkedinDisparoHabilitado,
         enriquecimento_ia_habilitado: enriquecimentoIa,
         bigdatacorp_enrichment_habilitado: bigdatacorpEnrichment,
+        whatsapp_oficial_habilitado: whatsappOficial,
         role,
       }),
     });
@@ -114,6 +116,9 @@ function UserRow({ user, isSelf }: { user: UserStatsRow; isSelf: boolean }) {
         <Switch checked={bigdatacorpEnrichment} onCheckedChange={markDirty(setBigdatacorpEnrichment)} />
       </TableCell>
       <TableCell>
+        <Switch checked={whatsappOficial} onCheckedChange={markDirty(setWhatsappOficial)} />
+      </TableCell>
+      <TableCell>
         <Badge variant="secondary">{user.total_searches}</Badge>
       </TableCell>
       <TableCell>
@@ -151,6 +156,7 @@ export function AdminUsersTable({ users, currentUserId }: { users: UserStatsRow[
           <TableHead>Disparo LinkedIn</TableHead>
           <TableHead>Enriq. IA</TableHead>
           <TableHead>Celular do sócio</TableHead>
+          <TableHead>WhatsApp oficial</TableHead>
           <TableHead>Buscas</TableHead>
           <TableHead>Leads</TableHead>
           <TableHead className="text-right">Ações</TableHead>

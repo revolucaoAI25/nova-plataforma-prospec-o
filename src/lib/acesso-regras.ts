@@ -1,4 +1,4 @@
-import { PLAN_FEATURE_FLAG_KEYS, type AssinaturaCiclo, type Profile } from "@/lib/database.types";
+import { FLAGS_BASE, PLAN_FEATURE_FLAG_KEYS, type AssinaturaCiclo, type Profile } from "@/lib/database.types";
 import { emTesteGratis } from "@/lib/teste-gratis-regras";
 
 /**
@@ -26,10 +26,10 @@ export type PerfilAcesso = Pick<Profile, "role" | "teste_gratis" | "assinatura_s
   Partial<Pick<Profile, (typeof PLAN_FEATURE_FLAG_KEYS)[number]>>;
 
 /** Colunas do perfil que a regra lê (para selects enxutos). */
-export const COLUNAS_ACESSO = ["role", "teste_gratis", "assinatura_status", "creditos", "acesso_ate", ...PLAN_FEATURE_FLAG_KEYS].join(", ");
+export const COLUNAS_ACESSO = ["role", "teste_gratis", "assinatura_status", "creditos", "acesso_ate", ...FLAGS_BASE].join(", ");
 
 function acessoLiberadoPeloAdmin(p: PerfilAcesso): boolean {
-  return p.creditos > 0 || PLAN_FEATURE_FLAG_KEYS.some((chave) => Boolean(p[chave]));
+  return p.creditos > 0 || FLAGS_BASE.some((chave) => Boolean(p[chave]));
 }
 
 export function motivoBloqueio(p: PerfilAcesso | null | undefined, agora: number = Date.now()): MotivoBloqueio | null {

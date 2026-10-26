@@ -62,6 +62,9 @@ export interface Profile {
 
   bigdatacorp_enrichment_habilitado: boolean;
 
+  /** Canal oficial do WhatsApp (Datafy) — migration 0050. */
+  whatsapp_oficial_habilitado: boolean;
+
   google_sheets_creds: GoogleSheetsCreds | null;
 
   creditos: number;
@@ -157,6 +160,8 @@ export interface PlanFeatureFlags {
   bigdatacorp_enrichment_habilitado: boolean;
   email_disparo_habilitado: boolean;
   linkedin_disparo_habilitado: boolean;
+  /** Canal oficial do WhatsApp (Datafy) que a própria pessoa conecta — migration 0050. */
+  whatsapp_oficial_habilitado: boolean;
 }
 
 export interface PlanRow extends PlanFeatureFlags {
@@ -180,7 +185,16 @@ export const PLAN_FEATURE_FLAG_KEYS: (keyof PlanFeatureFlags)[] = [
   "bigdatacorp_enrichment_habilitado",
   "email_disparo_habilitado",
   "linkedin_disparo_habilitado",
+  "whatsapp_oficial_habilitado",
 ];
+
+/**
+ * Recursos que existem desde antes da migration 0050. Onde todas as colunas
+ * precisam existir (gravar "sem recursos" no teste grátis, ler o acesso no
+ * proxy), usa-se esta lista: um recurso novo não quebra nada enquanto a
+ * migration dele não roda.
+ */
+export const FLAGS_BASE: (keyof PlanFeatureFlags)[] = PLAN_FEATURE_FLAG_KEYS.filter((k) => k !== "whatsapp_oficial_habilitado");
 
 export type AssinaturaStatus = "sem_assinatura" | "pendente" | "ativa" | "inadimplente" | "cancelada";
 export type AssinaturaCiclo = "mensal" | "anual";
@@ -254,6 +268,7 @@ export type PlatformSettingKey =
   | "evolution_api_key"
   | "webhook_segredo"
   | "datafy_api_base_url"
+  | "datafy_account_token"
   | "whatsapp_oficial_app_secret"
   | "dias_teste_gratis"
   | "meta_pixel_id"
@@ -355,6 +370,7 @@ export interface UserStatsRow {
   telefone: string | null;
   empresa: string | null;
   teste_gratis: boolean;
+  whatsapp_oficial_habilitado?: boolean;
 }
 
 export type EnrichmentRunStatus = "pendente" | "processando" | "concluido" | "erro";

@@ -18,6 +18,7 @@ const patchSchema = dadosClienteSchema.extend({
   linkedin_disparo_habilitado: z.boolean().optional(),
   enriquecimento_ia_habilitado: z.boolean().optional(),
   bigdatacorp_enrichment_habilitado: z.boolean().optional(),
+  whatsapp_oficial_habilitado: z.boolean().optional(),
   conta_teste: z.boolean().optional(),
   teste_expira_em: z.string().nullable().optional(),
   /** Liga: fotografa a tabela de preços de agora para este cliente. Desliga: volta à tabela atual. */

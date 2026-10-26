@@ -11,6 +11,7 @@ const ROTULO_RECURSO: Record<keyof PlanFeatureFlags, string> = {
   linkedin_visible: "Leads do LinkedIn",
   enriquecimento_ia_habilitado: "Enriquecimento com IA",
   bigdatacorp_enrichment_habilitado: "Celular do sócio (WhatsApp de quem decide)",
+  whatsapp_oficial_habilitado: "API oficial do WhatsApp",
 };
 
 /** Créditos de uma empresa com contato conferido: busca por CNPJ + verificação no Maps. */

@@ -19,6 +19,7 @@ const FEATURE_FLAG_LABELS: Record<keyof PlanFeatureFlags, string> = {
   bigdatacorp_enrichment_habilitado: "Celular do sócio (Sócios e Contato)",
   email_disparo_habilitado: "Disparo e-mail",
   linkedin_disparo_habilitado: "Disparo LinkedIn",
+  whatsapp_oficial_habilitado: "WhatsApp API oficial",
 };
 
 function contarFlagsAtivos(plano: PlanFeatureFlags): number {
@@ -185,7 +186,7 @@ export function PlansPanel({ planosIniciais }: { planosIniciais: PlanRow[] }) {
       disparo_habilitado: false, instagram_visible: false, linkedin_visible: false,
       enriquecimento_ia_habilitado: false, bigdatacorp_enrichment_habilitado: false,
       email_disparo_habilitado: false, linkedin_disparo_habilitado: false,
-    }]);
+     whatsapp_oficial_habilitado: false,}]);
     setNovoNome(""); setNovoPreco(""); setNovosCreditos("");
   }
 

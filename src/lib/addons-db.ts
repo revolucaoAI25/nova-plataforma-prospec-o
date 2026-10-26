@@ -57,14 +57,50 @@ export async function assinarAddon(
   return { invoiceUrl: fatura.invoiceUrl };
 }
 
-/** Cancela no Asaas — mantém a linha (histórico), só marca cancelada e limpa o subscription_id, pra permitir assinar de novo depois sem colidir com o unique. NÃO revoga o feature_flag concedido (mesma cautela de cancelarPlano — revogar é ação manual do admin). */
+/** Cancela no Asaas — mantém a linha (histórico), só marca cancelada e limpa o subscription_id, pra permitir assinar de novo depois sem colidir com o unique. NÃO revoga o feature_flag concedido (mesma cautela de cancelarPlano — revogar é ação manual do admin), com uma exceção: o WhatsApp API oficial, que custa por canal (ver revogarWhatsappOficialSeForaDoPlano). */
 export async function cancelarAddon(assinatura: UserAddonSubscriptionRow): Promise<void> {
   if (!assinatura.asaas_subscription_id) return;
   await cancelarAssinatura(assinatura.asaas_subscription_id);
-  await createAdminClient()
+  const sbAdmin = createAdminClient();
+  await sbAdmin
     .from("user_addon_subscriptions")
     .update({ asaas_subscription_id: null, status: "cancelada" as AddonSubscriptionStatus, atualizado_em: new Date().toISOString() })
     .eq("id", assinatura.id);
+  const { data: addon } = await sbAdmin.from("addons").select("feature_flag").eq("id", assinatura.addon_id).maybeSingle();
+  if ((addon as { feature_flag?: string } | null)?.feature_flag === "whatsapp_oficial_habilitado") {
+    await revogarWhatsappOficialSeForaDoPlano(assinatura.user_id);
+  }
+}
+
+/**
+ * WhatsApp API oficial: a plataforma paga um canal por cliente na Datafy.
+ * Ao cancelar o add-on, quem não tem o recurso pelo plano perde o recurso
+ * (o worker cancela o canal na Datafy em seguida).
+ */
+export async function revogarWhatsappOficialSeForaDoPlano(userId: string): Promise<void> {
+  const sbAdmin = createAdminClient();
+  const { data: perfil } = await sbAdmin.from("profiles").select("plano_id, assinatura_status").eq("id", userId).maybeSingle();
+  const p = perfil as { plano_id: string | null; assinatura_status: string } | null;
+  if (p?.plano_id && ["ativa", "inadimplente"].includes(p.assinatura_status)) {
+    const { data: plano } = await sbAdmin.from("plans").select("whatsapp_oficial_habilitado").eq("id", p.plano_id).maybeSingle();
+    if ((plano as { whatsapp_oficial_habilitado?: boolean } | null)?.whatsapp_oficial_habilitado) return;
+  }
+  await sbAdmin.from("profiles").update({ whatsapp_oficial_habilitado: false }).eq("id", userId);
+}
+
+/** O add-on de WhatsApp API oficial está pago (ou em carência) para a pessoa. */
+export async function temAddonWhatsappOficial(userId: string): Promise<boolean> {
+  const sbAdmin = createAdminClient();
+  const { data: addons } = await sbAdmin.from("addons").select("id").eq("feature_flag", "whatsapp_oficial_habilitado");
+  const ids = ((addons ?? []) as { id: string }[]).map((a) => a.id);
+  if (!ids.length) return false;
+  const { count } = await sbAdmin
+    .from("user_addon_subscriptions")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", userId)
+    .in("addon_id", ids)
+    .in("status", ["ativa", "inadimplente"]);
+  return Boolean(count);
 }
 
 /**

@@ -9,6 +9,7 @@ import { planoNaCondicao, type CondicaoPreco } from "@/lib/condicao-preco";
 import { enviarConversaoMeta, registrarEventoServidor } from "@/lib/rastreamento/servidor";
 import { fimDoPeriodo } from "@/lib/acesso-regras";
 import { registrarLeadLP } from "@/lib/lp-leads";
+import { temAddonWhatsappOficial } from "@/lib/addons-db";
 
 // Assinatura recorrente de plano via Asaas — ver comentário de topo de
 // supabase/migrations/0018_asaas_subscriptions.sql pro desenho geral.
@@ -173,6 +174,12 @@ export async function processarPagamentoAssinatura(asaasSubscriptionId: string, 
   if (plano && dono.assinatura_status !== "ativa") {
     for (const chave of PLAN_FEATURE_FLAG_KEYS) {
       if (plano[chave]) campos[chave] = true;
+    }
+    // Exceção ao "só concede": o WhatsApp API oficial custa por canal, então
+    // vale o que o plano novo inclui (ou o add-on pago), não o que sobrou de
+    // um plano anterior. Só quando a coluna já existe (migration 0050).
+    if ("whatsapp_oficial_habilitado" in plano) {
+      campos.whatsapp_oficial_habilitado = Boolean(plano.whatsapp_oficial_habilitado) || (await temAddonWhatsappOficial(dono.id));
     }
   }
 

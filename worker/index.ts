@@ -26,6 +26,7 @@ import { tickOnboarding } from "./onboarding-tick";
 import { tickRetomada } from "./retomada-tick";
 import { tickAcesso } from "./acesso-tick";
 import { tickUsoApify } from "./uso-apify-tick";
+import { tickCanaisOficiais } from "./canais-oficiais-tick";
 
 const DISPATCH_TICK_MS = 15_000;
 const SHEET_WATCH_TICK_MS = 120_000;
@@ -140,6 +141,9 @@ async function main() {
   agendar("acesso", ACESSO_TICK_MS, () => tickAcesso(sb, (msg) => log("acesso", msg)));
 
   agendar("uso-apify", USO_APIFY_TICK_MS, () => tickUsoApify((msg) => log("uso-apify", msg)));
+
+  // Mesma cadência do acesso: cancela canais oficiais de quem perdeu o recurso.
+  agendar("canais-oficiais", ACESSO_TICK_MS, () => tickCanaisOficiais(sb, (msg) => log("canais-oficiais", msg)));
 }
 
 main().catch((e) => {

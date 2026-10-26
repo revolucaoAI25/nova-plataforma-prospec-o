@@ -15,12 +15,15 @@ import { HistoricoCompras } from "@/components/creditos/historico-compras";
 import { PlanosGrid } from "@/components/creditos/planos-grid";
 import { pacoteNaCondicao, planoNaCondicao } from "@/lib/condicao-preco";
 import { AddonsGrid } from "@/components/creditos/addons-grid";
+import { PLAN_FEATURE_FLAG_KEYS } from "@/lib/database.types";
 import { asaasConfigurado } from "@/lib/integrations/asaas";
 import { redirect } from "next/navigation";
 
 export const metadata = { title: "Créditos e planos" };
 
-export default async function CreditosPage() {
+export default async function CreditosPage({ searchParams }: { searchParams: Promise<{ aba?: string }> }) {
+  // ?aba=extras abre direto nos add-ons (link da página do WhatsApp API oficial).
+  const { aba } = await searchParams;
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
@@ -67,7 +70,7 @@ export default async function CreditosPage() {
         </Alert>
       )}
 
-      <Tabs defaultValue="planos">
+      <Tabs defaultValue={aba === "extras" || aba === "avulso" ? aba : "planos"}>
         <TabsList>
           <TabsTrigger value="planos"><Crown className="h-3.5 w-3.5" /> Planos</TabsTrigger>
           {!testeGratis && <TabsTrigger value="avulso"><Package className="h-3.5 w-3.5" /> Créditos avulsos</TabsTrigger>}
@@ -94,6 +97,7 @@ export default async function CreditosPage() {
               addons={addons}
               assinaturasIniciais={assinaturasAddons}
               temCpfCnpj={Boolean(profile.cpf_cnpj)}
+              recursosAtivos={Object.fromEntries(PLAN_FEATURE_FLAG_KEYS.map((k) => [k, Boolean(profile[k])]))}
               configurado={podeComprar}
             />
           </TabsContent>

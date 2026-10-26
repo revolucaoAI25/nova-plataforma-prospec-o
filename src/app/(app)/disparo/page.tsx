@@ -39,7 +39,7 @@ export default async function DisparoPage() {
         actions={
           <Button asChild variant="outline" size="sm">
             <Link href="/disparo/solicitar-oficial">
-              <Send className="h-4 w-4" /> Solicitar canal oficial
+              <Send className="h-4 w-4" /> WhatsApp API oficial
             </Link>
           </Button>
         }

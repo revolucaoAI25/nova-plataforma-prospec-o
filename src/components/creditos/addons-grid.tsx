@@ -35,7 +35,10 @@ export function AddonsGrid({
   assinaturasIniciais,
   temCpfCnpj,
   configurado,
+  recursosAtivos = {},
 }: {
+  /** Recursos que a pessoa já tem (pelo plano ou liberados): o add-on aparece como incluso. */
+  recursosAtivos?: Partial<Record<string, boolean>>;
   addons: AddonRow[];
   assinaturasIniciais: UserAddonSubscriptionRow[];
   temCpfCnpj: boolean;
@@ -141,6 +144,7 @@ export function AddonsGrid({
           const status = statusPorAddon.get(addon.id);
           const statusInfo = status ? STATUS_LABEL[status] : null;
           const ativo = status === "ativa" || status === "pendente" || status === "inadimplente";
+          const incluso = !ativo && Boolean(recursosAtivos[addon.feature_flag]);
           return (
             <Card key={addon.id}>
               <CardHeader>
@@ -158,7 +162,11 @@ export function AddonsGrid({
                   {formatarPreco(addon.preco_centavos)}
                   <span className="text-sm font-medium text-muted-foreground">/mês</span>
                 </p>
-                {ativo ? (
+                {incluso ? (
+                  <Button variant="outline" disabled className="w-full">
+                    <Check className="h-4 w-4" /> Incluso no seu plano
+                  </Button>
+                ) : ativo ? (
                   <div className="flex flex-col gap-2">
                     <Button variant="outline" disabled className="w-full">
                       <Check className="h-4 w-4" /> {status === "pendente" ? "Aguardando pagamento" : "Assinado"}

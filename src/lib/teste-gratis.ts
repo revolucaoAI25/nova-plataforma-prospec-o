@@ -1,5 +1,5 @@
 import { configPlataforma } from "@/lib/platform-settings";
-import { PLAN_FEATURE_FLAG_KEYS } from "@/lib/database.types";
+import { FLAGS_BASE } from "@/lib/database.types";
 
 import { emTesteGratis, situacaoTesteGratis, type SituacaoTeste } from "@/lib/teste-gratis-regras";
 import type { Profile } from "@/lib/database.types";
@@ -43,7 +43,7 @@ export async function creditosTesteGratis(): Promise<number> {
 
 /** Campos gravados no perfil quando o teste começa: só créditos, nenhum recurso de plano. */
 export async function camposInicioTesteGratis(): Promise<Record<string, unknown>> {
-  const semRecursos = Object.fromEntries(PLAN_FEATURE_FLAG_KEYS.map((k) => [k, false]));
+  const semRecursos = Object.fromEntries(FLAGS_BASE.map((k) => [k, false]));
   return { ...semRecursos, teste_gratis: true, creditos: await creditosTesteGratis() };
 }
 

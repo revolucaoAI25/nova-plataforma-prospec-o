@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { Plus, Trash2, QrCode, Loader2, Smartphone } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -116,7 +117,7 @@ export function InstancesPanel({ instanciasIniciais }: { instanciasIniciais: Wha
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-base"><Smartphone className="h-4 w-4 text-primary" /> Instâncias WhatsApp</CardTitle>
-        <CardDescription>Números conectados via QR Code (não-oficial) ou canal oficial (provisionado pelo admin).</CardDescription>
+        <CardDescription>Números conectados por QR Code (não-oficial) ou pela API oficial do WhatsApp.</CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
         {error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
@@ -136,6 +137,11 @@ export function InstancesPanel({ instanciasIniciais }: { instanciasIniciais: Wha
               </div>
               <div className="flex items-center gap-2">
                 <Badge variant={STATUS_LABEL[inst.status]?.variant ?? "secondary"}>{STATUS_LABEL[inst.status]?.label ?? inst.status}</Badge>
+                {inst.canal === "oficial" && inst.status !== "conectado" && (
+                  <Button asChild variant="outline" size="sm">
+                    <Link href="/disparo/solicitar-oficial">{inst.status === "conectando" ? "Concluir conexão" : "Reativar"}</Link>
+                  </Button>
+                )}
                 {inst.canal === "evolution" && inst.status !== "conectado" && (
                   <Button aria-label="Mostrar QR code" title="Mostrar QR code" type="button" variant="ghost" size="icon" onClick={() => setQrAbertoPara(qrAbertoPara === inst.id ? null : inst.id)}>
                     <QrCode className="h-4 w-4" />

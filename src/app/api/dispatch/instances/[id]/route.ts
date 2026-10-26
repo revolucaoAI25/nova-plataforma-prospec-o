@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { obterInstancia, deletarInstancia } from "@/lib/dispatch-db";
 import { excluirInstancia, desconectarInstancia } from "@/lib/integrations/evolution-api";
+import { removerCanalOficialDaInstancia } from "@/lib/whatsapp-oficial-canal";
 
 export async function DELETE(
   _request: Request,
@@ -23,6 +24,9 @@ export async function DELETE(
       // segue removendo do banco mesmo se a Evolution API já não tiver a instância
     }
   }
+
+  // Canal oficial conectado pela própria pessoa: para de pagar e apaga o canal na Datafy.
+  if (instancia.canal === "oficial") await removerCanalOficialDaInstancia(id).catch(() => undefined);
 
   const ok = await deletarInstancia(supabase, id);
   if (!ok) return NextResponse.json({ error: "Não foi possível remover a instância." }, { status: 500 });

@@ -19,6 +19,7 @@ const FEATURE_FLAG_LABELS: Record<keyof PlanFeatureFlags, string> = {
   bigdatacorp_enrichment_habilitado: "Celular do sócio (Sócios e Contato)",
   email_disparo_habilitado: "Disparo e-mail",
   linkedin_disparo_habilitado: "Disparo LinkedIn",
+  whatsapp_oficial_habilitado: "WhatsApp API oficial",
 };
 
 function LinhaAddon({ addon, onRemovido }: { addon: AddonRow; onRemovido: (id: string) => void }) {

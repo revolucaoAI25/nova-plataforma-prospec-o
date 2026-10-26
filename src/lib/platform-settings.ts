@@ -77,5 +77,6 @@ export const PLATFORM_SETTINGS_META: Record<
   evolution_api_key: { grupo: "Evolution API (WhatsApp)", label: "API Key", envFallback: "EVOLUTION_API_KEY", secreto: true },
   webhook_segredo: { grupo: "Evolution API (WhatsApp)", label: "Segredo do webhook de respostas (opcional)", envFallback: "WEBHOOK_SECRET", secreto: true },
   datafy_api_base_url: { grupo: "Datafy (WhatsApp — canal oficial)", label: "URL base", envFallback: "DATAFY_API_BASE_URL", secreto: false },
+  datafy_account_token: { grupo: "Datafy (WhatsApp — canal oficial)", label: "Token de conta de parceiro (sk_acct_…): cria e conecta os canais dos clientes", envFallback: "DATAFY_ACCOUNT_TOKEN", secreto: true },
   whatsapp_oficial_app_secret: { grupo: "Datafy (WhatsApp — canal oficial)", label: "App Secret da Meta (só se o webhook vier direto da Meta)", envFallback: "WHATSAPP_OFICIAL_APP_SECRET", secreto: true },
 };

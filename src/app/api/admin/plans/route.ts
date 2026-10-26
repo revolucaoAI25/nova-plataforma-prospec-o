@@ -65,6 +65,7 @@ const patchSchema = z.object({
   bigdatacorp_enrichment_habilitado: z.boolean().optional(),
   email_disparo_habilitado: z.boolean().optional(),
   linkedin_disparo_habilitado: z.boolean().optional(),
+  whatsapp_oficial_habilitado: z.boolean().optional(),
 });
 
 const FLAG_KEYS = [
@@ -75,6 +76,7 @@ const FLAG_KEYS = [
   "bigdatacorp_enrichment_habilitado",
   "email_disparo_habilitado",
   "linkedin_disparo_habilitado",
+  "whatsapp_oficial_habilitado",
 ] as const;
 
 export async function PATCH(request: Request) {
