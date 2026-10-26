@@ -44,6 +44,22 @@ async function req(token: string, path: string, init?: RequestInit) {
   return resp.json();
 }
 
+/**
+ * IDs ligados ao token do canal na Datafy (GET /me, fora do prefixo /v1):
+ * confere o token na hora de provisionar e preenche phone_number_id e
+ * waba_id sem o admin precisar copiar do painel.
+ */
+export async function dadosContaDatafy(token: string): Promise<{ phoneNumberId: string; wabaId: string | null }> {
+  const origem = (await baseUrl()).replace(/\/v\d+$/, "");
+  const resp = await fetch(`${origem}/me`, { headers: headers(token), signal: AbortSignal.timeout(15_000) });
+  if (resp.status === 401) throw new Error("Token do canal inválido. Copie de novo no painel da Datafy.");
+  if (resp.status === 402) throw new Error("A assinatura do canal na Datafy está inativa.");
+  if (!resp.ok) throw new Error(`A Datafy respondeu ${resp.status} ao conferir o token.`);
+  const d = (await resp.json()) as { phone_number_id?: string; waba_id?: string };
+  if (!d.phone_number_id) throw new Error("O canal ainda não tem número conectado na Datafy. Conclua a conexão do número no painel deles.");
+  return { phoneNumberId: String(d.phone_number_id), wabaId: d.waba_id ? String(d.waba_id) : null };
+}
+
 /** Texto livre — só funciona dentro da janela de 24h após o cliente ter mandado mensagem primeiro. */
 export async function enviarTexto(token: string, phoneNumberId: string, numeroE164: string, texto: string) {
   return req(token, `/${phoneNumberId}/messages`, {

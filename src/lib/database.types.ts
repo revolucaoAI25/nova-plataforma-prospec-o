@@ -499,6 +499,8 @@ export interface WhatsappInstanceRow {
   waba_id: string | null;
   /** Quando o webhook de mensagens recebidas foi registrado na Evolution (detecção de resposta). */
   webhook_configurado_em: string | null;
+  /** Endereço em que o webhook foi registrado (migration 0049); muda junto com o domínio. */
+  webhook_url?: string | null;
   criado_em: string;
 }
 

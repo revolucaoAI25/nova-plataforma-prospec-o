@@ -152,7 +152,7 @@ export function LoginForm() {
         </button>
       )}
 
-      <form onSubmit={handleSubmit} className="mt-8 flex flex-col gap-5">
+      <form onSubmit={handleSubmit} className="mt-8 flex flex-col gap-5 [@media(max-height:760px)]:mt-6 [@media(max-height:760px)]:gap-4">
         {error && (
           <Alert variant="destructive">
             <AlertDescription>{error}</AlertDescription>
@@ -220,7 +220,7 @@ export function LoginForm() {
         </Button>
       </form>
 
-      <div className="mt-8 rounded-2xl border border-border bg-card p-4">
+      <div className="mt-8 rounded-2xl border border-border bg-card p-4 [@media(max-height:760px)]:mt-6">
         <p className="text-sm font-semibold text-foreground">Ainda não é cliente?</p>
         <p className="mt-0.5 text-xs text-muted-foreground">Conheça a plataforma por 7 dias, sem cartão.</p>
         <div className="mt-3 grid grid-cols-2 gap-2">
@@ -228,7 +228,7 @@ export function LoginForm() {
             <Link href="/teste-gratis">Testar grátis</Link>
           </Button>
           <Button asChild size="sm" variant="outline">
-            <Link href="/conheca#planos">Ver planos</Link>
+            <Link href="/conheca#planos" prefetch={false}>Ver planos</Link>
           </Button>
         </div>
       </div>

@@ -1,13 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Check, Eye, EyeOff, Loader2, Lock, ShieldCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { mascararCpfCnpj } from "@/lib/cpf-cnpj";
 import { brl, num, type PlanoLP } from "./dados";
-import { eventoPixel } from "@/lib/rastreamento/cliente";
+import { capturarLeadParcial, eventoPixel } from "@/lib/rastreamento/cliente";
 
 export function mascararTelefone(valor: string): string {
   const d = valor.replace(/\D/g, "").slice(0, 11);
@@ -68,6 +68,19 @@ export function Checkout({
     setErro(null);
   };
 
+  // Preenchimento parcial: com e-mail ou WhatsApp digitado, vira lead no quadro do admin.
+  const parcial = () =>
+    capturarLeadParcial({ nome: form.nome, email: form.email, telefone: form.telefone, empresa: form.empresa, pagina: "assinar", plano: plano?.nome, ciclo });
+  const parcialRef = useRef(parcial);
+  useEffect(() => {
+    parcialRef.current = parcial;
+  });
+  useEffect(() => {
+    const aoSair = () => parcialRef.current();
+    window.addEventListener("pagehide", aoSair);
+    return () => window.removeEventListener("pagehide", aoSair);
+  }, []);
+
   async function enviar(e: React.FormEvent) {
     e.preventDefault();
     setEnviando(true);
@@ -101,7 +114,7 @@ export function Checkout({
           Preencha os dados abaixo. Em seguida, você será direcionado para o pagamento e, assim que ele for confirmado, o acesso é liberado.
         </p>
 
-        <form onSubmit={enviar} className="mt-8 flex flex-col gap-5 rounded-[28px] border border-lp-line bg-lp-surface p-6 sm:p-8">
+        <form onSubmit={enviar} onBlur={parcial} className="mt-8 flex flex-col gap-5 rounded-[28px] border border-lp-line bg-lp-surface p-6 sm:p-8">
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
             <Campo id="ck-nome" rotulo="Nome completo">
               <input id="ck-nome" required minLength={3} autoComplete="name" value={form.nome} onChange={mudar("nome")} className={estiloInput} />

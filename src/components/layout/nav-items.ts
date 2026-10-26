@@ -22,6 +22,7 @@ import {
   Compass,
   UserRound,
   Filter,
+  Columns3,
 } from "lucide-react";
 import { paginaLiberadaNoTeste } from "@/lib/teste-gratis-regras";
 
@@ -168,6 +169,7 @@ function montarSecoes({
         { type: "link", href: "/admin", label: "Usuários", icon: Users },
         { type: "link", href: "/admin/disparo", label: "Canal oficial", icon: Radio },
         { type: "link", href: "/admin/funil-lp", label: "Funil da página", icon: Filter },
+        { type: "link", href: "/admin/leads", label: "Leads da página", icon: Columns3 },
       ],
     });
   }

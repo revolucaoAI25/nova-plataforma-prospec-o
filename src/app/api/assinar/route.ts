@@ -10,6 +10,7 @@ import { normalizarCpfCnpj } from "@/lib/cpf-cnpj";
 import { dentroDoLimite, ipDaRequisicao } from "@/lib/limite-tentativas";
 import type { PlanRow } from "@/lib/database.types";
 import { enviarConversaoMeta, origemDaRequisicao, registrarEventoServidor, salvarOrigemNoPerfil } from "@/lib/rastreamento/servidor";
+import { registrarLeadLP } from "@/lib/lp-leads";
 
 /**
  * Contratação pública (página /assinar): cria a conta, grava os dados do
@@ -104,6 +105,12 @@ export async function POST(request: Request) {
   after(async () => {
     await salvarOrigemNoPerfil(userId, origem);
     await registrarEventoServidor("conta_criada", origem, userId, `${plano.nome} (${ciclo})`);
+    await registrarLeadLP({
+      etapa: "aguardando_pagamento",
+      userId,
+      origem,
+      dados: { nome: dados.nome, email: dados.email, telefone, empresa: dados.empresa, pagina: "assinar", plano: plano.nome, ciclo },
+    });
     await enviarConversaoMeta({
       nome: "CompleteRegistration",
       eventId: eventos.registro,

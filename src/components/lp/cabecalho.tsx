@@ -48,7 +48,7 @@ export function Cabecalho() {
       )}
     >
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6">
-        <Link href="/conheca" className="flex items-center gap-2.5" aria-label="Leadmatic, início">
+        <Link href="/conheca" prefetch={false} className="flex items-center gap-2.5" aria-label="Leadmatic, início">
           <Image src="/logo.png" alt="" width={30} height={30} className="h-[30px] w-[30px] rounded-full" priority />
           <span className="leading-none">
             <span className="block whitespace-nowrap font-lp-display text-[15px] font-bold tracking-tight">Leadmatic</span>
@@ -61,7 +61,7 @@ export function Cabecalho() {
           ))}
         </nav>
         <div className="flex items-center gap-2">
-          <Link href="/login" className="hidden rounded-full px-3 py-2 text-sm text-lp-muted transition-colors hover:text-lp-text sm:block">
+          <Link href="/login" prefetch={false} className="hidden rounded-full px-3 py-2 text-sm text-lp-muted transition-colors hover:text-lp-text sm:block">
             Entrar
           </Link>
           <a

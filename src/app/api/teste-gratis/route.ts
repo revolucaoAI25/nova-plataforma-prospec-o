@@ -6,6 +6,7 @@ import { normalizarE164 } from "@/lib/phone";
 import { dentroDoLimite, ipDaRequisicao } from "@/lib/limite-tentativas";
 import { camposInicioTesteGratis } from "@/lib/teste-gratis";
 import { enviarConversaoMeta, origemDaRequisicao, registrarEventoServidor, salvarOrigemNoPerfil } from "@/lib/rastreamento/servidor";
+import { registrarLeadLP } from "@/lib/lp-leads";
 
 /**
  * Cadastro público do teste grátis (página /teste-gratis): cria a conta já
@@ -89,6 +90,7 @@ export async function POST(request: Request) {
     const pessoa = { userId, email: dados.email, telefone, nome: dados.nome, rastreamento: origem };
     await salvarOrigemNoPerfil(userId, origem);
     await registrarEventoServidor("teste_criado", origem, userId);
+    await registrarLeadLP({ etapa: "teste", userId, origem, dados: { nome: dados.nome, email: dados.email, telefone, empresa: dados.empresa, pagina: "teste" } });
     await Promise.all([
       enviarConversaoMeta({ nome: "CompleteRegistration", eventId: eventos.registro, pessoa, pagina: "/teste-gratis", conteudo: { nome: "Teste grátis" } }),
       enviarConversaoMeta({ nome: "StartTrial", eventId: eventos.teste, pessoa, pagina: "/teste-gratis", valor: 0, conteudo: { nome: "Teste grátis" } }),

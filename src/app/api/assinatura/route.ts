@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { getProfile } from "@/lib/credits";
@@ -6,6 +6,7 @@ import { MSG_CONTA_TESTE_SEM_COMPRA } from "@/lib/conta-teste";
 import { asaasConfigurado } from "@/lib/integrations/asaas";
 import { planoNaCondicao } from "@/lib/condicao-preco";
 import { listarPlanosAtivos, assinarPlano, cancelarPlano, AssinaturaJaPaga } from "@/lib/subscriptions-db";
+import { registrarLeadLP } from "@/lib/lp-leads";
 
 export async function GET(request: Request) {
   const supabase = await createClient();
@@ -68,6 +69,8 @@ export async function POST(request: Request) {
 
   try {
     const { invoiceUrl } = await assinarPlano(supabase, profile, plano, parsed.data.cpfCnpj || null, parsed.data.ciclo);
+    // Quem veio da página de vendas (ex.: do teste grátis) avança no quadro de leads.
+    after(() => registrarLeadLP({ etapa: "aguardando_pagamento", userId: user.id, soAtualizar: true, dados: { plano: plano.nome, ciclo: parsed.data.ciclo } }));
     return NextResponse.json({ invoiceUrl });
   } catch (err) {
     if (err instanceof AssinaturaJaPaga) return NextResponse.json({ error: err.message }, { status: 409 });

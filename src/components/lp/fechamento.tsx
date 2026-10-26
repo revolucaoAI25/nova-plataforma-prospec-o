@@ -122,7 +122,7 @@ export function ChamadaFinal() {
           <Link href="/teste-gratis" className="-my-2 inline-block py-2 text-lp-muted underline-offset-4 hover:text-lp-text hover:underline">Teste grátis por 7 dias, sem cartão</Link>
           <span aria-hidden="true"> · </span>
           Já é cliente?{" "}
-          <Link href="/login" className="-my-2 inline-block py-2 text-lp-muted underline-offset-4 hover:text-lp-text hover:underline">Entrar na plataforma</Link>
+          <Link href="/login" prefetch={false} className="-my-2 inline-block py-2 text-lp-muted underline-offset-4 hover:text-lp-text hover:underline">Entrar na plataforma</Link>
         </p>
       </Revela>
     </section>

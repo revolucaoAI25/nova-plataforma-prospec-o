@@ -8,6 +8,7 @@ import { dataISOBrasil } from "@/lib/datas";
 import { planoNaCondicao, type CondicaoPreco } from "@/lib/condicao-preco";
 import { enviarConversaoMeta, registrarEventoServidor } from "@/lib/rastreamento/servidor";
 import { fimDoPeriodo } from "@/lib/acesso-regras";
+import { registrarLeadLP } from "@/lib/lp-leads";
 
 // Assinatura recorrente de plano via Asaas — ver comentário de topo de
 // supabase/migrations/0018_asaas_subscriptions.sql pro desenho geral.
@@ -210,6 +211,12 @@ async function registrarCompra(userId: string, asaasSubscriptionId: string, prec
     .maybeSingle();
   const rastreamento = (perfil as { rastreamento?: Profile["rastreamento"] } | null)?.rastreamento ?? null;
   await registrarEventoServidor("compra", rastreamento, userId, plano?.nome);
+  await registrarLeadLP({
+    etapa: "cliente",
+    userId,
+    origem: rastreamento,
+    dados: { nome: perfil?.nome, email: perfil?.email, telefone: perfil?.telefone, plano: plano?.nome },
+  });
   await enviarConversaoMeta({
     nome: "Purchase",
     eventId: idEventoCompra(asaasSubscriptionId),

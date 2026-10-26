@@ -21,8 +21,8 @@ function ProvisionForm({ solicitacao, onDone }: { solicitacao: OficialConnection
   const [error, setError] = useState<string | null>(null);
 
   async function provisionar() {
-    if (!nome || !token || !phoneNumberId) {
-      setError("Preencha nome, token e phone number ID.");
+    if (!nome || !token) {
+      setError("Preencha o nome e o token do canal.");
       return;
     }
     setSaving(true);
@@ -61,11 +61,11 @@ function ProvisionForm({ solicitacao, onDone }: { solicitacao: OficialConnection
           <Input value={token} onChange={(e) => setToken(e.target.value)} className="h-8" type="password" />
         </div>
         <div className="flex flex-col gap-1">
-          <Label className="text-xs">Phone Number ID</Label>
+          <Label className="text-xs">Phone Number ID (opcional: vem do token)</Label>
           <Input value={phoneNumberId} onChange={(e) => setPhoneNumberId(e.target.value)} className="h-8" />
         </div>
         <div className="flex flex-col gap-1">
-          <Label className="text-xs">WABA ID</Label>
+          <Label className="text-xs">WABA ID (opcional: vem do token)</Label>
           <Input value={wabaId} onChange={(e) => setWabaId(e.target.value)} className="h-8" />
         </div>
       </div>

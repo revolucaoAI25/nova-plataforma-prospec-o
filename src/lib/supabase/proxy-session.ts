@@ -77,12 +77,14 @@ export async function updateSession(request: NextRequest) {
 
   const { pathname } = request.nextUrl;
 
-  // A raiz do domínio, para quem não está logado, é a página de vendas (os
-  // parâmetros da URL, como utm_* e fbclid, vão junto).
+  // A raiz do domínio, para quem não está logado, é a página de vendas.
+  // Rewrite (não redirect): o anúncio que aponta para a raiz abre a página
+  // direto, sem uma ida e volta a mais ao servidor (conta no connect rate),
+  // e os parâmetros da URL (utm_*, fbclid) continuam na barra de endereço.
   if (!user && pathname === "/") {
     const url = request.nextUrl.clone();
     url.pathname = "/conheca";
-    return NextResponse.redirect(url);
+    return NextResponse.rewrite(url);
   }
 
   if (!user && !isPublicPath(pathname)) {

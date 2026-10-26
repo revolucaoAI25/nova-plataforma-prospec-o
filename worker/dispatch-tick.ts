@@ -182,17 +182,27 @@ export async function tickDispatch(sb: SupabaseClient, log: (msg: string) => voi
 // scan lento, com espera de 30 min entre tentativas por instância.
 const ultimaTentativaWebhook = new Map<string, number>();
 
+// Também quando o endereço da plataforma muda (domínio novo em
+// NEXT_PUBLIC_APP_URL): a instância registrada no endereço antigo é
+// registrada de novo no atual (coluna webhook_url, migration 0049).
 async function garantirWebhooks(sb: SupabaseClient, log: (msg: string) => void) {
-  if (!urlWebhookEvolution()) return;
+  const urlAtual = urlWebhookEvolution();
+  if (!urlAtual) return;
   const semWebhook = (await listarInstanciasConectadas(sb)).filter(
-    (i) => i.canal === "evolution" && i.evolution_instance_name && !i.webhook_configurado_em,
+    (i) =>
+      i.canal === "evolution" &&
+      i.evolution_instance_name &&
+      (!i.webhook_configurado_em || ("webhook_url" in i && i.webhook_url !== urlAtual)),
   );
   for (const inst of semWebhook) {
     if (Date.now() - (ultimaTentativaWebhook.get(inst.id) ?? 0) < 30 * 60_000) continue;
     ultimaTentativaWebhook.set(inst.id, Date.now());
     try {
       if (await configurarWebhookMensagens(inst.evolution_instance_name!)) {
-        await sb.from("whatsapp_instances").update({ webhook_configurado_em: new Date().toISOString() }).eq("id", inst.id);
+        const marca = { webhook_configurado_em: new Date().toISOString(), webhook_url: urlAtual };
+        const { error } = await sb.from("whatsapp_instances").update(marca).eq("id", inst.id);
+        // Sem a migration 0049 (coluna webhook_url): marca só a data.
+        if (error) await sb.from("whatsapp_instances").update({ webhook_configurado_em: marca.webhook_configurado_em }).eq("id", inst.id);
         log(`Webhook de respostas registrado na instância ${inst.id}.`);
       }
     } catch (e) {

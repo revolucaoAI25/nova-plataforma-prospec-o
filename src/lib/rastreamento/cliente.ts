@@ -126,6 +126,27 @@ const pixelsIniciados = new Set<string>();
  * na navegação interna entre páginas. `correspondencia` é a correspondência
  * avançada (e-mail, telefone…) — o Pixel aplica o hash antes de enviar.
  */
+/**
+ * Carrega um script de terceiro sem disputar o processador com a montagem da
+ * página: espera o `load` e um momento ocioso (com prazo máximo). Os eventos
+ * disparados antes ficam na fila do stub e saem quando o script chega.
+ */
+function carregarQuandoOcioso(src: string, prazoMs: number) {
+  const carregar = () => {
+    const s = document.createElement("script");
+    s.async = true;
+    s.src = src;
+    document.head.appendChild(s);
+  };
+  const ocioso = () => {
+    const w = window as unknown as { requestIdleCallback?: (cb: () => void, o: { timeout: number }) => number };
+    if (w.requestIdleCallback) w.requestIdleCallback(carregar, { timeout: prazoMs });
+    else setTimeout(carregar, Math.min(prazoMs, 1000));
+  };
+  if (document.readyState === "complete") ocioso();
+  else window.addEventListener("load", ocioso, { once: true });
+}
+
 export function iniciarPixel(pixelId: string, correspondencia?: Record<string, string>) {
   if (!window.fbq) {
     const fbq = function (...args: unknown[]) {
@@ -138,10 +159,7 @@ export function iniciarPixel(pixelId: string, correspondencia?: Record<string, s
     fbq.queue = [];
     window.fbq = fbq;
     (window as unknown as { _fbq?: Fbq })._fbq = fbq;
-    const s = document.createElement("script");
-    s.async = true;
-    s.src = "https://connect.facebook.net/en_US/fbevents.js";
-    document.head.appendChild(s);
+    carregarQuandoOcioso("https://connect.facebook.net/en_US/fbevents.js", 1500);
   }
   if (!pixelsIniciados.has(pixelId)) {
     const preenchida = Object.fromEntries(Object.entries(correspondencia ?? {}).filter(([, v]) => v));
@@ -157,8 +175,35 @@ export function iniciarClarity(projeto: string) {
   clarityIniciado = true;
   const w = window as unknown as { clarity?: ((...a: unknown[]) => void) & { q?: unknown[] } };
   w.clarity = w.clarity || Object.assign((...a: unknown[]) => { (w.clarity!.q = w.clarity!.q || []).push(a); }, {});
-  const s = document.createElement("script");
-  s.async = true;
-  s.src = `https://www.clarity.ms/tag/${projeto}`;
-  document.head.appendChild(s);
+  carregarQuandoOcioso(`https://www.clarity.ms/tag/${projeto}`, 4000);
+}
+
+let ultimoLeadEnviado = "";
+/**
+ * Preenchimento parcial dos formulários (contratação e teste grátis): com o
+ * e-mail ou o WhatsApp já digitado, a pessoa entra no quadro de leads do
+ * admin mesmo sem concluir. Só manda o que mudou; nunca senha nem CPF/CNPJ.
+ */
+export function capturarLeadParcial(dados: {
+  nome?: string;
+  email?: string;
+  telefone?: string;
+  empresa?: string;
+  pagina: "assinar" | "teste";
+  plano?: string | null;
+  ciclo?: "mensal" | "anual" | null;
+}) {
+  const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test((dados.email ?? "").trim());
+  const telefoneOk = (dados.telefone ?? "").replace(/\D/g, "").length >= 10;
+  if (!emailOk && !telefoneOk) return;
+  const corpo = JSON.stringify(dados);
+  if (corpo === ultimoLeadEnviado) return;
+  ultimoLeadEnviado = corpo;
+  try {
+    const blob = new Blob([corpo], { type: "application/json" });
+    if (navigator.sendBeacon?.("/api/lp/lead", blob)) return;
+  } catch {
+    // segue para o fetch
+  }
+  fetch("/api/lp/lead", { method: "POST", headers: { "Content-Type": "application/json" }, body: corpo, keepalive: true }).catch(() => undefined);
 }

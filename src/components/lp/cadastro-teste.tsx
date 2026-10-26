@@ -1,13 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Building2, Check, Eye, EyeOff, Loader2, Lock, MapPin } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Campo, estiloInput, mascararTelefone } from "./checkout";
 import { num } from "./dados";
-import { eventoPixel } from "@/lib/rastreamento/cliente";
+import { capturarLeadParcial, eventoPixel } from "@/lib/rastreamento/cliente";
 
 const BLOQUEADOS = ["Estratégia de prospecção criada por IA", "Disparos por WhatsApp, e-mail e LinkedIn", "Funil, automações e cadências", "Enriquecimento e contato do decisor"];
 
@@ -26,6 +26,18 @@ export function CadastroTeste({ creditos }: { creditos: number }) {
     setForm((f) => ({ ...f, [campo]: v }));
     setErro(null);
   };
+
+  // Preenchimento parcial: com e-mail ou WhatsApp digitado, vira lead no quadro do admin.
+  const parcial = () => capturarLeadParcial({ nome: form.nome, email: form.email, telefone: form.telefone, empresa: form.empresa, pagina: "teste" });
+  const parcialRef = useRef(parcial);
+  useEffect(() => {
+    parcialRef.current = parcial;
+  });
+  useEffect(() => {
+    const aoSair = () => parcialRef.current();
+    window.addEventListener("pagehide", aoSair);
+    return () => window.removeEventListener("pagehide", aoSair);
+  }, []);
 
   async function enviar(e: React.FormEvent) {
     e.preventDefault();
@@ -63,7 +75,7 @@ export function CadastroTeste({ creditos }: { creditos: number }) {
             : "Crie a sua conta e explore as buscas, os disparos, o funil e as automações. Sem cartão e sem compromisso."}
         </p>
 
-        <form onSubmit={enviar} className="mt-8 flex flex-col gap-5 rounded-[28px] border border-lp-line bg-lp-surface p-6 sm:p-8">
+        <form onSubmit={enviar} onBlur={parcial} className="mt-8 flex flex-col gap-5 rounded-[28px] border border-lp-line bg-lp-surface p-6 sm:p-8">
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
             <Campo id="tg-nome" rotulo="Nome completo">
               <input id="tg-nome" required minLength={3} autoComplete="name" value={form.nome} onChange={mudar("nome")} className={estiloInput} />
