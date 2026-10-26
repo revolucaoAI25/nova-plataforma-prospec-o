@@ -55,7 +55,7 @@ export default async function TesteGratisPage() {
           </div>
         ) : (
           <>
-            <RastreamentoLP pixelId={rastreio.pixelId} clarityId={rastreio.clarityId} pagina="teste" />
+            <RastreamentoLP pixelId={rastreio.pixelId} pagina="teste" />
             <CadastroTeste creditos={creditos} />
           </>
         )}

@@ -79,12 +79,16 @@ function Deslizante({ valor, min, max, passo, aoMudar, rotulo }: { valor: number
   );
 }
 
+const TICKET_INICIAL = 1500;
+const EMPRESAS_INICIAL = 600;
+const FECHA_INICIAL = 3;
+
 export function Calculadora({ planos, creditosPorLead }: { planos: PlanoLP[]; creditosPorLead: number }) {
-  const [ticket, setTicket] = useState(1500);
+  const [ticket, setTicket] = useState(TICKET_INICIAL);
   const [recorrente, setRecorrente] = useState(false);
-  const [empresas, setEmpresas] = useState(600);
+  const [empresas, setEmpresas] = useState(EMPRESAS_INICIAL);
   const [canal, setCanal] = useState<CanalLP>("whatsapp");
-  const [fecha, setFecha] = useState(3);
+  const [fecha, setFecha] = useState(FECHA_INICIAL);
   const [ref, visto] = useVisto<HTMLDivElement>();
 
   const conta = useMemo(() => {
@@ -98,7 +102,10 @@ export function Calculadora({ planos, creditosPorLead }: { planos: PlanoLP[]; cr
     return { respostas, reunioes, clientes, receita, creditos, plano };
   }, [canal, empresas, fecha, ticket, creditosPorLead, planos]);
 
-  const planoId = conta.plano?.id ?? null;
+  // "Indicado na sua simulação" só aparece nos planos depois que a pessoa
+  // mexe em algo: com os valores de exemplo, a indicação não é dela.
+  const mexeu = ticket !== TICKET_INICIAL || recorrente || empresas !== EMPRESAS_INICIAL || canal !== "whatsapp" || fecha !== FECHA_INICIAL;
+  const planoId = mexeu ? conta.plano?.id ?? null : null;
   useEffect(() => {
     definirPlanoSugerido(planoId);
   }, [planoId]);

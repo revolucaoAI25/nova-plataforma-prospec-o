@@ -64,7 +64,6 @@ export default async function BemVindoPage() {
       </header>
       <RastreamentoLP
         pixelId={rastreio.pixelId}
-        clarityId={rastreio.clarityId}
         pagina="bem-vindo"
         correspondencia={{
           em: profile.email ?? "",

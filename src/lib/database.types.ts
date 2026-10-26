@@ -259,7 +259,6 @@ export type PlatformSettingKey =
   | "meta_pixel_id"
   | "meta_capi_token"
   | "meta_test_event_code"
-  | "clarity_id"
   | "email_remetente_plataforma"
   | "email_alertas_admin";
 

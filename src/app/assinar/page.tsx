@@ -63,7 +63,6 @@ export default async function AssinarPage({ searchParams }: { searchParams: Prom
           <>
             <RastreamentoLP
               pixelId={rastreio.pixelId}
-              clarityId={rastreio.clarityId}
               pagina="assinar"
               aoAbrir={{ nome: "InitiateCheckout", params: { value: valorAberto, currency: "BRL", content_name: planoAberto?.nome, content_ids: planoAberto ? [planoAberto.id] : [], content_type: "product" } }}
             />

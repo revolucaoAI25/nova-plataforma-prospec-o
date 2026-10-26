@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { capturarOrigem, eventoPixel, iniciarClarity, iniciarPixel, registrarEvento } from "@/lib/rastreamento/cliente";
+import { capturarOrigem, eventoPixel, iniciarPixel, registrarEvento } from "@/lib/rastreamento/cliente";
 
 /** De onde é cada clique: o destino do link diz a intenção (assinar, testar, WhatsApp…). */
 function alvoDoClique(el: HTMLElement): string | null {
@@ -21,15 +21,14 @@ function alvoDoClique(el: HTMLElement): string | null {
 
 /**
  * Rastreamento das páginas públicas (vendas, contratação, teste grátis e
- * boas-vindas): Pixel da Meta, Clarity e o nosso funil. Na página de vendas,
+ * boas-vindas): Pixel da Meta e o nosso funil. Na página de vendas,
  * também registra até onde a pessoa rolou (seções com data-secao) e em quais
  * botões ela clicou.
  */
 export function RastreamentoLP({
-  pixelId, clarityId, pagina, aoAbrir, correspondencia,
+  pixelId, pagina, aoAbrir, correspondencia,
 }: {
   pixelId?: string | null;
-  clarityId?: string | null;
   pagina: "vendas" | "assinar" | "teste" | "bem-vindo";
   /** Evento do Pixel próprio desta página (ex.: InitiateCheckout com o valor do plano). */
   aoAbrir?: { nome: string; params?: Record<string, unknown> } | null;
@@ -44,7 +43,6 @@ export function RastreamentoLP({
       if (pagina === "vendas") eventoPixel("ViewContent", { content_name: "Página de vendas" });
       if (aoAbrir) eventoPixel(aoAbrir.nome, aoAbrir.params);
     }
-    if (clarityId) iniciarClarity(clarityId);
     registrarEvento("pagina_vista");
     // Uma vez por abertura de página; os parâmetros não mudam depois.
     // eslint-disable-next-line react-hooks/exhaustive-deps

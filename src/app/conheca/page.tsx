@@ -49,7 +49,7 @@ export default async function ConhecaPage() {
   return (
     <div className={`lp ${FONTES_LP} relative min-h-screen w-full`}>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />
-      <RastreamentoLP pixelId={rastreio.pixelId} clarityId={rastreio.clarityId} pagina="vendas" />
+      <RastreamentoLP pixelId={rastreio.pixelId} pagina="vendas" />
       <Cabecalho />
       {/* data-secao: até onde cada visitante rolou e de onde veio cada clique (painel /admin/funil-lp). */}
       <main>

@@ -168,16 +168,6 @@ export function iniciarPixel(pixelId: string, correspondencia?: Record<string, s
   }
 }
 
-let clarityIniciado = false;
-/** Microsoft Clarity: mapa de calor, rolagem e gravação das sessões. */
-export function iniciarClarity(projeto: string) {
-  if (clarityIniciado || !/^[a-z0-9]{6,20}$/i.test(projeto)) return;
-  clarityIniciado = true;
-  const w = window as unknown as { clarity?: ((...a: unknown[]) => void) & { q?: unknown[] } };
-  w.clarity = w.clarity || Object.assign((...a: unknown[]) => { (w.clarity!.q = w.clarity!.q || []).push(a); }, {});
-  carregarQuandoOcioso(`https://www.clarity.ms/tag/${projeto}`, 4000);
-}
-
 let ultimoLeadEnviado = "";
 /**
  * Preenchimento parcial dos formulários (contratação e teste grátis): com o

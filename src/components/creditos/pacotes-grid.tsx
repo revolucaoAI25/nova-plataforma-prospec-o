@@ -51,7 +51,7 @@ export function PacotesGrid({
         return;
       }
       window.open(data.invoiceUrl, "_blank", "noopener,noreferrer");
-      setAviso("Fatura aberta em uma nova aba. Assim que o pagamento for confirmado, os créditos entram automaticamente no seu saldo.");
+      setAviso("Fatura aberta em uma nova aba: pague por Pix, boleto ou cartão. Assim que o pagamento for confirmado, os créditos entram automaticamente no seu saldo (no Pix e no cartão, na hora).");
       setPacotePendenteCpf(null);
       setCpfCnpj("");
     } catch {

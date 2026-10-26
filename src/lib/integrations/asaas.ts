@@ -1,6 +1,7 @@
 // Wrapper fino para a API REST do Asaas (https://asaas.com) — gateway de
 // pagamento das assinaturas, add-ons e compras de créditos avulsos.
-// Todas as cobranças são só no cartão de crédito (FORMA_PAGAMENTO).
+// Assinaturas (planos e add-ons) só no cartão de crédito (FORMA_PAGAMENTO);
+// compras avulsas de créditos aceitam Pix, boleto ou cartão (FORMA_AVULSA).
 //
 // Auth: header `access_token: <chave>` (chave única da plataforma,
 // cadastrada em /admin — platform_settings: asaas_api_key — ou, na
@@ -17,11 +18,17 @@ import { configPlataforma } from "@/lib/platform-settings";
 import { dataISOBrasil } from "@/lib/datas";
 
 /**
- * Forma de pagamento de toda cobrança: cartão de crédito. Na fatura do Asaas
- * o cliente só vê a opção de cartão; numa assinatura, o cartão informado na
- * primeira fatura fica salvo e as renovações são cobradas nele sozinhas.
+ * Forma de pagamento das assinaturas: cartão de crédito. O cartão informado
+ * na primeira fatura fica salvo e as renovações são cobradas nele sozinhas.
  */
 const FORMA_PAGAMENTO = "CREDIT_CARD";
+
+/**
+ * Compra avulsa de créditos: o cliente escolhe na fatura do Asaas entre Pix,
+ * boleto e cartão ("UNDEFINED" = perguntar ao cliente). Os créditos entram
+ * quando o pagamento é confirmado (Pix na hora; boleto em até 3 dias úteis).
+ */
+const FORMA_AVULSA = "UNDEFINED";
 
 async function chaveApi(): Promise<string> {
   return configPlataforma("asaas_api_key", process.env.ASAAS_API_KEY);
@@ -85,8 +92,9 @@ export interface AsaasCobranca {
 }
 
 /**
- * Cria uma cobrança "à vista" (vence amanhã, sem parcelamento), paga no
- * cartão de crédito na própria fatura hospedada do Asaas (`invoiceUrl`),
+ * Cria uma cobrança "à vista" (vence em 3 dias, prazo que cabe um boleto,
+ * sem parcelamento), paga por Pix, boleto ou cartão na própria fatura
+ * hospedada do Asaas (`invoiceUrl`),
  * sem a gente precisar implementar um checkout customizado. `externalReference` carrega o id
  * da nossa `credit_purchases`, pra casar o webhook de volta com a compra.
  */
@@ -97,12 +105,12 @@ export async function criarCobranca(dados: {
   externalReference: string;
 }): Promise<AsaasCobranca> {
   const vencimento = new Date();
-  vencimento.setDate(vencimento.getDate() + 1);
+  vencimento.setDate(vencimento.getDate() + 3);
   return req<AsaasCobranca>("/payments", {
     method: "POST",
     body: JSON.stringify({
       customer: dados.customerId,
-      billingType: FORMA_PAGAMENTO,
+      billingType: FORMA_AVULSA,
       value: Math.round(dados.valorCentavos) / 100,
       dueDate: dataISOBrasil(vencimento),
       description: dados.descricao,

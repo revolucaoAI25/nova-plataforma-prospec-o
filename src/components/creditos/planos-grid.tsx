@@ -38,6 +38,7 @@ export function PlanosGrid({
   cicloAtual,
   temCpfCnpj,
   configurado,
+  acessoAte = null,
 }: {
   planos: PlanRow[];
   planoAtualId: string | null;
@@ -45,6 +46,8 @@ export function PlanosGrid({
   cicloAtual: AssinaturaCiclo;
   temCpfCnpj: boolean;
   configurado: boolean;
+  /** Fim do período já pago: quem cancela usa a plataforma até essa data. */
+  acessoAte?: string | null;
 }) {
   const confirmar = useConfirm();
   const [status, setStatus] = useState(statusAtual);
@@ -67,6 +70,7 @@ export function PlanosGrid({
   const trocaTravada = status === "ativa" || status === "inadimplente";
   const pendente = status === "pendente";
   const statusInfo = STATUS_LABEL[status];
+  const fimPago = acessoAte && new Date(acessoAte) > new Date() ? new Date(acessoAte).toLocaleDateString("pt-BR") : null;
 
   async function iniciarAssinatura(plano: PlanRow, cpfCnpjInformado?: string) {
     setErro(null);
@@ -124,8 +128,10 @@ export function PlanosGrid({
       description: "A fatura em aberto é cancelada e nada é cobrado. Você pode assinar outro plano quando quiser.",
       destructive: true,
     } : {
-      title: "Cancelar sua assinatura?",
-      description: "Encerra a recorrência imediatamente — você mantém os créditos que já tem, mas não recebe mais a renovação mensal.",
+      title: "Cancelar a renovação da assinatura?",
+      description: fimPago
+        ? `Não haverá novas cobranças. Você continua usando a plataforma normalmente até ${fimPago}, o fim do período já pago, e pode assinar de novo quando quiser.`
+        : "Não haverá novas cobranças. Você pode assinar de novo quando quiser.",
       destructive: true,
     }))) return;
     setCancelando(true);
@@ -138,7 +144,11 @@ export function PlanosGrid({
       return;
     }
     setStatus(pendente ? "sem_assinatura" : "cancelada");
-    setAviso(pendente ? "Fatura cancelada. Escolha outro plano quando quiser." : "Assinatura cancelada.");
+    setAviso(
+      pendente
+        ? "Fatura cancelada. Escolha outro plano quando quiser."
+        : `Renovação cancelada: não haverá novas cobranças.${fimPago ? ` Seu acesso continua até ${fimPago}.` : ""}`,
+    );
   }
 
   return (
@@ -173,12 +183,21 @@ export function PlanosGrid({
             {status === "inadimplente" && (
               <span className="text-xs text-muted-foreground">A última cobrança não foi confirmada — verifique a fatura mais recente.</span>
             )}
+            {status === "cancelada" && fimPago && (
+              <span className="text-xs text-muted-foreground">Sem novas cobranças. Acesso até {fimPago}.</span>
+            )}
           </div>
+          {/* Discreto de propósito: cancelar só a renovação, sem destaque na tela. */}
           {temAssinaturaAtiva && (
-            <Button variant="outline" size="sm" onClick={cancelar} disabled={cancelando}>
-              {cancelando ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
-              {pendente ? "Desistir desta assinatura" : "Cancelar assinatura"}
-            </Button>
+            <button
+              type="button"
+              onClick={cancelar}
+              disabled={cancelando}
+              className="inline-flex items-center gap-1.5 text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline disabled:opacity-50"
+            >
+              {cancelando ? <Loader2 className="h-3 w-3 animate-spin" /> : null}
+              {pendente ? "Desistir desta assinatura" : "Cancelar renovação"}
+            </button>
           )}
         </div>
       )}

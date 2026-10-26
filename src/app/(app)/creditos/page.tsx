@@ -81,6 +81,7 @@ export default async function CreditosPage() {
             cicloAtual={profile.assinatura_ciclo}
             temCpfCnpj={Boolean(profile.cpf_cnpj)}
             configurado={podeComprar}
+            acessoAte={profile.acesso_ate ?? null}
           />
         </TabsContent>
         <TabsContent value="avulso" className="flex flex-col gap-6">
