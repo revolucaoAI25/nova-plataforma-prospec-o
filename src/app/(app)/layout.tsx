@@ -11,6 +11,8 @@ import { TourPlataforma, type PublicoTour } from "@/components/onboarding/tour-p
 import { PortaoAcesso } from "@/components/layout/acesso-bloqueado";
 import { motivoBloqueio } from "@/lib/acesso-regras";
 import { perfilParaTela } from "@/lib/perfil-tela";
+import { alertasAbertos } from "@/lib/alertas-admin";
+import { AlertasAdmin } from "@/components/admin/alertas-admin";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
@@ -57,6 +59,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       ])
     : [null, null];
 
+  // Avisos só para admins (ex.: consumo do provedor das buscas perto do limite).
+  const alertas = profile.role === "admin" ? await alertasAbertos(3) : [];
+
   // Tour guiado: um para o teste grátis (conhecer e assinar), outro para quem
   // já é cliente (começar pela estratégia). Quem ainda não pagou a assinatura
   // vê a fatura antes, não o tour.
@@ -82,6 +87,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <div className="flex min-w-0 flex-1 flex-col transition-[padding-left] duration-200 md:pl-[var(--app-sidebar-w)]">
         <Topbar profile={perfilParaTela(profile)} diasRestantesTeste={teste?.diasRestantes ?? null} />
         <main className="min-w-0 flex-1 p-4 pb-[max(1rem,var(--guia-espaco,0px))] md:p-8 md:pb-[max(2rem,var(--guia-espaco,0px))]">
+          {alertas.length > 0 && <AlertasAdmin alertas={alertas} />}
           {testeGratis && teste ? (
             <PortaoTesteGratis creditos={profile.creditos} teste={teste} precoMinimo={precoMinimo}>{children}</PortaoTesteGratis>
           ) : bloqueio ? (

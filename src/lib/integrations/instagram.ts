@@ -114,7 +114,8 @@ export async function buscarInstagram(p: BuscarInstagramParams): Promise<Lead[]>
   if (rawItems.length && !resultados.length) {
     const first = rawItems[0];
     if ("message" in first && Object.keys(first).length <= 3) {
-      throw new Error(`O actor retornou um erro: ${first.message}`);
+      console.error(`[busca instagram] o provedor devolveu um erro: ${String(first.message)}`);
+      throw new Error("A busca não pôde ser concluída agora. Tente de novo em instantes ou com outros filtros.");
     }
     throw new Error(`A busca trouxe ${rawItems.length} itens, mas nenhum pôde ser lido. Tente de novo mais tarde.`);
   }

@@ -8,7 +8,31 @@
 // - quando a nossa espera estoura, o run é cancelado em vez de ficar
 //   rodando sozinho.
 
+import { registrarAlertaAdmin } from "@/lib/alertas-admin";
+
 const APIFY_BASE = "https://api.apify.com/v2";
+
+/** Erros de conta: o limite de uso do mês acabou ou o recurso foi desativado no plano. */
+const LIMITE_DA_CONTA = /monthly|hard limit|usage limit|platform-feature-disabled|exceed.*(usage|limit)|not enough.*(credit|usage)/i;
+
+const MSG_BUSCA_INDISPONIVEL = "A busca está temporariamente indisponível. Nossa equipe já foi avisada; tente novamente mais tarde.";
+
+async function avisarAdminBuscaParada(status: number, detalhe: string) {
+  const hoje = new Date().toISOString().slice(0, 10);
+  const chave = status === 401 ? "apify:chave" : "apify:limite";
+  await registrarAlertaAdmin({
+    chave: `${chave}:${hoje}`,
+    nivel: "critico",
+    titulo: status === 401 ? "Buscas paradas: chave do Apify inválida" : "Buscas paradas: limite do Apify atingido",
+    mensagem:
+      (status === 401
+        ? "O Apify recusou a chave cadastrada em /admin (Apify → API Token). As buscas de Google Maps, Instagram e LinkedIn estão falhando."
+        : "O Apify recusou uma busca por limite da conta: o uso do mês acabou. As buscas de Google Maps, Instagram e LinkedIn estão paradas até você assinar um plano no Apify ou o ciclo virar.") +
+      ` Os clientes veem só "busca temporariamente indisponível" e não são cobrados. Resposta do Apify: ${detalhe.slice(0, 200) || status}`,
+    link: "https://console.apify.com/billing",
+  });
+}
+
 const STATUS_FALHA = ["FAILED", "ABORTED", "TIMED-OUT"];
 
 export interface RunApify {
@@ -32,12 +56,20 @@ export async function iniciarRunApify(
     let detalhe = "";
     try {
       const j = await resp.json();
-      detalhe = j?.error?.message || JSON.stringify(j).slice(0, 300);
+      detalhe = j?.error ? `${j.error.type ?? ""} ${j.error.message ?? ""}`.trim() : JSON.stringify(j).slice(0, 300);
     } catch {
       detalhe = "";
     }
-    if (resp.status === 401) throw new Error("Chave do provedor de busca inválida. Avise o suporte.");
-    throw new Error(`O provedor de busca retornou ${resp.status}${detalhe ? `: ${detalhe}` : ""}`);
+    console.error(`[apify] ${actorId} respondeu ${resp.status}: ${detalhe}`);
+    // O cliente nunca vê o detalhe do fornecedor; problema de conta (chave,
+    // limite do mês) vira aviso para o admin.
+    // Memória cheia é passageiro (buscas demais ao mesmo tempo), não o limite do mês.
+    if (/memory/i.test(detalhe)) throw new Error("Muitas buscas rodando ao mesmo tempo agora. Tente novamente em alguns minutos.");
+    if (resp.status === 401 || resp.status === 403 || LIMITE_DA_CONTA.test(detalhe)) {
+      await avisarAdminBuscaParada(resp.status, detalhe);
+      throw new Error(MSG_BUSCA_INDISPONIVEL);
+    }
+    throw new Error("Não foi possível iniciar a busca agora. Tente novamente em instantes.");
   }
   const data = (await resp.json()).data;
   return { runId: data.id as string, datasetId: data.defaultDatasetId as string };

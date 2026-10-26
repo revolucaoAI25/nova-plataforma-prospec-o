@@ -25,6 +25,7 @@ import { tickBigDataCorpEnrichment } from "./bigdatacorp-enrichment-tick";
 import { tickOnboarding } from "./onboarding-tick";
 import { tickRetomada } from "./retomada-tick";
 import { tickAcesso } from "./acesso-tick";
+import { tickUsoApify } from "./uso-apify-tick";
 
 const DISPATCH_TICK_MS = 15_000;
 const SHEET_WATCH_TICK_MS = 120_000;
@@ -60,6 +61,8 @@ const ONBOARDING_TICK_MS = 10_000;
 const RETOMADA_TICK_MS = 900_000;
 // Pausa campanhas e automações de quem perdeu o acesso (fim do período pago).
 const ACESSO_TICK_MS = 600_000;
+// Consumo do mês no provedor das buscas: avisa o admin perto do limite.
+const USO_APIFY_TICK_MS = 1_800_000;
 
 function log(origem: string, msg: string) {
   console.log(`[${new Date().toISOString()}] [${origem}] ${msg}`);
@@ -135,6 +138,8 @@ async function main() {
   agendar("retomada", RETOMADA_TICK_MS, () => tickRetomada(sb, (msg) => log("retomada", msg)));
 
   agendar("acesso", ACESSO_TICK_MS, () => tickAcesso(sb, (msg) => log("acesso", msg)));
+
+  agendar("uso-apify", USO_APIFY_TICK_MS, () => tickUsoApify((msg) => log("uso-apify", msg)));
 }
 
 main().catch((e) => {

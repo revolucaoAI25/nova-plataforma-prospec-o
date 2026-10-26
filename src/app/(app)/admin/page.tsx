@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Send, Users, Crown, KeyRound } from "lucide-react";
@@ -16,6 +17,7 @@ import { PlatformSettingsPanel } from "@/components/admin/platform-settings-pane
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { PageHeader } from "@/components/layout/page-header";
+import { UsoBuscas } from "@/components/admin/uso-buscas";
 
 export const metadata = { title: "Administração" };
 
@@ -74,6 +76,9 @@ export default async function AdminPage() {
           </Button>
         }
       />
+      <Suspense fallback={null}>
+        <UsoBuscas />
+      </Suspense>
       <Tabs defaultValue="usuarios">
         <TabsList>
           <TabsTrigger value="usuarios"><Users className="h-3.5 w-3.5" /> Usuários</TabsTrigger>

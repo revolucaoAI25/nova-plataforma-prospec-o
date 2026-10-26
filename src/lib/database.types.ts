@@ -260,7 +260,8 @@ export type PlatformSettingKey =
   | "meta_capi_token"
   | "meta_test_event_code"
   | "clarity_id"
-  | "email_remetente_plataforma";
+  | "email_remetente_plataforma"
+  | "email_alertas_admin";
 
 export interface PlatformSettingRow {
   chave: PlatformSettingKey;

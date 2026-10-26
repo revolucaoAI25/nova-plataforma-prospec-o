@@ -1,147 +1,90 @@
-"use client";
-
-import { useState, Suspense } from "react";
-import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Suspense } from "react";
+import { MessagesSquare, Search, Send, ShieldCheck, Sparkles, type LucideIcon } from "lucide-react";
 import { Logo } from "@/components/layout/logo";
-import { caminhoInterno } from "@/lib/caminho-interno";
-import { formatarData } from "@/lib/datas";
+import { LoginForm } from "@/components/login/login-form";
+import { FONTES_LP } from "../conheca/fontes";
+import "../conheca/lp.css";
 
-const MSG_PERFIL_AUSENTE = "Não encontramos os dados da sua conta. Fale com o suporte para regularizar o acesso.";
+export const metadata = {
+  title: "Entrar",
+  description: "Acesse a sua conta do Leadmatic.",
+};
 
-function LoginForm() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(
-    searchParams.get("expirado")
-      ? "Sua sessão expirou porque o prazo da conta de teste terminou."
-      : searchParams.get("perfil_ausente")
-        ? MSG_PERFIL_AUSENTE
-        : null,
-  );
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
-
-    const supabase = createClient();
-    const { data: signInData, error } = await supabase.auth.signInWithPassword({ email, password });
-
-    if (error) {
-      setError(
-        error.message === "Invalid login credentials"
-          ? "E-mail ou senha incorretos."
-          : /rate|limit|too many/i.test(error.message)
-            ? "Muitas tentativas seguidas. Aguarde alguns minutos e tente novamente."
-            : /not confirmed/i.test(error.message)
-              ? "Confirme o seu e-mail pelo link que enviamos antes de entrar."
-              : "Não foi possível entrar agora. Tente novamente em instantes.",
-      );
-      setLoading(false);
-      return;
-    }
-
-    // Perfil ausente (linha em `profiles` não existe pra este usuário) ou
-    // conta de teste expirada: nunca deixa a sessão de pé nesses casos —
-    // mesma checagem repetida a cada navegação em (app)/layout.tsx, mas
-    // resolvida aqui já dá feedback imediato em vez de um round-trip extra.
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("conta_teste, teste_expira_em")
-      .eq("id", signInData.user.id)
-      .single();
-    if (!profile) {
-      await supabase.auth.signOut();
-      setError(MSG_PERFIL_AUSENTE);
-      setLoading(false);
-      return;
-    }
-    if (profile.conta_teste && profile.teste_expira_em && new Date(profile.teste_expira_em) <= new Date()) {
-      await supabase.auth.signOut();
-      const dataExp = formatarData(profile.teste_expira_em);
-      setError(`Sua conta de teste expirou em ${dataExp}. Fale com o administrador para renovar.`);
-      setLoading(false);
-      return;
-    }
-
-    router.replace(caminhoInterno(searchParams.get("next")));
-    router.refresh();
-  }
-
-  return (
-    <Card className="w-full max-w-sm backdrop-blur-sm">
-      <CardHeader className="items-center text-center">
-        <Logo size="lg" className="mb-2" />
-        <span className="eyebrow">Leadmatic · Revolução AI</span>
-        <CardTitle className="text-2xl">Entrar</CardTitle>
-        <CardDescription>Acesse sua conta de prospecção ativa.</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          {error && (
-            <Alert variant="destructive">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="email">E-mail</Label>
-            <Input
-              id="email"
-              type="email"
-              autoComplete="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <div className="flex items-center justify-between gap-2">
-              <Label htmlFor="password">Senha</Label>
-              <Link href="/redefinir-senha" className="text-xs font-medium text-primary hover:underline">
-                Esqueci minha senha
-              </Link>
-            </div>
-            <Input
-              id="password"
-              type="password"
-              autoComplete="current-password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-          </div>
-          <Button type="submit" disabled={loading} withArrow className="mt-2 w-full">
-            {loading ? "Entrando…" : "Entrar"}
-          </Button>
-        </form>
-      </CardContent>
-    </Card>
-  );
-}
+/** O que segue rodando na conta enquanto a pessoa está fora (o painel da esquerda). */
+const NA_SUA_CONTA: { icone: LucideIcon; titulo: string; texto: string }[] = [
+  { icone: MessagesSquare, titulo: "Respostas no funil", texto: "Quem respondeu já está na coluna certa, com a conversa junto." },
+  { icone: Send, titulo: "Campanhas e follow-up", texto: "WhatsApp, e-mail e LinkedIn seguem a cadência no dia certo." },
+  { icone: Search, titulo: "Empresas novas", texto: "CNPJ e Google Maps, sem repetir quem você já tem na base." },
+  { icone: Sparkles, titulo: "Estratégia da IA", texto: "Público, mensagens e cadência prontos para a próxima campanha." },
+];
 
 export default function LoginPage() {
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-background p-4">
-      <div className="bg-grid absolute inset-0" aria-hidden="true" />
-      <div
-        className="bg-glow animate-pulse-glow h-[420px] w-[420px] -translate-y-1/3"
-        aria-hidden="true"
-      />
-      <div className="relative">
-        <Suspense>
-          <LoginForm />
-        </Suspense>
-      </div>
+    <div className={`${FONTES_LP} grid min-h-dvh bg-background lg:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)]`}>
+      {/* Painel da marca (só em telas largas): o tema escuro da página de vendas. */}
+      <aside className="lp relative isolate hidden flex-col justify-between overflow-hidden px-12 py-10 lg:flex xl:px-16">
+        <div className="lp-grid absolute inset-0 -z-10" aria-hidden="true" />
+        <div className="lp-aurora -z-10 left-[-120px] top-[-160px] h-[520px] w-[520px]" aria-hidden="true" />
+        <div className="lp-aurora -z-10 bottom-[-200px] right-[-160px] h-[460px] w-[460px] [--pico:0.22] [animation-delay:-9s]" aria-hidden="true" />
+
+        <div className="flex items-center gap-3">
+          <Logo size="lg" />
+          <div className="leading-tight">
+            <p className="font-lp-display text-lg font-bold tracking-tight text-lp-text">Leadmatic</p>
+            <p className="text-xs text-lp-muted-2">por Revolução AI</p>
+          </div>
+        </div>
+
+        <div className="max-w-xl">
+          <p className="inline-flex items-center gap-2 rounded-full border border-lp-line-2 bg-white/[0.03] px-3.5 py-1.5 font-lp-mono text-[11px] uppercase tracking-[0.16em] text-lp-muted">
+            <span className="h-1.5 w-1.5 rounded-full bg-lp-accent" />
+            Área do cliente
+          </p>
+          <h2 className="mt-6 font-lp-display text-[44px] font-extrabold leading-[1.02] tracking-[-0.035em] text-lp-text xl:text-[52px]">
+            Sua prospecção continua{" "}
+            <span className="font-lp-serif text-[1.06em] font-normal italic tracking-[-0.01em] text-lp-glow">de onde parou.</span>
+          </h2>
+          <p className="mt-5 max-w-lg text-[16px] leading-relaxed text-lp-muted">
+            Entre para ver quem respondeu, o que a IA preparou e as próximas empresas do seu público.
+          </p>
+
+          <div className="mt-10 overflow-hidden rounded-[22px] border border-lp-line bg-lp-surface/70 shadow-[0_40px_120px_-50px_rgba(0,200,83,0.35)]">
+            <div className="flex items-center gap-2 border-b border-lp-line px-5 py-3 font-lp-mono text-[11px] uppercase tracking-[0.14em] text-lp-muted-2">
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-lp-accent opacity-60 motion-reduce:animate-none" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-lp-accent" />
+              </span>
+              Seguindo enquanto você está fora
+            </div>
+            <ul className="divide-y divide-lp-line">
+              {NA_SUA_CONTA.map(({ icone: Icone, titulo, texto }) => (
+                <li key={titulo} className="flex items-start gap-4 px-5 py-4">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-lp-accent-soft text-lp-glow">
+                    <Icone className="h-4 w-4" />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-lp-text">{titulo}</p>
+                    <p className="mt-0.5 text-[13px] leading-snug text-lp-muted">{texto}</p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+
+        <p className="flex items-center gap-2 text-xs text-lp-muted-2">
+          <ShieldCheck className="h-3.5 w-3.5 text-lp-accent" /> Conexão segura. Seus dados e os dos seus leads ficam só na sua conta.
+        </p>
+      </aside>
+
+      <main className="relative flex items-center justify-center overflow-hidden px-4 py-12 sm:px-8">
+        <div className="bg-glow h-[360px] w-[360px] -translate-y-1/2 opacity-60 lg:hidden" aria-hidden="true" />
+        <div className="relative flex w-full justify-center">
+          <Suspense>
+            <LoginForm />
+          </Suspense>
+        </div>
+      </main>
     </div>
   );
 }
