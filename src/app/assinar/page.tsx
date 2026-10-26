@@ -5,6 +5,8 @@ import { ArrowRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { carregarPlanosPublicos } from "@/lib/planos-publicos";
 import { Checkout } from "@/components/lp/checkout";
+import { RastreamentoLP } from "@/components/rastreamento/rastreamento-lp";
+import { configRastreamento } from "@/lib/rastreamento/config";
 import { FONTES_LP } from "../conheca/fontes";
 import "../conheca/lp.css";
 
@@ -16,11 +18,15 @@ export const metadata: Metadata = {
 
 export default async function AssinarPage({ searchParams }: { searchParams: Promise<{ plano?: string; ciclo?: string }> }) {
   const { plano, ciclo } = await searchParams;
-  const [{ planos }, sessao] = await Promise.all([
+  const [{ planos }, sessao, rastreio] = await Promise.all([
     carregarPlanosPublicos(),
     createClient().then((sb) => sb.auth.getUser()).catch(() => null),
+    configRastreamento(),
   ]);
   const logado = Boolean(sessao?.data.user);
+  const cicloInicial = ciclo === "anual" ? "anual" : "mensal";
+  const planoAberto = planos.find((p) => p.id === plano) ?? planos[Math.floor(planos.length / 2)];
+  const valorAberto = planoAberto ? (cicloInicial === "anual" && planoAberto.precoAnual ? planoAberto.precoAnual : planoAberto.precoMes) : undefined;
 
   return (
     <div className={`lp ${FONTES_LP} relative min-h-screen w-full`}>
@@ -54,7 +60,15 @@ export default async function AssinarPage({ searchParams }: { searchParams: Prom
             </Link>
           </div>
         ) : planos.length ? (
-          <Checkout planos={planos} planoInicial={plano ?? null} cicloInicial={ciclo === "mensal" ? "mensal" : "anual"} />
+          <>
+            <RastreamentoLP
+              pixelId={rastreio.pixelId}
+              clarityId={rastreio.clarityId}
+              pagina="assinar"
+              aoAbrir={{ nome: "InitiateCheckout", params: { value: valorAberto, currency: "BRL", content_name: planoAberto?.nome, content_ids: planoAberto ? [planoAberto.id] : [], content_type: "product" } }}
+            />
+            <Checkout planos={planos} planoInicial={plano ?? null} cicloInicial={cicloInicial} />
+          </>
         ) : (
           <div className="mx-auto max-w-lg rounded-[28px] border border-lp-line bg-lp-surface p-8 text-center">
             <h1 className="font-lp-display text-2xl font-bold tracking-tight">Contratação indisponível no momento</h1>

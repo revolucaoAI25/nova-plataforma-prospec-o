@@ -7,7 +7,7 @@ import { buscarApifyMaps } from "@/lib/integrations/apify-maps";
 import { NICHOS } from "@/lib/data/nichos";
 import { salvarPesquisa, salvarLeads, buscarIdentificadoresExistentes } from "@/lib/db";
 import { autoExportarSheetsSeConfigurado } from "@/lib/auto-export";
-import { emTesteGratis, MSG_TESTE_GRATIS_SEM_CREDITOS } from "@/lib/teste-gratis";
+import { emTesteGratis, MSG_TESTE_ENCERRADO, MSG_TESTE_GRATIS_SEM_CREDITOS, testeGratisEncerrado } from "@/lib/teste-gratis";
 import { raioMapsSchema, resolverRaioMaps } from "@/lib/raio-maps";
 
 const bodySchema = z.object({
@@ -47,6 +47,9 @@ export async function POST(request: Request) {
 
   const profile = await getProfile(supabase, user.id);
   if (!profile) return NextResponse.json({ error: "Perfil não encontrado." }, { status: 404 });
+  if (await testeGratisEncerrado(profile)) {
+    return NextResponse.json({ error: MSG_TESTE_ENCERRADO, testeGratis: true, encerrado: true }, { status: 403 });
+  }
 
   // Diferente do CNPJ (que reduz o limite ao saldo disponível), a busca
   // Maps bloqueia de vez quando o saldo é insuficiente — mesmo comportamento
@@ -54,8 +57,10 @@ export async function POST(request: Request) {
   const limite = filtros.limite;
   const custo = await custoAcao(supabase, "maps", user.id);
   const saldo = profile.creditos;
-  if (saldo < limite * custo && emTesteGratis(profile)) {
-    return NextResponse.json({ error: MSG_TESTE_GRATIS_SEM_CREDITOS }, { status: 402 });
+  // Teste grátis sem saldo nem para uma empresa: a extração continua ao assinar.
+  // Com algum saldo, vale a mensagem normal (dá para reduzir o limite).
+  if (saldo < custo && emTesteGratis(profile)) {
+    return NextResponse.json({ error: MSG_TESTE_GRATIS_SEM_CREDITOS, testeGratis: true, semCreditos: true }, { status: 402 });
   }
   if (saldo < limite * custo) {
     return NextResponse.json(

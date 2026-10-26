@@ -23,6 +23,7 @@ import { tickEmailDispatch, tickEmailSheetWatchAndAutoTrigger } from "./email-di
 import { tickLinkedInDispatch, tickLinkedInSheetWatchAndAutoTrigger, tickLinkedInRelationsPoll } from "./linkedin-dispatch-tick";
 import { tickBigDataCorpEnrichment } from "./bigdatacorp-enrichment-tick";
 import { tickOnboarding } from "./onboarding-tick";
+import { tickRetomada } from "./retomada-tick";
 
 const DISPATCH_TICK_MS = 15_000;
 const SHEET_WATCH_TICK_MS = 120_000;
@@ -53,6 +54,9 @@ const BIGDATACORP_ENRICHMENT_TICK_MS = 10_000;
 const FLOW_TICK_MS = 20_000;
 // Geração dos planos do onboarding — o cliente fica na tela esperando.
 const ONBOARDING_TICK_MS = 10_000;
+// E-mails de retomada (teste grátis e pagamento não concluído): as etapas são
+// em horas, então 15 min de espaço sobra.
+const RETOMADA_TICK_MS = 900_000;
 
 function log(origem: string, msg: string) {
   console.log(`[${new Date().toISOString()}] [${origem}] ${msg}`);
@@ -124,6 +128,8 @@ async function main() {
   agendar("bigdatacorp-enrichment", BIGDATACORP_ENRICHMENT_TICK_MS, () => tickBigDataCorpEnrichment(sb, (msg) => log("bigdatacorp-enrichment", msg)), 3);
 
   agendar("onboarding", ONBOARDING_TICK_MS, () => tickOnboarding(sb, (msg) => log("onboarding", msg)), 3);
+
+  agendar("retomada", RETOMADA_TICK_MS, () => tickRetomada(sb, (msg) => log("retomada", msg)));
 }
 
 main().catch((e) => {

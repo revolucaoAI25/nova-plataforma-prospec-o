@@ -1,10 +1,12 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { after } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { obterOuCriarClienteAsaas } from "@/lib/credit-purchases-db";
 import { criarAssinatura, cancelarAssinatura, obterPrimeiraFaturaAssinatura } from "@/lib/integrations/asaas";
 import { PLAN_FEATURE_FLAG_KEYS, type AssinaturaCiclo, type PlanRow, type Profile } from "@/lib/database.types";
 import { dataISOBrasil } from "@/lib/datas";
 import { planoNaCondicao, type CondicaoPreco } from "@/lib/condicao-preco";
+import { enviarConversaoMeta, registrarEventoServidor } from "@/lib/rastreamento/servidor";
 
 // Assinatura recorrente de plano via Asaas — ver comentário de topo de
 // supabase/migrations/0018_asaas_subscriptions.sql pro desenho geral.
@@ -170,7 +172,36 @@ export async function processarPagamentoAssinatura(asaasSubscriptionId: string, 
 
   await sbAdmin.from("profiles").update(campos).eq("id", dono.id);
 
+  // 1º pagamento de uma assinatura nova (estava aguardando pagamento): é a
+  // venda. Renovações e reativações de inadimplência não contam de novo.
+  if (dono.assinatura_status === "pendente") {
+    after(() => registrarCompra(dono.id, asaasSubscriptionId, precoCentavos, plano));
+  }
+
   return true;
+}
+
+/** Id do evento de compra: o mesmo na página de boas-vindas (Pixel) e aqui (API de Conversões). */
+export function idEventoCompra(asaasSubscriptionId: string): string {
+  return `compra-${asaasSubscriptionId}`;
+}
+
+async function registrarCompra(userId: string, asaasSubscriptionId: string, precoCentavos: number, plano: PlanRow | null) {
+  const { data: perfil } = await createAdminClient()
+    .from("profiles")
+    .select("email, telefone, nome, rastreamento")
+    .eq("id", userId)
+    .maybeSingle();
+  const rastreamento = (perfil as { rastreamento?: Profile["rastreamento"] } | null)?.rastreamento ?? null;
+  await registrarEventoServidor("compra", rastreamento, userId, plano?.nome);
+  await enviarConversaoMeta({
+    nome: "Purchase",
+    eventId: idEventoCompra(asaasSubscriptionId),
+    pessoa: { userId, email: perfil?.email, telefone: perfil?.telefone, nome: perfil?.nome, rastreamento },
+    pagina: "/bem-vindo",
+    valor: precoCentavos / 100,
+    conteudo: plano ? { id: plano.id, nome: plano.nome } : undefined,
+  });
 }
 
 /** Chamado pelo webhook em falha/vencimento de cobrança de assinatura (PAYMENT_OVERDUE) — não credita nada, só marca o status pra UI avisar o usuário. Retorna se era uma assinatura de PLANO conhecida, pra o caller tentar add-on senão. */

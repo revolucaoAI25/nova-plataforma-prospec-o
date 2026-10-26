@@ -4,29 +4,48 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, ArrowUpRight, Check, Loader2, RefreshCw } from "lucide-react";
 import type { AssinaturaStatus } from "@/lib/database.types";
+import { eventoPixel, registrarEvento } from "@/lib/rastreamento/cliente";
 
 /**
  * Enquanto o pagamento não é confirmado, consulta o status da assinatura a
- * cada poucos segundos (o webhook do Asaas é quem ativa). Pix costuma
- * confirmar em segundos; boleto pode levar até 3 dias úteis — nesse caso
- * a pessoa pode fechar a página e voltar depois.
+ * cada poucos segundos (o webhook do Asaas é quem ativa). O cartão costuma
+ * ser aprovado em segundos; se a pessoa fechar a página, o acesso fica
+ * liberado do mesmo jeito quando ela entrar de novo.
  */
 export function BoasVindas({
-  primeiroNome, nomePlano, statusInicial, faturaUrl,
+  primeiroNome, nomePlano, statusInicial, faturaUrl, compra,
 }: {
   primeiroNome: string | null;
   nomePlano: string | null;
   statusInicial: AssinaturaStatus;
   faturaUrl: string | null;
+  /** Compra que o Pixel registra ao aprovar (mesmo id do evento mandado pelo servidor). */
+  compra?: { eventId: string; valor: number; planoId: string; planoNome: string } | null;
 }) {
   const [status, setStatus] = useState(statusInicial);
   const ativa = status === "ativa";
+
+  // Pagamento aprovado: compra no Pixel, uma vez por assinatura neste navegador.
+  useEffect(() => {
+    if (!ativa || !compra) return;
+    const chave = `lm_${compra.eventId}`;
+    try {
+      if (localStorage.getItem(chave)) return;
+      localStorage.setItem(chave, "1");
+    } catch {}
+    eventoPixel("Purchase", { value: compra.valor, currency: "BRL", content_ids: [compra.planoId], content_type: "product", content_name: compra.planoNome }, compra.eventId);
+  }, [ativa, compra]);
+
+  function irParaPagamento() {
+    registrarEvento("clique", "pagar:bem-vindo");
+    eventoPixel("AddPaymentInfo", compra ? { value: compra.valor, currency: "BRL", content_name: compra.planoNome } : undefined);
+  }
 
   useEffect(() => {
     if (ativa || status !== "pendente") return;
     const id = setInterval(async () => {
       // Aba em segundo plano não consulta: volta a checar quando a pessoa
-      // retorna da fatura (é quando o Pix costuma estar pago).
+      // retorna da fatura (é quando o cartão costuma estar aprovado).
       if (document.visibilityState === "hidden") return;
       const resp = await fetch("/api/assinatura?so=status", { cache: "no-store" }).catch(() => null);
       const data = await resp?.json().catch(() => null);
@@ -83,8 +102,8 @@ export function BoasVindas({
         {primeiroNome ? `${primeiroNome}, falta só o pagamento.` : "Falta só o pagamento."}
       </h1>
       <p className="mt-3 text-[16px] leading-relaxed text-lp-muted">
-        {nomePlano ? `A assinatura do plano ${nomePlano} foi gerada.` : "A sua assinatura foi gerada."} Conclua o pagamento por Pix, boleto ou
-        cartão. Assim que ele for confirmado, esta página libera o acesso automaticamente.
+        {nomePlano ? `A assinatura do plano ${nomePlano} foi gerada.` : "A sua assinatura foi gerada."} Conclua o pagamento no cartão de
+        crédito. Assim que ele for aprovado, esta página libera o acesso automaticamente.
       </p>
 
       {faturaUrl ? (
@@ -92,6 +111,7 @@ export function BoasVindas({
           href={faturaUrl}
           target="_blank"
           rel="noopener noreferrer"
+          onClick={irParaPagamento}
           className="group mt-8 flex h-14 w-full items-center justify-center gap-2 rounded-full bg-lp-accent px-6 text-base font-semibold text-[#04140a] shadow-[0_18px_50px_-14px_rgba(0,200,83,0.7)] transition-colors hover:bg-lp-glow"
         >
           Ir para o pagamento
@@ -109,7 +129,7 @@ export function BoasVindas({
 
       <div className="mt-6 flex items-center gap-3 rounded-2xl border border-lp-line bg-lp-bg/50 px-4 py-3 text-sm text-lp-muted" role="status" aria-live="polite">
         <Loader2 className="h-4 w-4 shrink-0 animate-spin text-lp-accent motion-reduce:animate-none" />
-        Aguardando a confirmação do pagamento. Pix é confirmado em instantes; boleto pode levar até 3 dias úteis.
+        Aguardando a aprovação do pagamento. No cartão, ela costuma sair em poucos segundos.
       </div>
       <p className="mt-4 text-[13px] text-lp-muted-2">
         Pode fechar esta página se preferir: quando o pagamento for confirmado, basta entrar na plataforma com o seu e-mail e senha.

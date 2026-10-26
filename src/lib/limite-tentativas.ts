@@ -4,18 +4,20 @@
  * ataque distribuído, só segura repetição e robôs simples em rotas
  * públicas (cadastro). Entradas vencidas são limpas a cada chamada.
  */
-const registros = new Map<string, number[]>();
+// Cada chave guarda a própria janela: a limpeza de uma rota com janela curta
+// não pode apagar o histórico de outra com janela longa.
+const registros = new Map<string, { janelaMs: number; tempos: number[] }>();
 
 export function dentroDoLimite(chave: string, maximo: number, janelaMs: number): boolean {
   const agora = Date.now();
-  for (const [k, tempos] of registros) {
-    const vivos = tempos.filter((t) => agora - t < janelaMs);
-    if (vivos.length) registros.set(k, vivos);
+  for (const [k, r] of registros) {
+    const vivos = r.tempos.filter((t) => agora - t < r.janelaMs);
+    if (vivos.length) r.tempos = vivos;
     else registros.delete(k);
   }
-  const tempos = registros.get(chave) ?? [];
+  const tempos = registros.get(chave)?.tempos ?? [];
   if (tempos.length >= maximo) return false;
-  registros.set(chave, [...tempos, agora]);
+  registros.set(chave, { janelaMs, tempos: [...tempos, agora] });
   return true;
 }
 

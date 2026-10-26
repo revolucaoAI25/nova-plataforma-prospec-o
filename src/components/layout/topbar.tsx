@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { LogOut, Coins, Plus, Sparkles } from "lucide-react";
+import { LogOut, Coins, Plus, Sparkles, CircleHelp } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { MobileNav } from "@/components/layout/mobile-nav";
@@ -10,7 +10,7 @@ import { ThemeToggle } from "@/components/layout/theme-toggle";
 import type { Profile } from "@/lib/database.types";
 import { emTesteGratis } from "@/lib/teste-gratis-regras";
 
-export function Topbar({ profile }: { profile: Profile }) {
+export function Topbar({ profile, diasRestantesTeste = null }: { profile: Profile; diasRestantesTeste?: number | null }) {
   const router = useRouter();
   const testeGratis = emTesteGratis(profile);
 
@@ -38,6 +38,7 @@ export function Topbar({ profile }: { profile: Profile }) {
         <div className="flex items-center gap-2 text-sm">
           <Link
             href="/creditos"
+            data-tour="creditos"
             title="Comprar créditos"
             className="group flex items-center gap-1.5 rounded-full border border-primary/20 bg-accent px-3 py-1 transition-colors hover:border-primary/40"
           >
@@ -49,10 +50,14 @@ export function Topbar({ profile }: { profile: Profile }) {
           {testeGratis && (
             <Link
               href="/creditos"
+              data-tour="assinar"
               className="flex items-center gap-1.5 rounded-full bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground transition-opacity hover:opacity-90"
             >
               <Sparkles className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Teste grátis ·</span> Assinar
+              <span className="hidden sm:inline">
+                Teste grátis{diasRestantesTeste !== null ? ` (${diasRestantesTeste <= 0 ? "último dia" : `${diasRestantesTeste}d`})` : ""} ·
+              </span>{" "}
+              Assinar
             </Link>
           )}
         </div>
@@ -60,6 +65,15 @@ export function Topbar({ profile }: { profile: Profile }) {
       <div className="flex items-center gap-3">
         {/* No desktop (md+) o e-mail já aparece no rodapé da sidebar — evita duplicar. */}
         <span className="hidden text-sm text-muted-foreground sm:inline md:hidden">{profile.email}</span>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => window.dispatchEvent(new Event("tour:iniciar"))}
+          title="Ver o tour da plataforma"
+          aria-label="Ver o tour da plataforma"
+        >
+          <CircleHelp className="h-4 w-4" />
+        </Button>
         <ThemeToggle />
         <Button variant="ghost" size="icon" onClick={handleLogout} title="Sair">
           <LogOut className="h-4 w-4" />

@@ -17,7 +17,7 @@ import { CODIGO_PARA_DESC } from "@/lib/data/cnaes";
 import {
   criarRunBigDataCorp, LIMITE_LOTE_BUSCA, perfilComBigDataCorpEnrichmentHabilitado, sociosEContatoConfigurado,
 } from "@/lib/bigdatacorp-enrichment-db";
-import { emTesteGratis, MSG_TESTE_GRATIS_SEM_CREDITOS } from "@/lib/teste-gratis";
+import { emTesteGratis, MSG_TESTE_ENCERRADO, MSG_TESTE_GRATIS_SEM_CREDITOS, testeGratisEncerrado } from "@/lib/teste-gratis";
 import { localizacaoCnpj, RAIO_VIZINHOS_MAX_KM } from "@/lib/vizinhos";
 
 const bodySchema = z.object({
@@ -80,6 +80,9 @@ export async function POST(request: Request) {
 
   const profile = await getProfile(supabase, user.id);
   if (!profile) return NextResponse.json({ error: "Perfil não encontrado." }, { status: 404 });
+  if (await testeGratisEncerrado(profile)) {
+    return NextResponse.json({ error: MSG_TESTE_ENCERRADO, testeGratis: true, encerrado: true }, { status: 403 });
+  }
 
   // A verificação no Maps custa por lead verificado e o débito satura em 0 —
   // sem somar ela aqui, um saldo pequeno liberava centenas de chamadas pagas
@@ -89,8 +92,9 @@ export async function POST(request: Request) {
     (filtros.mapsModo !== "nao_usar" ? await custoAcao(supabase, "cnpj_maps_extra", user.id) : 0);
   const saldo = profile.creditos;
   if (saldo < custoCnpj) {
-    const erro = emTesteGratis(profile) ? MSG_TESTE_GRATIS_SEM_CREDITOS : "Você não tem créditos suficientes. Adquira mais créditos pra continuar.";
-    return NextResponse.json({ error: erro }, { status: 402 });
+    const teste = emTesteGratis(profile);
+    const erro = teste ? MSG_TESTE_GRATIS_SEM_CREDITOS : "Você não tem créditos suficientes. Adquira mais créditos pra continuar.";
+    return NextResponse.json({ error: erro, ...(teste ? { testeGratis: true, semCreditos: true } : {}) }, { status: 402 });
   }
 
   let avisoSaldo: string | null = null;

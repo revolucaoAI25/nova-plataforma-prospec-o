@@ -13,8 +13,8 @@ const SEMPRE = ["Busca por CNPJ e Google Maps", "Estratégia criada por IA", "Fu
 export function Planos({ planos }: { planos: PlanoLP[] }) {
   const sugerido = usePlanoSugerido();
   const temAnual = planos.some((p) => p.precoAnual);
-  // O anual vem marcado por padrão quando algum plano tem preço anual.
-  const [ciclo, setCiclo] = useState<"mensal" | "anual">(temAnual ? "anual" : "mensal");
+  // Abre no mensal; o anual fica a um clique para quem preferir.
+  const [ciclo, setCiclo] = useState<"mensal" | "anual">("mensal");
   // O plano do meio é o recomendado; com dois planos, o de cima.
   const recomendado = planos.length ? planos[Math.floor(planos.length / 2)].id : null;
 
@@ -172,7 +172,7 @@ export function Planos({ planos }: { planos: PlanoLP[] }) {
               </Link>
             </p>
             <p className="flex items-center justify-center gap-2 text-[13px] text-lp-muted-2">
-              <Lock className="h-3.5 w-3.5 shrink-0" /> Pagamento seguro por Pix, boleto ou cartão. Acesso liberado assim que o pagamento é confirmado.
+              <Lock className="h-3.5 w-3.5 shrink-0" /> Pagamento seguro no cartão de crédito. Acesso liberado assim que o pagamento é aprovado.
             </p>
           </Revela>
         )}

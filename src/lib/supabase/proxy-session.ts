@@ -20,6 +20,8 @@ const PUBLIC_PATHS = [
   "/api/assinar",
   "/teste-gratis",
   "/api/teste-gratis",
+  "/api/lp",
+  "/api/retomada/sair",
   "/login",
   "/redefinir-senha",
   "/auth",
@@ -73,6 +75,14 @@ export async function updateSession(request: NextRequest) {
   }
 
   const { pathname } = request.nextUrl;
+
+  // A raiz do domínio, para quem não está logado, é a página de vendas (os
+  // parâmetros da URL, como utm_* e fbclid, vão junto).
+  if (!user && pathname === "/") {
+    const url = request.nextUrl.clone();
+    url.pathname = "/conheca";
+    return NextResponse.redirect(url);
+  }
 
   if (!user && !isPublicPath(pathname)) {
     const url = request.nextUrl.clone();

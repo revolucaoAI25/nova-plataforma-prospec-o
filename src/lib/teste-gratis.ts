@@ -1,7 +1,10 @@
 import { configPlataforma } from "@/lib/platform-settings";
 import { PLAN_FEATURE_FLAG_KEYS } from "@/lib/database.types";
 
-export { emTesteGratis, paginaLiberadaNoTeste, MSG_TESTE_GRATIS } from "@/lib/teste-gratis-regras";
+import { emTesteGratis, situacaoTesteGratis, type SituacaoTeste } from "@/lib/teste-gratis-regras";
+import type { Profile } from "@/lib/database.types";
+
+export { emTesteGratis, paginaLiberadaNoTeste, MSG_TESTE_GRATIS, MSG_TESTE_ENCERRADO } from "@/lib/teste-gratis-regras";
 
 /**
  * Teste grátis do cadastro público (/teste-gratis). Não confundir com
@@ -15,6 +18,23 @@ export { emTesteGratis, paginaLiberadaNoTeste, MSG_TESTE_GRATIS } from "@/lib/te
  */
 
 const CREDITOS_PADRAO = 100;
+const DIAS_PADRAO = 7;
+
+/** Duração do teste em dias (configurável em /admin; 0 = sem prazo). */
+export async function diasTesteGratis(): Promise<number> {
+  const valor = parseInt(await configPlataforma("dias_teste_gratis", process.env.DIAS_TESTE_GRATIS), 10);
+  return Number.isFinite(valor) && valor >= 0 ? valor : DIAS_PADRAO;
+}
+
+/** Prazo do teste de um perfil (só faz sentido para quem está em teste grátis). */
+export async function situacaoTeste(profile: Pick<Profile, "created_at">): Promise<SituacaoTeste> {
+  return situacaoTesteGratis(profile.created_at, await diasTesteGratis());
+}
+
+/** Teste grátis com o prazo vencido: as ações que gastam créditos ficam bloqueadas até assinar. */
+export async function testeGratisEncerrado(profile: Pick<Profile, "teste_gratis" | "assinatura_status" | "role" | "created_at">): Promise<boolean> {
+  return emTesteGratis(profile) && (await situacaoTeste(profile)).expirado;
+}
 
 export async function creditosTesteGratis(): Promise<number> {
   const valor = parseInt(await configPlataforma("creditos_teste_gratis", process.env.CREDITOS_TESTE_GRATIS), 10);

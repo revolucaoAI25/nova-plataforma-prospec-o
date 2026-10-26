@@ -1,10 +1,11 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { normalizarE164 } from "@/lib/phone";
 import { dentroDoLimite, ipDaRequisicao } from "@/lib/limite-tentativas";
 import { camposInicioTesteGratis } from "@/lib/teste-gratis";
+import { enviarConversaoMeta, origemDaRequisicao, registrarEventoServidor, salvarOrigemNoPerfil } from "@/lib/rastreamento/servidor";
 
 /**
  * Cadastro público do teste grátis (página /teste-gratis): cria a conta já
@@ -80,11 +81,25 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Não foi possível criar a sua conta agora. Tente novamente em instantes." }, { status: 500 });
   }
 
+  // Origem da conta (campanha, Pixel) e conversões: depois da resposta, sem atrasar o cadastro.
+  // Os ids voltam para o navegador mandar os mesmos eventos pelo Pixel (a Meta conta uma vez só).
+  const origem = origemDaRequisicao(request);
+  const eventos = { registro: `registro-${userId}`, teste: `teste-${userId}` };
+  after(async () => {
+    const pessoa = { userId, email: dados.email, telefone, nome: dados.nome, rastreamento: origem };
+    await salvarOrigemNoPerfil(userId, origem);
+    await registrarEventoServidor("teste_criado", origem, userId);
+    await Promise.all([
+      enviarConversaoMeta({ nome: "CompleteRegistration", eventId: eventos.registro, pessoa, pagina: "/teste-gratis", conteudo: { nome: "Teste grátis" } }),
+      enviarConversaoMeta({ nome: "StartTrial", eventId: eventos.teste, pessoa, pagina: "/teste-gratis", valor: 0, conteudo: { nome: "Teste grátis" } }),
+    ]);
+  });
+
   const supabase = await createClient();
   const { error: erroLogin } = await supabase.auth.signInWithPassword({ email: dados.email, password: dados.senha });
   if (erroLogin) {
     console.error("[teste-gratis] conta criada, mas o login automático falhou", erroLogin);
-    return NextResponse.json({ ok: true, proximo: "/login" });
+    return NextResponse.json({ ok: true, proximo: "/login", eventos });
   }
-  return NextResponse.json({ ok: true, proximo: "/" });
+  return NextResponse.json({ ok: true, proximo: "/", eventos });
 }

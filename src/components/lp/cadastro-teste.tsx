@@ -7,6 +7,7 @@ import { ArrowRight, Building2, Check, Eye, EyeOff, Loader2, Lock, MapPin } from
 import { cn } from "@/lib/utils";
 import { Campo, estiloInput, mascararTelefone } from "./checkout";
 import { num } from "./dados";
+import { eventoPixel } from "@/lib/rastreamento/cliente";
 
 const BLOQUEADOS = ["Estratégia de prospecção criada por IA", "Disparos por WhatsApp, e-mail e LinkedIn", "Funil, automações e cadências", "Enriquecimento e contato do decisor"];
 
@@ -41,6 +42,9 @@ export function CadastroTeste({ creditos }: { creditos: number }) {
       setErro({ msg: data?.error || "Não foi possível concluir agora. Verifique a conexão e tente novamente.", entrar: data?.entrar });
       return;
     }
+    // Mesmos ids que o servidor mandou pela API de Conversões: a Meta conta uma vez só.
+    eventoPixel("CompleteRegistration", { content_name: "Teste grátis", currency: "BRL" }, data.eventos?.registro);
+    eventoPixel("StartTrial", { value: 0, currency: "BRL", content_name: "Teste grátis" }, data.eventos?.teste);
     router.push(data.proximo || "/");
     router.refresh();
   }

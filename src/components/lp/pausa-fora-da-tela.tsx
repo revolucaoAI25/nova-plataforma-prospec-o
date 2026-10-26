@@ -9,7 +9,7 @@ import { useEffect } from "react";
  */
 export function PausaForaDaTela() {
   useEffect(() => {
-    const secoes = document.querySelectorAll<HTMLElement>(".lp main > section");
+    const secoes = document.querySelectorAll<HTMLElement>(".lp main > section, .lp main > [data-secao] > section");
     const obs = new IntersectionObserver(
       (entradas) => {
         for (const e of entradas) e.target.toggleAttribute("data-fora", !e.isIntersecting);

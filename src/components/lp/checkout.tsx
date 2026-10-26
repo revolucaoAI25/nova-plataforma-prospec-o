@@ -7,6 +7,7 @@ import { ArrowRight, Check, Eye, EyeOff, Loader2, Lock, ShieldCheck } from "luci
 import { cn } from "@/lib/utils";
 import { mascararCpfCnpj } from "@/lib/cpf-cnpj";
 import { brl, num, type PlanoLP } from "./dados";
+import { eventoPixel } from "@/lib/rastreamento/cliente";
 
 export function mascararTelefone(valor: string): string {
   const d = valor.replace(/\D/g, "").slice(0, 11);
@@ -18,7 +19,7 @@ export function mascararTelefone(valor: string): string {
 
 const ETAPAS = [
   ["Crie a sua conta", "Preencha os dados do formulário. Leva menos de um minuto."],
-  ["Conclua o pagamento", "Por Pix, boleto ou cartão, em ambiente seguro."],
+  ["Conclua o pagamento", "No cartão de crédito, em ambiente seguro. A liberação é na hora."],
   ["Comece a prospectar", "Com o pagamento confirmado, os créditos são liberados e a IA monta a sua estratégia."],
 ] as const;
 
@@ -82,6 +83,8 @@ export function Checkout({
       setErro({ msg: data?.error || "Não foi possível concluir agora. Verifique a conexão e tente novamente.", entrar: data?.entrar });
       return;
     }
+    // Mesmo id que o servidor mandou pela API de Conversões: a Meta conta uma vez só.
+    eventoPixel("CompleteRegistration", { value: data.valor, currency: "BRL", content_name: plano.nome, content_ids: [plano.id] }, data.eventos?.registro);
     router.push(data.proximo || "/bem-vindo");
     router.refresh();
   }
@@ -250,7 +253,7 @@ export function Checkout({
           </ol>
 
           <p className="flex items-center gap-2 text-[12.5px] text-lp-muted-2">
-            <Lock className="h-3.5 w-3.5 shrink-0" /> Pagamento seguro, com Pix, boleto ou cartão de crédito.
+            <Lock className="h-3.5 w-3.5 shrink-0" /> Pagamento seguro no cartão de crédito.
           </p>
         </div>
       </aside>

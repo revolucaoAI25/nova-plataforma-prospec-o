@@ -15,9 +15,10 @@ import { obterCobranca } from "@/lib/integrations/asaas";
 // documentado pelo próprio Asaas, diferente da Unipile, que não publica
 // um jeito de assinar o payload).
 //
-// Eventos assinados: PAYMENT_CONFIRMED (cartão pré-autorizado) e
-// PAYMENT_RECEIVED (dinheiro de fato recebido — único evento que dispara
-// pra PIX/boleto), e PAYMENT_OVERDUE (cobrança de assinatura vencida sem
+// Eventos assinados: PAYMENT_CONFIRMED (cartão aprovado — é o que ativa o
+// plano na hora; o dinheiro só cai na conta ~30 dias depois),
+// PAYMENT_RECEIVED (dinheiro recebido; repete o mesmo pagamento e as funções
+// abaixo ignoram a repetição) e PAYMENT_OVERDUE (cobrança de assinatura vencida sem
 // pagamento). O campo `payment.subscription` é o que diferencia uma
 // renovação de assinatura de uma compra avulsa de créditos — só cobranças
 // geradas por uma assinatura carregam esse campo.

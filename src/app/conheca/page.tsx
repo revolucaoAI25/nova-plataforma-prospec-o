@@ -15,6 +15,8 @@ import { ChamadaFinal, Duvidas, PERGUNTAS, Rodape } from "@/components/lp/fecham
 import { PausaForaDaTela } from "@/components/lp/pausa-fora-da-tela";
 import { ChamadaMeio } from "@/components/lp/chamada-meio";
 import { linkWhatsApp } from "@/components/lp/dados";
+import { RastreamentoLP } from "@/components/rastreamento/rastreamento-lp";
+import { configRastreamento } from "@/lib/rastreamento/config";
 import { FONTES_LP } from "./fontes";
 import "./lp.css";
 
@@ -34,7 +36,7 @@ export const metadata: Metadata = {
 };
 
 export default async function ConhecaPage() {
-  const { planos, creditosPorLead } = await carregarPlanosPublicos();
+  const [{ planos, creditosPorLead }, rastreio] = await Promise.all([carregarPlanosPublicos(), configRastreamento()]);
   // Menor custo, nos planos, de uma empresa com o telefone conferido (para o comparativo com o tráfego pago).
   const custos = planos.filter((p) => p.creditosMes > 0).map((p) => (p.precoMes / p.creditosMes) * creditosPorLead);
   const custoEmpresa = custos.length ? Math.min(...custos) : null;
@@ -47,41 +49,45 @@ export default async function ConhecaPage() {
   return (
     <div className={`lp ${FONTES_LP} relative min-h-screen w-full`}>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />
+      <RastreamentoLP pixelId={rastreio.pixelId} clarityId={rastreio.clarityId} pagina="vendas" />
       <Cabecalho />
+      {/* data-secao: até onde cada visitante rolou e de onde veio cada clique (painel /admin/funil-lp). */}
       <main>
-        <Hero />
-        <SemTrafego custoEmpresa={custoEmpresa} />
-        <div className="py-12 sm:py-16">
+        <div data-secao="inicio"><Hero /></div>
+        <div data-secao="sem_trafego"><SemTrafego custoEmpresa={custoEmpresa} /></div>
+        <div data-secao="chamada_1" className="py-12 sm:py-16">
           <ChamadaMeio
             frase="Comece a prospectar sem depender de anúncio."
             principal={{ rotulo: "Ver planos", href: "#planos" }}
             secundario={{ rotulo: "Testar grátis", href: "/teste-gratis" }}
           />
         </div>
-        <Historia />
-        <Enriquecimento />
-        <ChamadaMeio
-          frase="Quanto isso pode render para a sua empresa?"
-          principal={{ rotulo: "Simular meu resultado", href: "#conta" }}
-          secundario={{ rotulo: "Ver planos", href: "#planos" }}
-        />
-        <Calculadora planos={planos} creditosPorLead={creditosPorLead} />
-        <Semana />
-        <div className="py-12 sm:py-16">
+        <div data-secao="como_funciona"><Historia /></div>
+        <div data-secao="enriquecimento"><Enriquecimento /></div>
+        <div data-secao="chamada_2">
+          <ChamadaMeio
+            frase="Quanto isso pode render para a sua empresa?"
+            principal={{ rotulo: "Simular meu resultado", href: "#conta" }}
+            secundario={{ rotulo: "Ver planos", href: "#planos" }}
+          />
+        </div>
+        <div data-secao="calculadora"><Calculadora planos={planos} creditosPorLead={creditosPorLead} /></div>
+        <div data-secao="semana"><Semana /></div>
+        <div data-secao="chamada_3" className="py-12 sm:py-16">
           <ChamadaMeio
             frase="Quer essa semana na sua empresa?"
             principal={{ rotulo: "Começar agora", href: "#planos" }}
             secundario={{ rotulo: "Falar no WhatsApp", href: linkWhatsApp(), externo: true }}
           />
         </div>
-        <Recursos />
-        <Comparativo planos={planos} />
-        <Clientes />
-        <Planos planos={planos} />
-        <Duvidas />
-        <ChamadaFinal />
+        <div data-secao="recursos"><Recursos /></div>
+        <div data-secao="comparativo"><Comparativo planos={planos} /></div>
+        <div data-secao="clientes"><Clientes /></div>
+        <div data-secao="planos"><Planos planos={planos} /></div>
+        <div data-secao="duvidas"><Duvidas /></div>
+        <div data-secao="chamada_final"><ChamadaFinal /></div>
       </main>
-      <Rodape />
+      <div data-secao="rodape"><Rodape /></div>
       <PausaForaDaTela />
     </div>
   );

@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -9,6 +9,7 @@ import { normalizarE164 } from "@/lib/phone";
 import { normalizarCpfCnpj } from "@/lib/cpf-cnpj";
 import { dentroDoLimite, ipDaRequisicao } from "@/lib/limite-tentativas";
 import type { PlanRow } from "@/lib/database.types";
+import { enviarConversaoMeta, origemDaRequisicao, registrarEventoServidor, salvarOrigemNoPerfil } from "@/lib/rastreamento/servidor";
 
 /**
  * Contratação pública (página /assinar): cria a conta, grava os dados do
@@ -95,11 +96,29 @@ export async function POST(request: Request) {
     // A assinatura existe e só a fatura atrasou: segue para /bem-vindo, que busca a fatura de novo.
   }
 
+  // Origem da conta e conversão de cadastro, depois da resposta. A compra é
+  // registrada pelo webhook do Asaas, quando o pagamento é aprovado.
+  const origem = origemDaRequisicao(request);
+  const eventos = { registro: `registro-${userId}` };
+  const valorPlano = (ciclo === "anual" ? (plano.preco_anual_centavos ?? plano.preco_centavos * 12) : plano.preco_centavos) / 100;
+  after(async () => {
+    await salvarOrigemNoPerfil(userId, origem);
+    await registrarEventoServidor("conta_criada", origem, userId, `${plano.nome} (${ciclo})`);
+    await enviarConversaoMeta({
+      nome: "CompleteRegistration",
+      eventId: eventos.registro,
+      pessoa: { userId, email: dados.email, telefone, nome: dados.nome, rastreamento: origem },
+      pagina: "/assinar",
+      valor: valorPlano,
+      conteudo: { id: plano.id, nome: plano.nome },
+    });
+  });
+
   const supabase = await createClient();
   const { error: erroLogin } = await supabase.auth.signInWithPassword({ email: dados.email, password: dados.senha });
   if (erroLogin) {
     console.error("[assinar] conta criada, mas o login automático falhou", erroLogin);
-    return NextResponse.json({ ok: true, proximo: "/login?next=/bem-vindo" });
+    return NextResponse.json({ ok: true, proximo: "/login?next=/bem-vindo", eventos, valor: valorPlano });
   }
-  return NextResponse.json({ ok: true, proximo: "/bem-vindo" });
+  return NextResponse.json({ ok: true, proximo: "/bem-vindo", eventos, valor: valorPlano });
 }

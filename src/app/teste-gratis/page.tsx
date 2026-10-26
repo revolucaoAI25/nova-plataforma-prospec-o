@@ -5,6 +5,8 @@ import { ArrowRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { creditosTesteGratis } from "@/lib/teste-gratis";
 import { CadastroTeste } from "@/components/lp/cadastro-teste";
+import { RastreamentoLP } from "@/components/rastreamento/rastreamento-lp";
+import { configRastreamento } from "@/lib/rastreamento/config";
 import { FONTES_LP } from "../conheca/fontes";
 import "../conheca/lp.css";
 
@@ -15,9 +17,10 @@ export const metadata: Metadata = {
 };
 
 export default async function TesteGratisPage() {
-  const [creditos, sessao] = await Promise.all([
+  const [creditos, sessao, rastreio] = await Promise.all([
     creditosTesteGratis().catch(() => 100),
     createClient().then((sb) => sb.auth.getUser()).catch(() => null),
+    configRastreamento(),
   ]);
   const logado = Boolean(sessao?.data.user);
 
@@ -51,7 +54,10 @@ export default async function TesteGratisPage() {
             </Link>
           </div>
         ) : (
-          <CadastroTeste creditos={creditos} />
+          <>
+            <RastreamentoLP pixelId={rastreio.pixelId} clarityId={rastreio.clarityId} pagina="teste" />
+            <CadastroTeste creditos={creditos} />
+          </>
         )}
       </main>
     </div>

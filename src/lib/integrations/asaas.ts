@@ -1,7 +1,6 @@
 // Wrapper fino para a API REST do Asaas (https://asaas.com) — gateway de
-// pagamento pra compra de créditos avulsos. Escolhido pelo próprio
-// usuário (conta já existente lá, PIX/boleto/cartão nativos, taxas boas
-// pro público brasileiro).
+// pagamento das assinaturas, add-ons e compras de créditos avulsos.
+// Todas as cobranças são só no cartão de crédito (FORMA_PAGAMENTO).
 //
 // Auth: header `access_token: <chave>` (chave única da plataforma,
 // cadastrada em /admin — platform_settings: asaas_api_key — ou, na
@@ -16,6 +15,13 @@
 // carregam.
 import { configPlataforma } from "@/lib/platform-settings";
 import { dataISOBrasil } from "@/lib/datas";
+
+/**
+ * Forma de pagamento de toda cobrança: cartão de crédito. Na fatura do Asaas
+ * o cliente só vê a opção de cartão; numa assinatura, o cartão informado na
+ * primeira fatura fica salvo e as renovações são cobradas nele sozinhas.
+ */
+const FORMA_PAGAMENTO = "CREDIT_CARD";
 
 async function chaveApi(): Promise<string> {
   return configPlataforma("asaas_api_key", process.env.ASAAS_API_KEY);
@@ -79,10 +85,9 @@ export interface AsaasCobranca {
 }
 
 /**
- * Cria uma cobrança "à vista" (vence amanhã, sem parcelamento) com
- * `billingType: UNDEFINED` — o pagador escolhe PIX, boleto ou cartão na
- * própria fatura hospedada do Asaas (`invoiceUrl`), sem a gente precisar
- * implementar um checkout customizado. `externalReference` carrega o id
+ * Cria uma cobrança "à vista" (vence amanhã, sem parcelamento), paga no
+ * cartão de crédito na própria fatura hospedada do Asaas (`invoiceUrl`),
+ * sem a gente precisar implementar um checkout customizado. `externalReference` carrega o id
  * da nossa `credit_purchases`, pra casar o webhook de volta com a compra.
  */
 export async function criarCobranca(dados: {
@@ -97,7 +102,7 @@ export async function criarCobranca(dados: {
     method: "POST",
     body: JSON.stringify({
       customer: dados.customerId,
-      billingType: "UNDEFINED",
+      billingType: FORMA_PAGAMENTO,
       value: Math.round(dados.valorCentavos) / 100,
       dueDate: dataISOBrasil(vencimento),
       description: dados.descricao,
@@ -112,9 +117,8 @@ interface AsaasSubscription {
 }
 
 /**
- * Cria a assinatura recorrente — mesma escolha de `billingType: UNDEFINED`
- * das cobranças avulsas, o pagador decide o método na fatura de cada
- * ciclo. `externalReference` carrega o id do usuário (não temos uma linha
+ * Cria a assinatura recorrente no cartão de crédito: o cliente informa o
+ * cartão na fatura da 1ª cobrança e as renovações são cobradas nele. `externalReference` carrega o id do usuário (não temos uma linha
  * própria de "assinatura pendente" pra referenciar como em `criarCompra`,
  * já que `profiles` já guarda o estado atual da assinatura diretamente).
  * `cycle` default MONTHLY (mantém o comportamento de antes pra quem já
@@ -135,7 +139,7 @@ export async function criarAssinatura(dados: {
     method: "POST",
     body: JSON.stringify({
       customer: dados.customerId,
-      billingType: "UNDEFINED",
+      billingType: FORMA_PAGAMENTO,
       value: Math.round(dados.valorCentavos) / 100,
       nextDueDate: dataISOBrasil(primeiraCobranca),
       cycle: dados.cycle ?? "MONTHLY",

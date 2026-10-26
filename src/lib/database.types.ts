@@ -78,6 +78,28 @@ export interface Profile {
   updated_at: string;
   /** Condição de preço travada (migration 0044); nulo = tabela atual. */
   condicao_preco?: CondicaoPreco | null;
+  /** Origem da conta: campanha, visitante e cookies da Meta no cadastro (migration 0046). */
+  rastreamento?: RastreamentoConta | null;
+  /** Quando o tour guiado foi visto, por público (migration 0046). */
+  tour_visto?: Partial<Record<"teste" | "assinante", string>> | null;
+  /** Etapas já enviadas da sequência de e-mails de retomada (migration 0046). */
+  emails_retomada?: Record<string, string> | null;
+  emails_retomada_off?: boolean;
+}
+
+/** Gravado no cadastro (teste grátis ou contratação) a partir dos cookies da página de vendas. */
+export interface RastreamentoConta {
+  visitante?: string | null;
+  fbp?: string | null;
+  fbc?: string | null;
+  ip?: string | null;
+  navegador?: string | null;
+  utm_source?: string | null;
+  utm_medium?: string | null;
+  utm_campaign?: string | null;
+  utm_content?: string | null;
+  utm_term?: string | null;
+  pagina_entrada?: string | null;
 }
 
 /** Chaves de `credit_costs.acao` — cada ação que consome o pool único de créditos. */
@@ -229,7 +251,13 @@ export type PlatformSettingKey =
   | "evolution_api_key"
   | "webhook_segredo"
   | "datafy_api_base_url"
-  | "whatsapp_oficial_app_secret";
+  | "whatsapp_oficial_app_secret"
+  | "dias_teste_gratis"
+  | "meta_pixel_id"
+  | "meta_capi_token"
+  | "meta_test_event_code"
+  | "clarity_id"
+  | "email_remetente_plataforma";
 
 export interface PlatformSettingRow {
   chave: PlatformSettingKey;

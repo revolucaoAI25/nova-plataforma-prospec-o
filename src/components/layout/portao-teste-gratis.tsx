@@ -1,13 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ArrowRight, Building2, Compass, Kanban, CalendarClock, Send, Mail, Contact, BrainCircuit, Plug, Lock, MapPin, Search, Eye, type LucideIcon } from "lucide-react";
+import { ArrowRight, Building2, Compass, Kanban, CalendarClock, Send, Mail, Contact, BrainCircuit, Plug, Lock, MapPin, Search, Eye, Sparkles, type LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { acaoBloqueadaNaVisualizacao, MSG_TESTE_GRATIS, paginaLiberadaNoTeste } from "@/lib/teste-gratis-regras";
+import { acaoBloqueadaNaVisualizacao, MSG_TESTE_GRATIS, paginaLiberadaNoTeste, type SituacaoTeste } from "@/lib/teste-gratis-regras";
+import { OfertaTeste, TesteEncerrado, textoDiasRestantes, type MotivoOferta } from "@/components/layout/oferta-teste";
 
 /**
  * O que cada área entrega — o texto da faixa e do aviso muda conforme a aba.
@@ -42,42 +43,94 @@ function caminhoDe(alvo: string): string | null {
   }
 }
 
+/** Páginas que continuam abertas com o teste vencido: é por elas que a pessoa assina. */
+const ABERTAS_APOS_TESTE = ["/creditos", "/perfil"];
+
+const CHAVE_OFERTA_DIA = "lm_oferta_teste_dia";
+const CHAVE_OFERTA_BUSCA = "lm_oferta_apos_busca";
+
+function hojeLocal(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+}
+
+/** O tour guiado está aberto: a oferta espera ele fechar. */
+function tourAberto(): boolean {
+  return document.documentElement.dataset.tour === "aberto";
+}
+
 /**
- * Teste grátis: as páginas fora do que o teste usa de verdade (CNPJ, Maps,
- * histórico e conta) abrem em modo de visualização. A pessoa navega, abre
- * abas e formulários para conhecer a plataforma, mas qualquer ação (salvar,
- * enviar, conectar) é barrada antes de sair e abre o convite para assinar.
- * O servidor recusa essas ações por conta própria (proxy e flags do perfil);
- * isto aqui é só para a experiência ser clara em vez de mostrar erros soltos.
+ * Tudo o que o teste grátis mostra em volta das páginas:
+ *
+ * - Páginas fora do que o teste usa de verdade (CNPJ, Maps, histórico e
+ *   conta) abrem em modo de visualização: dá para navegar e abrir as telas,
+ *   mas qualquer ação (salvar, enviar, conectar) é barrada antes de sair e
+ *   abre o convite para assinar. O servidor recusa essas ações por conta
+ *   própria (proxy e flags do perfil); isto aqui é a experiência clara.
+ * - Uma barra fixa com o prazo, os créditos e o botão de assinar, em toda tela.
+ * - A oferta nos momentos de decisão: créditos esgotados, último dia, volta
+ *   à plataforma (uma vez por dia) e depois da primeira busca.
+ * - Com o prazo vencido, a oferta toma o lugar das páginas (menos planos e perfil).
  */
-export function PortaoTesteGratis({ children, creditos }: { children: React.ReactNode; creditos: number }) {
+export function PortaoTesteGratis({
+  children, creditos, teste, precoMinimo,
+}: {
+  children: React.ReactNode;
+  creditos: number;
+  teste: SituacaoTeste;
+  precoMinimo: number | null;
+}) {
   const pathname = usePathname();
   const visualizacao = !paginaLiberadaNoTeste(pathname);
   const area = areaDe(pathname);
   const [avisoAberto, setAvisoAberto] = useState(false);
-
+  const [oferta, setOferta] = useState<MotivoOferta | null>(null);
+  const visualizacaoRef = useRef(visualizacao);
   useEffect(() => {
-    if (!visualizacao) return;
-    const fetchOriginal = window.fetch;
+    visualizacaoRef.current = visualizacao;
+  }, [visualizacao]);
 
-    window.fetch = (entrada, init) => {
+  // Um único interceptador, instalado uma vez: bloqueia ações no modo de
+  // visualização e percebe, nas buscas, quando o saldo ou o prazo acabam.
+  useEffect(() => {
+    const fetchOriginal = window.fetch;
+    let timerBusca: ReturnType<typeof setTimeout> | null = null;
+
+    window.fetch = async (entrada, init) => {
       const url = entrada instanceof Request ? entrada.url : String(entrada);
-      const metodo = init?.method ?? (entrada instanceof Request ? entrada.method : "GET");
+      const metodo = (init?.method ?? (entrada instanceof Request ? entrada.method : "GET")).toUpperCase();
       const caminho = caminhoDe(url);
-      if (caminho && acaoBloqueadaNaVisualizacao(caminho, metodo)) {
+      if (visualizacaoRef.current && caminho && acaoBloqueadaNaVisualizacao(caminho, metodo)) {
         setAvisoAberto(true);
-        return Promise.resolve(
-          new Response(JSON.stringify({ error: MSG_TESTE_GRATIS, testeGratis: true }), {
-            status: 403,
-            headers: { "Content-Type": "application/json" },
-          }),
-        );
+        return new Response(JSON.stringify({ error: MSG_TESTE_GRATIS, testeGratis: true }), {
+          status: 403,
+          headers: { "Content-Type": "application/json" },
+        });
       }
-      return fetchOriginal(entrada, init);
+      const resposta = await fetchOriginal(entrada, init);
+      if (caminho?.startsWith("/api/search/") && metodo !== "GET") {
+        if (resposta.status === 402 || resposta.status === 403) {
+          const corpo = await resposta.clone().json().catch(() => null);
+          if (corpo?.testeGratis) setOferta(corpo.encerrado ? "encerrado" : "sem_creditos");
+        } else if (resposta.ok && !timerBusca) {
+          // Depois da primeira busca do teste: mostra o que falta (abordar), uma vez só.
+          try {
+            if (!localStorage.getItem(CHAVE_OFERTA_BUSCA)) {
+              timerBusca = setTimeout(() => {
+                if (tourAberto()) return;
+                try { localStorage.setItem(CHAVE_OFERTA_BUSCA, "1"); } catch {}
+                setOferta((atual) => atual ?? "apos_busca");
+              }, 25_000);
+            }
+          } catch {}
+        }
+      }
+      return resposta;
     };
 
     // Links e formulários que vão direto para a API (ex.: conectar o Google).
     const aoClicar = (e: MouseEvent) => {
+      if (!visualizacaoRef.current) return;
       const link = (e.target as Element | null)?.closest?.("a[href]") as HTMLAnchorElement | null;
       const caminho = link ? caminhoDe(link.href) : null;
       if (caminho && acaoBloqueadaNaVisualizacao(caminho, "GET")) {
@@ -87,6 +140,7 @@ export function PortaoTesteGratis({ children, creditos }: { children: React.Reac
       }
     };
     const aoEnviar = (e: SubmitEvent) => {
+      if (!visualizacaoRef.current) return;
       const form = e.target as HTMLFormElement | null;
       const destino = form?.getAttribute("action");
       const caminho = destino ? caminhoDe(destino) : null;
@@ -100,29 +154,74 @@ export function PortaoTesteGratis({ children, creditos }: { children: React.Reac
 
     return () => {
       window.fetch = fetchOriginal;
+      if (timerBusca) clearTimeout(timerBusca);
       document.removeEventListener("click", aoClicar, true);
       document.removeEventListener("submit", aoEnviar, true);
     };
-  }, [visualizacao]);
+  }, []);
 
-  if (!visualizacao) return <>{children}</>;
-  if (area.convite) return <ConviteAssinatura area={area} creditos={creditos} />;
+  // Volta à plataforma: a oferta aparece uma vez por dia (não no primeiro dia,
+  // quando a pessoa está conhecendo e vê o tour), e sempre que o saldo zerou
+  // ou é o último dia. Espera o tour fechar, se ele estiver aberto.
+  useEffect(() => {
+    if (teste.expirado) return;
+    const primeiroDia = teste.diasRestantes !== null && teste.diasRestantes >= teste.dias - 1;
+    const motivo: MotivoOferta | null =
+      creditos <= 0 ? "sem_creditos" : teste.diasRestantes === 0 ? "ultimo_dia" : primeiroDia ? null : "retorno";
+    if (!motivo) return;
+    try {
+      if (localStorage.getItem(CHAVE_OFERTA_DIA) === hojeLocal()) return;
+    } catch {}
+    const mostrar = () => {
+      if (tourAberto()) return;
+      try { localStorage.setItem(CHAVE_OFERTA_DIA, hojeLocal()); } catch {}
+      setOferta((atual) => atual ?? motivo);
+    };
+    const timer = setTimeout(mostrar, 10_000);
+    window.addEventListener("tour:fechado", mostrar);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener("tour:fechado", mostrar);
+    };
+    // Só na entrada (o layout não remonta ao navegar entre páginas).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
+  const ofertaJanela = (
+    <OfertaTeste motivo={oferta} diasRestantes={teste.diasRestantes} precoMinimo={precoMinimo} aoFechar={() => setOferta(null)} />
+  );
+
+  if (teste.expirado && !ABERTAS_APOS_TESTE.some((p) => pathname === p || pathname.startsWith(`${p}/`))) {
+    return <TesteEncerrado precoMinimo={precoMinimo} />;
+  }
+  if (visualizacao && area.convite) return <ConviteAssinatura area={area} creditos={creditos} />;
+
+  const prazo = textoDiasRestantes(teste.diasRestantes);
   const Icone = area.icone;
   return (
     <>
       <div className="sticky top-16 z-[9] -mx-4 -mt-4 mb-6 border-b border-primary/25 bg-accent/95 px-4 py-3 backdrop-blur md:-mx-8 md:-mt-8 md:px-8">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <p className="flex min-w-0 items-start gap-2.5 text-sm text-accent-foreground">
-            <Eye className="mt-0.5 h-4 w-4 shrink-0" />
-            <span>
-              <strong className="font-semibold">Modo de visualização.</strong>{" "}
-              {area.titulo} faz parte dos planos pagos: explore à vontade, e assine para usar.
-            </span>
+            {visualizacao ? <Eye className="mt-0.5 h-4 w-4 shrink-0" /> : <Sparkles className="mt-0.5 h-4 w-4 shrink-0" />}
+            {visualizacao ? (
+              <span>
+                <strong className="font-semibold">Modo de visualização.</strong>{" "}
+                {area.titulo} faz parte dos planos pagos: explore à vontade, e assine para usar.
+                {prazo && <span className="text-muted-foreground"> · Teste grátis: {prazo}</span>}
+              </span>
+            ) : teste.expirado ? (
+              <span><strong className="font-semibold">O seu teste grátis terminou.</strong> Escolha um plano para continuar de onde parou.</span>
+            ) : (
+              <span>
+                <strong className="font-semibold">Teste grátis{prazo ? `: ${prazo}` : ""}.</strong>{" "}
+                Você tem {creditos.toLocaleString("pt-BR")} créditos para buscar empresas. Assine para a IA abordar essas empresas por você.
+              </span>
+            )}
           </p>
           <Button asChild size="sm">
             <Link href="/creditos">
-              Ver planos <ArrowRight />
+              {visualizacao ? "Ver planos" : "Assinar agora"} <ArrowRight />
             </Link>
           </Button>
         </div>
@@ -154,6 +253,8 @@ export function PortaoTesteGratis({ children, creditos }: { children: React.Reac
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {ofertaJanela}
     </>
   );
 }

@@ -6,6 +6,8 @@ import { Topbar } from "@/components/layout/topbar";
 import { GuiaFlutuante } from "@/components/onboarding/guia-flutuante";
 import { PortaoTesteGratis } from "@/components/layout/portao-teste-gratis";
 import { emTesteGratis } from "@/lib/teste-gratis-regras";
+import { situacaoTeste } from "@/lib/teste-gratis";
+import { TourPlataforma, type PublicoTour } from "@/components/onboarding/tour-plataforma";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
@@ -34,6 +36,24 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   }
 
   const testeGratis = emTesteGratis(profile);
+  // Teste grátis: prazo e o preço de entrada que aparecem nas ofertas.
+  const [teste, precoMinimo] = testeGratis
+    ? await Promise.all([
+        situacaoTeste(profile),
+        supabase
+          .from("plans")
+          .select("preco_centavos")
+          .eq("ativo", true)
+          .order("preco_centavos")
+          .limit(1)
+          .then(({ data }) => (data?.[0] ? (data[0] as { preco_centavos: number }).preco_centavos / 100 : null)),
+      ])
+    : [null, null];
+
+  // Tour guiado: um para o teste grátis (conhecer e assinar), outro para quem
+  // já é cliente (começar pela estratégia). Quem ainda não pagou a assinatura
+  // vê a fatura antes, não o tour.
+  const publicoTour: PublicoTour | null = testeGratis ? "teste" : profile.assinatura_status === "pendente" ? null : "assinante";
 
   return (
     <div className="flex min-h-screen bg-background">
@@ -53,13 +73,28 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           abaixo do conteúdo intrínseco — uma tabela larga (leads, usuários)
           empurra a página inteira pro lado em vez de rolar só por dentro. */}
       <div className="flex min-w-0 flex-1 flex-col transition-[padding-left] duration-200 md:pl-[var(--app-sidebar-w)]">
-        <Topbar profile={profile} />
+        <Topbar profile={profile} diasRestantesTeste={teste?.diasRestantes ?? null} />
         <main className="min-w-0 flex-1 p-4 pb-[max(1rem,var(--guia-espaco,0px))] md:p-8 md:pb-[max(2rem,var(--guia-espaco,0px))]">
-          {testeGratis ? <PortaoTesteGratis creditos={profile.creditos}>{children}</PortaoTesteGratis> : children}
+          {testeGratis && teste ? (
+            <PortaoTesteGratis creditos={profile.creditos} teste={teste} precoMinimo={precoMinimo}>{children}</PortaoTesteGratis>
+          ) : (
+            children
+          )}
         </main>
       </div>
       {/* O guia leva à estratégia por IA, que fica bloqueada no teste grátis. */}
       {!testeGratis && <GuiaFlutuante />}
+      {publicoTour && (
+        <TourPlataforma
+          publico={publicoTour}
+          userId={profile.id}
+          visto={Boolean(profile.tour_visto?.[publicoTour])}
+          nome={(profile.nome ?? "").trim().split(/\s+/)[0] || null}
+          creditos={profile.creditos}
+          diasTeste={teste?.dias || null}
+          precoMinimo={precoMinimo}
+        />
+      )}
     </div>
   );
 }

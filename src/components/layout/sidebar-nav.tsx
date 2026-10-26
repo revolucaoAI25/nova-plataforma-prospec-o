@@ -96,6 +96,7 @@ function NavLink({
   return (
     <Link
       href={item.href}
+      data-tour={item.href}
       title={collapsed ? `${item.label}${item.bloqueado ? " (disponível ao assinar)" : ""}` : undefined}
       onClick={onNavigate}
       className={cn(
@@ -148,6 +149,7 @@ function NavGroup({
     return (
       <Link
         href={target}
+        data-tour={`grupo:${item.label}`}
         title={item.label}
         onClick={onNavigate}
         className={cn(
@@ -166,6 +168,7 @@ function NavGroup({
     <div>
       <button
         type="button"
+        data-tour={`grupo:${item.label}`}
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
         className={cn(
