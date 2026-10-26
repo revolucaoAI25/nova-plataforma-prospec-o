@@ -8,7 +8,7 @@ import {
   UserSearch,
   Send,
   MessageSquareText,
-  BadgeCheck,
+  Smartphone,
   CalendarClock,
   History,
   Plug,
@@ -137,7 +137,7 @@ function montarSecoes({
       icon: Send,
       children: [
         { type: "link", href: "/disparo", label: "Campanhas", icon: MessageSquareText },
-        { type: "link", href: "/disparo/solicitar-oficial", label: "WhatsApp API oficial", icon: BadgeCheck },
+        { type: "link", href: "/disparo/numeros", label: "Números", icon: Smartphone },
       ],
     });
   }

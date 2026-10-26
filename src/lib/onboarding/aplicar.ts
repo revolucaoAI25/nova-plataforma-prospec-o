@@ -202,7 +202,7 @@ export interface PassoChecklist {
 const PASSO_CONEXAO: Record<ConexaoId, { titulo: string; descricao: string; acao: string }> = {
   whatsapp: {
     titulo: "Conecte o número de WhatsApp",
-    descricao: "Leia o QR code com o número dedicado à prospecção — nunca o seu número principal.",
+    descricao: "Conecte pelo QR Code um número dedicado à prospecção (nunca o seu principal) ou use a API oficial do WhatsApp.",
     acao: "Conectar WhatsApp",
   },
   email: {

@@ -56,11 +56,17 @@ export function ConectarOficial({
   pode,
   instancias,
   ehAdmin,
+  embutido = false,
+  aoConectar,
 }: {
   pode: boolean;
   instancias: InstanciaOficialResumo[];
   ehAdmin: boolean;
+  /** Dentro de uma janela (dialog): sem a moldura de cartão. */
+  embutido?: boolean;
+  aoConectar?: () => void;
 }) {
+  const moldura = (borda = "border-border") => (embutido ? "flex flex-col gap-5" : `flex flex-col gap-5 rounded-2xl border ${borda} bg-card p-6`);
   const conectada = instancias.find((i) => i.status === "conectado") ?? null;
   const pendente = instancias.find((i) => i.status === "conectando") ?? null;
   const pausada = instancias.find((i) => i.status === "desconectado") ?? null;
@@ -97,11 +103,12 @@ export function ConectarOficial({
       setNumero(json.numero);
       setEtapa("conectado");
       setAviso(null);
+      aoConectar?.();
     } else {
       setEtapa("aguardando");
       setAviso("A conexão ainda não foi concluída. Termine o processo na janela da Meta e clique em “Verificar conexão”.");
     }
-  }, []);
+  }, [aoConectar]);
 
   // A janela de conexão avisa a página quando termina (só vale a mensagem vinda da Datafy).
   useEffect(() => {
@@ -145,6 +152,7 @@ export function ConectarOficial({
       janela?.close();
       setNumero(json.numero);
       setEtapa("conectado");
+      aoConectar?.();
       return;
     }
     setInstanceId(json.instanceId);
@@ -159,7 +167,7 @@ export function ConectarOficial({
 
   if (!pode) {
     return (
-      <div className="flex flex-col gap-4 rounded-2xl border border-border bg-card p-6">
+      <div className={moldura()}>
         <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-accent text-primary"><Lock className="h-5 w-5" /></span>
         <div className="flex flex-col gap-1.5">
           <h2 className="text-lg font-semibold text-foreground">A API oficial faz parte dos planos Pro e Business</h2>
@@ -182,7 +190,7 @@ export function ConectarOficial({
 
   if (etapa === "conectado" && !ehAdmin) {
     return (
-      <div className="flex flex-col gap-5 rounded-2xl border border-primary/40 bg-card p-6">
+      <div className={moldura("border-primary/40")}>
         <div className="flex items-center gap-3">
           <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-accent text-primary"><CheckCircle2 className="h-5 w-5" /></span>
           <div>
@@ -213,7 +221,7 @@ export function ConectarOficial({
   }
 
   return (
-    <div className="flex flex-col gap-5 rounded-2xl border border-border bg-card p-6">
+    <div className={moldura()}>
       <div className="flex items-center gap-3">
         <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-accent text-primary"><BadgeCheck className="h-5 w-5" /></span>
         <div>

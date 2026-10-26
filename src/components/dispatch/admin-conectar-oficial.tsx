@@ -67,7 +67,7 @@ export function AdminConectarOficial({ clientes, parceiroConfigurado }: { client
     setCarregando(false);
     if (!resp?.ok) return setErro(json?.error ?? "Não foi possível verificar.");
     if (json.conectado) {
-      setSucesso(`Conectado${json.numero ? ` (+${json.numero})` : ""}. O número já aparece em Disparo → Instâncias do cliente.`);
+      setSucesso(`Conectado${json.numero ? ` (+${json.numero})` : ""}. O número já aparece em Disparo WhatsApp → Números, na conta do cliente.`);
       setConexao(null);
     } else {
       setErro("Ainda não conectado. Quando o cliente concluir, o canal é ativado sozinho em até 10 minutos, ou clique de novo aqui.");
@@ -114,7 +114,7 @@ export function AdminConectarOficial({ clientes, parceiroConfigurado }: { client
     setCarregando(false);
     if (!resp?.ok) return setErro(json?.error ?? "Não foi possível vincular o canal.");
     setToken("");
-    setSucesso("Canal vinculado. O número já aparece em Disparo → Instâncias do cliente.");
+    setSucesso("Canal vinculado. O número já aparece em Disparo WhatsApp → Números, na conta do cliente.");
   }
 
   async function copiar() {

@@ -86,13 +86,21 @@ export function CampaignsPanel({
           ))}
         </ul>
 
+        {!instancias.length && (
+          <Alert>
+            <AlertDescription>
+              Para criar uma campanha, conecte antes um número em{" "}
+              <Link href="/disparo/numeros" className="font-semibold text-primary underline-offset-4 hover:underline">Números de WhatsApp</Link>.
+            </AlertDescription>
+          </Alert>
+        )}
         <form onSubmit={criar} className="flex flex-wrap gap-2">
           <Input value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Nome da campanha" className="flex-1 min-w-[180px]" />
           <Select value={instanceId} onValueChange={setInstanceId}>
-            <SelectTrigger className="w-56"><SelectValue placeholder="Instância" /></SelectTrigger>
+            <SelectTrigger className="w-56"><SelectValue placeholder="Número que envia" /></SelectTrigger>
             <SelectContent>
               {instancias.map((i) => (
-                <SelectItem key={i.id} value={i.id}>{i.nome}</SelectItem>
+                <SelectItem key={i.id} value={i.id}>{i.nome}{i.canal === "oficial" ? " · API oficial" : ""}</SelectItem>
               ))}
             </SelectContent>
           </Select>

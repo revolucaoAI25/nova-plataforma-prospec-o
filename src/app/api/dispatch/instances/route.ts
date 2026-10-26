@@ -16,7 +16,7 @@ export async function GET() {
   return NextResponse.json({ instancias });
 }
 
-const bodySchema = z.object({ nome: z.string().min(1), limiteDiarioEnvios: z.number().int().min(1).optional() });
+const bodySchema = z.object({ nome: z.string().trim().max(60).optional(), limiteDiarioEnvios: z.number().int().min(1).optional() });
 
 export async function POST(request: Request) {
   const supabase = await createClient();
@@ -26,20 +26,23 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Disparo não habilitado para sua conta." }, { status: 403 });
   }
   if (!(await evolutionConfigurado())) {
-    return NextResponse.json({ error: "Disparo por WhatsApp não configurado nesta plataforma." }, { status: 501 });
+    return NextResponse.json({ error: "A conexão pelo QR Code está indisponível no momento. Fale com o suporte." }, { status: 501 });
   }
 
   const parsed = bodySchema.safeParse(await request.json().catch(() => null));
-  if (!parsed.success) return NextResponse.json({ error: "Informe um nome para a instância." }, { status: 400 });
+  if (!parsed.success) return NextResponse.json({ error: "Confira o nome e o limite diário." }, { status: 400 });
 
   const evolutionInstanceName = `${user.id.slice(0, 8)}_${Date.now()}`;
   try {
     await evolutionCriarInstancia(evolutionInstanceName);
   } catch (e) {
-    return NextResponse.json({ error: `Erro ao criar instância: ${(e as Error).message}` }, { status: 502 });
+    console.error("[dispatch/instances] falha ao criar na Evolution", (e as Error).message);
+    return NextResponse.json({ error: "O serviço de WhatsApp não respondeu. Tente de novo em instantes." }, { status: 502 });
   }
 
-  const id = await criarInstancia(supabase, user.id, parsed.data.nome, evolutionInstanceName, parsed.data.limiteDiarioEnvios ?? null);
+  // Sem nome: "WhatsApp 1", "WhatsApp 2"…
+  const nome = parsed.data.nome || `WhatsApp ${(await listarInstancias(supabase, user.id)).filter((i) => i.canal === "evolution").length + 1}`;
+  const id = await criarInstancia(supabase, user.id, nome, evolutionInstanceName, parsed.data.limiteDiarioEnvios ?? null);
   if (!id) return NextResponse.json({ error: "Erro ao salvar a instância." }, { status: 500 });
 
   return NextResponse.json({ id }, { status: 201 });

@@ -12,7 +12,7 @@ function isPrefixMatch(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-/** Vence o prefixo mais específico — evita que "/disparo" fique ativo junto de "/disparo/solicitar-oficial". */
+/** Vence o prefixo mais específico — evita que "/disparo" fique ativo junto de "/disparo/numeros". */
 function findActiveHref(pathname: string, allHrefs: string[]): string | null {
   let best: string | null = null;
   for (const href of allHrefs) {

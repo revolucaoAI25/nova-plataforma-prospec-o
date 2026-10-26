@@ -56,7 +56,7 @@ export async function statusConexoes(sb: SupabaseClient, profile: Profile): Prom
       disponivel: whatsappOk,
       conectado: nInstancias > 0,
       detalhe: nInstancias ? `${nInstancias} número(s) conectado(s)` : "Nenhum número conectado",
-      href: "/disparo",
+      href: "/disparo/numeros",
     },
     {
       id: "email",
