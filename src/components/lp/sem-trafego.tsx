@@ -1,6 +1,7 @@
 import { Check, Crosshair, Megaphone, X } from "lucide-react";
 import { Revela } from "./revela";
 import { brl } from "./dados";
+import { ClientesFaixa } from "./clientes";
 
 // Lado a lado: cada item da esquerda tem o seu correspondente na direita.
 const TRAFEGO = [
@@ -87,6 +88,7 @@ export function SemTrafego({ custoEmpresa }: { custoEmpresa: number | null }) {
           Já investe em anúncios? As duas estratégias funcionam bem juntas. A diferença é que a sua geração de oportunidades deixa
           de depender de um único canal.
         </p>
+        <div data-secao="clientes_faixa"><ClientesFaixa /></div>
       </div>
     </section>
   );

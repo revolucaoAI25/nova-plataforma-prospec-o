@@ -23,8 +23,8 @@ interface Painel {
 // Ordem das seções na página de vendas (mesmos nomes de data-secao em /conheca).
 const SECOES: [string, string][] = [
   ["inicio", "Início (hero)"],
-  ["clientes_faixa", "Logos dos clientes"],
   ["sem_trafego", "Sem tráfego pago"],
+  ["clientes_faixa", "Empresas atendidas (faixa)"],
   ["chamada_1", "Chamada: ver planos / testar"],
   ["como_funciona", "Como funciona"],
   ["enriquecimento", "Enriquecimento do lead"],

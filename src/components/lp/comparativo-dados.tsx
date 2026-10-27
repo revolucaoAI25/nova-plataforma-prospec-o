@@ -22,13 +22,18 @@ export const COLUNAS = [
 export function linhas(precoInicial: number | null): { criterio: string; valores: Valor[] }[] {
   return [
     { criterio: "Você escolhe exatamente quem será abordado", valores: [true, false, true, true, true] },
+    { criterio: "Busca por CNPJ, Google Maps, Instagram e LinkedIn num só lugar", valores: [true, false, "Pesquisa manual", "Só CNPJ", "Foco em LinkedIn"] },
     { criterio: "Leads qualificados por atividade, porte e região", valores: [true, "Parcial", "Depende da lista", true, "Parcial no Brasil"] },
-    { criterio: "Dados de empresas brasileiras (CNPJ e Receita Federal)", valores: [true, false, "Pesquisa manual", true, "Limitado"] },
-    { criterio: "Quadro societário e contato do decisor", valores: [true, false, "Pesquisa manual", "Parcial", "Foco em e-mail"] },
+    { criterio: "Quadro societário e celular do decisor", valores: [true, false, "Pesquisa manual", "Parcial", "Foco em e-mail"] },
     { criterio: "Enriquecimento e pesquisa com IA", valores: [true, false, false, false, "Parcial"] },
-    { criterio: "Abordagem automática por WhatsApp", valores: [true, false, "Manual", false, false] },
-    { criterio: "Follow-up automático em vários canais", valores: [true, false, "Depende da rotina", false, "E-mail e LinkedIn"] },
-    { criterio: "Funil e relatórios integrados", valores: [true, "Só do anúncio", "Exige CRM à parte", false, true] },
+    { criterio: "WhatsApp automático, por QR Code ou API oficial da Meta", valores: [true, false, "Manual", false, false] },
+    { criterio: "Cadência de follow-up por WhatsApp, e-mail e LinkedIn", valores: [true, false, "Depende da rotina", false, "E-mail e LinkedIn"] },
+    { criterio: "Automações visuais: buscar, enriquecer e disparar sozinho", valores: [true, false, false, false, "Parcial"] },
+    { criterio: "Teste A/B das mensagens", valores: [true, "Só do anúncio", false, false, true] },
+    { criterio: "Status de entregue, lida e respondida", valores: [true, false, "Manual", false, "Só e-mail"] },
+    { criterio: "Ritmo que protege o número: horário, limite por dia e intervalo", valores: [true, false, "Depende da rotina", false, "Só e-mail"] },
+    { criterio: "Sem empresas repetidas entre campanhas", valores: [true, false, "Depende do CRM", false, true] },
+    { criterio: "Funil, relatórios e exportação para Google Sheets e Excel", valores: [true, "Só do anúncio", "Exige CRM à parte", "Só planilha", true] },
     { criterio: "Independe de leilão e aprovação de anúncios", valores: [true, false, true, true, true] },
     {
       criterio: "Custo",

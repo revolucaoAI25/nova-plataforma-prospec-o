@@ -97,44 +97,65 @@ export function Clientes() {
   );
 }
 
-const ALTURA_LOGO_FAIXA = 36;
+const ALTURA_FAIXA = 56;
+
+/** Logos e prints dos profissionais intercalados: mais variedade, sem o mesmo cliente aparecer duas vezes à vista. */
+const ITENS_FAIXA = Array.from({ length: Math.max(LOGOS.length, PERFIS.length) }).flatMap((_, i) => [
+  ...(LOGOS[i] ? [{ ...LOGOS[i], tipo: "logo" as const }] : []),
+  ...(PERFIS[i] ? [{ ...PERFIS[i], tipo: "perfil" as const }] : []),
+]);
 
 /**
- * Versão curta para logo abaixo do topo: uma linha de texto e os logos
- * passando, sem segurar a leitura. A seção completa (com os depoimentos)
- * fica perto dos planos.
+ * Prova social curta, dentro da seção sobre tráfego pago (alinhada ao
+ * conteúdo, não de ponta a ponta como o letreiro de funcionalidades): um
+ * rótulo e os clientes passando. A seção completa fica perto dos planos.
  */
 export function ClientesFaixa() {
   return (
-    <section className="border-y border-lp-line py-6" aria-label="Clientes atendidos pelo Revolução AI">
-      <p className="px-4 text-center font-lp-mono text-[11px] uppercase tracking-[0.18em] text-lp-muted">
-        Do time do Revolução AI, que já atendeu centenas de empresas
-      </p>
-      <div className="lp-letreiro mt-4">
-        <div className="lp-letreiro-faixa gap-3 pr-3" style={{ animationDuration: "40s" }}>
-          {[...LOGOS, ...LOGOS].map((c, i) => {
-            const largura = Math.min(150, Math.round((c.w / c.h) * ALTURA_LOGO_FAIXA));
+    <div className="mt-14 border-t border-lp-line pt-8" aria-label="Empresas atendidas">
+      <p className="font-lp-mono text-[12px] uppercase tracking-[0.18em] text-lp-muted">Empresas atendidas</p>
+      <div className="lp-letreiro mt-5">
+        <div className="lp-letreiro-faixa gap-4 pr-4" style={{ animationDuration: "70s" }}>
+          {[...ITENS_FAIXA, ...ITENS_FAIXA].map((c, i) => {
+            const repetido = i >= ITENS_FAIXA.length;
+            if (c.tipo === "perfil") {
+              const largura = Math.round((c.w / c.h) * ALTURA_FAIXA);
+              return (
+                <div key={`${c.nome}-${i}`} aria-hidden={repetido} title={c.nome} className="shrink-0 overflow-hidden rounded-xl border border-lp-line" style={{ height: ALTURA_FAIXA }}>
+                  <Image
+                    src={c.src}
+                    alt={repetido ? "" : c.nome}
+                    width={largura}
+                    height={ALTURA_FAIXA}
+                    className="object-cover opacity-80 saturate-[0.85]"
+                    style={{ height: ALTURA_FAIXA, width: largura }}
+                  />
+                </div>
+              );
+            }
+            const alturaLogo = ALTURA_FAIXA - 16;
+            const largura = Math.min(180, Math.round((c.w / c.h) * alturaLogo));
             return (
               <div
                 key={`${c.nome}-${i}`}
-                aria-hidden={i >= LOGOS.length}
+                aria-hidden={repetido}
                 title={c.nome}
                 className="flex shrink-0 items-center justify-center rounded-xl border border-lp-line bg-lp-surface px-4"
-                style={{ height: ALTURA_LOGO_FAIXA + 16 }}
+                style={{ height: ALTURA_FAIXA }}
               >
                 <Image
                   src={c.src}
-                  alt={i >= LOGOS.length ? "" : c.nome}
+                  alt={repetido ? "" : c.nome}
                   width={largura}
-                  height={ALTURA_LOGO_FAIXA}
+                  height={alturaLogo}
                   className="rounded object-contain"
-                  style={{ height: ALTURA_LOGO_FAIXA, width: largura }}
+                  style={{ height: alturaLogo, width: largura }}
                 />
               </div>
             );
           })}
         </div>
       </div>
-    </section>
+    </div>
   );
 }

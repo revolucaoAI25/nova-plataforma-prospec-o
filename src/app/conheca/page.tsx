@@ -8,7 +8,7 @@ import { Planos } from "@/components/lp/planos";
 import { SemTrafego } from "@/components/lp/sem-trafego";
 import { Enriquecimento } from "@/components/lp/enriquecimento";
 import { Comparativo } from "@/components/lp/comparativo";
-import { Clientes, ClientesFaixa } from "@/components/lp/clientes";
+import { Clientes } from "@/components/lp/clientes";
 import { ChamadaFinal, Duvidas, PERGUNTAS, Rodape } from "@/components/lp/fechamento";
 import { PausaForaDaTela } from "@/components/lp/pausa-fora-da-tela";
 import { ChamadaMeio } from "@/components/lp/chamada-meio";
@@ -51,8 +51,6 @@ export default async function ConhecaPage() {
       {/* data-secao: até onde cada visitante rolou e de onde veio cada clique (painel /admin/funil-lp). */}
       <main>
         <div data-secao="inicio"><Hero /></div>
-        {/* Prova social curta logo depois da promessa (só os logos); a seção completa fica perto dos planos. */}
-        <div data-secao="clientes_faixa"><ClientesFaixa /></div>
         <div data-secao="sem_trafego"><SemTrafego custoEmpresa={custoEmpresa} /></div>
         <div data-secao="chamada_1" className="py-12 sm:py-16">
           <ChamadaMeio
