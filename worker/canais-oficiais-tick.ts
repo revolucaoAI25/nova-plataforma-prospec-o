@@ -5,11 +5,14 @@
  *   é cancelada (a conexão do número fica, para reativar depois);
  * - conectados fora da página (link enviado ao cliente, janela fechada antes
  *   do aviso): confirmados aqui, consultando a Datafy;
- * - criados e nunca conectados há mais de 3 dias: apagados na Datafy.
+ * - criados pela plataforma e nunca conectados há mais de 3 dias: apagados
+ *   na Datafy (os criados no painel da Datafy e vinculados pelo admin ficam).
  */
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { cancelarCanalOficial, confirmarConexaoOficial, podeUsarOficial, type CanalOficialRow } from "../src/lib/whatsapp-oficial-canal";
-import { cancelarCanal, consultarCanal, deletarCanal, parceiroDatafyConfigurado } from "../src/lib/integrations/datafy-parceiro";
+import {
+  cancelarCanal, consultarCanal, deletarCanal, ErroDatafy, parceiroDatafyConfigurado, PREFIXO_DESCRICAO_PLATAFORMA,
+} from "../src/lib/integrations/datafy-parceiro";
 
 export async function tickCanaisOficiais(sb: SupabaseClient, log: (msg: string) => void): Promise<void> {
   if (!(await parceiroDatafyConfigurado())) return;
@@ -38,7 +41,8 @@ export async function tickCanaisOficiais(sb: SupabaseClient, log: (msg: string) 
   }
 
   const limite = Date.now() - 3 * 86_400_000;
-  for (const canal of canais.filter((c) => !c.conectado_em && c.instance_id && new Date(c.criado_em).getTime() >= limite)) {
+  // Sem prazo: os canais do painel da Datafy vinculados pelo admin nunca são apagados.
+  for (const canal of canais.filter((c) => !c.conectado_em && c.instance_id)) {
     try {
       const situacao = await consultarCanal(canal.channel_id);
       if (!situacao.phone_number_id) continue;
@@ -51,6 +55,11 @@ export async function tickCanaisOficiais(sb: SupabaseClient, log: (msg: string) 
 
   for (const canal of canais.filter((c) => !c.conectado_em && new Date(c.criado_em).getTime() < limite)) {
     try {
+      // Só apaga o que a plataforma criou; o canal do painel da Datafy vinculado pelo admin fica,
+      // mesmo sem conectar. Falha na consulta: tenta no próximo ciclo (404 = já não existe).
+      const situacao = await consultarCanal(canal.channel_id).catch((e: ErroDatafy) => (e.status === 404 ? null : undefined));
+      if (situacao === undefined) continue;
+      if (situacao && !(situacao.description ?? "").startsWith(PREFIXO_DESCRICAO_PLATAFORMA)) continue;
       if (canal.assinado) await cancelarCanal(canal.channel_id).catch(() => undefined);
       await deletarCanal(canal.channel_id).catch(() => undefined);
       if (canal.instance_id) await sb.from("whatsapp_instances").delete().eq("id", canal.instance_id).eq("status", "conectando");

@@ -55,6 +55,7 @@ export interface CanalCriado {
 export interface CanalDatafy {
   id: string;
   name?: string;
+  description?: string | null;
   token?: string;
   subscribed: boolean;
   on_trial?: boolean;
@@ -70,6 +71,15 @@ export interface CanalDatafy {
 export function criarCanal(nome: string, descricao?: string): Promise<CanalCriado> {
   return req<CanalCriado>("/channels/whatsapp", { method: "POST", body: JSON.stringify({ name: nome.slice(0, 80), description: descricao?.slice(0, 200) }) });
 }
+
+/** Todos os canais da conta de parceiro (inclusive os criados no painel da Datafy). Sem o token de cada um. */
+export async function listarCanais(): Promise<CanalDatafy[]> {
+  const r = await req<{ channels?: CanalDatafy[] }>("/channels/whatsapp");
+  return r.channels ?? [];
+}
+
+/** Canais que a plataforma cria levam esta descrição; os criados no painel da Datafy, não. */
+export const PREFIXO_DESCRICAO_PLATAFORMA = "Usuário ";
 
 export function consultarCanal(id: string): Promise<CanalDatafy> {
   return req<CanalDatafy>(`/channels/whatsapp/${encodeURIComponent(id)}`);

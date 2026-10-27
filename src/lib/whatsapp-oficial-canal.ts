@@ -5,6 +5,7 @@ import { registrarAlertaAdmin } from "@/lib/alertas-admin";
 import { dadosWebhookOficial } from "@/lib/integrations/whatsapp-oficial";
 import {
   assinarCanal, cancelarCanal, configurarWebhookGlobal, consultarCanal, criarCanal, deletarCanal, ErroDatafy, gerarLinkConexao,
+  PREFIXO_DESCRICAO_PLATAFORMA,
 } from "@/lib/integrations/datafy-parceiro";
 import type { Profile } from "@/lib/database.types";
 
@@ -149,7 +150,7 @@ export async function iniciarConexaoOficial(
   }
 
   if (!canal) {
-    const criado = await criarCanal(`Leadmatic · ${p.email}`, `Usuário ${userId}`);
+    const criado = await criarCanal(`Leadmatic · ${p.email}`, `${PREFIXO_DESCRICAO_PLATAFORMA}${userId}`);
     const { data: inst, error } = await sb
       .from("whatsapp_instances")
       .insert({ user_id: userId, nome: "WhatsApp oficial", canal: "oficial", status: "conectando", token_oficial: criado.token })
@@ -174,6 +175,77 @@ export async function iniciarConexaoOficial(
 
   const { url } = await gerarLinkConexao(canal.channel_id);
   return { url, instanceId: canal.instance_id! };
+}
+
+/**
+ * Admin: entrega a um cliente um canal que já existe na conta de parceiro
+ * (ex.: o primeiro canal, assinado no painel da Datafy). A plataforma lê o
+ * token do canal pela API; se o número ainda não foi conectado, devolve o
+ * link de conexão para o cliente abrir. Canal criado no painel nunca é
+ * apagado pelo worker (só pausado se o cliente perder o recurso).
+ */
+export async function vincularCanalExistente(
+  userId: string,
+  channelId: string,
+): Promise<{ url: string; instanceId: string } | { conectado: true; numero: string | null }> {
+  const p = await perfil(userId);
+  if (!p) throw new ErroCanalOficial(404, "Cliente não encontrado.");
+  const sb = createAdminClient();
+  const { data: existente } = await sb.from("datafy_canais").select("*").eq("channel_id", channelId).maybeSingle();
+  const linha = existente as CanalOficialRow | null;
+  if (linha && !linha.cancelado_em && linha.user_id !== userId) {
+    throw new ErroCanalOficial(409, "Esse canal já está com outro cliente. Remova o número na conta dele antes de passar para outro.");
+  }
+
+  const situacao = await consultarCanal(channelId).catch((e: ErroDatafy) => {
+    throw new ErroCanalOficial(e.status === 404 ? 404 : 502, e.status === 404 ? "Canal não encontrado na conta da Datafy." : e.message);
+  });
+  if (!situacao.token) throw new ErroCanalOficial(502, "A Datafy não devolveu o token do canal. Tente de novo em instantes.");
+  if (!p.whatsapp_oficial_habilitado && p.role !== "admin") await sb.from("profiles").update({ whatsapp_oficial_habilitado: true }).eq("id", userId);
+
+  const conectado = Boolean(situacao.phone_number_id);
+  const numero = soDigitos(situacao.phone);
+  const dadosInstancia = {
+    status: conectado ? "conectado" : "conectando",
+    token_oficial: situacao.token,
+    phone_number_id: situacao.phone_number_id ?? null,
+    waba_id: situacao.waba_id ?? null,
+    numero_conectado: numero,
+  };
+  // Mesmo cliente vinculando de novo: reaproveita a instância.
+  let instanceId = linha && !linha.cancelado_em ? linha.instance_id : null;
+  if (instanceId) {
+    await sb.from("whatsapp_instances").update(dadosInstancia).eq("id", instanceId);
+  } else {
+    const nome = situacao.display_name ? `WhatsApp oficial · ${situacao.display_name}`.slice(0, 80) : "WhatsApp oficial";
+    const { data: inst, error } = await sb
+      .from("whatsapp_instances")
+      .insert({ user_id: userId, nome, canal: "oficial", ...dadosInstancia })
+      .select("id")
+      .single();
+    if (error || !inst) throw new ErroCanalOficial(500, "Não foi possível criar o número na conta do cliente.");
+    instanceId = (inst as { id: string }).id;
+  }
+
+  const campos = {
+    user_id: userId,
+    instance_id: instanceId,
+    assinado: situacao.subscribed,
+    conectado_em: conectado ? (linha?.conectado_em ?? new Date().toISOString()) : null,
+    cancelado_em: null,
+  };
+  const { error: erroLinha } = linha
+    ? await sb.from("datafy_canais").update(campos).eq("id", linha.id)
+    : await sb.from("datafy_canais").insert({ channel_id: channelId, ...campos });
+  if (erroLinha) {
+    if (!linha) await sb.from("whatsapp_instances").delete().eq("id", instanceId);
+    throw new ErroCanalOficial(500, "Não foi possível registrar o canal. Confira se a migration 0050 foi aplicada.");
+  }
+
+  await garantirWebhookGlobal();
+  if (conectado) return { conectado: true, numero };
+  const { url } = await gerarLinkConexao(channelId);
+  return { url, instanceId };
 }
 
 /** Confere na Datafy se o número foi conectado; se foi, assina o canal e libera a instância. */
@@ -224,12 +296,18 @@ export async function cancelarCanalOficial(canal: CanalOficialRow): Promise<void
   if (canal.instance_id) await sb.from("whatsapp_instances").update({ status: "desconectado" }).eq("id", canal.instance_id);
 }
 
-/** A pessoa removeu o número: cancela e apaga o canal na Datafy. */
+/** A pessoa removeu o número: cancela e apaga o canal na Datafy (o criado no painel só é desvinculado). */
 export async function removerCanalOficialDaInstancia(instanceId: string): Promise<void> {
   const sb = createAdminClient();
   const { data } = await sb.from("datafy_canais").select("*").eq("instance_id", instanceId).maybeSingle();
   const canal = data as CanalOficialRow | null;
   if (!canal) return;
+  // Canal do painel da Datafy (vinculado pelo admin): só sai do cliente; o admin decide no painel se cancela.
+  const situacao = await consultarCanal(canal.channel_id).catch(() => null);
+  if (situacao && !(situacao.description ?? "").startsWith(PREFIXO_DESCRICAO_PLATAFORMA)) {
+    await sb.from("datafy_canais").update({ cancelado_em: new Date().toISOString(), instance_id: null }).eq("id", canal.id);
+    return;
+  }
   if (canal.assinado) await cancelarCanalOficial(canal).catch((e) => console.error("[whatsapp-oficial] cancelar", (e as Error).message));
   await deletarCanal(canal.channel_id).catch((e) => console.error("[whatsapp-oficial] apagar", (e as Error).message));
   await sb.from("datafy_canais").update({ cancelado_em: new Date().toISOString(), assinado: false, instance_id: null }).eq("id", canal.id);
