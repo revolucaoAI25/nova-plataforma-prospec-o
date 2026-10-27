@@ -3,7 +3,6 @@ import { carregarPlanosPublicos } from "@/lib/planos-publicos";
 import { Cabecalho } from "@/components/lp/cabecalho";
 import { Hero } from "@/components/lp/hero";
 import { Historia } from "@/components/lp/historia";
-import { Semana } from "@/components/lp/semana";
 import { Calculadora } from "@/components/lp/calculadora";
 import { Recursos } from "@/components/lp/recursos";
 import { Planos } from "@/components/lp/planos";
@@ -14,7 +13,6 @@ import { Clientes } from "@/components/lp/clientes";
 import { ChamadaFinal, Duvidas, PERGUNTAS, Rodape } from "@/components/lp/fechamento";
 import { PausaForaDaTela } from "@/components/lp/pausa-fora-da-tela";
 import { ChamadaMeio } from "@/components/lp/chamada-meio";
-import { linkWhatsApp } from "@/components/lp/dados";
 import { RastreamentoLP } from "@/components/rastreamento/rastreamento-lp";
 import { configRastreamento } from "@/lib/rastreamento/config";
 import { FONTES_LP } from "./fontes";
@@ -54,6 +52,8 @@ export default async function ConhecaPage() {
       {/* data-secao: até onde cada visitante rolou e de onde veio cada clique (painel /admin/funil-lp). */}
       <main>
         <div data-secao="inicio"><Hero /></div>
+        {/* Prova social logo depois da promessa: quem chega pelo anúncio vê cedo quem já confiou. */}
+        <div data-secao="clientes"><Clientes /></div>
         <div data-secao="sem_trafego"><SemTrafego custoEmpresa={custoEmpresa} /></div>
         <div data-secao="chamada_1" className="py-12 sm:py-16">
           <ChamadaMeio
@@ -72,17 +72,8 @@ export default async function ConhecaPage() {
           />
         </div>
         <div data-secao="calculadora"><Calculadora planos={planos} creditosPorLead={creditosPorLead} /></div>
-        <div data-secao="semana"><Semana /></div>
-        <div data-secao="chamada_3" className="py-12 sm:py-16">
-          <ChamadaMeio
-            frase="Quer essa semana na sua empresa?"
-            principal={{ rotulo: "Começar agora", href: "#planos" }}
-            secundario={{ rotulo: "Falar no WhatsApp", href: linkWhatsApp(), externo: true }}
-          />
-        </div>
         <div data-secao="recursos"><Recursos /></div>
         <div data-secao="comparativo"><Comparativo planos={planos} /></div>
-        <div data-secao="clientes"><Clientes /></div>
         <div data-secao="planos"><Planos planos={planos} /></div>
         <div data-secao="duvidas"><Duvidas /></div>
         <div data-secao="chamada_final"><ChamadaFinal /></div>

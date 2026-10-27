@@ -23,18 +23,16 @@ interface Painel {
 // Ordem das seções na página de vendas (mesmos nomes de data-secao em /conheca).
 const SECOES: [string, string][] = [
   ["inicio", "Início (hero)"],
+  ["clientes", "Clientes (prova social)"],
   ["sem_trafego", "Sem tráfego pago"],
   ["chamada_1", "Chamada: ver planos / testar"],
   ["como_funciona", "Como funciona"],
   ["enriquecimento", "Enriquecimento do lead"],
   ["chamada_2", "Chamada: simular resultado"],
   ["calculadora", "Calculadora"],
-  ["semana", "Uma semana na prática"],
-  ["chamada_3", "Chamada: começar agora"],
   ["recursos", "Recursos"],
   ["comparativo", "Comparativo"],
-  ["clientes", "Clientes"],
-  ["planos", "Planos"],
+  ["planos", "Planos (oferta)"],
   ["duvidas", "Dúvidas"],
   ["chamada_final", "Chamada final"],
   ["rodape", "Rodapé"],
@@ -50,38 +48,73 @@ const PERIODOS = [
 const fmt = (n: number) => n.toLocaleString("pt-BR");
 const pct = (a: number, b: number) => (b > 0 ? `${((a / b) * 100).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%` : "—");
 
-function Barra({ rotulo, valor, base, anterior, destaque }: { rotulo: string; valor: number; base: number; anterior?: number; destaque?: boolean }) {
-  const largura = base > 0 ? Math.max(valor > 0 ? 1.5 : 0, (valor / base) * 100) : 0;
-  const dica = `${rotulo}: ${fmt(valor)} visitantes (${pct(valor, base)} do total${anterior !== undefined ? `, ${pct(valor, anterior)} da etapa anterior` : ""})`;
+const BOTOES: Record<string, string> = {
+  assinar: "Assinar",
+  teste: "Testar grátis",
+  whatsapp: "WhatsApp",
+  entrar: "Entrar",
+  ancora_planos: "Ver planos",
+  ancora_conta: "Simular resultado",
+  pagar: "Pagar",
+  link: "Outro link",
+};
+
+/** "assinar:planos" → botão "Assinar", em "Planos (oferta)". */
+function descreverClique(alvo: string): { botao: string; onde: string } {
+  const [base, secao] = alvo.split(":");
+  const nomeSecao = SECOES.find(([k]) => k === secao)?.[1] ?? (secao === "topo" ? "Menu do topo" : secao === "bem-vindo" ? "Página de boas-vindas" : secao || "—");
+  const botao = BOTOES[base] ?? (base.startsWith("ancora_") ? `Ir para "${base.slice(7)}"` : base);
+  return { botao, onde: nomeSecao };
+}
+
+/**
+ * Passos de um funil, com a perda desde o passo anterior. Destaca a maior
+ * perda em proporção (o passo que mais deixa gente para trás), não em
+ * quantidade: no topo sempre sai mais gente em número absoluto.
+ */
+function Jornada({ passos, base }: { passos: { rotulo: string; valor: number }[]; base: number }) {
+  const perdas = passos.map((p, i) => (i === 0 ? 0 : Math.max(0, passos[i - 1].valor - p.valor)));
+  const taxas = perdas.map((perda, i) => (i > 0 && passos[i - 1].valor > 0 ? perda / passos[i - 1].valor : 0));
+  const maior = Math.max(...taxas.slice(1), 0);
   return (
-    <div className="flex flex-col gap-1.5" title={dica}>
-      <div className="flex items-baseline justify-between gap-3 text-sm">
-        <span className="text-foreground">{rotulo}</span>
-        <span className="tabular-nums text-muted-foreground">
-          <span className="font-semibold text-foreground">{fmt(valor)}</span>
-          {anterior !== undefined ? (
-            <span className="ml-2 text-xs">{pct(valor, anterior)} da etapa anterior</span>
-          ) : valor !== base ? (
-            <span className="ml-2 text-xs">{pct(valor, base)} dos visitantes</span>
-          ) : null}
-        </span>
-      </div>
-      <div className="h-2.5 w-full overflow-hidden rounded-full bg-secondary">
-        <div className={cn("h-full rounded-full", destaque ? "bg-primary" : "bg-primary/60")} style={{ width: `${largura}%` }} />
-      </div>
-    </div>
+    <ol className="flex flex-col gap-3">
+      {passos.map((p, i) => {
+        const largura = base > 0 ? Math.max(p.valor > 0 ? 1.5 : 0, Math.min(100, (p.valor / base) * 100)) : 0;
+        const destaque = maior > 0 && taxas[i] === maior;
+        return (
+          <li key={p.rotulo} className="flex flex-col gap-1.5">
+            <div className="flex items-baseline justify-between gap-3 text-sm">
+              <span className="flex min-w-0 items-baseline gap-2 text-foreground">
+                <span className="w-5 shrink-0 text-xs tabular-nums text-muted-foreground">{i + 1}.</span>
+                <span className="truncate">{p.rotulo}</span>
+              </span>
+              <span className="shrink-0 tabular-nums">
+                <span className="font-semibold text-foreground">{fmt(p.valor)}</span>
+                <span className="ml-1.5 text-xs text-muted-foreground">{pct(p.valor, base)}</span>
+              </span>
+            </div>
+            <div className="ml-7 h-2.5 overflow-hidden rounded-full bg-secondary">
+              <div className={cn("h-full rounded-full", i === passos.length - 1 ? "bg-primary" : "bg-primary/60")} style={{ width: `${largura}%` }} />
+            </div>
+            {i > 0 && perdas[i] > 0 && (
+              <span className={cn("ml-7 text-xs", destaque ? "font-semibold text-destructive" : "text-muted-foreground")}>
+                {destaque ? "Maior perda: " : ""}−{fmt(perdas[i])} ({pct(perdas[i], passos[i - 1].valor)} de quem estava no passo anterior)
+              </span>
+            )}
+          </li>
+        );
+      })}
+    </ol>
   );
 }
 
-function Numero({ rotulo, valor, detalhe }: { rotulo: string; valor: string; detalhe?: string }) {
+function Numero({ rotulo, valor, detalhe, destaque }: { rotulo: string; valor: string; detalhe?: string; destaque?: boolean }) {
   return (
-    <Card>
-      <CardContent className="flex flex-col gap-1 p-5">
-        <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{rotulo}</span>
-        <span className="text-3xl font-bold tabular-nums tracking-tight text-foreground">{valor}</span>
-        {detalhe && <span className="text-xs text-muted-foreground">{detalhe}</span>}
-      </CardContent>
-    </Card>
+    <div className={cn("flex flex-col gap-1 rounded-xl border p-4", destaque ? "border-primary/40 bg-accent/40" : "border-border bg-card")}>
+      <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{rotulo}</span>
+      <span className="text-2xl font-bold tabular-nums tracking-tight text-foreground">{valor}</span>
+      {detalhe && <span className="text-xs text-muted-foreground">{detalhe}</span>}
+    </div>
   );
 }
 
@@ -111,6 +144,19 @@ export default async function FunilLpPage({ searchParams }: { searchParams: Prom
   const visitantes = v("visitou");
   const pagos = v("comprou");
   const totalDispositivos = Object.values(painel?.dispositivos ?? {}).reduce((a, b) => a + Number(b), 0);
+  const sec = (k: string) => Number(painel?.secoes?.[k] ?? 0);
+  const porCem = (n: number) => (visitantes ? Math.round((n / visitantes) * 100).toLocaleString("pt-BR") : "0");
+  // Rolagem na ordem da página e o ponto em que mais gente sai.
+  const rolagem = SECOES.map(([chave, nome]) => ({ chave, nome, valor: sec(chave) }));
+  // Até a oferta (depois dos planos, sair é esperado): o trecho que perde a maior parte de quem chegou nele.
+  const ateOferta = rolagem.slice(0, rolagem.findIndex((r) => r.chave === "planos") + 1);
+  const maiorQueda = ateOferta.slice(1).reduce<{ chave: string; nome: string; perda: number; taxa: number; pct: string } | null>((maior, r, i) => {
+    const antes = ateOferta[i].valor;
+    const perda = antes - r.valor;
+    const taxa = antes > 0 ? perda / antes : 0;
+    if (perda <= 0 || (maior && maior.taxa >= taxa)) return maior;
+    return { chave: r.chave, nome: r.nome, perda, taxa, pct: pct(perda, antes) };
+  }, null);
 
   const link = (params: { dias?: number; campanha?: string | null }) => {
     const q = new URLSearchParams();
@@ -164,75 +210,132 @@ export default async function FunilLpPage({ searchParams }: { searchParams: Prom
         </Alert>
       )}
 
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <Numero rotulo="Visitantes" valor={fmt(visitantes)} detalhe={totalDispositivos ? `${pct(Number(painel?.dispositivos?.celular ?? 0), totalDispositivos)} no celular` : undefined} />
-        <Numero rotulo="Testes grátis" valor={fmt(v("iniciou_teste"))} detalhe={`${pct(v("iniciou_teste"), visitantes)} dos visitantes`} />
-        <Numero rotulo="Contas na contratação" valor={fmt(v("criou_conta"))} detalhe={`${pct(v("criou_conta"), visitantes)} dos visitantes`} />
-        <Numero rotulo="Compras" valor={fmt(pagos)} detalhe={`${pct(pagos, visitantes)} dos visitantes · ${pct(pagos, v("criou_conta"))} das contas`} />
-      </div>
+      {/* Resumo em linguagem de gente: de cada 100 visitantes, quantos chegam a cada ponto. */}
+      <Card>
+        <CardContent className="flex flex-col gap-4 p-5">
+          <p className="text-sm text-muted-foreground">
+            {visitantes ? (
+              <>
+                De cada <strong className="text-foreground">100 visitantes</strong>,{" "}
+                <strong className="text-foreground">{porCem(v("viu_planos"))}</strong> chegam na oferta (planos),{" "}
+                <strong className="text-foreground">{porCem(v("clicou_assinar"))}</strong> clicam para assinar,{" "}
+                <strong className="text-foreground">{porCem(v("iniciou_teste"))}</strong> começam o teste grátis e{" "}
+                <strong className="text-foreground">{porCem(pagos)}</strong> pagam.
+              </>
+            ) : (
+              "Nenhuma visita no período."
+            )}
+          </p>
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+            <Numero rotulo="Visitantes" valor={fmt(visitantes)} detalhe={totalDispositivos ? `${pct(Number(painel?.dispositivos?.celular ?? 0), totalDispositivos)} no celular` : undefined} />
+            <Numero rotulo="Chegaram na oferta" valor={fmt(v("viu_planos"))} detalhe={`${pct(v("viu_planos"), visitantes)} dos visitantes`} />
+            <Numero rotulo="Clicaram em assinar" valor={fmt(v("clicou_assinar"))} detalhe={`${pct(v("clicou_assinar"), visitantes)} dos visitantes`} />
+            <Numero rotulo="Testes grátis" valor={fmt(v("iniciou_teste"))} detalhe={`${pct(v("iniciou_teste"), visitantes)} dos visitantes`} />
+            <Numero rotulo="Compras" valor={fmt(pagos)} detalhe={`${pct(pagos, visitantes)} dos visitantes`} destaque />
+          </div>
+        </CardContent>
+      </Card>
 
-      <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Caminho até a compra</CardTitle>
-            <CardDescription>Visitantes únicos em cada etapa. A largura é relativa a quem visitou a página.</CardDescription>
+            <CardTitle className="text-base">Jornada até a compra</CardTitle>
+            <CardDescription>
+              Pessoas diferentes que chegaram a cada ponto, na ordem. Ao lado, quantas se perderam desde o passo anterior; a maior perda
+              fica em destaque, é onde vale mexer primeiro.
+            </CardDescription>
           </CardHeader>
-          <CardContent className="flex flex-col gap-4">
-            <Barra rotulo="Visitaram a página" valor={visitantes} base={visitantes} destaque />
-            <Barra rotulo="Chegaram aos planos" valor={v("viu_planos")} base={visitantes} anterior={visitantes} />
-            <Barra rotulo="Clicaram em assinar" valor={v("clicou_assinar")} base={visitantes} anterior={v("viu_planos")} />
-            <Barra rotulo="Abriram a contratação" valor={v("abriu_checkout")} base={visitantes} anterior={v("clicou_assinar")} />
-            <Barra rotulo="Criaram a conta" valor={v("criou_conta")} base={visitantes} anterior={v("abriu_checkout")} />
-            <Barra rotulo="Pagaram" valor={pagos} base={visitantes} anterior={v("criou_conta")} destaque />
+          <CardContent>
+            <Jornada
+              base={visitantes}
+              passos={[
+                { rotulo: "Entraram na página", valor: visitantes },
+                // A seção logo depois do topo mudou (clientes subiu): vale a que mais gente viu entre as duas.
+                { rotulo: "Passaram do topo", valor: Math.max(sec("clientes"), sec("sem_trafego")) },
+                { rotulo: "Viram como funciona", valor: sec("como_funciona") },
+                { rotulo: "Viram a calculadora", valor: sec("calculadora") },
+                { rotulo: "Chegaram na oferta (planos)", valor: v("viu_planos") },
+                { rotulo: "Clicaram em assinar", valor: v("clicou_assinar") },
+                { rotulo: "Abriram a contratação", valor: v("abriu_checkout") },
+                { rotulo: "Criaram a conta", valor: v("criou_conta") },
+                { rotulo: "Pagaram", valor: pagos },
+              ]}
+            />
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Caminho do teste grátis e contato</CardTitle>
-            <CardDescription>Quem preferiu testar antes ou falar com a equipe.</CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-4">
-            <Barra rotulo="Clicaram em testar grátis" valor={v("clicou_teste")} base={visitantes} />
-            <Barra rotulo="Abriram o cadastro do teste" valor={v("abriu_teste")} base={visitantes} anterior={v("clicou_teste")} />
-            <Barra rotulo="Começaram o teste" valor={v("iniciou_teste")} base={visitantes} anterior={v("abriu_teste")} destaque />
-            <Barra rotulo="Clicaram no WhatsApp" valor={v("clicou_whatsapp")} base={visitantes} />
-          </CardContent>
-        </Card>
+        <div className="flex flex-col gap-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Teste grátis</CardTitle>
+              <CardDescription>Quem preferiu testar antes de assinar.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Jornada
+                base={visitantes}
+                passos={[
+                  { rotulo: "Clicaram em testar grátis", valor: v("clicou_teste") },
+                  { rotulo: "Abriram o cadastro", valor: v("abriu_teste") },
+                  { rotulo: "Começaram o teste", valor: v("iniciou_teste") },
+                ]}
+              />
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Contato</CardTitle>
+            </CardHeader>
+            <CardContent className="text-sm text-muted-foreground">
+              <strong className="text-2xl font-bold tabular-nums text-foreground">{fmt(v("clicou_whatsapp"))}</strong> pessoas clicaram no WhatsApp ({pct(v("clicou_whatsapp"), visitantes)} dos visitantes).
+            </CardContent>
+          </Card>
+        </div>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Até onde os visitantes rolam</CardTitle>
-          <CardDescription>Parte dos visitantes que viu cada seção, na ordem da página. Onde a barra cai, a página está perdendo gente.</CardDescription>
+          <CardTitle className="text-base">Até onde as pessoas rolam a página</CardTitle>
+          <CardDescription>
+            Parte dos visitantes que viu cada seção, na ordem da página.{maiorQueda ? ` Até a oferta, o trecho que mais perde gente é logo antes de "${maiorQueda.nome}": ${maiorQueda.pct} de quem chegou ali para de rolar (${fmt(maiorQueda.perda)} pessoas).` : ""}
+          </CardDescription>
         </CardHeader>
-        <CardContent className="grid grid-cols-1 gap-x-8 gap-y-4 md:grid-cols-2">
-          {SECOES.map(([chave, nome]) => (
-            <Barra key={chave} rotulo={nome} valor={Number(painel?.secoes?.[chave] ?? 0)} base={visitantes} />
+        <CardContent className="flex flex-col gap-2.5">
+          {rolagem.map((r) => (
+            <div key={r.chave} className="grid grid-cols-[minmax(0,11rem)_minmax(0,1fr)_4.5rem] items-center gap-3 text-sm sm:grid-cols-[minmax(0,14rem)_minmax(0,1fr)_5rem]">
+              <span className={cn("truncate", r.chave === maiorQueda?.chave ? "font-semibold text-destructive" : "text-foreground")} title={r.nome}>{r.nome}</span>
+              <div className="h-2.5 overflow-hidden rounded-full bg-secondary">
+                <div className={cn("h-full rounded-full", r.chave === "planos" ? "bg-primary" : "bg-primary/60")} style={{ width: `${visitantes ? Math.max(r.valor ? 1.5 : 0, (r.valor / visitantes) * 100) : 0}%` }} />
+              </div>
+              <span className="text-right tabular-nums text-muted-foreground">{pct(r.valor, visitantes)}</span>
+            </div>
           ))}
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+      <div className="grid grid-cols-1 gap-6 2xl:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Cliques</CardTitle>
-            <CardDescription>Botão (destino) e a seção em que estava, por visitantes únicos.</CardDescription>
+            <CardTitle className="text-base">Em quais botões clicam</CardTitle>
+            <CardDescription>Cada botão e a parte da página em que estava. Pessoas diferentes (e total de cliques).</CardDescription>
           </CardHeader>
           <CardContent>
             {painel?.cliques?.length ? (
               <Table>
                 <TableHeader>
-                  <TableRow><TableHead>Botão · seção</TableHead><TableHead className="text-right">Visitantes</TableHead><TableHead className="text-right">Cliques</TableHead></TableRow>
+                  <TableRow><TableHead>Botão</TableHead><TableHead>Onde</TableHead><TableHead className="text-right">Pessoas</TableHead><TableHead className="text-right">Cliques</TableHead></TableRow>
                 </TableHeader>
                 <TableBody>
-                  {painel.cliques.map((c) => (
-                    <TableRow key={c.alvo}>
-                      <TableCell className="font-mono text-xs">{c.alvo}</TableCell>
-                      <TableCell className="text-right tabular-nums">{fmt(c.visitantes)}</TableCell>
-                      <TableCell className="text-right tabular-nums text-muted-foreground">{fmt(c.total)}</TableCell>
-                    </TableRow>
-                  ))}
+                  {painel.cliques.map((c) => {
+                    const { botao, onde } = descreverClique(c.alvo);
+                    return (
+                      <TableRow key={c.alvo}>
+                        <TableCell className="font-medium">{botao}</TableCell>
+                        <TableCell className="text-muted-foreground">{onde}</TableCell>
+                        <TableCell className="text-right tabular-nums">{fmt(c.visitantes)}</TableCell>
+                        <TableCell className="text-right tabular-nums text-muted-foreground">{fmt(c.total)}</TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             ) : (
