@@ -4,12 +4,11 @@ import { Cabecalho } from "@/components/lp/cabecalho";
 import { Hero } from "@/components/lp/hero";
 import { Historia } from "@/components/lp/historia";
 import { Calculadora } from "@/components/lp/calculadora";
-import { Recursos } from "@/components/lp/recursos";
 import { Planos } from "@/components/lp/planos";
 import { SemTrafego } from "@/components/lp/sem-trafego";
 import { Enriquecimento } from "@/components/lp/enriquecimento";
 import { Comparativo } from "@/components/lp/comparativo";
-import { Clientes } from "@/components/lp/clientes";
+import { Clientes, ClientesFaixa } from "@/components/lp/clientes";
 import { ChamadaFinal, Duvidas, PERGUNTAS, Rodape } from "@/components/lp/fechamento";
 import { PausaForaDaTela } from "@/components/lp/pausa-fora-da-tela";
 import { ChamadaMeio } from "@/components/lp/chamada-meio";
@@ -52,8 +51,8 @@ export default async function ConhecaPage() {
       {/* data-secao: até onde cada visitante rolou e de onde veio cada clique (painel /admin/funil-lp). */}
       <main>
         <div data-secao="inicio"><Hero /></div>
-        {/* Prova social logo depois da promessa: quem chega pelo anúncio vê cedo quem já confiou. */}
-        <div data-secao="clientes"><Clientes /></div>
+        {/* Prova social curta logo depois da promessa (só os logos); a seção completa fica perto dos planos. */}
+        <div data-secao="clientes_faixa"><ClientesFaixa /></div>
         <div data-secao="sem_trafego"><SemTrafego custoEmpresa={custoEmpresa} /></div>
         <div data-secao="chamada_1" className="py-12 sm:py-16">
           <ChamadaMeio
@@ -64,16 +63,9 @@ export default async function ConhecaPage() {
         </div>
         <div data-secao="como_funciona"><Historia /></div>
         <div data-secao="enriquecimento"><Enriquecimento /></div>
-        <div data-secao="chamada_2">
-          <ChamadaMeio
-            frase="Quanto isso pode render para a sua empresa?"
-            principal={{ rotulo: "Simular meu resultado", href: "#conta" }}
-            secundario={{ rotulo: "Ver planos", href: "#planos" }}
-          />
-        </div>
         <div data-secao="calculadora"><Calculadora planos={planos} creditosPorLead={creditosPorLead} /></div>
-        <div data-secao="recursos"><Recursos /></div>
         <div data-secao="comparativo"><Comparativo planos={planos} /></div>
+        <div data-secao="clientes"><Clientes /></div>
         <div data-secao="planos"><Planos planos={planos} /></div>
         <div data-secao="duvidas"><Duvidas /></div>
         <div data-secao="chamada_final"><ChamadaFinal /></div>

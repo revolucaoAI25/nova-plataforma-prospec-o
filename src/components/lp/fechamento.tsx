@@ -4,34 +4,19 @@ import { ArrowRight, ArrowUpRight, Plus } from "lucide-react";
 import { EMAIL_CONTATO, linkWhatsApp, whatsappExibicao } from "./dados";
 import { Revela } from "./revela";
 
+// As dúvidas que mais seguram a compra (as demais respostas já estão ao longo da página).
 export const PERGUNTAS: [string, string][] = [
-  [
-    "Como funciona a contratação?",
-    "Você escolhe o plano, cria a sua conta e conclui o pagamento. Assim que o pagamento é aprovado, os créditos e os recursos do plano são liberados e o onboarding começa.",
-  ],
   [
     "Posso testar antes de assinar?",
     "Sim. No teste grátis você cria a conta sem cartão, recebe créditos para extrair as primeiras empresas do seu público por CNPJ e Google Maps e conhece o resto do Leadmatic por dentro. E, ao assinar, você tem 7 dias de garantia: se a plataforma não fizer sentido para a sua empresa, devolvemos 100% do valor pago.",
-  ],
-  [
-    "Preciso investir em tráfego pago também?",
-    "Não. A prospecção ativa gera oportunidades sem anúncios: você escolhe as empresas e a plataforma inicia a conversa com quem decide. Se você já investe em tráfego, as duas estratégias se complementam, e a sua agenda deixa de depender de um único canal.",
-  ],
-  [
-    "Preciso de conhecimento técnico?",
-    "Não. Você responde ao questionário, escolhe uma das estratégias criadas pela IA e conecta o seu WhatsApp pelo QR Code. A partir daí, basta revisar as mensagens, se quiser, e ativar a campanha.",
   ],
   [
     "O Leadmatic é indicado para o meu negócio?",
     "Ele funciona melhor para empresas que vendem para outras empresas ou para negócios locais: softwares, serviços, agências, consultorias, distribuidores, escritórios e fornecedores. Para vendas em massa ao consumidor final, provavelmente não é a ferramenta mais adequada.",
   ],
   [
-    "Existe risco de bloqueio do WhatsApp?",
-    "Todo envio por número comum envolve algum risco. Por isso, a plataforma respeita o horário comercial, limita os novos contatos por dia, espaça as mensagens e interrompe o envio para quem respondeu ou pediu para sair. Para eliminar esse risco, é possível usar a API oficial do WhatsApp (a Meta cobra por conversa, à parte).",
-  ],
-  [
-    "De onde vêm os dados? O uso é permitido?",
-    "São dados públicos de empresas: cadastro na Receita Federal e perfis no Google Maps, no Instagram e no LinkedIn. A abordagem entre empresas costuma se apoiar no legítimo interesse previsto na LGPD, desde que o destinatário tenha uma forma simples de sair. A plataforma já oferece descadastro no e-mail e opt-out no WhatsApp.",
+    "Preciso de conhecimento técnico?",
+    "Não. Você responde ao questionário, escolhe uma das estratégias criadas pela IA e conecta o seu WhatsApp pelo QR Code. A partir daí, basta revisar as mensagens, se quiser, e ativar a campanha.",
   ],
   [
     "Em quanto tempo surgem os primeiros resultados?",
@@ -44,10 +29,6 @@ export const PERGUNTAS: [string, string][] = [
   [
     "Existe fidelidade?",
     "O plano mensal não tem fidelidade e pode ser cancelado quando você quiser. O plano anual tem valor reduzido e é cobrado uma vez por ano.",
-  ],
-  [
-    "Posso usar a minha própria lista de contatos?",
-    "Sim. Você pode importar a sua planilha e utilizar as mesmas cadências, o mesmo funil e os mesmos relatórios.",
   ],
 ];
 

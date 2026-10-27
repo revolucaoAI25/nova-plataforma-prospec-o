@@ -96,3 +96,45 @@ export function Clientes() {
     </section>
   );
 }
+
+const ALTURA_LOGO_FAIXA = 36;
+
+/**
+ * Versão curta para logo abaixo do topo: uma linha de texto e os logos
+ * passando, sem segurar a leitura. A seção completa (com os depoimentos)
+ * fica perto dos planos.
+ */
+export function ClientesFaixa() {
+  return (
+    <section className="border-y border-lp-line py-6" aria-label="Clientes atendidos pelo Revolução AI">
+      <p className="px-4 text-center font-lp-mono text-[11px] uppercase tracking-[0.18em] text-lp-muted">
+        Do time do Revolução AI, que já atendeu centenas de empresas
+      </p>
+      <div className="lp-letreiro mt-4">
+        <div className="lp-letreiro-faixa gap-3 pr-3" style={{ animationDuration: "40s" }}>
+          {[...LOGOS, ...LOGOS].map((c, i) => {
+            const largura = Math.min(150, Math.round((c.w / c.h) * ALTURA_LOGO_FAIXA));
+            return (
+              <div
+                key={`${c.nome}-${i}`}
+                aria-hidden={i >= LOGOS.length}
+                title={c.nome}
+                className="flex shrink-0 items-center justify-center rounded-xl border border-lp-line bg-lp-surface px-4"
+                style={{ height: ALTURA_LOGO_FAIXA + 16 }}
+              >
+                <Image
+                  src={c.src}
+                  alt={i >= LOGOS.length ? "" : c.nome}
+                  width={largura}
+                  height={ALTURA_LOGO_FAIXA}
+                  className="rounded object-contain"
+                  style={{ height: ALTURA_LOGO_FAIXA, width: largura }}
+                />
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </section>
+  );
+}

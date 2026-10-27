@@ -23,15 +23,14 @@ interface Painel {
 // Ordem das seções na página de vendas (mesmos nomes de data-secao em /conheca).
 const SECOES: [string, string][] = [
   ["inicio", "Início (hero)"],
-  ["clientes", "Clientes (prova social)"],
+  ["clientes_faixa", "Logos dos clientes"],
   ["sem_trafego", "Sem tráfego pago"],
   ["chamada_1", "Chamada: ver planos / testar"],
   ["como_funciona", "Como funciona"],
   ["enriquecimento", "Enriquecimento do lead"],
-  ["chamada_2", "Chamada: simular resultado"],
   ["calculadora", "Calculadora"],
-  ["recursos", "Recursos"],
   ["comparativo", "Comparativo"],
+  ["clientes", "Clientes (prova social)"],
   ["planos", "Planos (oferta)"],
   ["duvidas", "Dúvidas"],
   ["chamada_final", "Chamada final"],
@@ -250,8 +249,7 @@ export default async function FunilLpPage({ searchParams }: { searchParams: Prom
               base={visitantes}
               passos={[
                 { rotulo: "Entraram na página", valor: visitantes },
-                // A seção logo depois do topo mudou (clientes subiu): vale a que mais gente viu entre as duas.
-                { rotulo: "Passaram do topo", valor: Math.max(sec("clientes"), sec("sem_trafego")) },
+                { rotulo: "Passaram do topo", valor: sec("sem_trafego") },
                 { rotulo: "Viram como funciona", valor: sec("como_funciona") },
                 { rotulo: "Viram a calculadora", valor: sec("calculadora") },
                 { rotulo: "Chegaram na oferta (planos)", valor: v("viu_planos") },
