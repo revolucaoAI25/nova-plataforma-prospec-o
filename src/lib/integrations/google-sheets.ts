@@ -15,10 +15,35 @@ import { configPlataforma } from "@/lib/platform-settings";
 // GOOGLE_CLIENT_SECRET do ambiente — mais simples de operar e é o padrão
 // de fato para esse tipo de fluxo "Conectar sua conta Google".
 
-export const SCOPES = [
-  "https://www.googleapis.com/auth/spreadsheets",
-  "https://www.googleapis.com/auth/drive.readonly",
-];
+// Só os arquivos que a pessoa escolhe no seletor do Google (Picker) ou que a
+// plataforma cria. É um escopo não sensível: o app publicado não mostra o
+// aviso de "app não verificado" nem tem o limite de 100 contas. Quem
+// conectou antes (spreadsheets + drive.readonly) continua com o token antigo,
+// que enxerga tudo, até reconectar.
+export const SCOPES = ["https://www.googleapis.com/auth/drive.file"];
+
+/** Token conectado antes da troca para o seletor: lista e lê todas as planilhas do Drive. */
+export function tokenComAcessoAmplo(creds: OAuthCreds): boolean {
+  return (creds.scopes ?? []).some((s) => s.endsWith("/auth/drive.readonly") || s.endsWith("/auth/drive") || s.endsWith("/auth/spreadsheets"));
+}
+
+export const MSG_SEM_ACESSO_PLANILHA =
+  "A plataforma não tem acesso a essa planilha. Escolha a planilha pelo botão “Escolher do Google Drive” para liberar o acesso.";
+
+/** 404/403 do Google numa planilha: com o escopo drive.file, é planilha que não foi escolhida no seletor (ou foi apagada). */
+export function semAcessoPlanilha(e: unknown): boolean {
+  const status = (e as { code?: number; status?: number; response?: { status?: number } })?.response?.status
+    ?? (e as { code?: number }).code ?? (e as { status?: number }).status;
+  // 403 também é "API desativada no projeto" ou cota: só conta como falta de acesso quando fala de permissão.
+  return status === 404 || (status === 403 && /permission/i.test((e as Error)?.message ?? ""));
+}
+
+function mensagemErroPlanilha(e: unknown): string {
+  if (semAcessoPlanilha(e)) return MSG_SEM_ACESSO_PLANILHA;
+  // Acesso revogado na conta Google (ou expirado enquanto o app do Google estava "em teste").
+  if (/invalid_grant/i.test((e as Error)?.message ?? "")) return "A conexão com o Google expirou. Conecte a sua conta Google de novo em Conexões.";
+  return (e as Error).message;
+}
 
 export type OAuthCreds = NonNullable<GoogleSheetsCreds["oauth"]>;
 
@@ -80,12 +105,36 @@ async function credsClient(creds: OAuthCreds) {
   return client;
 }
 
+/** Token de acesso atual (renovado) para o seletor do Google abrir no navegador da própria pessoa. */
+export async function tokenParaSeletor(creds: OAuthCreds): Promise<string> {
+  const client = await credsClient(creds);
+  const { token } = await client.getAccessToken();
+  if (!token) throw new Error("Não foi possível renovar o acesso ao Google. Conecte a conta de novo em Conexões.");
+  return token;
+}
+
+/** Cria uma planilha no Drive da pessoa (já fica acessível para a plataforma), com uma aba "Leads". */
+export async function criarPlanilha(creds: OAuthCreds, titulo: string): Promise<{ id: string; name: string; abas: string[] }> {
+  const auth = await credsClient(creds);
+  const sheets = google.sheets({ version: "v4", auth });
+  const resp = await sheets.spreadsheets.create({
+    requestBody: { properties: { title: titulo, locale: "pt_BR" }, sheets: [{ properties: { title: "Leads" } }] },
+    fields: "spreadsheetId,properties.title,sheets.properties.title",
+  });
+  return {
+    id: resp.data.spreadsheetId || "",
+    name: resp.data.properties?.title || titulo,
+    abas: (resp.data.sheets || []).map((s) => s.properties?.title || "").filter(Boolean),
+  };
+}
+
+/** Lista as planilhas que a plataforma enxerga: com o escopo novo, as escolhidas no seletor ou criadas por ela. */
 export async function listarPlanilhas(creds: OAuthCreds): Promise<Array<{ id: string; name: string }>> {
   const auth = await credsClient(creds);
   const drive = google.drive({ version: "v3", auth });
   const resp = await drive.files.list({
     q: "mimeType='application/vnd.google-apps.spreadsheet' and trashed=false",
-    pageSize: 50,
+    pageSize: 100,
     fields: "files(id, name)",
     orderBy: "modifiedTime desc",
   });
@@ -95,16 +144,24 @@ export async function listarPlanilhas(creds: OAuthCreds): Promise<Array<{ id: st
 export async function listarAbas(creds: OAuthCreds, sheetId: string): Promise<string[]> {
   const auth = await credsClient(creds);
   const sheets = google.sheets({ version: "v4", auth });
-  const meta = await sheets.spreadsheets.get({ spreadsheetId: sheetId });
-  return (meta.data.sheets || []).map((s) => s.properties?.title || "").filter(Boolean);
+  try {
+    const meta = await sheets.spreadsheets.get({ spreadsheetId: sheetId, fields: "sheets.properties.title" });
+    return (meta.data.sheets || []).map((s) => s.properties?.title || "").filter(Boolean);
+  } catch (e) {
+    throw new Error(mensagemErroPlanilha(e), { cause: e });
+  }
 }
 
 export async function lerValores(creds: OAuthCreds, sheetId: string, abaNome: string): Promise<string[][]> {
   const auth = await credsClient(creds);
   const sheets = google.sheets({ version: "v4", auth });
   const escapedAba = abaNome.replace(/'/g, "''");
-  const resp = await sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range: `'${escapedAba}'` });
-  return (resp.data.values as string[][]) || [];
+  try {
+    const resp = await sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range: `'${escapedAba}'` });
+    return (resp.data.values as string[][]) || [];
+  } catch (e) {
+    throw new Error(mensagemErroPlanilha(e), { cause: e });
+  }
 }
 
 const COLUNAS_EXPORT: Array<[keyof LeadRow, string]> = [
@@ -176,7 +233,12 @@ async function escreverPlanilha(
   const auth = await credsClient(creds);
   const sheets = google.sheets({ version: "v4", auth });
 
-  const meta = await sheets.spreadsheets.get({ spreadsheetId: sheetId });
+  let meta;
+  try {
+    meta = await sheets.spreadsheets.get({ spreadsheetId: sheetId });
+  } catch (e) {
+    return { ok: false, msg: mensagemErroPlanilha(e) };
+  }
   const sheetTitle = meta.data.properties?.title || sheetId;
   const sheetUrl = `https://docs.google.com/spreadsheets/d/${sheetId}`;
   const tabs = (meta.data.sheets || []).map((s) => s.properties?.title || "");
@@ -241,7 +303,7 @@ async function escreverPlanilha(
       msg: `${linhas.length} registros exportados para ${sheetTitle} → aba ${abaNome}. Células escritas: ${updatedCells} | Intervalo: ${updatedRange}. ${sheetUrl}`,
     };
   } catch (e) {
-    return { ok: false, msg: `Erro ao escrever: ${(e as Error).message} | Planilha: ${sheetTitle} | Aba: ${abaNome}` };
+    return { ok: false, msg: `Erro ao escrever: ${mensagemErroPlanilha(e)} | Planilha: ${sheetTitle} | Aba: ${abaNome}` };
   }
 }
 

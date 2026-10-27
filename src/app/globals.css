@@ -409,3 +409,7 @@ body {
 .mapa-popup-suave { color: var(--color-muted-foreground); }
 .maplibregl-ctrl-attrib.maplibregl-compact { background: var(--color-card); color: var(--color-muted-foreground); }
 .maplibregl-ctrl-attrib a { color: inherit; }
+
+/* Seletor de planilhas do Google: acima das janelas e da tela cheia do editor de automações. */
+.picker-dialog-bg { z-index: 2000 !important; }
+.picker-dialog { z-index: 2001 !important; }

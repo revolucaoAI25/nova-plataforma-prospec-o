@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
+import { conferirPlanilhaParaMonitorar } from "@/lib/sheets-acesso";
 import { criarSheetWatcherLinkedin, atualizarCampanhaLinkedin } from "@/lib/linkedin-dispatch-db";
 
 const bodySchema = z.object({
@@ -23,7 +24,10 @@ export async function POST(
   const parsed = bodySchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "Dados inválidos." }, { status: 400 });
 
-  const watcherId = await criarSheetWatcherLinkedin(supabase, id, parsed.data);
+  const planilha = await conferirPlanilhaParaMonitorar(supabase, user.id, parsed.data.sheetId, parsed.data.abaNome);
+  if ("erro" in planilha) return NextResponse.json({ error: planilha.erro }, { status: 400 });
+
+  const watcherId = await criarSheetWatcherLinkedin(supabase, id, { ...parsed.data, sheetId: planilha.sheetId });
   if (!watcherId) return NextResponse.json({ error: "Não foi possível configurar o monitoramento." }, { status: 500 });
 
   await atualizarCampanhaLinkedin(supabase, id, { tipo_origem: "sheet_watch" });

@@ -264,6 +264,8 @@ export type PlatformSettingKey =
   | "asaas_webhook_token"
   | "google_client_id"
   | "google_client_secret"
+  | "google_picker_api_key"
+  | "google_projeto_numero"
   | "evolution_api_url"
   | "evolution_api_key"
   | "webhook_segredo"

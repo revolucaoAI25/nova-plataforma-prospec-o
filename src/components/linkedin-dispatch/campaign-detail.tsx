@@ -28,6 +28,7 @@ import type {
   SearchRow,
 } from "@/lib/database.types";
 import { formatarDataHora } from "@/lib/datas";
+import { AvisoAcessoPlanilha, CampoPlanilha, type ValorPlanilha } from "@/components/sheets/campo-planilha";
 
 const TARGET_STATUS_LABEL: Record<string, { label: string; variant: BadgeProps["variant"] }> = {
   pendente: { label: "Pendente", variant: "outline" },
@@ -40,17 +41,10 @@ const TARGET_STATUS_LABEL: Record<string, { label: string; variant: BadgeProps["
   respondeu: { label: "Respondeu", variant: "success" },
 };
 
-/** Aceita URL completa ("…/spreadsheets/d/ID/edit") ou o ID direto. */
-function extrairSheetId(input: string): string {
-  const trimmed = input.trim();
-  const match = trimmed.match(/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
-  return match ? match[1] : trimmed;
-}
-
 function SheetWatcherCard({ campaignId, watcherInicial }: { campaignId: string; watcherInicial: LinkedinSheetWatcherRow | null }) {
   const [watcher, setWatcher] = useState(watcherInicial);
-  const [sheetUrl, setSheetUrl] = useState("");
-  const [abaNome, setAbaNome] = useState("Leads");
+  const [planilha, setPlanilha] = useState<ValorPlanilha>({ sheetId: "", aba: "" });
+  const abaNome = planilha.aba;
   const [colunaUrl, setColunaUrl] = useState("LinkedIn");
   const [colunaNome, setColunaNome] = useState("Nome");
   const [saving, setSaving] = useState(false);
@@ -58,7 +52,7 @@ function SheetWatcherCard({ campaignId, watcherInicial }: { campaignId: string; 
 
   async function configurar(e: React.FormEvent) {
     e.preventDefault();
-    const sheetId = extrairSheetId(sheetUrl);
+    const sheetId = planilha.sheetId;
     if (!sheetId || !abaNome.trim() || !colunaUrl.trim()) return;
     setSaving(true);
     setError(null);
@@ -111,20 +105,14 @@ function SheetWatcherCard({ campaignId, watcherInicial }: { campaignId: string; 
             >
               Abrir planilha
             </a>
+            <AvisoAcessoPlanilha sheetId={watcher.sheet_id} />
             <p className="text-xs text-muted-foreground">Última linha processada: {watcher.ultima_linha_processada}</p>
           </div>
         ) : (
           <form onSubmit={configurar} className="flex flex-col gap-3">
             {error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="watcher-url">Link ou ID da planilha</Label>
-              <Input id="watcher-url" value={sheetUrl} onChange={(e) => setSheetUrl(e.target.value)} placeholder="https://docs.google.com/spreadsheets/d/…" />
-            </div>
-            <div className="grid gap-3 sm:grid-cols-3">
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="watcher-aba">Aba</Label>
-                <Input id="watcher-aba" value={abaNome} onChange={(e) => setAbaNome(e.target.value)} />
-              </div>
+            <CampoPlanilha idPrefixo="watcher" rotuloAba="Aba monitorada" valor={planilha} onChange={setPlanilha} />
+            <div className="grid gap-3 sm:grid-cols-2">
               <div className="flex flex-col gap-1.5">
                 <Label htmlFor="watcher-col-url">Coluna URL do perfil</Label>
                 <Input id="watcher-col-url" value={colunaUrl} onChange={(e) => setColunaUrl(e.target.value)} placeholder="LinkedIn ou B" />
@@ -134,7 +122,7 @@ function SheetWatcherCard({ campaignId, watcherInicial }: { campaignId: string; 
                 <Input id="watcher-col-nome" value={colunaNome} onChange={(e) => setColunaNome(e.target.value)} placeholder="Nome ou A" />
               </div>
             </div>
-            <Button type="submit" disabled={saving} className="self-start">
+            <Button type="submit" disabled={saving || !planilha.sheetId || !planilha.aba.trim()} className="self-start">
               {saving ? "Configurando…" : "Ativar monitoramento"}
             </Button>
           </form>

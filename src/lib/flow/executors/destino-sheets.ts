@@ -1,5 +1,5 @@
 import { getProfile } from "@/lib/credits";
-import { exportarGenerico } from "@/lib/integrations/google-sheets";
+import { exportarGenerico, extrairSheetId } from "@/lib/integrations/google-sheets";
 import { COLUNAS_PADRAO } from "@/lib/export";
 import { ENRIQUECIMENTO_LABELS, BIGDATACORP_LABELS } from "../enrichment-merge";
 import type { GoogleSheetsCreds } from "@/lib/database.types";
@@ -42,7 +42,9 @@ function colunasParaLote(lote: Array<Record<string, unknown>>): Array<{ chave: s
 export async function executarDestinoSheets(ctx: FlowExecutorContext): Promise<FlowExecutorOutcome> {
   const { sb, userId, node, contexto } = ctx;
   const config = (node.config || {}) as Record<string, unknown>;
-  const sheetId = String(config.sheetId || "");
+  // Automações antigas podiam guardar a URL colada em vez do ID.
+  const bruto = String(config.sheetId || "");
+  const sheetId = extrairSheetId(bruto) ?? bruto;
   const aba = String(config.aba || "Leads");
   const modo = config.modo === "substituir" ? "substituir" : "acrescentar";
   if (!sheetId) return { status: "erro", erro: "Informe a planilha de destino." };

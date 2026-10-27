@@ -22,6 +22,7 @@ import { LINKEDIN_INDUSTRIES } from "@/lib/data/linkedin-industries";
 import { camposDisponiveis, CAMPOS_SEMPRE } from "./lead-field-reference";
 import { DESTINOS_TELEFONE } from "@/lib/phone";
 import type { FlowNode, FlowNodeTipo } from "@/lib/database.types";
+import { CampoPlanilha } from "@/components/sheets/campo-planilha";
 
 const DIAS = [
   { value: 1, label: "Seg" }, { value: 2, label: "Ter" }, { value: 3, label: "Qua" },
@@ -305,8 +306,12 @@ function CamposGatilhoFiltroLeads({ config, set }: CamposProps) {
 function CamposGatilhoPlanilha({ config, set }: CamposProps) {
   return (
     <>
-      <Campo label="ID ou URL da planilha"><Input value={String(config.sheetId || "")} onChange={(e) => set({ sheetId: e.target.value })} /></Campo>
-      <Campo label="Nome da aba"><Input value={String(config.abaNome || "")} onChange={(e) => set({ abaNome: e.target.value })} /></Campo>
+      <CampoPlanilha
+        idPrefixo="gatilho-planilha"
+        rotuloAba="Aba monitorada"
+        valor={{ sheetId: String(config.sheetId || ""), aba: String(config.abaNome || "") }}
+        onChange={(v) => set({ sheetId: v.sheetId, abaNome: v.aba })}
+      />
       <Campo label="Coluna do telefone"><Input value={String(config.colunaTelefone || "telefone")} onChange={(e) => set({ colunaTelefone: e.target.value })} /></Campo>
       <Campo label="Coluna do nome (opcional)"><Input value={String(config.colunaNome || "")} onChange={(e) => set({ colunaNome: e.target.value })} /></Campo>
     </>
@@ -857,33 +862,13 @@ function CamposDisparoEmail({ config, set }: CamposProps) {
 }
 
 function CamposDestinoSheets({ config, set }: CamposProps) {
-  const sheetId = String(config.sheetId || "");
-  const planilhas = useListaFetch<{ id: string; name: string }>("/api/integrations/google-sheets/spreadsheets");
-  const abas = useListaFetch<string>(sheetId ? `/api/integrations/google-sheets/spreadsheets?sheetId=${encodeURIComponent(sheetId)}` : null);
   return (
     <>
-      <Campo label="Planilha">
-        <Select value={sheetId} onValueChange={(v) => set({ sheetId: v, aba: "" })}>
-          <SelectTrigger><SelectValue placeholder="Selecione a planilha" /></SelectTrigger>
-          <SelectContent>
-            {planilhas.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
-          </SelectContent>
-        </Select>
-      </Campo>
-      <Campo label="Ou cole o ID/URL da planilha">
-        <Input value={sheetId} onChange={(e) => set({ sheetId: e.target.value })} placeholder="https://docs.google.com/spreadsheets/d/…" />
-      </Campo>
-      <Campo label="Aba">
-        <Select value={String(config.aba || "")} onValueChange={(v) => set({ aba: v })}>
-          <SelectTrigger><SelectValue placeholder="Selecione a aba" /></SelectTrigger>
-          <SelectContent>
-            {abas.map((a) => <SelectItem key={a} value={a}>{a}</SelectItem>)}
-          </SelectContent>
-        </Select>
-      </Campo>
-      <Campo label="Ou digite o nome da aba">
-        <Input value={String(config.aba || "")} onChange={(e) => set({ aba: e.target.value })} />
-      </Campo>
+      <CampoPlanilha
+        idPrefixo="destino-sheets"
+        valor={{ sheetId: String(config.sheetId || ""), aba: String(config.aba || "") }}
+        onChange={(v) => set({ sheetId: v.sheetId, aba: v.aba })}
+      />
       <Campo label="Modo">
         <Select value={String(config.modo || "acrescentar")} onValueChange={(v) => set({ modo: v })}>
           <SelectTrigger><SelectValue /></SelectTrigger>

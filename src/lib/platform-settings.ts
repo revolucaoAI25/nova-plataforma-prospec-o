@@ -73,6 +73,9 @@ export const PLATFORM_SETTINGS_META: Record<
   asaas_webhook_token: { grupo: "Asaas (pagamentos)", label: "Token do webhook", envFallback: "ASAAS_WEBHOOK_TOKEN", secreto: true },
   google_client_id: { grupo: "Google Sheets (OAuth)", label: "Client ID", envFallback: "GOOGLE_CLIENT_ID", secreto: false },
   google_client_secret: { grupo: "Google Sheets (OAuth)", label: "Client Secret", envFallback: "GOOGLE_CLIENT_SECRET", secreto: true },
+  // Seletor do Google (Picker): a chave vai para o navegador de quem conecta, então não é segredo; restrinja-a ao domínio da plataforma no Google Cloud.
+  google_picker_api_key: { grupo: "Google Sheets (OAuth)", label: "Chave de API do seletor de planilhas (Google Picker API)", envFallback: "GOOGLE_PICKER_API_KEY", secreto: false },
+  google_projeto_numero: { grupo: "Google Sheets (OAuth)", label: "Número do projeto no Google Cloud (App ID do seletor)", envFallback: "GOOGLE_PROJETO_NUMERO", secreto: false },
   evolution_api_url: { grupo: "Evolution API (WhatsApp)", label: "URL base", envFallback: "EVOLUTION_API_URL", secreto: false },
   evolution_api_key: { grupo: "Evolution API (WhatsApp)", label: "API Key", envFallback: "EVOLUTION_API_KEY", secreto: true },
   webhook_segredo: { grupo: "Evolution API (WhatsApp)", label: "Segredo do webhook de respostas (opcional)", envFallback: "WEBHOOK_SECRET", secreto: true },

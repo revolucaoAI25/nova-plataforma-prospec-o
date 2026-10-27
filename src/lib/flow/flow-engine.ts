@@ -2,7 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { calcularProximaExecucao } from "@/lib/automation-logic";
 import { buscarLeadsFiltro } from "@/lib/dispatch-db";
 import { getProfile } from "@/lib/credits";
-import { lerValores } from "@/lib/integrations/google-sheets";
+import { extrairSheetId, lerValores } from "@/lib/integrations/google-sheets";
 import { FLOW_NODE_EXECUTORS } from "./executors";
 import { FLOW_NODE_TYPES } from "./node-types";
 import { interpolarConfig } from "./interpolation";
@@ -207,7 +207,8 @@ async function avaliarGatilhoFiltroLeads(sb: SupabaseClient, flow: AutomationFlo
 
 async function avaliarGatilhoPlanilha(sb: SupabaseClient, flow: AutomationFlowRow, gatilho: FlowNode, log: (m: string) => void) {
   const config = (gatilho.config || {}) as Record<string, unknown>;
-  const sheetId = String(config.sheetId || "");
+  const bruto = String(config.sheetId || "");
+  const sheetId = extrairSheetId(bruto) ?? bruto;
   const abaNome = String(config.abaNome || "");
   const colunaTelefone = String(config.colunaTelefone || "telefone");
   const colunaNome = config.colunaNome ? String(config.colunaNome) : "";

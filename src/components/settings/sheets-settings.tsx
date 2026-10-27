@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Sheet, Link2, Unlink, Star, Trash2 } from "lucide-react";
+import { Sheet, Link2, Unlink, Star, Trash2, FolderOpen, FilePlus2, Loader2, AlertTriangle } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,8 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { FieldGroup, FieldRow, FieldGroupLabel } from "@/components/ui/field-group";
 import { useConfirm } from "@/components/ui/confirm-provider";
+import { Input } from "@/components/ui/input";
+import { criarPlanilhaNova, escolherPlanilhaNoGoogle, type PlanilhaEscolhida } from "@/components/sheets/seletor-google";
 import type { Profile, SheetConfig } from "@/lib/database.types";
 
 export function SheetsSettings({
@@ -31,11 +33,16 @@ export function SheetsSettings({
   const [novaPlanilha, setNovaPlanilha] = useState("");
   const [loadingList, setLoadingList] = useState(conectado);
   const [saving, setSaving] = useState(false);
+  // Planilhas configuradas que a plataforma não consegue abrir (com o acesso novo, só as escolhidas no seletor do Google).
+  const [semAcesso, setSemAcesso] = useState<Record<string, boolean>>({});
+  const [ocupado, setOcupado] = useState<"escolher" | "criar" | null>(null);
+  const [criando, setCriando] = useState(false);
+  const [titulo, setTitulo] = useState("Leads Leadmatic");
   const [feedback, setFeedback] = useState<{ ok: boolean; msg: string } | null>(
     initialFeedback === "conectado"
       ? { ok: true, msg: "Conta Google conectada com sucesso." }
       : initialFeedback === "nao_configurado"
-        ? { ok: false, msg: "Integração com Google Sheets não configurada nesta plataforma (faltam GOOGLE_CLIENT_ID/GOOGLE_CLIENT_SECRET)." }
+        ? { ok: false, msg: "A integração com o Google Sheets ainda não está disponível. Fale com o suporte para ativar." }
         : initialFeedback === "erro"
           ? { ok: false, msg: "Não foi possível conectar sua conta Google." }
           : null,
@@ -49,27 +56,86 @@ export function SheetsSettings({
       .finally(() => setLoadingList(false));
   }, [conectado]);
 
+  /** Abas da planilha (e se a plataforma tem acesso a ela). */
+  async function buscarAbas(sheetId: string): Promise<string[]> {
+    const resp = await fetch(`/api/integrations/google-sheets/spreadsheets?sheetId=${encodeURIComponent(sheetId)}`).catch(() => null);
+    const data = await resp?.json().catch(() => null);
+    setSemAcesso((prev) => ({ ...prev, [sheetId]: Boolean(!resp?.ok && data?.semAcesso) }));
+    const abas = resp?.ok ? ((data?.abas as string[] | undefined) ?? []) : [];
+    if (resp?.ok) setAbasPorSheet((prev) => ({ ...prev, [sheetId]: abas }));
+    return abas;
+  }
+
+  // Confere uma vez se as planilhas já configuradas continuam acessíveis.
+  useEffect(() => {
+    if (!conectado) return;
+    const ids = [...new Set((profile.google_sheets_creds?.planilhas || []).map((p) => p.id))];
+    let ativo = true;
+    for (const id of ids) {
+      fetch(`/api/integrations/google-sheets/spreadsheets?sheetId=${encodeURIComponent(id)}`)
+        .then(async (r) => ({ ok: r.ok, d: await r.json().catch(() => null) }))
+        .then(({ ok, d }) => {
+          if (!ativo) return;
+          setSemAcesso((prev) => ({ ...prev, [id]: Boolean(!ok && d?.semAcesso) }));
+          if (ok) setAbasPorSheet((prev) => ({ ...prev, [id]: d?.abas ?? [] }));
+        })
+        .catch(() => undefined);
+    }
+    return () => { ativo = false; };
+  }, [conectado, profile.google_sheets_creds?.planilhas]);
+
   async function carregarAbas(sheetId: string) {
     if (abasPorSheet[sheetId]) return;
-    const resp = await fetch(`/api/integrations/google-sheets/spreadsheets?sheetId=${sheetId}`);
-    const data = await resp.json();
-    setAbasPorSheet((prev) => ({ ...prev, [sheetId]: data.abas || [] }));
+    await buscarAbas(sheetId);
+  }
+
+  async function escolherNoGoogle(arquivoId?: string) {
+    setFeedback(null);
+    setOcupado("escolher");
+    try {
+      const p = await escolherPlanilhaNoGoogle({ arquivoId });
+      if (!p) return;
+      setDisponiveis((lista) => (lista.some((d) => d.id === p.id) ? lista : [p, ...lista]));
+      if (arquivoId) {
+        // Liberou uma planilha já configurada: só recarrega as abas.
+        await buscarAbas(p.id);
+      } else {
+        await adicionarPlanilha(p);
+      }
+    } catch (e) {
+      setFeedback({ ok: false, msg: (e as Error).message });
+    } finally {
+      setOcupado(null);
+    }
+  }
+
+  async function criarNova() {
+    if (!titulo.trim()) return;
+    setFeedback(null);
+    setOcupado("criar");
+    try {
+      const p = await criarPlanilhaNova(titulo.trim());
+      setDisponiveis((lista) => [{ id: p.id, name: p.name }, ...lista]);
+      setAbasPorSheet((prev) => ({ ...prev, [p.id]: p.abas }));
+      setCriando(false);
+      await adicionarPlanilha({ id: p.id, name: p.name }, p.abas);
+      setFeedback({ ok: true, msg: `Planilha "${p.name}" criada no seu Google Drive. Clique em Salvar para manter a configuração.` });
+    } catch (e) {
+      setFeedback({ ok: false, msg: (e as Error).message });
+    } finally {
+      setOcupado(null);
+    }
   }
 
   // A mesma planilha pode entrar mais de uma vez, uma por aba: cada linha
   // é planilha + aba (as operações abaixo usam a posição na lista, não o id
   // da planilha, que se repete).
-  async function adicionarPlanilha() {
-    const p = disponiveis.find((d) => d.id === novaPlanilha);
+  async function adicionarPlanilha(escolhida?: PlanilhaEscolhida, abasConhecidas?: string[]) {
+    const p = escolhida ?? disponiveis.find((d) => d.id === novaPlanilha);
     if (!p) return;
-    setNovaPlanilha("");
-    let abas = abasPorSheet[p.id];
-    if (!abas) {
-      const resp = await fetch(`/api/integrations/google-sheets/spreadsheets?sheetId=${p.id}`).catch(() => null);
-      const data = resp?.ok ? await resp.json().catch(() => null) : null;
-      abas = (data?.abas as string[] | undefined) ?? [];
-      setAbasPorSheet((prev) => ({ ...prev, [p.id]: abas! }));
-    }
+    if (!escolhida) setNovaPlanilha("");
+    let abas = abasConhecidas ?? abasPorSheet[p.id];
+    if (!abas) abas = await buscarAbas(p.id);
     setPlanilhas((prev) => {
       const usadas = new Set(prev.filter((x) => x.id === p.id).map((x) => x.aba));
       const aba = abas!.find((a) => !usadas.has(a)) ?? abas![0] ?? "Planilha1";
@@ -183,6 +249,15 @@ export function SheetsSettings({
                         </Button>
                       </div>
                     </div>
+                    {semAcesso[p.id] && (
+                      <div className="flex flex-wrap items-center gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-foreground">
+                        <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
+                        <span className="min-w-0 flex-1">A plataforma não tem acesso a esta planilha. Libere escolhendo-a no Google Drive (uma vez só).</span>
+                        <Button type="button" size="sm" variant="outline" onClick={() => escolherNoGoogle(p.id)} disabled={ocupado !== null}>
+                          Liberar acesso
+                        </Button>
+                      </div>
+                    )}
                     <div className="grid gap-2 sm:grid-cols-2">
                       <Select value={p.aba} onValueChange={(v) => atualizarPlanilha(i, { aba: v })} onOpenChange={(open) => open && carregarAbas(p.id)}>
                         <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
@@ -217,10 +292,30 @@ export function SheetsSettings({
                       })}
                     </SelectContent>
                   </Select>
-                  <Button type="button" variant="outline" onClick={adicionarPlanilha} disabled={!novaPlanilha}>
+                  <Button type="button" variant="outline" onClick={() => adicionarPlanilha()} disabled={!novaPlanilha}>
                     Adicionar
                   </Button>
                 </div>
+                <div className="flex flex-wrap gap-2">
+                  <Button type="button" size="sm" variant="outline" onClick={() => escolherNoGoogle()} disabled={ocupado !== null}>
+                    {ocupado === "escolher" ? <Loader2 className="h-4 w-4 animate-spin" /> : <FolderOpen className="h-4 w-4" />} Escolher do Google Drive
+                  </Button>
+                  <Button type="button" size="sm" variant="ghost" onClick={() => setCriando((v) => !v)} disabled={ocupado !== null}>
+                    <FilePlus2 className="h-4 w-4" /> Criar planilha nova
+                  </Button>
+                </div>
+                {criando && (
+                  <div className="flex gap-2">
+                    <Input value={titulo} onChange={(e) => setTitulo(e.target.value)} aria-label="Nome da planilha nova" maxLength={120} />
+                    <Button type="button" size="sm" onClick={criarNova} disabled={!titulo.trim() || ocupado !== null} className="h-10 shrink-0">
+                      {ocupado === "criar" && <Loader2 className="h-4 w-4 animate-spin" />} Criar
+                    </Button>
+                  </div>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  A lista mostra as planilhas que você já usou aqui. Para usar outra do seu Drive, clique em “Escolher do Google Drive”: o Google
+                  libera para a plataforma só a planilha que você escolher.
+                </p>
               </div>
 
               <Button type="button" onClick={salvar} disabled={saving} className="self-start">
