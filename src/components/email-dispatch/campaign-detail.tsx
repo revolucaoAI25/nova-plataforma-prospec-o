@@ -322,6 +322,11 @@ export function CampaignDetail({
             </Button>
           </div>
         </CardHeader>
+        {!sender && (
+          <div className="px-6 pb-4">
+            <Alert variant="destructive"><AlertDescription>Esta campanha está sem remetente (o que ela usava foi removido): nenhum e-mail sai, mesmo ativa. Crie uma campanha nova com um remetente do seu domínio.</AlertDescription></Alert>
+          </div>
+        )}
         <CardContent>
           <div className="flex flex-wrap gap-2">
             {Object.entries(stats).map(([k, v]) => (

@@ -334,6 +334,11 @@ export function CampaignDetail({
             </Button>
           </div>
         </CardHeader>
+        {(!conta || conta.status !== "conectado") && (
+          <div className="px-6 pb-4">
+            <Alert variant="destructive"><AlertDescription>{conta ? "A conta do LinkedIn desta campanha está desconectada: nada é enviado até reconectar em Conexões." : "Esta campanha está sem conta do LinkedIn (a que ela usava foi removida): nada é enviado. Crie uma campanha nova com uma conta conectada."}</AlertDescription></Alert>
+          </div>
+        )}
         <CardContent>
           <div className="flex flex-wrap gap-2">
             {Object.entries(stats).map(([k, v]) => (

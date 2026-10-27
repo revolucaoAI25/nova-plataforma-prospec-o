@@ -337,6 +337,11 @@ export function CampaignDetail({
             </Button>
           </div>
         </CardHeader>
+        {(!instancia || instancia.status !== "conectado") && (
+          <div className="px-6 pb-4">
+            <Alert variant="destructive"><AlertDescription>{instancia ? "O número desta campanha está desconectado: as mensagens ficam esperando até reconectar em Números." : "Esta campanha está sem número de WhatsApp (o que ela usava foi removido): nada é enviado."}</AlertDescription></Alert>
+          </div>
+        )}
         <CardContent>
           <div className="flex flex-wrap gap-2">
             {Object.entries(stats).map(([k, v]) => (
