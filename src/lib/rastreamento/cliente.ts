@@ -94,7 +94,8 @@ export function registrarEvento(evento: string, alvo?: string | null) {
       visitante: visitanteId(),
       sessao: sessaoId(),
       evento,
-      pagina: location.pathname,
+      // A raiz, para quem não está logado, é a página de vendas (rewrite no proxy).
+      pagina: location.pathname === "/" ? "/conheca" : location.pathname,
       alvo: alvo ?? null,
       referrer: document.referrer ? new URL(document.referrer).hostname : null,
       dispositivo: dispositivo(),

@@ -139,7 +139,11 @@ export default async function FunilLpPage({ searchParams }: { searchParams: Prom
   const painel = (data as Painel | null) ?? null;
   const e = painel?.etapas ?? {};
   const v = (k: string) => Number(e[k] ?? 0);
-  const visitantes = v("visitou");
+  // A raiz do domínio mostra a página de vendas sem mudar o endereço, e essas
+  // visitas foram registradas como "/" (fora de "visitou"). Ninguém vê uma
+  // seção sem ter entrado na página: o maior número entre as seções corrige
+  // a base, inclusive para os dados antigos.
+  const visitantes = Math.max(v("visitou"), ...Object.values(painel?.secoes ?? {}).map(Number), 0);
   const pagos = v("comprou");
   const totalDispositivos = Object.values(painel?.dispositivos ?? {}).reduce((a, b) => a + Number(b), 0);
   const sec = (k: string) => Number(painel?.secoes?.[k] ?? 0);
