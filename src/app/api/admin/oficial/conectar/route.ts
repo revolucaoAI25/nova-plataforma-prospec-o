@@ -13,7 +13,7 @@ export async function POST(request: Request) {
   const parsed = z.object({ userId: z.string().uuid() }).safeParse(await request.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "Escolha um cliente." }, { status: 400 });
   if (!(await parceiroDatafyConfigurado())) {
-    return NextResponse.json({ error: "Cadastre o token de conta de parceiro da Datafy em /admin → Chaves da plataforma." }, { status: 503 });
+    return NextResponse.json({ error: "Cadastre o token de conta de parceiro da Datafy em Administração → Chaves e integrações." }, { status: 503 });
   }
   try {
     return NextResponse.json(await iniciarConexaoOficial(parsed.data.userId, { porAdmin: true }));

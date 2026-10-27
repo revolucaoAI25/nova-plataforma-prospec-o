@@ -3,7 +3,6 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getProfile } from "@/lib/credits";
-import { PageHeader } from "@/components/layout/page-header";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { LeadsBoard } from "@/components/admin/leads-board";
 import { cn } from "@/lib/utils";
@@ -33,12 +32,6 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
 
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader
-        backHref="/admin"
-        eyebrow="Administração"
-        title="Leads da página de vendas"
-        description="Quem preencheu o formulário (mesmo sem concluir), quem está no teste, quem não pagou e quem virou cliente. Arraste para Em contato quando chamar; a etapa avança sozinha quando a pessoa cria a conta ou paga."
-      />
       <div className="inline-flex self-start rounded-lg border border-border bg-card p-1" role="group" aria-label="Período">
         {PERIODOS.map(([valor, rotulo]) => (
           <Link

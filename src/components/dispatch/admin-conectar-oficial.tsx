@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { Check, Copy, ExternalLink, Link2, Loader2, RefreshCw, Search, X } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -189,7 +190,7 @@ export function AdminConectarOficial({ clientes, parceiroConfigurado }: { client
 
         {modo === "gerar" ? (
           !parceiroConfigurado ? (
-            <p className="text-sm text-muted-foreground">Cadastre o token de conta de parceiro da Datafy em /admin → Chaves da plataforma para usar esta opção.</p>
+            <p className="text-sm text-muted-foreground">Cadastre o token de conta de parceiro da Datafy em <Link href="/admin/configuracoes" className="font-medium text-primary hover:underline">Chaves e integrações</Link> para usar esta opção.</p>
           ) : conexao ? (
             <div className="flex flex-col gap-3 rounded-xl border border-border p-4">
               <p className="text-sm text-muted-foreground">

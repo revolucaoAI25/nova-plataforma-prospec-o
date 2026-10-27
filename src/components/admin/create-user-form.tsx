@@ -56,7 +56,7 @@ export function CreateUserForm() {
   if (!open) {
     return (
       <Button onClick={() => setOpen(true)} className="self-start">
-        <UserPlus className="h-4 w-4" /> Novo usuário
+        <UserPlus className="h-4 w-4" /> Nova conta
       </Button>
     );
   }
@@ -65,14 +65,14 @@ export function CreateUserForm() {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-base"><UserPlus className="h-4 w-4 text-primary" /> Criar novo usuário</CardTitle>
-        <CardDescription>Outros campos de crédito e permissões ficam editáveis na tabela abaixo.</CardDescription>
+        <CardDescription>Recursos liberados e condição de preço ficam na página do cliente, depois de criar.</CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div className="flex flex-wrap items-end gap-3">
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="new-nome">Nome</Label>
-              <Input id="new-nome" required autoComplete="off" value={nome} onChange={(e) => setNome(e.target.value)} className="w-64" />
+              <Input id="new-nome" required autoComplete="off" value={nome} onChange={(e) => setNome(e.target.value)} className="w-full sm:w-64" />
             </div>
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="new-telefone">Telefone <span className="font-normal text-muted-2">(opcional)</span></Label>
@@ -83,13 +83,13 @@ export function CreateUserForm() {
             </div>
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="new-empresa">Empresa <span className="font-normal text-muted-2">(opcional)</span></Label>
-              <Input id="new-empresa" autoComplete="off" value={empresa} onChange={(e) => setEmpresa(e.target.value)} className="w-64" />
+              <Input id="new-empresa" autoComplete="off" value={empresa} onChange={(e) => setEmpresa(e.target.value)} className="w-full sm:w-64" />
             </div>
           </div>
           <div className="flex flex-wrap items-end gap-3">
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="new-email">E-mail</Label>
-              <Input id="new-email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="w-64" />
+              <Input id="new-email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="w-full sm:w-64" />
             </div>
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="new-password">Senha inicial</Label>

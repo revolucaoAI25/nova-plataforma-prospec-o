@@ -3,7 +3,6 @@ import { createClient } from "@/lib/supabase/server";
 import { getProfile } from "@/lib/credits";
 import { listarSolicitacoesOficial } from "@/lib/dispatch-db";
 import { AdminOficialRequests } from "@/components/dispatch/admin-oficial-requests";
-import { PageHeader } from "@/components/layout/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { dadosWebhookOficial } from "@/lib/integrations/whatsapp-oficial";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -28,12 +27,6 @@ export default async function AdminDisparoPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader
-        backHref="/admin"
-        eyebrow="Administração"
-        title="Canal oficial"
-        description="Conexão do WhatsApp oficial dos clientes, solicitações antigas e o webhook do canal oficial."
-      />
       <AdminConectarOficial clientes={(clientesData ?? []) as ClienteOpcao[]} parceiroConfigurado={parceiro} />
       <Card>
         <CardHeader>

@@ -36,7 +36,7 @@ export function ContaTesteForm({ userId, profile, creditosTeste }: { userId: str
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base"><Clock className="h-4 w-4 text-primary" /> Conta de teste</CardTitle>
           <CardDescription>
-            Ao ativar, a conta recebe {creditosTeste.toLocaleString("pt-BR")} créditos (quantidade global, em Chaves da plataforma) e acesso
+            Ao ativar, a conta recebe {creditosTeste.toLocaleString("pt-BR")} créditos (quantidade global, em Chaves e integrações) e acesso
             a toda a plataforma — exceto disparo por LinkedIn e canal oficial de WhatsApp. Não pode comprar créditos nem assinar planos.
             O acesso é bloqueado automaticamente ao expirar.
           </CardDescription>

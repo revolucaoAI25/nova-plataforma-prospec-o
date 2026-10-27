@@ -12,8 +12,6 @@ import {
   CalendarClock,
   History,
   Plug,
-  Users,
-  Radio,
   BrainCircuit,
   Mail,
   Contact,
@@ -21,8 +19,7 @@ import {
   Coins,
   Compass,
   UserRound,
-  Filter,
-  Columns3,
+  ShieldCheck,
 } from "lucide-react";
 import { paginaLiberadaNoTeste } from "@/lib/teste-gratis-regras";
 
@@ -165,13 +162,9 @@ function montarSecoes({
 
   if (isAdmin) {
     sections.push({
-      label: "Administração",
-      items: [
-        { type: "link", href: "/admin", label: "Usuários", icon: Users },
-        { type: "link", href: "/admin/disparo", label: "Canal oficial", icon: Radio },
-        { type: "link", href: "/admin/funil-lp", label: "Funil da página", icon: Filter },
-        { type: "link", href: "/admin/leads", label: "Leads da página", icon: Columns3 },
-      ],
+      label: "Gestão",
+      // Uma entrada só: clientes, leads, funil, preços, WhatsApp oficial e chaves ficam nas seções de /admin.
+      items: [{ type: "link", href: "/admin", label: "Administração", icon: ShieldCheck }],
     });
   }
 
