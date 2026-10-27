@@ -737,7 +737,6 @@ function CamposDisparoWhatsapp({ config, set }: CamposProps) {
 
 function CamposDisparoLinkedin({ config, set }: CamposProps) {
   const campanhas = useListaFetch<{ id: string; nome: string; status: string }>("/api/linkedin-dispatch/campaigns");
-  const contas = useListaFetch<{ id: string; nome: string }>("/api/linkedin-dispatch/accounts");
   return (
     <>
       <Campo label="Campanha de disparo por LinkedIn">
@@ -748,17 +747,9 @@ function CamposDisparoLinkedin({ config, set }: CamposProps) {
           </SelectContent>
         </Select>
       </Campo>
-      <Campo label="Conta LinkedIn">
-        <Select value={String(config.accountId || "")} onValueChange={(v) => set({ accountId: v })}>
-          <SelectTrigger><SelectValue placeholder="Selecione uma conta" /></SelectTrigger>
-          <SelectContent>
-            {contas.map((c) => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}
-          </SelectContent>
-        </Select>
-      </Campo>
       <p className="text-xs text-muted-foreground">
-        Este módulo só inscreve os leads na campanha. A nota do convite e as mensagens ficam na campanha, em{" "}
-        <strong className="text-foreground">Disparo LinkedIn</strong>. O lead precisa ter o endereço do perfil (linkedin_url).
+        Este módulo inscreve os leads na campanha; a conta do LinkedIn que envia é a da campanha. O lead precisa ter o endereço do
+        perfil (linkedin_url). Logo abaixo aparecem as mensagens, o status e de onde vem cada variável.
       </p>
     </>
   );
@@ -766,7 +757,6 @@ function CamposDisparoLinkedin({ config, set }: CamposProps) {
 
 function CamposDisparoEmail({ config, set }: CamposProps) {
   const campanhas = useListaFetch<{ id: string; nome: string; status: string }>("/api/email-dispatch/campaigns");
-  const senders = useListaFetch<{ id: string; nome: string }>("/api/email-dispatch/senders");
   return (
     <>
       <Campo label="Campanha de disparo por e-mail">
@@ -777,17 +767,9 @@ function CamposDisparoEmail({ config, set }: CamposProps) {
           </SelectContent>
         </Select>
       </Campo>
-      <Campo label="Remetente">
-        <Select value={String(config.senderId || "")} onValueChange={(v) => set({ senderId: v })}>
-          <SelectTrigger><SelectValue placeholder="Selecione um remetente" /></SelectTrigger>
-          <SelectContent>
-            {senders.map((s) => <SelectItem key={s.id} value={s.id}>{s.nome}</SelectItem>)}
-          </SelectContent>
-        </Select>
-      </Campo>
       <p className="text-xs text-muted-foreground">
-        Este módulo só inscreve os leads na campanha. O assunto e o texto ficam nas etapas da própria campanha, em{" "}
-        <strong className="text-foreground">Disparo e-mail</strong>. Veja abaixo os campos que a mensagem pode usar.
+        Este módulo inscreve os leads na campanha; o remetente é o da campanha. Logo abaixo aparecem o assunto e o texto de cada
+        e-mail, o status e de onde vem cada variável.
       </p>
     </>
   );

@@ -23,11 +23,36 @@ export const CAMPOS_SEMPRE = ["nome", "telefone", "email", "municipio", "uf", "f
 export const CAMPOS_PRONTOS: GrupoCampos = {
   grupo: "Prontos para mensagem (já arrumados)",
   campos: [
-    { chave: "primeiro_nome", label: "Primeiro nome do sócio ou da pessoa" },
-    { chave: "empresa", label: "Nome da empresa sem LTDA e sem caixa alta" },
-    { chave: "cidade", label: "Cidade" },
+    { chave: "primeiro_nome", label: "Primeiro nome: do sócio encontrado no Celular do sócio; sem ele, do sócio principal do CNPJ; em lead de LinkedIn, Instagram ou lista, da própria pessoa" },
+    { chave: "empresa", label: "Nome da empresa sem LTDA e sem caixa alta (razão social ou nome do estabelecimento; no LinkedIn, a empresa atual)" },
+    { chave: "cidade", label: "Cidade do lead (município; sem ele, a cidade da busca)" },
   ],
 };
+
+/**
+ * De onde sai cada variável pronta neste ponto da automação, em português,
+ * seguindo a mesma ordem de src/lib/mensagem.ts (variaveisDerivadas).
+ */
+export function origemDasProntas(tiposAnteriores: FlowNodeTipo[]): Record<"primeiro_nome" | "empresa" | "cidade", string> {
+  const tem = (t: FlowNodeTipo) => tiposAnteriores.includes(t);
+  const cnpj = tem("extracao_cnpj") || tem("fonte_historico") || tem("gatilho_filtro_leads");
+  const socio = tem("enriquecimento_bigdatacorp");
+  let nome: string;
+  if (tem("extracao_linkedin")) nome = "do nome da pessoa no LinkedIn";
+  else if (tem("extracao_instagram")) nome = "do nome no perfil do Instagram";
+  else if (socio) nome = "do sócio encontrado pelo Celular do sócio (o dono do celular que recebe a mensagem); se não achar, do sócio principal do CNPJ";
+  else if (cnpj) nome = "do sócio principal do CNPJ (o administrador, quando há)";
+  else if (tem("gatilho_planilha")) nome = "da coluna nome_completo, ou socio_nome, da planilha";
+  else if (tem("extracao_maps")) nome = "o Maps não traz nome de pessoa: fica vazio (use um texto padrão ou o Celular do sócio antes)";
+  else nome = "do sócio ou da pessoa do lead";
+  return {
+    primeiro_nome: `Primeiro nome, ${nome}.`,
+    empresa: tem("extracao_linkedin")
+      ? "Empresa atual da pessoa no LinkedIn, sem LTDA."
+      : "Nome da empresa (razão social ou nome no Maps), sem LTDA e sem caixa alta.",
+    cidade: "Município do lead; sem ele, a cidade usada na busca.",
+  };
+}
 
 const CNPJ: GrupoCampos = {
   grupo: "Da busca por CNPJ",

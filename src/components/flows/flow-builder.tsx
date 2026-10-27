@@ -17,6 +17,7 @@ import { chaveExplicacaoIa } from "./criar-fluxo-ia-dialog";
 import type { ExecucaoDoNo } from "./flow-node-card";
 import type { VariavelEntrada } from "@/lib/flow/node-types";
 import type { AutomationFlowRow, FlowNode, FlowEdge, FlowRunRow, FlowRunStepRow } from "@/lib/database.types";
+import { AvisoCampanhas } from "./aviso-campanhas";
 
 function novoGatilho(): FlowNode {
   return { id: crypto.randomUUID(), tipo: "gatilho_manual", config: {}, posicao: { x: 60, y: 160 } };
@@ -279,6 +280,8 @@ export function FlowBuilder({ flowInicial }: { flowInicial: AutomationFlowRow | 
             )}
           </div>
         </div>
+
+        <AvisoCampanhas nodes={grafo.nodes} />
 
         {formVariaveis && (
           <div className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4">

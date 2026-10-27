@@ -7,21 +7,34 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import type { FlowNodeTipo } from "@/lib/database.types";
-import { camposDisponiveis, CAMPOS_SEMPRE } from "./lead-field-reference";
+import { camposDisponiveis, CAMPOS_SEMPRE, origemDasProntas } from "./lead-field-reference";
 
-const CAMPANHA_DO_NO: Partial<Record<FlowNodeTipo, { api: string; pagina: string }>> = {
+export const CAMPANHA_DO_NO: Partial<Record<FlowNodeTipo, { api: string; pagina: string }>> = {
   disparo_whatsapp: { api: "/api/dispatch/campaigns", pagina: "/disparo/campanhas" },
   disparo_email: { api: "/api/email-dispatch/campaigns", pagina: "/disparo-email/campanhas" },
   disparo_linkedin: { api: "/api/linkedin-dispatch/campaigns", pagina: "/disparo-linkedin/campanhas" },
 };
 
-interface Campanha {
+export interface CampanhaResumo {
   nome?: string;
   status?: string;
+  instance_id?: string | null;
+  sender_id?: string | null;
+  account_id?: string | null;
   limite_novos_por_dia?: number | null;
   janela_inicio?: string | null;
   janela_fim?: string | null;
   janela_dias?: number[] | null;
+}
+
+/** O que impede a campanha de enviar (vazio = pronta). */
+export function problemasDaCampanha(tipo: FlowNodeTipo, c: CampanhaResumo): string[] {
+  const p: string[] = [];
+  if (c.status !== "ativa") p.push(c.status === "concluida" ? "está concluída" : c.status === "pausada" ? "está pausada" : "ainda não foi ativada");
+  if (tipo === "disparo_whatsapp" && "instance_id" in c && !c.instance_id) p.push("não tem número de WhatsApp escolhido");
+  if (tipo === "disparo_email" && "sender_id" in c && !c.sender_id) p.push("não tem remetente escolhido");
+  if (tipo === "disparo_linkedin" && "account_id" in c && !c.account_id) p.push("não tem conta do LinkedIn escolhida");
+  return p;
 }
 
 type Etapa = Record<string, unknown> & { ordem?: number; atraso_horas?: number };
@@ -80,7 +93,7 @@ export function ResumoCampanha({
   onMapear: (m: Record<string, string>) => void;
 }) {
   const destino = CAMPANHA_DO_NO[tipo];
-  const [dados, setDados] = useState<{ campanha: Campanha; etapas: Etapa[] } | null>(null);
+  const [dados, setDados] = useState<{ campanha: CampanhaResumo; etapas: Etapa[] } | null>(null);
   const [ativando, setAtivando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
 
@@ -89,7 +102,7 @@ export function ResumoCampanha({
     let vivo = true;
     fetch(`${destino.api}/${campaignId}`)
       .then((r) => (r.ok ? r.json() : null))
-      .then((d) => vivo && setDados({ campanha: (d?.campanha ?? {}) as Campanha, etapas: Array.isArray(d?.etapas) ? d.etapas : [] }))
+      .then((d) => vivo && setDados({ campanha: (d?.campanha ?? {}) as CampanhaResumo, etapas: Array.isArray(d?.etapas) ? d.etapas : [] }))
       .catch(() => vivo && setDados({ campanha: {}, etapas: [] }));
     return () => { vivo = false; };
   }, [destino, campaignId]);
@@ -120,6 +133,8 @@ export function ResumoCampanha({
 
   const status = campanha.status ?? "";
   const ativa = status === "ativa";
+  const semCanal = problemasDaCampanha(tipo, campanha).filter((x) => x.startsWith("não tem"));
+  const origens = origemDasProntas(tipos) as Record<string, string>;
 
   // Variáveis usadas nas mensagens e se o dado chega até este ponto da automação.
   const { grupos, dePlanilha } = camposDisponiveis(tipos, viaRamo);
@@ -167,6 +182,13 @@ export function ResumoCampanha({
         </div>
       )}
 
+      {semCanal.length > 0 && (
+        <p className="flex items-start gap-1.5 rounded-lg border border-destructive/40 bg-destructive-soft p-2.5 text-xs text-destructive">
+          <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+          <span>A campanha {semCanal.join(" e ")}: os leads entram, mas nada é enviado. Escolha na campanha. {link}</span>
+        </p>
+      )}
+
       {etapas.length === 0 ? (
         <p className="flex items-start gap-1.5 rounded-lg border border-destructive/40 bg-destructive-soft p-2.5 text-xs text-destructive">
           <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
@@ -207,6 +229,7 @@ export function ResumoCampanha({
                     </span>
                   )}
                 </div>
+                {!mapeada && origens[variavel] && <p className="text-[11px] leading-snug text-muted-foreground">{origens[variavel]}</p>}
                 {dePlanilha ? (
                   <Input
                     value={mapeada ?? ""}

@@ -99,10 +99,16 @@ export function DicaVariaveis({
             (&quot;Oi {"{{primeiro_nome}}"}, tudo bem?&quot; vira &quot;Oi, tudo bem?&quot;). Para usar outra palavra quando faltar, ponha uma barra:{" "}
             {codigo("{{empresa|sua empresa}}")}.
           </p>
-          <p className="leading-snug">
-            {codigo("{{primeiro_nome}}")}, {codigo("{{empresa}}")} e {codigo("{{cidade}}")} são as melhores para abrir a conversa: já
-            vêm arrumadas (sem LTDA, sem caixa alta).
-          </p>
+          <div className="flex flex-col gap-1 leading-snug">
+            <p>As prontas são as melhores para abrir a conversa: já vêm arrumadas (sem LTDA, sem caixa alta). De onde vem cada uma:</p>
+            <p>
+              {codigo("{{primeiro_nome}}")}: o primeiro nome do sócio encontrado pelo Celular do sócio (o dono do celular que recebe a
+              mensagem); sem ele, do sócio principal do CNPJ. Em lead de LinkedIn, Instagram ou lista, é o nome da própria pessoa. Lead
+              do Maps não tem nome de pessoa: use um texto padrão, ex.: {codigo("{{primeiro_nome|tudo bem}}")}.
+            </p>
+            <p>{codigo("{{empresa}}")}: a razão social ou o nome no Maps (no LinkedIn, a empresa atual), sem LTDA.</p>
+            <p>{codigo("{{cidade}}")}: o município do lead; sem ele, a cidade usada na busca.</p>
+          </div>
           {outros.map((g) => (
             <div key={g.grupo} className="flex flex-col gap-1.5">
               <p className="text-[11px] font-medium text-foreground">{g.grupo}</p>
