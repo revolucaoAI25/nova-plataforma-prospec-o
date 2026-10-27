@@ -24,7 +24,6 @@ interface Painel {
 const SECOES: [string, string][] = [
   ["inicio", "Início (hero)"],
   ["sem_trafego", "Sem tráfego pago"],
-  ["clientes_faixa", "Empresas atendidas (faixa)"],
   ["chamada_1", "Chamada: ver planos / testar"],
   ["como_funciona", "Como funciona"],
   ["enriquecimento", "Enriquecimento do lead"],
