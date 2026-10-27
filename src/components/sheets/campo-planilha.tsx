@@ -5,8 +5,11 @@ import { AlertTriangle, FilePlus2, FolderOpen, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { criarPlanilhaNova, escolherPlanilhaNoGoogle, extrairIdPlanilha } from "@/components/sheets/seletor-google";
+
+const ACAO_DRIVE = "__buscar_no_drive__";
+const ACAO_NOVA = "__criar_planilha__";
 
 export interface ValorPlanilha {
   sheetId: string;
@@ -126,22 +129,39 @@ export function CampoPlanilha({
     <div className="flex flex-col gap-3">
       <div className="flex flex-col gap-1.5">
         <Label htmlFor={`${idPrefixo}-planilha`}>Planilha</Label>
-        {/* Dentro de <form>, o Select manda "" quando as opções mudam: ignora. */}
-        <Select value={valor.sheetId} onValueChange={(v) => v && v !== valor.sheetId && escolher(v)}>
-          <SelectTrigger id={`${idPrefixo}-planilha`}><SelectValue placeholder="Selecione a planilha" /></SelectTrigger>
+        {/* As ações ficam dentro da própria lista, onde a pessoa clica primeiro. */}
+        <Select
+          value={valor.sheetId}
+          onValueChange={(v) => {
+            // Dentro de <form>, o Select manda "" quando as opções mudam: ignora.
+            if (!v || v === valor.sheetId) return;
+            if (v === ACAO_DRIVE) return void setTimeout(() => abrirSeletor(), 0);
+            if (v === ACAO_NOVA) return setCriando(true);
+            escolher(v);
+          }}
+        >
+          <SelectTrigger id={`${idPrefixo}-planilha`}><SelectValue placeholder="Escolha a planilha" /></SelectTrigger>
           <SelectContent>
-            {valor.sheetId && !valorNaLista && <SelectItem value={valor.sheetId}>{rotuloSemLista}</SelectItem>}
-            {planilhas.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+            <SelectItem value={ACAO_DRIVE}>
+              <span className="flex items-center gap-2 font-medium text-primary"><FolderOpen className="h-4 w-4" /> Buscar no Google Drive…</span>
+            </SelectItem>
+            <SelectItem value={ACAO_NOVA}>
+              <span className="flex items-center gap-2 font-medium text-primary"><FilePlus2 className="h-4 w-4" /> Criar planilha nova…</span>
+            </SelectItem>
+            {(planilhas.length > 0 || (valor.sheetId && !valorNaLista)) && (
+              <SelectGroup>
+                <p className="mt-1 border-t border-border px-2 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Já usadas aqui
+                </p>
+                {valor.sheetId && !valorNaLista && <SelectItem value={valor.sheetId}>{rotuloSemLista}</SelectItem>}
+                {planilhas.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+              </SelectGroup>
+            )}
           </SelectContent>
         </Select>
-        <div className="flex flex-wrap gap-2">
-          <Button type="button" size="sm" variant="outline" onClick={() => abrirSeletor()} disabled={ocupado !== null}>
-            {ocupado === "escolher" ? <Loader2 className="h-4 w-4 animate-spin" /> : <FolderOpen className="h-4 w-4" />} Escolher do Google Drive
-          </Button>
-          <Button type="button" size="sm" variant="ghost" onClick={() => setCriando((v) => !v)} disabled={ocupado !== null}>
-            <FilePlus2 className="h-4 w-4" /> Criar planilha nova
-          </Button>
-        </div>
+        {ocupado === "escolher" && (
+          <p className="flex items-center gap-2 text-xs text-muted-foreground"><Loader2 className="h-3.5 w-3.5 animate-spin" /> Abrindo o Google Drive…</p>
+        )}
         {criando && (
           <div className="flex gap-2">
             <Input value={titulo} onChange={(e) => setTitulo(e.target.value)} aria-label="Nome da planilha nova" maxLength={120} />

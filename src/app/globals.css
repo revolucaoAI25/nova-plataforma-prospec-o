@@ -410,6 +410,19 @@ body {
 .maplibregl-ctrl-attrib.maplibregl-compact { background: var(--color-card); color: var(--color-muted-foreground); }
 .maplibregl-ctrl-attrib a { color: inherit; }
 
-/* Seletor de planilhas do Google: acima das janelas e da tela cheia do editor de automações. */
-.picker-dialog-bg { z-index: 2000 !important; }
-.picker-dialog { z-index: 2001 !important; }
+/* Seletor de planilhas do Google: acima das janelas e da tela cheia do editor de
+   automações, sempre centralizado na tela (por padrão ele se posiciona pela
+   página e fica cortado quando a página está rolada). */
+.picker-dialog-bg { position: fixed !important; inset: 0 !important; width: auto !important; height: auto !important; z-index: 2000 !important; }
+.picker-dialog {
+  position: fixed !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%);
+  max-width: calc(100vw - 16px);
+  border-radius: 16px;
+  overflow: hidden;
+  border: none !important;
+  box-shadow: 0 24px 64px rgb(0 0 0 / 0.25) !important;
+  z-index: 2001 !important;
+}

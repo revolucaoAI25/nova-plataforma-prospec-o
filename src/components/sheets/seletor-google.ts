@@ -54,10 +54,17 @@ export async function escolherPlanilhaNoGoogle(opcoes: { arquivoId?: string } = 
 
   const g = window.google.picker;
   return new Promise((resolve) => {
-    const visao = new g.DocsView(g.ViewId.SPREADSHEETS).setMode(g.DocsViewMode.LIST).setIncludeFolders(true).setSelectFolderEnabled(false);
+    // Só planilhas (sem pastas nem formulários), em lista, com a busca do Google no topo.
+    const visao = new g.DocsView(g.ViewId.SPREADSHEETS).setMode(g.DocsViewMode.LIST).setIncludeFolders(false).setSelectFolderEnabled(false);
     if (opcoes.arquivoId) visao.setFileIds(opcoes.arquivoId);
+    // Cabe na tela (inclusive notebook pequeno e celular); o CSS em globals.css centraliza.
+    const largura = Math.max(320, Math.min(860, window.innerWidth - 32));
+    const altura = Math.max(360, Math.min(560, window.innerHeight - 48));
     const seletor = new g.PickerBuilder()
       .addView(visao)
+      .enableFeature(g.Feature.NAV_HIDDEN)
+      .enableFeature(g.Feature.SUPPORT_DRIVES)
+      .setSize(largura, altura)
       .setOAuthToken(dados.accessToken)
       .setDeveloperKey(dados.apiKey)
       .setAppId(dados.appId)
