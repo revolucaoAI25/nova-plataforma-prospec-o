@@ -1,5 +1,4 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { emTesteGratis } from "@/lib/teste-gratis-regras";
 import { motivoBloqueio, type PerfilAcesso } from "@/lib/acesso-regras";
 import { registrarAlertaAdmin } from "@/lib/alertas-admin";
 import { dadosWebhookOficial } from "@/lib/integrations/whatsapp-oficial";
@@ -46,13 +45,22 @@ export const MSG_SEM_RECURSO =
 
 type PerfilOficial = PerfilAcesso & Pick<Profile, "id" | "email" | "whatsapp_oficial_habilitado">;
 
-/** Quem pode ter um canal oficial ativo agora. */
+/**
+ * Quem pode ter um canal oficial ativo agora. No teste grátis o recurso
+ * começa desligado (camposInicioTesteGratis) e só o admin liga, então o
+ * teste não barra aqui: senão o worker cancelaria o canal que o admin deu.
+ */
 export function podeUsarOficial(p: PerfilOficial | null | undefined): boolean {
   if (!p) return false;
   if (p.role === "admin") return true;
-  if (emTesteGratis(p)) return false;
   if (p.acesso_ate !== undefined && motivoBloqueio(p)) return false;
   return Boolean(p.whatsapp_oficial_habilitado);
+}
+
+/** Canal dado pelo admin: libera o recurso e o disparo (sem ele o número não aparece em Campanhas). */
+async function liberarRecursosOficial(p: PerfilOficial & { disparo_habilitado?: boolean }) {
+  if (p.role === "admin" || (p.whatsapp_oficial_habilitado && p.disparo_habilitado)) return;
+  await createAdminClient().from("profiles").update({ whatsapp_oficial_habilitado: true, disparo_habilitado: true }).eq("id", p.id);
 }
 
 async function perfil(userId: string): Promise<PerfilOficial | null> {
@@ -108,7 +116,7 @@ export async function iniciarConexaoOficial(
   const sb = createAdminClient();
   if (opcoes.porAdmin) {
     // O admin decidiu dar o canal a este cliente: o recurso fica liberado (sem isso o worker cancelaria o canal).
-    if (!p.whatsapp_oficial_habilitado && p.role !== "admin") await sb.from("profiles").update({ whatsapp_oficial_habilitado: true }).eq("id", userId);
+    await liberarRecursosOficial(p);
   } else if (!podeUsarOficial(p)) {
     throw new ErroCanalOficial(403, MSG_SEM_RECURSO);
   }
@@ -201,7 +209,7 @@ export async function vincularCanalExistente(
     throw new ErroCanalOficial(e.status === 404 ? 404 : 502, e.status === 404 ? "Canal não encontrado na conta da Datafy." : e.message);
   });
   if (!situacao.token) throw new ErroCanalOficial(502, "A Datafy não devolveu o token do canal. Tente de novo em instantes.");
-  if (!p.whatsapp_oficial_habilitado && p.role !== "admin") await sb.from("profiles").update({ whatsapp_oficial_habilitado: true }).eq("id", userId);
+  await liberarRecursosOficial(p);
 
   const conectado = Boolean(situacao.phone_number_id);
   const numero = soDigitos(situacao.phone);
