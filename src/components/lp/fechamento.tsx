@@ -141,6 +141,8 @@ export function Rodape() {
           <a href={linkWhatsApp()} target="_blank" rel="noopener noreferrer" className="-my-2 py-2 transition-colors hover:text-lp-text">{whatsappExibicao()}</a>
           <a href={`mailto:${EMAIL_CONTATO}`} className="-my-2 py-2 transition-colors hover:text-lp-text">{EMAIL_CONTATO}</a>
           <a href="https://revolucao-ai.com" target="_blank" rel="noopener noreferrer" className="-my-2 py-2 transition-colors hover:text-lp-text">revolucao-ai.com</a>
+          <a href="/privacidade" className="-my-2 py-2 transition-colors hover:text-lp-text">Privacidade</a>
+          <a href="/termos" className="-my-2 py-2 transition-colors hover:text-lp-text">Termos</a>
         </div>
       </div>
     </footer>
