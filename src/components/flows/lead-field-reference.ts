@@ -153,3 +153,25 @@ export function camposDisponiveis(tiposAnteriores: FlowNodeTipo[], viaRamoDispar
   if (viaRamoDisparo) grupos.push(RAMO_DISPARO);
   return { grupos, dePlanilha: tiposAnteriores.includes("gatilho_planilha") };
 }
+
+/**
+ * Todos os grupos, para os editores de mensagem das campanhas (lá não dá
+ * para saber de onde os leads vão vir: lista do histórico, planilha,
+ * automação). Cada campo só vem preenchido se a origem trouxe o dado.
+ */
+export const TODOS_OS_GRUPOS: GrupoCampos[] = [
+  CAMPOS_PRONTOS,
+  { grupo: "Do lead (qualquer origem)", campos: [
+    { chave: "nome", label: "Nome (empresa ou pessoa, como veio)" },
+    { chave: "telefone", label: "Telefone" },
+    { chave: "email", label: "E-mail" },
+    { chave: "municipio", label: "Município" },
+    { chave: "uf", label: "UF" },
+  ] },
+  { ...CNPJ, campos: CNPJ.campos.filter((c) => !["telefone", "email", "uf", "nome"].includes(c.chave)) },
+  SOCIOS,
+  IA,
+  { ...MAPS, campos: MAPS.campos.filter((c) => !["nome", "telefone", "endereco", "bairro"].includes(c.chave)) },
+  { ...LINKEDIN, campos: LINKEDIN.campos.filter((c) => c.chave !== "nome") },
+  INSTAGRAM,
+];

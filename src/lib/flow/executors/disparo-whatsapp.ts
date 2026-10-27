@@ -1,7 +1,7 @@
 import { enrollTargets, obterCampanha, perfilComDisparoHabilitado } from "@/lib/dispatch-db";
 import { comTelefoneDeDestino, DESTINOS_TELEFONE, type DestinoTelefone } from "@/lib/phone";
 import type { FlowExecutorContext, FlowExecutorOutcome } from "../executor-types";
-import { avisoDaInscricao, opcoesInscricaoDoNo, saidasDaInscricao } from "./disparo-comum";
+import { avisoDaInscricao, opcoesInscricaoDoNo, saidasDaInscricao, aplicarMapeamentoVariaveis } from "./disparo-comum";
 
 /**
  * Inscreve o lote recebido numa campanha de disparo já existente. O envio
@@ -24,7 +24,7 @@ export async function executarDisparoWhatsapp(ctx: FlowExecutorContext): Promise
     return { status: "erro", erro: "Disparo por WhatsApp não está mais habilitado para sua conta." };
   }
 
-  const lote = contexto.lote || [];
+  const lote = aplicarMapeamentoVariaveis(contexto.lote || [], config);
   if (!lote.length) {
     return { status: "concluido", leadsEntrada: 0, leadsSaida: 0, detalhe: { campaignId, inscritos: 0 } };
   }

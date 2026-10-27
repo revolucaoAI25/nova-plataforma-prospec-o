@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { obterTemplateDb, atualizarTemplateDb, deletarTemplateDb, obterInstancia } from "@/lib/dispatch-db";
-import { criarTemplate as criarTemplateMeta, obterTemplate as obterTemplateMeta } from "@/lib/integrations/whatsapp-oficial";
+import { obterTemplate as obterTemplateMeta } from "@/lib/integrations/whatsapp-oficial";
+import { enviarTemplateParaMeta } from "@/lib/templates-oficial";
 
 /** Reconsulta o status de aprovação na Meta. */
 export async function GET(
@@ -26,7 +27,8 @@ export async function GET(
     if (status && status !== template.status_aprovacao) {
       await atualizarTemplateDb(supabase, id, { status_aprovacao: status });
     }
-    return NextResponse.json({ template: { ...template, status_aprovacao: status || template.status_aprovacao } });
+    const motivo = meta.rejected_reason && meta.rejected_reason !== "NONE" ? String(meta.rejected_reason) : undefined;
+    return NextResponse.json({ template: { ...template, status_aprovacao: status || template.status_aprovacao }, motivo });
   } catch {
     return NextResponse.json({ template });
   }
@@ -44,29 +46,9 @@ export async function PATCH(
 
   const template = await obterTemplateDb(supabase, id);
   if (!template) return NextResponse.json({ error: "Template não encontrado." }, { status: 404 });
-  if (!template.instance_id) return NextResponse.json({ error: "Template sem instância vinculada." }, { status: 400 });
-
-  const instancia = await obterInstancia(supabase, template.instance_id);
-  if (!instancia?.token_oficial || !instancia.waba_id) {
-    return NextResponse.json({ error: "Instância oficial sem WABA ID configurado." }, { status: 400 });
-  }
-  if (!template.nome_meta) {
-    return NextResponse.json({ error: "Informe o nome do template na Meta (minúsculo, com underscore) antes de enviar." }, { status: 400 });
-  }
-
-  try {
-    const componentes = (template.componentes as Array<Record<string, unknown>>) || [];
-    const header = componentes.find((c) => c.type === "HEADER");
-    const footer = componentes.find((c) => c.type === "FOOTER");
-    const resp = await criarTemplateMeta(
-      instancia.token_oficial, instancia.waba_id, template.nome_meta, template.categoria || "MARKETING",
-      template.idioma || "pt_BR", template.corpo, String(header?.text || ""), String(footer?.text || ""),
-    );
-    await atualizarTemplateDb(supabase, id, { meta_template_id: resp.id, status_aprovacao: "pending" });
-    return NextResponse.json({ ok: true, metaTemplateId: resp.id });
-  } catch (e) {
-    return NextResponse.json({ error: (e as Error).message }, { status: 502 });
-  }
+  const r = await enviarTemplateParaMeta(supabase, template);
+  if (!r.ok) return NextResponse.json({ error: r.erro }, { status: r.status });
+  return NextResponse.json({ ok: true, metaTemplateId: r.metaTemplateId });
 }
 
 export async function DELETE(

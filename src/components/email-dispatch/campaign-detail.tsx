@@ -1,8 +1,8 @@
 "use client";
 
-import { DicaVariaveis } from "@/components/dispatch/dica-variaveis";
+import { DicaVariaveis, inserirNoCursor } from "@/components/dispatch/dica-variaveis";
 import { RitmoEnvioCard, VarianteBEditor, EscreverCadenciaDialog, aplicarCadenciaEscrita } from "@/components/dispatch/ritmo-cadencia";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Trash2, Play, Pause, UserPlus, Sheet as SheetIcon, Activity, ListOrdered, Users, FileText, PenLine } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -172,6 +172,10 @@ export function CampaignDetail({
   const [atrasoHoras, setAtrasoHoras] = useState(0);
   const [assunto, setAssunto] = useState("");
   const [corpo, setCorpo] = useState("");
+  const refAssunto = useRef<HTMLInputElement>(null);
+  const refCorpo = useRef<HTMLTextAreaElement>(null);
+  // Onde a variável clicada entra: no último campo em que a pessoa esteve.
+  const campoAtivo = useRef<"assunto" | "corpo">("corpo");
   const [addingStep, setAddingStep] = useState(false);
   const [escrevendo, setEscrevendo] = useState(false);
   const [erroEtapa, setErroEtapa] = useState<string | null>(null);
@@ -407,18 +411,26 @@ export function CampaignDetail({
 
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="assunto">Assunto</Label>
-              <Input id="assunto" value={assunto} onChange={(e) => setAssunto(e.target.value)} placeholder="Ex.: {{primeiro_nome}}, uma pergunta rápida" />
+              <Input id="assunto" ref={refAssunto} onFocus={() => { campoAtivo.current = "assunto"; }} value={assunto} onChange={(e) => setAssunto(e.target.value)} placeholder="Ex.: {{primeiro_nome}}, uma pergunta rápida" />
             </div>
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="corpo">Corpo</Label>
               <Textarea
                 id="corpo"
+                ref={refCorpo}
+                onFocus={() => { campoAtivo.current = "corpo"; }}
                 value={corpo}
                 onChange={(e) => setCorpo(e.target.value)}
                 placeholder="Ex.: Oi {{primeiro_nome}}, tudo bem? Vi que a {{empresa|sua empresa}}…"
                 rows={4}
               />
-              <DicaVariaveis extras={["uf", "cnpj", "enriquecimento_resumo"]} texto={[assunto && `Assunto: ${assunto}`, corpo].filter(Boolean).join("\n\n")} leads={targets.filter((t) => t.status !== "removido").slice(0, 20).map((t) => t.lead_snapshot)} />
+              <DicaVariaveis
+                texto={[assunto && `Assunto: ${assunto}`, corpo].filter(Boolean).join("\n\n")}
+                leads={targets.filter((t) => t.status !== "removido").slice(0, 20).map((t) => t.lead_snapshot)}
+                onInserir={(t) => campoAtivo.current === "assunto"
+                  ? setAssunto(inserirNoCursor(refAssunto.current, assunto, t))
+                  : setCorpo(inserirNoCursor(refCorpo.current, corpo, t))}
+              />
             </div>
 
             <Button type="submit" disabled={addingStep} className="self-start">

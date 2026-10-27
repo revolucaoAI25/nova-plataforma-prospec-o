@@ -40,7 +40,18 @@ function headers(token: string): Record<string, string> {
 
 async function req(token: string, path: string, init?: RequestInit) {
   const resp = await fetch(`${await baseUrl()}${path}`, { ...init, headers: headers(token) });
-  if (!resp.ok) throw new Error(`WhatsApp oficial HTTP ${resp.status}: ${(await resp.text()).slice(0, 300)}`);
+  if (!resp.ok) {
+    // A Meta explica o erro em português em error_user_msg (ex.: nome do template inválido).
+    const texto = await resp.text();
+    let explicacao = "";
+    try {
+      const j = JSON.parse(texto) as { error?: { error_user_msg?: string; error_user_title?: string; message?: string }; message?: string };
+      explicacao = j.error?.error_user_msg || j.error?.message || j.message || "";
+    } catch {
+      // resposta sem JSON
+    }
+    throw new Error(explicacao ? `${explicacao} (HTTP ${resp.status})` : `WhatsApp oficial HTTP ${resp.status}: ${texto.slice(0, 300)}`);
+  }
   return resp.json();
 }
 
@@ -96,7 +107,11 @@ export async function listarTemplates(token: string, wabaId: string) {
   return data.data || [];
 }
 
-/** nomeMeta deve ser único, minúsculo e com underscore. Retorna status PENDING — aprovação demora. */
+/**
+ * nomeMeta deve ser único, minúsculo e com underscore. Retorna status PENDING — aprovação demora.
+ * Cada variável ({{1}}, {{2}}…) precisa de um exemplo: sem ele a Meta cria o
+ * template e o reprova na hora (INVALID_FORMAT).
+ */
 export async function criarTemplate(
   token: string,
   wabaId: string,
@@ -106,9 +121,17 @@ export async function criarTemplate(
   corpo: string,
   cabecalho = "",
   rodape = "",
+  exemplos: { corpo?: string[]; cabecalho?: string } = {},
 ) {
-  const components: Array<Record<string, unknown>> = [{ type: "BODY", text: corpo }];
-  if (cabecalho) components.unshift({ type: "HEADER", format: "TEXT", text: cabecalho });
+  const body: Record<string, unknown> = { type: "BODY", text: corpo };
+  if (exemplos.corpo?.length) body.example = { body_text: [exemplos.corpo] };
+  const components: Array<Record<string, unknown>> = [body];
+  if (cabecalho) {
+    components.unshift({
+      type: "HEADER", format: "TEXT", text: cabecalho,
+      ...(exemplos.cabecalho ? { example: { header_text: [exemplos.cabecalho] } } : {}),
+    });
+  }
   if (rodape) components.push({ type: "FOOTER", text: rodape });
   return req(token, `/${wabaId}/message_templates`, {
     method: "POST",

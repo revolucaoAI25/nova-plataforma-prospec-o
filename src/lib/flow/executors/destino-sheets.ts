@@ -5,6 +5,9 @@ import { ENRIQUECIMENTO_LABELS, BIGDATACORP_LABELS } from "../enrichment-merge";
 import type { GoogleSheetsCreds } from "@/lib/database.types";
 import type { FlowExecutorContext, FlowExecutorOutcome } from "../executor-types";
 
+/** Campos de controle do banco: não interessam na planilha do cliente. */
+const CHAVES_INTERNAS = new Set(["id", "user_id", "search_id", "created_at", "updated_at"]);
+
 function humanizarChave(chave: string): string {
   return chave.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
@@ -25,7 +28,7 @@ function colunasParaLote(lote: Array<Record<string, unknown>>): Array<{ chave: s
   const chavesExtras = new Set<string>();
   for (const lead of lote) {
     for (const chave of Object.keys(lead)) {
-      if (!chavesConhecidas.has(chave)) chavesExtras.add(chave);
+      if (!chavesConhecidas.has(chave) && !CHAVES_INTERNAS.has(chave) && !chave.startsWith("_")) chavesExtras.add(chave);
     }
   }
 

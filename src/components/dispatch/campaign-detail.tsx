@@ -1,8 +1,9 @@
 "use client";
 
-import { DicaVariaveis } from "@/components/dispatch/dica-variaveis";
+import { DicaVariaveis, inserirNoCursor } from "@/components/dispatch/dica-variaveis";
+import { TODOS_OS_GRUPOS } from "@/components/flows/lead-field-reference";
 import { RitmoEnvioCard, VarianteBEditor, EscreverCadenciaDialog, aplicarCadenciaEscrita } from "@/components/dispatch/ritmo-cadencia";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Trash2, Play, Pause, UserPlus, Sheet as SheetIcon, Activity, ListOrdered, Users, PenLine } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -174,6 +175,7 @@ export function CampaignDetail({
   const [parametrosValores, setParametrosValores] = useState<string[]>([]);
   const [atrasoHoras, setAtrasoHoras] = useState(0);
   const [corpoMensagem, setCorpoMensagem] = useState("");
+  const refCorpo = useRef<HTMLTextAreaElement>(null);
   const [midiaUrl, setMidiaUrl] = useState("");
   const [addingStep, setAddingStep] = useState(false);
   const [escrevendo, setEscrevendo] = useState(false);
@@ -440,19 +442,37 @@ export function CampaignDetail({
                       {numerosParametros.length > 0 && (
                         <div className="flex flex-col gap-2">
                           <Label className="text-xs text-muted-foreground">
-                            Valor de cada parâmetro (pode usar {"{{campo}}"} pra puxar do lead — ex.: {"{{nome}}"}, {"{{municipio}}"}, ou {"{{enriquecimento_empresa}}"} se os leads vierem de um fluxo com enriquecimento)
+                            O que entra em cada variável do template: escolha um dado do lead ou escreva um texto fixo.
                           </Label>
                           {numerosParametros.map((n, i) => (
-                            <Input
-                              key={n}
-                              value={parametrosValores[i] ?? ""}
-                              onChange={(e) => setParametrosValores((prev) => {
-                                const novo = [...prev];
-                                novo[i] = e.target.value;
-                                return novo;
-                              })}
-                              placeholder={`Parâmetro {{${n}}}`}
-                            />
+                            <div key={n} className="flex flex-col gap-1.5 sm:flex-row sm:items-center">
+                              <span className="w-10 shrink-0 font-mono text-xs text-muted-foreground">{`{{${n}}}`}</span>
+                              <Select
+                                value={/^\{\{\w+\}\}$/.test(parametrosValores[i] ?? "") ? parametrosValores[i] : "__texto__"}
+                                onValueChange={(v) => setParametrosValores((prev) => {
+                                  const novo = [...prev];
+                                  novo[i] = v === "__texto__" ? "" : v;
+                                  return novo;
+                                })}
+                              >
+                                <SelectTrigger className="sm:w-64"><SelectValue placeholder="Dado do lead" /></SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="__texto__">Texto fixo (escrever ao lado)</SelectItem>
+                                  {TODOS_OS_GRUPOS.flatMap((g) => g.campos).filter((c, j, todos) => todos.findIndex((x) => x.chave === c.chave) === j).map((c) => (
+                                    <SelectItem key={c.chave} value={`{{${c.chave}}}`}>{c.label}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <Input
+                                value={parametrosValores[i] ?? ""}
+                                onChange={(e) => setParametrosValores((prev) => {
+                                  const novo = [...prev];
+                                  novo[i] = e.target.value;
+                                  return novo;
+                                })}
+                                placeholder="Texto fixo ou {{campo|padrão}}"
+                              />
+                            </div>
                           ))}
                         </div>
                       )}
@@ -463,12 +483,17 @@ export function CampaignDetail({
             ) : (
               <div className="flex flex-col gap-1.5">
                 <Textarea
+                  ref={refCorpo}
                   value={corpoMensagem}
                   onChange={(e) => setCorpoMensagem(e.target.value)}
                   placeholder="Ex.: Oi {{primeiro_nome}}, tudo bem? Vi que a {{empresa|sua empresa}}…"
                   rows={3}
                 />
-                <DicaVariaveis extras={["uf", "cnpj", "enriquecimento_resumo"]} texto={corpoMensagem} leads={targets.filter((t) => t.status !== "removido").slice(0, 20).map((t) => t.lead_snapshot)} />
+                <DicaVariaveis
+                  texto={corpoMensagem}
+                  leads={targets.filter((t) => t.status !== "removido").slice(0, 20).map((t) => t.lead_snapshot)}
+                  onInserir={(t) => setCorpoMensagem(inserirNoCursor(refCorpo.current, corpoMensagem, t))}
+                />
                 <Label htmlFor="midia-url" className="mt-1 text-xs text-muted-foreground">
                   Mídia (opcional) — URL pública de imagem, vídeo ou documento
                 </Label>

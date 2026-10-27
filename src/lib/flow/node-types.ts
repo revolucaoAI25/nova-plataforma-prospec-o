@@ -212,6 +212,8 @@ const disparoWhatsappConfigSchema = z.object({
   // Para qual telefone do lead a mensagem vai (ver DESTINOS_TELEFONE em src/lib/phone.ts).
   telefoneDestino: z.enum(["padrao", "socio", "empresa", "segundo"]).default("padrao"),
   horasSemResposta,
+  // Variável da mensagem → campo do lead que a preenche (só para os leads desta automação).
+  mapeamentoVariaveis: z.record(z.string(), z.string()).default({}),
 });
 
 const disparoEmailConfigSchema = z.object({
@@ -219,6 +221,8 @@ const disparoEmailConfigSchema = z.object({
   campaignId: z.string().uuid().nullable().default(null).refine((v) => v !== null, "Escolha a campanha."),
   senderId: z.string().uuid().nullable().default(null),
   horasSemResposta,
+  // Variável da mensagem → campo do lead que a preenche (só para os leads desta automação).
+  mapeamentoVariaveis: z.record(z.string(), z.string()).default({}),
 });
 
 const disparoLinkedinConfigSchema = z.object({
@@ -226,6 +230,8 @@ const disparoLinkedinConfigSchema = z.object({
   campaignId: z.string().uuid().nullable().default(null).refine((v) => v !== null, "Escolha a campanha."),
   accountId: z.string().uuid().nullable().default(null),
   horasSemResposta,
+  // Variável da mensagem → campo do lead que a preenche (só para os leads desta automação).
+  mapeamentoVariaveis: z.record(z.string(), z.string()).default({}),
 });
 
 const destinoSheetsConfigSchema = z.object({

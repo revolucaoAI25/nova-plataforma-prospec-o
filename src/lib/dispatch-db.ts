@@ -273,10 +273,19 @@ export async function criarTemplateDb(
   params: {
     instanceId: string; nome: string; categoria: string; corpo: string;
     nomeMeta?: string; idioma?: string; cabecalho?: string; rodape?: string; variaveis?: string[];
+    exemplos?: string[]; exemploCabecalho?: string;
   },
 ) {
-  const componentes: Array<Record<string, unknown>> = [{ type: "BODY", text: params.corpo }];
-  if (params.cabecalho) componentes.unshift({ type: "HEADER", format: "TEXT", text: params.cabecalho });
+  // Os exemplos das variáveis ficam junto do componente, no formato da Meta (vão na análise do template).
+  const body: Record<string, unknown> = { type: "BODY", text: params.corpo };
+  if (params.exemplos?.length) body.example = { body_text: [params.exemplos] };
+  const componentes: Array<Record<string, unknown>> = [body];
+  if (params.cabecalho) {
+    componentes.unshift({
+      type: "HEADER", format: "TEXT", text: params.cabecalho,
+      ...(params.exemploCabecalho ? { example: { header_text: [params.exemploCabecalho] } } : {}),
+    });
+  }
   if (params.rodape) componentes.push({ type: "FOOTER", text: params.rodape });
   const { data } = await sb
     .from("message_templates")

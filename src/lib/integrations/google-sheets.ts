@@ -190,19 +190,23 @@ async function garantirLinhas(
   meta: any,
   abaNome: string,
   linhasNecessarias: number,
+  colunasNecessarias = 0,
 ) {
+  // A aba nasce com 1000 linhas e 26 colunas (A–Z); gravar além disso dá
+  // "exceeds grid limits". A exportação tem mais de 26 colunas.
   for (const sheet of meta.data.sheets || []) {
     const props = sheet.properties || {};
     if (props.title !== abaNome) continue;
     const linhasAtuais = props.gridProperties?.rowCount || 1000;
-    if (linhasNecessarias <= linhasAtuais) return;
-    const adicionar = linhasNecessarias - linhasAtuais + 100;
-    await sheetsApi.spreadsheets.batchUpdate({
-      spreadsheetId: sheetId,
-      requestBody: {
-        requests: [{ appendDimension: { sheetId: props.sheetId, dimension: "ROWS", length: adicionar } }],
-      },
-    });
+    const colunasAtuais = props.gridProperties?.columnCount || 26;
+    const requests: object[] = [];
+    if (linhasNecessarias > linhasAtuais) {
+      requests.push({ appendDimension: { sheetId: props.sheetId, dimension: "ROWS", length: linhasNecessarias - linhasAtuais + 100 } });
+    }
+    if (colunasNecessarias > colunasAtuais) {
+      requests.push({ appendDimension: { sheetId: props.sheetId, dimension: "COLUMNS", length: colunasNecessarias - colunasAtuais + 5 } });
+    }
+    if (requests.length) await sheetsApi.spreadsheets.batchUpdate({ spreadsheetId: sheetId, requestBody: { requests } });
     return;
   }
 }
@@ -257,7 +261,7 @@ async function escreverPlanilha(
     let updatedRange = "?";
 
     if (modo === "substituir") {
-      await garantirLinhas(sheets, sheetId, meta, abaNome, linhas.length + 1);
+      await garantirLinhas(sheets, sheetId, meta, abaNome, linhas.length + 1, cabecalho.length);
       await sheets.spreadsheets.values.clear({ spreadsheetId: sheetId, range: `'${escapedAba}'` });
       const upd = await sheets.spreadsheets.values.update({
         spreadsheetId: sheetId,
@@ -272,7 +276,7 @@ async function escreverPlanilha(
       const nextRow = (colA.data.values || []).length + 1;
 
       if (nextRow === 1) {
-        await garantirLinhas(sheets, sheetId, meta, abaNome, linhas.length + 1);
+        await garantirLinhas(sheets, sheetId, meta, abaNome, linhas.length + 1, cabecalho.length);
         const upd = await sheets.spreadsheets.values.update({
           spreadsheetId: sheetId,
           range: `'${escapedAba}'!A1`,
@@ -282,7 +286,7 @@ async function escreverPlanilha(
         updatedCells = upd.data.updatedCells ?? undefined;
         updatedRange = upd.data.updatedRange || "?";
       } else {
-        await garantirLinhas(sheets, sheetId, meta, abaNome, nextRow + linhas.length - 1);
+        await garantirLinhas(sheets, sheetId, meta, abaNome, nextRow + linhas.length - 1, cabecalho.length);
         const upd = await sheets.spreadsheets.values.update({
           spreadsheetId: sheetId,
           range: `'${escapedAba}'!A${nextRow}`,
@@ -334,9 +338,55 @@ export async function exportarGenerico(
   abaNome = "Planilha1",
   modo: "substituir" | "acrescentar" = "substituir",
 ): Promise<{ ok: boolean; msg: string }> {
-  const cabecalho = colunas.map((c) => c.label);
-  const linhas = linhasObjeto.map((r) => colunas.map((c) => (c.chave === "fonte" ? rotuloFonte(r[c.chave]) : String(r[c.chave] ?? ""))));
+  let cabecalho = colunas.map((c) => c.label);
+  // Acrescentando numa aba que já tem cabeçalho: segue a ordem dele (cada
+  // execução pode trazer colunas diferentes, ex.: um lote sem nenhum sócio
+  // encontrado) e põe as colunas novas no fim, sem desalinhar as antigas.
+  if (modo === "acrescentar") {
+    const existente = await lerCabecalho(creds, sheetId, abaNome).catch(() => [] as string[]);
+    if (existente.length) {
+      const novas = cabecalho.filter((l) => !existente.includes(l));
+      cabecalho = [...existente, ...novas];
+      if (novas.length) await gravarCabecalho(creds, sheetId, abaNome, cabecalho).catch(() => undefined);
+    }
+  }
+  const porLabel = new Map(colunas.map((c) => [c.label, c.chave]));
+  const linhas = linhasObjeto.map((r) =>
+    cabecalho.map((label) => {
+      const chave = porLabel.get(label);
+      if (!chave) return "";
+      return chave === "fonte" ? rotuloFonte(r[chave]) : valorCelula(r[chave]);
+    }),
+  );
   return escreverPlanilha(creds, sheetId, abaNome, modo, cabecalho, linhas);
+}
+
+/** Texto da célula: lista vira "a; b", objeto vira JSON (nunca "[object Object]"). */
+function valorCelula(v: unknown): string {
+  if (v === null || v === undefined) return "";
+  if (Array.isArray(v)) return v.map((x) => (x !== null && typeof x === "object" ? JSON.stringify(x) : String(x))).join("; ");
+  if (typeof v === "object") return JSON.stringify(v);
+  return String(v);
+}
+
+async function lerCabecalho(creds: OAuthCreds, sheetId: string, abaNome: string): Promise<string[]> {
+  const auth = await credsClient(creds);
+  const sheets = google.sheets({ version: "v4", auth });
+  const resp = await sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range: `'${abaNome.replace(/'/g, "''")}'!1:1` });
+  return ((resp.data.values?.[0] as string[] | undefined) ?? []).map((c) => String(c).trim());
+}
+
+async function gravarCabecalho(creds: OAuthCreds, sheetId: string, abaNome: string, cabecalho: string[]) {
+  const auth = await credsClient(creds);
+  const sheets = google.sheets({ version: "v4", auth });
+  const meta = await sheets.spreadsheets.get({ spreadsheetId: sheetId });
+  await garantirLinhas(sheets, sheetId, meta, abaNome, 1, cabecalho.length);
+  await sheets.spreadsheets.values.update({
+    spreadsheetId: sheetId,
+    range: `'${abaNome.replace(/'/g, "''")}'!A1`,
+    valueInputOption: "RAW",
+    requestBody: { values: [cabecalho] },
+  });
 }
 
 export function extrairSheetId(urlOuId: string): string | null {

@@ -1,8 +1,8 @@
 "use client";
 
-import { DicaVariaveis } from "@/components/dispatch/dica-variaveis";
+import { DicaVariaveis, inserirNoCursor } from "@/components/dispatch/dica-variaveis";
 import { RitmoEnvioCard, VarianteBEditor, EscreverCadenciaDialog, aplicarCadenciaEscrita } from "@/components/dispatch/ritmo-cadencia";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Trash2, Play, Pause, UserPlus, Sheet as SheetIcon, Activity, ListOrdered, Users, FileText, PenLine } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -175,6 +175,8 @@ export function CampaignDetail({
   const [atrasoHoras, setAtrasoHoras] = useState(0);
   const [nota, setNota] = useState("");
   const [corpo, setCorpo] = useState("");
+  const refNota = useRef<HTMLTextAreaElement>(null);
+  const refCorpo = useRef<HTMLTextAreaElement>(null);
   const [addingStep, setAddingStep] = useState(false);
   const [escrevendo, setEscrevendo] = useState(false);
   const [erroEtapa, setErroEtapa] = useState<string | null>(null);
@@ -436,6 +438,7 @@ export function CampaignDetail({
                 <Label htmlFor="nota">Nota (opcional)</Label>
                 <Textarea
                   id="nota"
+                  ref={refNota}
                   value={nota}
                   onChange={(e) => setNota(e.target.value.slice(0, 300))}
                   placeholder="Ex.: Oi {{primeiro_nome}}, vi seu trabalho na {{empresa}}… (em branco = convite sem nota)"
@@ -449,6 +452,7 @@ export function CampaignDetail({
                 <Label htmlFor="corpo">Corpo da mensagem</Label>
                 <Textarea
                   id="corpo"
+                  ref={refCorpo}
                   value={corpo}
                   onChange={(e) => setCorpo(e.target.value)}
                   placeholder="Ex.: Obrigado por aceitar, {{primeiro_nome}}…"
@@ -456,7 +460,13 @@ export function CampaignDetail({
                 />
               </div>
             )}
-            <DicaVariaveis extras={["cargo", "enriquecimento_resumo"]} texto={tipoEtapa === "convite" ? nota : corpo} leads={targets.filter((t) => t.status !== "removido").slice(0, 20).map((t) => t.lead_snapshot)} />
+            <DicaVariaveis
+              texto={tipoEtapa === "convite" ? nota : corpo}
+              leads={targets.filter((t) => t.status !== "removido").slice(0, 20).map((t) => t.lead_snapshot)}
+              onInserir={(t) => tipoEtapa === "convite"
+                ? setNota(inserirNoCursor(refNota.current, nota, t).slice(0, 300))
+                : setCorpo(inserirNoCursor(refCorpo.current, corpo, t))}
+            />
 
             <Button type="submit" disabled={addingStep} className="self-start">
               <Plus className="h-4 w-4" /> {addingStep ? "Adicionando…" : "Adicionar etapa"}
