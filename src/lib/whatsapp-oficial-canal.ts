@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import { emTesteGratis } from "@/lib/teste-gratis-regras";
 import { motivoBloqueio, type PerfilAcesso } from "@/lib/acesso-regras";
 import { registrarAlertaAdmin } from "@/lib/alertas-admin";
 import { dadosWebhookOficial } from "@/lib/integrations/whatsapp-oficial";
@@ -45,20 +46,20 @@ export const MSG_SEM_RECURSO =
 
 type PerfilOficial = PerfilAcesso & Pick<Profile, "id" | "email" | "whatsapp_oficial_habilitado">;
 
-/**
- * Quem pode ter um canal oficial ativo agora. No teste grátis o recurso
- * começa desligado (camposInicioTesteGratis) e só o admin liga, então o
- * teste não barra aqui: senão o worker cancelaria o canal que o admin deu.
- */
+/** Quem pode ter um canal oficial ativo agora. Teste grátis nunca (nem dado pelo admin): o canal custa por mês. */
 export function podeUsarOficial(p: PerfilOficial | null | undefined): boolean {
   if (!p) return false;
   if (p.role === "admin") return true;
+  if (emTesteGratis(p)) return false;
   if (p.acesso_ate !== undefined && motivoBloqueio(p)) return false;
   return Boolean(p.whatsapp_oficial_habilitado);
 }
 
 /** Canal dado pelo admin: libera o recurso e o disparo (sem ele o número não aparece em Campanhas). */
 async function liberarRecursosOficial(p: PerfilOficial & { disparo_habilitado?: boolean }) {
+  if (emTesteGratis(p)) {
+    throw new ErroCanalOficial(403, "Este cliente está no teste grátis, e o teste não inclui a API oficial. Ela fica disponível quando ele assinar um plano.");
+  }
   if (p.role === "admin" || (p.whatsapp_oficial_habilitado && p.disparo_habilitado)) return;
   await createAdminClient().from("profiles").update({ whatsapp_oficial_habilitado: true, disparo_habilitado: true }).eq("id", p.id);
 }
