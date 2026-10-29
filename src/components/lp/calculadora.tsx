@@ -41,7 +41,7 @@ function TicketRotulo() {
           aria-controls="ajuda-ticket"
           aria-label="O que é ticket médio?"
           onClick={() => setAberto((a) => !a)}
-          className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-lp-line-2 font-lp-mono text-[12px] text-lp-muted transition-colors hover:border-lp-accent/60 hover:text-lp-text"
+          className="relative inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full border after:absolute after:-inset-2.5 after:content-[''] border-lp-line-2 font-lp-mono text-[12px] text-lp-muted transition-colors hover:border-lp-accent/60 hover:text-lp-text"
         >
           ?
         </button>

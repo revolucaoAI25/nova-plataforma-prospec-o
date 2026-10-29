@@ -60,17 +60,22 @@ export function Cabecalho() {
             <a key={href} href={href} className="transition-colors hover:text-lp-text">{rotulo}</a>
           ))}
         </nav>
-        <div className="flex items-center gap-2">
-          <Link href="/login" prefetch={false} className="hidden rounded-full px-3 py-2 text-sm text-lp-muted transition-colors hover:text-lp-text sm:block">
+        <div className="flex items-center gap-1 sm:gap-2">
+          {/* Sempre visível: quem já é cliente chega aqui pelo anúncio ou pelo domínio e precisa achar o login. */}
+          <Link
+            href="/login"
+            prefetch={false}
+            className="flex min-h-10 items-center rounded-full px-2.5 text-sm font-medium text-lp-muted transition-colors hover:text-lp-text sm:px-3"
+          >
             Entrar
           </Link>
           <a
             href="#planos"
             className="group inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-lp-accent px-4 py-2 text-sm font-semibold text-[#04140a] transition-[background-color,box-shadow] hover:bg-lp-glow hover:shadow-[0_0_24px_rgba(0,200,83,0.5)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lp-glow"
           >
-            {/* Em telas bem estreitas (abaixo de 360px) o rótulo encurta pra caber numa linha. */}
-            <span>Começar<span className="hidden min-[360px]:inline"> agora</span></span>
-            <ArrowRight className="hidden h-4 w-4 transition-transform group-hover:translate-x-0.5 min-[360px]:block" />
+            {/* No celular o rótulo encurta para caber junto com o Entrar numa linha. */}
+            <span>Começar<span className="hidden sm:inline"> agora</span></span>
+            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
           </a>
         </div>
       </div>

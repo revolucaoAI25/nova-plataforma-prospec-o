@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { usePathname } from "next/navigation";
 import { Menu, X } from "lucide-react";
 import { buildNavSections } from "./nav-items";
 import { SidebarNav } from "./sidebar-nav";
 import { Logo } from "./logo";
 
-/** Sidebar não aparece abaixo de md — sem isso não havia NENHUMA forma de navegar no mobile. */
+/** Sidebar fixa só a partir de lg: no celular e no tablet a navegação é este menu (o conteúdo fica com a largura toda). */
 export function MobileNav({
   role,
   instagramVisible,
@@ -59,20 +60,21 @@ export function MobileNav({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-foreground transition-colors hover:bg-secondary md:hidden"
+        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-foreground transition-colors hover:bg-secondary lg:hidden"
         aria-label="Abrir menu"
       >
         <Menu className="h-5 w-5" />
       </button>
 
-      {open && (
-        <div className="fixed inset-0 z-50 md:hidden">
+      {/* No <body>: o topo tem backdrop-blur, que prende elementos fixos dentro dele (o menu abria com 64 px de altura). */}
+      {open && createPortal(
+        <div className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true" aria-label="Menu">
           <div
             className="animate-fade-in absolute inset-0 bg-black/60 backdrop-blur-sm"
             onClick={() => setOpen(false)}
             aria-hidden="true"
           />
-          <div className="animate-slide-in-left relative flex h-full w-72 max-w-[85vw] flex-col border-r border-border bg-card">
+          <div className="animate-slide-in-left relative flex h-full w-72 max-w-[85vw] flex-col border-r border-border bg-card pb-[env(safe-area-inset-bottom)]">
             <div className="flex h-16 items-center justify-between border-b border-border px-5">
               <div className="flex items-center gap-2.5">
                 <Logo />
@@ -89,7 +91,8 @@ export function MobileNav({
             </div>
             <SidebarNav sections={sections} onNavigate={() => setOpen(false)} />
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
     </>
   );

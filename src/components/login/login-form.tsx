@@ -212,7 +212,7 @@ export function LoginForm() {
 
         <label className="flex cursor-pointer items-center gap-2.5 text-sm text-muted-foreground">
           <Checkbox checked={lembrar} onCheckedChange={(v) => setLembrar(v === true)} />
-          Lembrar meu e-mail neste computador
+          Lembrar meu e-mail neste aparelho
         </label>
 
         <Button type="submit" disabled={loading} className="h-12 w-full text-[15px]">

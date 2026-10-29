@@ -84,7 +84,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       {/* min-w-0 é essencial aqui: sem isso, um item flex nunca encolhe
           abaixo do conteúdo intrínseco — uma tabela larga (leads, usuários)
           empurra a página inteira pro lado em vez de rolar só por dentro. */}
-      <div className="flex min-w-0 flex-1 flex-col transition-[padding-left] duration-200 md:pl-[var(--app-sidebar-w)]">
+      <div className="flex min-w-0 flex-1 flex-col transition-[padding-left] duration-200 lg:pl-[var(--app-sidebar-w)]">
         <Topbar profile={perfilParaTela(profile)} diasRestantesTeste={teste?.diasRestantes ?? null} />
         <main className="min-w-0 flex-1 overflow-x-clip p-4 pb-[max(1rem,var(--guia-espaco,0px))] md:p-8 md:pb-[max(2rem,var(--guia-espaco,0px))]">
           {alertas.length > 0 && <AlertasAdmin alertas={alertas} />}

@@ -114,7 +114,20 @@ export function Checkout({
           Preencha os dados abaixo. Em seguida, você será direcionado para o pagamento e, assim que ele for confirmado, o acesso é liberado.
         </p>
 
-        <form onSubmit={enviar} onBlur={parcial} className="mt-8 flex flex-col gap-5 rounded-[28px] border border-lp-line bg-lp-surface p-6 sm:p-8">
+        {/* Celular: o resumo do plano fica depois do formulário; aqui a pessoa já vê o que está contratando. */}
+        <div className="mt-6 flex items-center justify-between gap-3 rounded-2xl border border-lp-accent/40 bg-lp-accent-soft px-4 py-3 lg:hidden">
+          <span className="min-w-0 text-sm">
+            <span className="block truncate font-semibold text-lp-text">Plano {plano.nome}</span>
+            <span className="text-lp-muted">
+              {brl(anual ? (plano.precoAnual as number) : plano.precoMes)}/{anual ? "ano" : "mês"}
+            </span>
+          </span>
+          <a href="#plano-escolhido" className="flex min-h-10 shrink-0 items-center rounded-full border border-lp-line-2 px-4 text-sm font-medium text-lp-text transition-colors hover:border-lp-accent/60">
+            Trocar
+          </a>
+        </div>
+
+        <form onSubmit={enviar} onBlur={parcial} className="mt-6 lg:mt-8 flex flex-col gap-5 rounded-[28px] border border-lp-line bg-lp-surface p-6 sm:p-8">
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
             <Campo id="ck-nome" rotulo="Nome completo">
               <input id="ck-nome" required minLength={3} autoComplete="name" value={form.nome} onChange={mudar("nome")} className={estiloInput} />
@@ -189,7 +202,7 @@ export function Checkout({
         </form>
       </div>
 
-      <aside>
+      <aside id="plano-escolhido" className="scroll-mt-6">
         <div className="flex flex-col gap-5 rounded-[28px] border border-lp-accent/40 bg-gradient-to-b from-[#0c2318] to-lp-surface p-6 shadow-[0_30px_80px_-40px_rgba(0,200,83,0.6)] sm:p-7 lg:sticky lg:top-8">
           <div className="flex items-center justify-between gap-3">
             <p className="font-lp-mono text-[11px] uppercase tracking-[0.16em] text-lp-muted">Plano escolhido</p>

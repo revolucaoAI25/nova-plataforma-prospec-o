@@ -64,7 +64,7 @@ export function Topbar({ profile, diasRestantesTeste = null }: { profile: Profil
       </div>
       <div className="flex items-center gap-3">
         {/* No desktop (md+) o e-mail já aparece no rodapé da sidebar — evita duplicar. */}
-        <span className="hidden text-sm text-muted-foreground sm:inline md:hidden">{profile.email}</span>
+        <span className="hidden text-sm text-muted-foreground sm:inline lg:hidden">{profile.email}</span>
         <Button
           variant="ghost"
           size="icon"
