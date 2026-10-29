@@ -46,6 +46,8 @@ export async function assinarPlano(
   plano: PlanRow,
   cpfCnpj: string | null,
   ciclo: AssinaturaCiclo = "mensal",
+  /** Página para onde a fatura devolve a pessoa depois do pagamento aprovado. */
+  retornoUrl?: string,
 ): Promise<{ invoiceUrl: string }> {
   // Assinatura aguardando o 1º pagamento: a pessoa voltou da fatura para
   // trocar de plano ou de ciclo (mensal ↔ anual). Mesmo plano e ciclo
@@ -76,6 +78,7 @@ export async function assinarPlano(
     descricao: `Assinatura ${plano.nome} (${ciclo === "anual" ? "anual" : "mensal"})`,
     externalReference: profile.id,
     cycle: ciclo === "anual" ? "YEARLY" : "MONTHLY",
+    retornoUrl,
   });
 
   // Cliente admin: campos de assinatura são protegidos contra escrita pelo

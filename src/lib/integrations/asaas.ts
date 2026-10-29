@@ -140,21 +140,36 @@ export async function criarAssinatura(dados: {
   descricao: string;
   externalReference: string;
   cycle?: "MONTHLY" | "YEARLY";
+  /** Para onde a fatura leva a pessoa sozinha depois do pagamento aprovado. */
+  retornoUrl?: string;
 }): Promise<AsaasSubscription> {
   const primeiraCobranca = new Date();
   primeiraCobranca.setDate(primeiraCobranca.getDate() + 1);
-  return req<AsaasSubscription>("/subscriptions", {
-    method: "POST",
-    body: JSON.stringify({
-      customer: dados.customerId,
-      billingType: FORMA_PAGAMENTO,
-      value: Math.round(dados.valorCentavos) / 100,
-      nextDueDate: dataISOBrasil(primeiraCobranca),
-      cycle: dados.cycle ?? "MONTHLY",
-      description: dados.descricao,
-      externalReference: dados.externalReference,
-    }),
-  });
+  const corpo = {
+    customer: dados.customerId,
+    billingType: FORMA_PAGAMENTO,
+    value: Math.round(dados.valorCentavos) / 100,
+    nextDueDate: dataISOBrasil(primeiraCobranca),
+    cycle: dados.cycle ?? "MONTHLY",
+    description: dados.descricao,
+    externalReference: dados.externalReference,
+  };
+  if (dados.retornoUrl) {
+    try {
+      return await req<AsaasSubscription>("/subscriptions", {
+        method: "POST",
+        body: JSON.stringify({ ...corpo, callback: { successUrl: dados.retornoUrl, autoRedirect: true } }),
+      });
+    } catch (err) {
+      // O Asaas só aceita retorno para o domínio cadastrado nos dados
+      // comerciais da conta. Recusado o retorno (resposta 400), a assinatura
+      // sai sem ele (a pessoa volta pelo botão da fatura ou entrando na
+      // plataforma). Falha de rede não repete: a primeira pode ter sido criada.
+      if (!/respondeu 400/.test(err instanceof Error ? err.message : "")) throw err;
+      console.warn("[asaas] assinatura com retorno automático recusada; criando sem retorno", err);
+    }
+  }
+  return req<AsaasSubscription>("/subscriptions", { method: "POST", body: JSON.stringify(corpo) });
 }
 
 /**

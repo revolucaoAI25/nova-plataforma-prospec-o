@@ -17,7 +17,8 @@ import { registrarLeadLP } from "@/lib/lp-leads";
  * cliente, abre a assinatura no Asaas e já deixa a pessoa logada. O acesso
  * (créditos e recursos do plano) só é liberado quando o webhook do Asaas
  * confirma o primeiro pagamento — até lá a conta existe com status
- * "pendente" e a página /bem-vindo mostra a fatura.
+ * "pendente". A página manda a pessoa direto para a fatura; /bem-vindo
+ * (para onde a fatura devolve) também mostra a fatura enquanto não pagar.
  */
 
 const texto = (erro: string) => z.string({ error: erro }).trim();
@@ -82,10 +83,14 @@ export async function POST(request: Request) {
   // O trigger handle_new_user já criou o perfil (como 'user'); aqui entram os dados do cliente.
   await admin.from("profiles").update({ nome: dados.nome, telefone, empresa: dados.empresa, cpf_cnpj: cpfCnpj }).eq("id", userId);
 
+  // Fatura do 1º pagamento: a página manda a pessoa direto para ela, e a
+  // fatura devolve para /bem-vindo (que libera o acesso) depois do pagamento.
+  let fatura: string | null = null;
   try {
     const profile = await getProfile(admin, userId);
     if (!profile) throw new Error("Perfil não encontrado após a criação da conta.");
-    await assinarPlano(admin, profile, plano, cpfCnpj, ciclo);
+    const appUrl = (process.env.NEXT_PUBLIC_APP_URL || "").replace(/\/$/, "");
+    ({ invoiceUrl: fatura } = await assinarPlano(admin, profile, plano, cpfCnpj, ciclo, appUrl ? `${appUrl}/bem-vindo` : undefined));
   } catch (err) {
     console.error("[assinar] falha ao abrir assinatura", err);
     const { data: aposErro } = await admin.from("profiles").select("asaas_subscription_id").eq("id", userId).maybeSingle();
@@ -125,7 +130,7 @@ export async function POST(request: Request) {
   const { error: erroLogin } = await supabase.auth.signInWithPassword({ email: dados.email, password: dados.senha });
   if (erroLogin) {
     console.error("[assinar] conta criada, mas o login automático falhou", erroLogin);
-    return NextResponse.json({ ok: true, proximo: "/login?next=/bem-vindo", eventos, valor: valorPlano });
+    return NextResponse.json({ ok: true, proximo: "/login?next=/bem-vindo", fatura, eventos, valor: valorPlano });
   }
-  return NextResponse.json({ ok: true, proximo: "/bem-vindo", eventos, valor: valorPlano });
+  return NextResponse.json({ ok: true, proximo: "/bem-vindo", fatura, eventos, valor: valorPlano });
 }

@@ -7,7 +7,7 @@ import { ArrowRight, Check, Eye, EyeOff, Loader2, Lock, ShieldCheck } from "luci
 import { cn } from "@/lib/utils";
 import { mascararCpfCnpj } from "@/lib/cpf-cnpj";
 import { brl, num, type PlanoLP } from "./dados";
-import { capturarLeadParcial, eventoPixel } from "@/lib/rastreamento/cliente";
+import { capturarLeadParcial, eventoPixel, registrarEvento } from "@/lib/rastreamento/cliente";
 
 export function mascararTelefone(valor: string): string {
   const d = valor.replace(/\D/g, "").slice(0, 11);
@@ -58,6 +58,7 @@ export function Checkout({
   const [form, setForm] = useState({ nome: "", email: "", telefone: "", empresa: "", cpfCnpj: "", senha: "", site: "" });
   const [verSenha, setVerSenha] = useState(false);
   const [enviando, setEnviando] = useState(false);
+  const [indoPagar, setIndoPagar] = useState(false);
   const [erro, setErro] = useState<{ msg: string; entrar?: boolean } | null>(null);
 
   const mudar = (campo: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -75,8 +76,12 @@ export function Checkout({
   useEffect(() => {
     parcialRef.current = parcial;
   });
+  // Conta criada: ao sair para a fatura não precisa mais registrar o preenchimento parcial.
+  const concluido = useRef(false);
   useEffect(() => {
-    const aoSair = () => parcialRef.current();
+    const aoSair = () => {
+      if (!concluido.current) parcialRef.current();
+    };
     window.addEventListener("pagehide", aoSair);
     return () => window.removeEventListener("pagehide", aoSair);
   }, []);
@@ -96,9 +101,25 @@ export function Checkout({
       setErro({ msg: data?.error || "Não foi possível concluir agora. Verifique a conexão e tente novamente.", entrar: data?.entrar });
       return;
     }
+    concluido.current = true;
     // Mesmo id que o servidor mandou pela API de Conversões: a Meta conta uma vez só.
     eventoPixel("CompleteRegistration", { value: data.valor, currency: "BRL", content_name: plano.nome, content_ids: [plano.id] }, data.eventos?.registro);
-    router.push(data.proximo || "/bem-vindo");
+    const proximo: string = data.proximo || "/bem-vindo";
+    if (typeof data.fatura === "string" && /^https:\/\//.test(data.fatura)) {
+      // Direto para a fatura, sem a parada em /bem-vindo (cada clique a mais perde gente).
+      // O "voltar" da fatura cai em /bem-vindo, que mostra a fatura e libera o acesso ao pagar.
+      eventoPixel("AddPaymentInfo", { value: data.valor, currency: "BRL", content_name: plano.nome });
+      registrarEvento("clique", "pagar:assinar");
+      setIndoPagar(true);
+      window.history.replaceState(null, "", proximo);
+      window.addEventListener("pageshow", (ev) => {
+        if (ev.persisted) window.location.reload();
+      });
+      // Um instante para o Pixel enviar os eventos antes de sair da página.
+      setTimeout(() => window.location.assign(data.fatura), 300);
+      return;
+    }
+    router.push(proximo);
     router.refresh();
   }
 
@@ -188,7 +209,7 @@ export function Checkout({
             className="group inline-flex h-14 w-full items-center justify-center gap-2 rounded-full bg-lp-accent px-6 text-base font-semibold text-[#04140a] shadow-[0_18px_50px_-14px_rgba(0,200,83,0.7)] transition-colors hover:bg-lp-glow disabled:cursor-wait disabled:opacity-70 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-lp-glow"
           >
             {enviando ? <Loader2 className="h-5 w-5 animate-spin" /> : null}
-            {enviando ? "Criando a sua conta…" : "Criar conta e ir para o pagamento"}
+            {indoPagar ? "Abrindo o pagamento…" : enviando ? "Criando a sua conta…" : "Criar conta e ir para o pagamento"}
             {!enviando && <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-0.5" />}
           </button>
           <p className="text-center text-[12.5px] leading-relaxed text-lp-muted-2">
