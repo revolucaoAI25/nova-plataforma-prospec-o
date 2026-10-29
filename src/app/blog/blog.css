@@ -1,0 +1,206 @@
+/* ============================================================
+   Texto dos artigos do blog (HTML gerado de content/blog/*.md).
+   Usa os tokens do tema (claro ou escuro) de globals.css.
+   ============================================================ */
+
+.artigo {
+  font-size: 17px;
+  line-height: 1.75;
+  color: var(--text);
+  overflow-wrap: break-word;
+}
+
+.artigo > * + * {
+  margin-top: 1.15em;
+}
+
+.artigo h2,
+.artigo h3,
+.artigo h4 {
+  font-family: var(--font-bricolage), var(--font-inter), sans-serif;
+  color: var(--text);
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+  scroll-margin-top: 8.5rem;
+}
+
+.artigo h2 {
+  margin-top: 2.4em;
+  font-size: 1.65rem;
+  line-height: 1.2;
+  font-weight: 800;
+}
+
+.artigo h3 {
+  margin-top: 1.9em;
+  font-size: 1.25rem;
+  line-height: 1.3;
+  font-weight: 700;
+}
+
+.artigo h4 {
+  margin-top: 1.6em;
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.artigo :is(h2, h3, h4) + * {
+  margin-top: 0.6em;
+}
+
+.artigo .quadro p {
+  margin-top: 0;
+}
+
+.artigo p,
+.artigo li {
+  color: color-mix(in srgb, var(--text) 86%, var(--muted));
+}
+
+.artigo strong {
+  color: var(--text);
+  font-weight: 650;
+}
+
+.artigo a {
+  color: var(--accent-dark);
+  font-weight: 550;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+.artigo a:hover {
+  text-decoration-thickness: 2px;
+}
+
+.artigo ul,
+.artigo ol {
+  padding-left: 1.4em;
+}
+
+.artigo ul {
+  list-style: disc;
+}
+
+.artigo ol {
+  list-style: decimal;
+}
+
+.artigo li + li {
+  margin-top: 0.45em;
+}
+
+.artigo li::marker {
+  color: var(--accent-dark);
+  font-weight: 700;
+}
+
+.artigo code {
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 0.88em;
+  background: var(--surface-2);
+  border-radius: 6px;
+  padding: 0.1em 0.4em;
+}
+
+.artigo hr {
+  border: 0;
+  border-top: 1px solid var(--border-subtle);
+  margin: 2.5em 0;
+}
+
+.artigo blockquote {
+  border-left: 3px solid var(--accent);
+  padding: 0.2em 0 0.2em 1.1em;
+  font-style: italic;
+}
+
+.artigo .quadro {
+  border-radius: 14px;
+  border: 1px solid var(--border-subtle);
+  padding: 1em 1.2em;
+  font-size: 16px;
+  line-height: 1.65;
+}
+
+.artigo .quadro strong:first-child {
+  display: block;
+  margin-bottom: 0.2em;
+  font-size: 0.8rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.artigo .quadro-dica {
+  background: var(--accent-soft);
+  border-color: color-mix(in srgb, var(--accent) 30%, transparent);
+}
+
+.artigo .quadro-dica strong:first-child {
+  color: var(--accent-dark);
+}
+
+.artigo .quadro-atencao {
+  background: var(--amber-soft);
+  border-color: color-mix(in srgb, var(--amber) 30%, transparent);
+}
+
+.artigo .quadro-atencao strong:first-child {
+  color: var(--amber);
+}
+
+.artigo .quadro-exemplo,
+.artigo .quadro-pratica {
+  background: var(--surface-2);
+}
+
+.artigo .tabela {
+  overflow-x: auto;
+  border: 1px solid var(--border-subtle);
+  border-radius: 14px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.artigo table {
+  width: 100%;
+  min-width: 34rem;
+  border-collapse: collapse;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.artigo th,
+.artigo td {
+  padding: 0.7em 0.9em;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.artigo thead th {
+  background: var(--surface-2);
+  font-weight: 700;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.artigo tbody th {
+  font-weight: 650;
+  color: var(--text);
+}
+
+.artigo tbody tr:last-child th,
+.artigo tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+@media (max-width: 640px) {
+  .artigo {
+    font-size: 16.5px;
+  }
+
+  .artigo h2 {
+    font-size: 1.45rem;
+  }
+}
