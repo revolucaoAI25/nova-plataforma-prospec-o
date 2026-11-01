@@ -26,7 +26,7 @@ export default async function CampanhaEmailDetailPage({ params }: { params: Prom
     listarEtapasEmail(supabase, id),
     statsCampanhaEmail(supabase, id),
     listarSenders(supabase, user.id),
-    listarPesquisas(supabase, 100),
+    listarPesquisas(supabase, user.id, 100),
     listarTargetsCampanhaEmail(supabase, id),
     obterSheetWatcherEmail(supabase, id),
     listarTemplatesEmail(supabase, user.id),

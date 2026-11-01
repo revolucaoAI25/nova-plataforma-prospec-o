@@ -26,7 +26,7 @@ export default async function CampanhaDetailPage({ params }: { params: Promise<{
     listarEtapas(supabase, id),
     statsCampanha(supabase, id),
     listarInstancias(supabase, user.id),
-    listarPesquisas(supabase, 100),
+    listarPesquisas(supabase, user.id, 100),
     listarTargetsCampanha(supabase, id),
     obterSheetWatcher(supabase, id),
     listarTemplatesDb(supabase, user.id),

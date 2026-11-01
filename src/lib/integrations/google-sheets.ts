@@ -1,4 +1,8 @@
-import { google } from "googleapis";
+// Pacotes só de Planilhas e Drive (o "googleapis" completo ocupava ~116 MB
+// de memória em cada processo, o site e o worker; estes, ~23 MB).
+import { sheets as sheetsApi } from "@googleapis/sheets";
+import { drive as driveApi } from "@googleapis/drive";
+import { OAuth2Client } from "google-auth-library";
 import { rotuloFonte } from "@/lib/fonte";
 import type { LeadRow } from "@/lib/database.types";
 import type { GoogleSheetsCreds } from "@/lib/database.types";
@@ -62,7 +66,7 @@ export async function oauthDisponivel(): Promise<boolean> {
 
 async function criarClient(redirectUri: string) {
   const { clientId, clientSecret } = await credenciaisOAuth();
-  return new google.auth.OAuth2(clientId, clientSecret, redirectUri);
+  return new OAuth2Client(clientId, clientSecret, redirectUri);
 }
 
 export async function gerarUrlAuth(redirectUri: string, state: string): Promise<string> {
@@ -92,7 +96,7 @@ export async function trocarCodigo(redirectUri: string, code: string): Promise<O
 
 async function credsClient(creds: OAuthCreds) {
   const { clientId, clientSecret } = await credenciaisOAuth();
-  const client = new google.auth.OAuth2(clientId, clientSecret);
+  const client = new OAuth2Client(clientId, clientSecret);
   client.setCredentials({ access_token: creds.token, refresh_token: creds.refresh_token });
   if (creds.refresh_token) {
     try {
@@ -116,7 +120,7 @@ export async function tokenParaSeletor(creds: OAuthCreds): Promise<string> {
 /** Cria uma planilha no Drive da pessoa (já fica acessível para a plataforma), com uma aba "Leads". */
 export async function criarPlanilha(creds: OAuthCreds, titulo: string): Promise<{ id: string; name: string; abas: string[] }> {
   const auth = await credsClient(creds);
-  const sheets = google.sheets({ version: "v4", auth });
+  const sheets = sheetsApi({ version: "v4", auth });
   const resp = await sheets.spreadsheets.create({
     requestBody: { properties: { title: titulo, locale: "pt_BR" }, sheets: [{ properties: { title: "Leads" } }] },
     fields: "spreadsheetId,properties.title,sheets.properties.title",
@@ -131,7 +135,7 @@ export async function criarPlanilha(creds: OAuthCreds, titulo: string): Promise<
 /** Lista as planilhas que a plataforma enxerga: com o escopo novo, as escolhidas no seletor ou criadas por ela. */
 export async function listarPlanilhas(creds: OAuthCreds): Promise<Array<{ id: string; name: string }>> {
   const auth = await credsClient(creds);
-  const drive = google.drive({ version: "v3", auth });
+  const drive = driveApi({ version: "v3", auth });
   const resp = await drive.files.list({
     q: "mimeType='application/vnd.google-apps.spreadsheet' and trashed=false",
     pageSize: 100,
@@ -143,7 +147,7 @@ export async function listarPlanilhas(creds: OAuthCreds): Promise<Array<{ id: st
 
 export async function listarAbas(creds: OAuthCreds, sheetId: string): Promise<string[]> {
   const auth = await credsClient(creds);
-  const sheets = google.sheets({ version: "v4", auth });
+  const sheets = sheetsApi({ version: "v4", auth });
   try {
     const meta = await sheets.spreadsheets.get({ spreadsheetId: sheetId, fields: "sheets.properties.title" });
     return (meta.data.sheets || []).map((s) => s.properties?.title || "").filter(Boolean);
@@ -154,7 +158,7 @@ export async function listarAbas(creds: OAuthCreds, sheetId: string): Promise<st
 
 export async function lerValores(creds: OAuthCreds, sheetId: string, abaNome: string): Promise<string[][]> {
   const auth = await credsClient(creds);
-  const sheets = google.sheets({ version: "v4", auth });
+  const sheets = sheetsApi({ version: "v4", auth });
   const escapedAba = abaNome.replace(/'/g, "''");
   try {
     const resp = await sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range: `'${escapedAba}'` });
@@ -235,7 +239,7 @@ async function escreverPlanilha(
   linhas = linhas.map((linha) => linha.map(neutralizarFormula));
 
   const auth = await credsClient(creds);
-  const sheets = google.sheets({ version: "v4", auth });
+  const sheets = sheetsApi({ version: "v4", auth });
 
   let meta;
   try {
@@ -371,14 +375,14 @@ function valorCelula(v: unknown): string {
 
 async function lerCabecalho(creds: OAuthCreds, sheetId: string, abaNome: string): Promise<string[]> {
   const auth = await credsClient(creds);
-  const sheets = google.sheets({ version: "v4", auth });
+  const sheets = sheetsApi({ version: "v4", auth });
   const resp = await sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range: `'${abaNome.replace(/'/g, "''")}'!1:1` });
   return ((resp.data.values?.[0] as string[] | undefined) ?? []).map((c) => String(c).trim());
 }
 
 async function gravarCabecalho(creds: OAuthCreds, sheetId: string, abaNome: string, cabecalho: string[]) {
   const auth = await credsClient(creds);
-  const sheets = google.sheets({ version: "v4", auth });
+  const sheets = sheetsApi({ version: "v4", auth });
   const meta = await sheets.spreadsheets.get({ spreadsheetId: sheetId });
   await garantirLinhas(sheets, sheetId, meta, abaNome, 1, cabecalho.length);
   await sheets.spreadsheets.values.update({

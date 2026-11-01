@@ -20,8 +20,8 @@ export default async function HistoricoPage() {
   const podeUsarIa = Boolean(profile && (profile.enriquecimento_ia_habilitado || profile.role === "admin"));
   const podeBigDataCorp = Boolean(profile && (profile.bigdatacorp_enrichment_habilitado || profile.role === "admin"));
 
-  const pesquisas = await listarPesquisas(supabase, 300);
-  const execucoesIa = podeUsarIa ? await listarExecucoesEnriquecimento(supabase) : [];
+  const pesquisas = user ? await listarPesquisas(supabase, user.id, 300) : [];
+  const execucoesIa = podeUsarIa && user ? await listarExecucoesEnriquecimento(supabase, user.id) : [];
   const execucoesBigDataCorp = podeBigDataCorp && user ? await listarRunsBigDataCorp(supabase, user.id) : [];
 
   return (

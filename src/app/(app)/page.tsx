@@ -27,8 +27,8 @@ export default async function DashboardPage() {
   const profile = user ? await getProfile(supabase, user.id) : null;
   const admin = createAdminClient();
   const [pesquisas, { totalPesquisas, totalLeads }, onboarding, aplicacoes] = await Promise.all([
-    listarPesquisas(supabase, 5),
-    contarPesquisasELeads(supabase),
+    user ? listarPesquisas(supabase, user.id, 5) : [],
+    user ? contarPesquisasELeads(supabase, user.id) : { totalPesquisas: 0, totalLeads: 0 },
     user ? obterOnboarding(admin, user.id) : null,
     user ? listarAplicacoes(admin, user.id) : [],
   ]);

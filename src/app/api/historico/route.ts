@@ -8,6 +8,6 @@ export async function GET() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Não autenticado." }, { status: 401 });
 
-  const pesquisas = await listarPesquisas(supabase, 200);
+  const pesquisas = await listarPesquisas(supabase, user.id, 200);
   return NextResponse.json({ pesquisas });
 }

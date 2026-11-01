@@ -11,7 +11,7 @@ export default async function AutomacoesPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const { data } = await supabase.from("automation_flows").select("*").order("created_at", { ascending: false });
+  const { data } = await supabase.from("automation_flows").select("*").eq("user_id", user.id).order("created_at", { ascending: false });
   const fluxos = (data as AutomationFlowRow[]) || [];
 
   return (

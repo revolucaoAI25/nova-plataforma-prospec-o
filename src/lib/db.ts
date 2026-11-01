@@ -109,19 +109,24 @@ export async function salvarLeads(
   }
 }
 
-export async function listarPesquisas(supabase: SupabaseClient, limite = 300): Promise<SearchRow[]> {
+// As listas filtram por usuário mesmo com a sessão dele: a regra de acesso do
+// banco deixa o admin ler as linhas de todos, e a conta admin carregaria o
+// histórico de todos os clientes.
+export async function listarPesquisas(supabase: SupabaseClient, userId: string, limite = 300): Promise<SearchRow[]> {
   const { data } = await supabase
     .from("searches")
     .select("id, fonte, nicho, subnicho, cidade, estado, localidade, total_results, filtros, created_at, user_id")
+    .eq("user_id", userId)
     .order("created_at", { ascending: false })
     .limit(limite);
   return (data as SearchRow[]) ?? [];
 }
 
-export async function listarExecucoesEnriquecimento(supabase: SupabaseClient, limite = 100): Promise<EnrichmentRunRow[]> {
+export async function listarExecucoesEnriquecimento(supabase: SupabaseClient, userId: string, limite = 100): Promise<EnrichmentRunRow[]> {
   const { data } = await supabase
     .from("enrichment_runs")
     .select("*")
+    .eq("user_id", userId)
     .order("created_at", { ascending: false })
     .limit(limite);
   return (data as EnrichmentRunRow[]) ?? [];
@@ -232,10 +237,11 @@ export async function buscarLinkedInUrlsExistentes(
 /** Contagens para os cartões de estatística do dashboard — COUNT indexado, sem baixar linhas. */
 export async function contarPesquisasELeads(
   supabase: SupabaseClient,
+  userId: string,
 ): Promise<{ totalPesquisas: number; totalLeads: number }> {
   const [{ count: totalPesquisas }, { count: totalLeads }] = await Promise.all([
-    supabase.from("searches").select("id", { count: "exact", head: true }),
-    supabase.from("leads").select("id", { count: "exact", head: true }),
+    supabase.from("searches").select("id", { count: "exact", head: true }).eq("user_id", userId),
+    supabase.from("leads").select("id", { count: "exact", head: true }).eq("user_id", userId),
   ]);
   return { totalPesquisas: totalPesquisas ?? 0, totalLeads: totalLeads ?? 0 };
 }

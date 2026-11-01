@@ -3,7 +3,9 @@ builder = "NIXPACKS"
 buildCommand = "npm run build"
 
 [deploy]
-startCommand = "npm run start"
+# Node direto (sem o npm na frente, que ficava rodando como um segundo
+# processo de ~70 MB) e com teto de memória para o Node recolher mais cedo.
+startCommand = "node --max-old-space-size=1024 node_modules/next/dist/bin/next start"
 healthcheckPath = "/login"
 healthcheckTimeout = 100
 restartPolicyType = "ON_FAILURE"

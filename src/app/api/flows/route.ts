@@ -9,7 +9,7 @@ export async function GET() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Não autenticado." }, { status: 401 });
 
-  const { data, error } = await supabase.from("automation_flows").select("*").order("created_at", { ascending: false });
+  const { data, error } = await supabase.from("automation_flows").select("*").eq("user_id", user.id).order("created_at", { ascending: false });
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ fluxos: data });
 }

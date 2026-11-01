@@ -19,7 +19,7 @@ export default async function FunilDetailPage({ params }: { params: Promise<{ id
     obterFunil(supabase, id),
     listarColunas(supabase, id),
     listarCards(supabase, id),
-    supabase.from("automation_flows").select("id, nome").eq("ativo", true).order("nome"),
+    supabase.from("automation_flows").select("id, nome").eq("user_id", user.id).eq("ativo", true).order("nome"),
   ]);
   if (!funil) notFound();
 

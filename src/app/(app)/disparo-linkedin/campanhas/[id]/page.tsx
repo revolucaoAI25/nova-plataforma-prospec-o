@@ -26,7 +26,7 @@ export default async function CampanhaLinkedinDetailPage({ params }: { params: P
     listarEtapasLinkedin(supabase, id),
     statsCampanhaLinkedin(supabase, id),
     listarContas(supabase, user.id),
-    listarPesquisas(supabase, 100),
+    listarPesquisas(supabase, user.id, 100),
     listarTargetsCampanhaLinkedin(supabase, id),
     obterSheetWatcherLinkedin(supabase, id),
     listarTemplatesLinkedin(supabase, user.id),
