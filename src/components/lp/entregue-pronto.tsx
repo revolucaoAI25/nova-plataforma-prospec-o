@@ -1,4 +1,4 @@
-import { Check, MessageCircle, PackageCheck, QrCode, UserRound } from "lucide-react";
+import { Cable, Check, MessageCircle, PackageCheck, UserRound } from "lucide-react";
 import { Revela } from "./revela";
 
 const SUA_PARTE = [
@@ -8,9 +8,9 @@ const SUA_PARTE = [
     texto: "O que você vende, para quem e quem decide a compra. Leva poucos minutos.",
   },
   {
-    icone: QrCode,
-    titulo: "Conectar o seu WhatsApp",
-    texto: "Lendo um QR Code, como no WhatsApp Web.",
+    icone: Cable,
+    titulo: "Conectar os seus canais de prospecção",
+    texto: "WhatsApp, e-mail e LinkedIn, em poucos cliques.",
   },
   {
     icone: MessageCircle,

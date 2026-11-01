@@ -60,11 +60,11 @@ export default async function ConhecaPage() {
             secundario={{ rotulo: "Testar grátis", href: "/teste-gratis" }}
           />
         </div>
-        <div data-secao="entregue_pronto"><EntreguePronto /></div>
         <div data-secao="como_funciona"><Historia /></div>
         <div data-secao="enriquecimento"><Enriquecimento /></div>
         <div data-secao="calculadora"><Calculadora planos={planos} creditosPorLead={creditosPorLead} /></div>
         <div data-secao="comparativo"><Comparativo planos={planos} /></div>
+        <div data-secao="entregue_pronto"><EntreguePronto /></div>
         <div data-secao="clientes"><Clientes /></div>
         <div data-secao="planos"><Planos planos={planos} /></div>
         <div data-secao="duvidas"><Duvidas /></div>
