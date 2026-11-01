@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowDown, ArrowRight, Check } from "lucide-react";
+import { ArrowRight, Check } from "lucide-react";
 import { VideoDemonstracao } from "./video-demonstracao";
 
 const LETREIRO = [
@@ -37,13 +37,12 @@ export function Hero() {
               Começar agora
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
             </a>
-            <a
-              href="#conta"
+            <Link
+              href="/teste-gratis"
               className="inline-flex h-13 w-full items-center justify-center gap-2 rounded-full border border-lp-line-2 px-7 text-[15px] font-medium text-lp-text transition-colors hover:border-lp-accent/60 hover:bg-white/[0.03] sm:w-auto"
             >
-              Simular meu resultado
-              <ArrowDown className="h-4 w-4" />
-            </a>
+              Testar grátis
+            </Link>
           </div>
           <ul className="lp-entra mt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-1.5 text-[13px] text-lp-muted [animation-delay:280ms]">
             {["Contato direto com o dono", "Leads qualificados", "Tudo montado para você"].map((t) => (
@@ -54,9 +53,7 @@ export function Hero() {
             ))}
           </ul>
           <p className="lp-entra mt-3 text-[13px] text-lp-muted-2 [animation-delay:300ms]">
-            <Link href="/teste-gratis" className="-my-2 inline-block py-2 text-lp-muted underline decoration-lp-line-2 underline-offset-4 transition-colors hover:text-lp-text">
-              Teste grátis por 7 dias, sem cartão
-            </Link>
+            Teste grátis por 7 dias, sem cartão
           </p>
         </div>
 
