@@ -27,6 +27,7 @@ import { tickRetomada } from "./retomada-tick";
 import { tickAcesso } from "./acesso-tick";
 import { tickUsoApify } from "./uso-apify-tick";
 import { tickCanaisOficiais } from "./canais-oficiais-tick";
+import { avisarIndexNow, urlsRecentes } from "../src/lib/indexnow";
 
 const DISPATCH_TICK_MS = 15_000;
 const SHEET_WATCH_TICK_MS = 120_000;
@@ -113,6 +114,18 @@ async function main() {
   // Aguarda um pouco no início, mesma cautela do produto atual (deixa o
   // resto da infra terminar de subir antes do primeiro tick).
   await new Promise((r) => setTimeout(r, 5_000));
+
+  // Depois de cada deploy, avisa os buscadores (IndexNow) sobre artigos do
+  // blog novos ou atualizados nos últimos dias. Espera o site novo subir.
+  setTimeout(async () => {
+    try {
+      const urls = urlsRecentes();
+      const r = await avisarIndexNow(urls);
+      if (r) log("indexnow", `${urls.length} páginas avisadas (status ${r.status})`);
+    } catch (e) {
+      log("indexnow", `falha ao avisar: ${(e as Error).message}`);
+    }
+  }, 180_000);
 
   agendar("dispatch", DISPATCH_TICK_MS, () => tickDispatch(sb, (msg) => log("dispatch", msg)));
 

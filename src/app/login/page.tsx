@@ -8,6 +8,7 @@ import "../conheca/lp.css";
 export const metadata = {
   title: "Entrar",
   description: "Acesse a sua conta do Leadmatic.",
+  robots: { index: false, follow: true },
 };
 
 /** O que segue rodando na conta enquanto a pessoa está fora (o painel da esquerda). */

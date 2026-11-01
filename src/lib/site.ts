@@ -5,6 +5,13 @@ export const EMPRESA_NOME = "Revolução AI";
 export const EMPRESA_URL = "https://revolucao-ai.com";
 export const LOGO_URL = `${SITE_URL}/logo.png`;
 
+/**
+ * O blog está pronto no código (src/app/blog, artigos em content/blog), mas
+ * fechado ao público por enquanto: fica atrás do login, fora do sitemap e do
+ * llms.txt. Para abrir: true aqui e "/blog" no proxy (matcher e PUBLIC_PATHS).
+ */
+export const BLOG_PUBLICO = false;
+
 export function urlAbsoluta(caminho: string): string {
   return `${SITE_URL}${caminho.startsWith("/") ? caminho : `/${caminho}`}`;
 }

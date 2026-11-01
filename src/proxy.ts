@@ -8,7 +8,10 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
+  // Fora do proxy (públicos e sem sessão): estáticos, webhooks e os arquivos
+  // para buscadores e IAs (robots, sitemap, llms.txt, imagens de
+  // compartilhamento e a chave do IndexNow).
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|api/webhooks|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|api/webhooks|opengraph-image|twitter-image|.*\\.(?:svg|png|jpg|jpeg|gif|webp|mp4|webm|txt|xml)$).*)",
   ],
 };

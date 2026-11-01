@@ -12,7 +12,7 @@ export const PERGUNTAS: [string, string][] = [
   ],
   [
     "O Leadmatic é indicado para o meu negócio?",
-    "Ele funciona melhor para empresas que vendem para outras empresas ou para negócios locais: softwares, serviços, agências, consultorias, distribuidores, escritórios e fornecedores. Para vendas em massa ao consumidor final, provavelmente não é a ferramenta mais adequada.",
+    "Se você vende para outras empresas ou para negócios locais, sim, qualquer que seja o seu porte ou segmento. Funciona para quem está começando sozinho e para empresas com time de vendas, em nichos como agências, contabilidade, software, consultoria, energia solar, seguros, TI, distribuição e serviços. A estratégia é montada para o seu público. Só não é indicado para vender em massa ao consumidor final.",
   ],
   [
     "Preciso de conhecimento técnico?",

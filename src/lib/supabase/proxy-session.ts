@@ -16,6 +16,10 @@ import { apiConfereAcesso, COLUNAS_ACESSO, motivoBloqueio, MSG_ACESSO_BLOQUEADO,
 // Os webhooks em /api/webhooks já ficam fora do matcher do proxy.
 const PUBLIC_PATHS = [
   "/conheca",
+  "/robots.txt",
+  "/sitemap.xml",
+  "/llms.txt",
+  "/opengraph-image",
   "/privacidade",
   "/termos",
   "/assinar",

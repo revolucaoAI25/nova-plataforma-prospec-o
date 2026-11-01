@@ -14,6 +14,9 @@ import { perfilParaTela } from "@/lib/perfil-tela";
 import { alertasAbertos } from "@/lib/alertas-admin";
 import { AlertasAdmin } from "@/components/admin/alertas-admin";
 
+// Telas de dentro da plataforma: fora dos buscadores.
+export const metadata = { robots: { index: false, follow: false } };
+
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
   const {
