@@ -2,11 +2,12 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ArrowRight, ArrowUpRight, Check, Lock, ShieldCheck, Sparkles } from "lucide-react";
+import { ArrowRight, ArrowUpRight, Check, ShieldCheck, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { brl, linkAssinar, linkWhatsApp, num, type PlanoLP } from "./dados";
 import { usePlanoSugerido } from "./hooks";
 import { Revela } from "./revela";
+import { Selos } from "./selos";
 
 const SEMPRE = ["Busca por CNPJ e Google Maps", "Estratégia criada por IA", "Funil, automações e cadências"];
 
@@ -171,9 +172,7 @@ export function Planos({ planos }: { planos: PlanoLP[] }) {
                 Faça o teste grátis por 7 dias, sem cartão
               </Link>
             </p>
-            <p className="flex items-center justify-center gap-2 text-[13px] text-lp-muted-2">
-              <Lock className="h-3.5 w-3.5 shrink-0" /> Pagamento seguro. Acesso liberado assim que o pagamento é aprovado.
-            </p>
+            <Selos className="mt-1" />
           </Revela>
         )}
       </div>

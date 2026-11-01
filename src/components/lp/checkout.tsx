@@ -3,10 +3,11 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Check, Eye, EyeOff, Loader2, Lock, ShieldCheck } from "lucide-react";
+import { ArrowRight, Check, Eye, EyeOff, Loader2, ShieldCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { mascararCpfCnpj } from "@/lib/cpf-cnpj";
 import { brl, num, type PlanoLP } from "./dados";
+import { Selos } from "./selos";
 import { capturarLeadParcial, eventoPixel, registrarEvento } from "@/lib/rastreamento/cliente";
 
 export function mascararTelefone(valor: string): string {
@@ -299,9 +300,7 @@ export function Checkout({
             ))}
           </ol>
 
-          <p className="flex items-center gap-2 text-[12.5px] text-lp-muted-2">
-            <Lock className="h-3.5 w-3.5 shrink-0" /> Pagamento seguro. Acesso liberado assim que o pagamento é aprovado.
-          </p>
+          <Selos compacto />
         </div>
       </aside>
     </div>
