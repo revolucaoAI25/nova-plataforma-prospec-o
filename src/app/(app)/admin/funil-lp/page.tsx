@@ -25,6 +25,7 @@ const SECOES: [string, string][] = [
   ["inicio", "Início (hero)"],
   ["sem_trafego", "Sem tráfego pago"],
   ["chamada_1", "Chamada: ver planos / testar"],
+  ["entregue_pronto", "Tudo entregue pronto"],
   ["como_funciona", "Como funciona"],
   ["enriquecimento", "Enriquecimento do lead"],
   ["calculadora", "Calculadora"],

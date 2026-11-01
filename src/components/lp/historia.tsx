@@ -16,10 +16,10 @@ interface Ato {
 const ATOS: Ato[] = [
   {
     rotulo: "Estratégia sob medida",
-    titulo: "Você descreve o seu negócio. A IA monta a estratégia.",
+    titulo: "Você conta sobre o seu negócio. A estratégia chega pronta.",
     texto:
       "O que você vende, para quem, qual o ticket, quem decide a compra e quantas conversas a sua equipe consegue atender. A partir dessas respostas, a IA define de onde vêm os leads, quais canais usar, o volume diário e as mensagens de cada etapa.",
-    detalhes: ["Estratégias prontas para escolher e ajustar", "Volume calculado de acordo com o seu plano"],
+    detalhes: ["Campanhas, mensagens e automações montadas a partir dela", "Volume calculado de acordo com o seu plano"],
     Cena: CenaEstrategia,
   },
   {
@@ -105,6 +105,9 @@ export function Historia() {
             Do primeiro contato à reunião marcada,{" "}
             <span className="font-lp-serif font-normal italic text-lp-glow">em seis etapas.</span>
           </h2>
+          <p className="mt-5 max-w-2xl text-[17px] leading-relaxed text-lp-muted">
+            Todas já montadas para você desde o primeiro dia. Veja o que acontece por trás, enquanto você cuida das conversas.
+          </p>
         </div>
 
         <div className="mt-14 grid grid-cols-1 gap-10 lg:mt-20 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-16">

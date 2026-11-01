@@ -6,6 +6,7 @@ import { Historia } from "@/components/lp/historia";
 import { Calculadora } from "@/components/lp/calculadora";
 import { Planos } from "@/components/lp/planos";
 import { SemTrafego } from "@/components/lp/sem-trafego";
+import { EntreguePronto } from "@/components/lp/entregue-pronto";
 import { Enriquecimento } from "@/components/lp/enriquecimento";
 import { Comparativo } from "@/components/lp/comparativo";
 import { Clientes } from "@/components/lp/clientes";
@@ -59,6 +60,7 @@ export default async function ConhecaPage() {
             secundario={{ rotulo: "Testar grátis", href: "/teste-gratis" }}
           />
         </div>
+        <div data-secao="entregue_pronto"><EntreguePronto /></div>
         <div data-secao="como_funciona"><Historia /></div>
         <div data-secao="enriquecimento"><Enriquecimento /></div>
         <div data-secao="calculadora"><Calculadora planos={planos} creditosPorLead={creditosPorLead} /></div>
