@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowDown, ArrowRight } from "lucide-react";
+import { ArrowDown, ArrowRight, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { num } from "./dados";
 import { useMenosMovimento, useNaTela } from "./hooks";
@@ -119,7 +119,7 @@ export function Hero() {
             </span>
           </h1>
           <p className="lp-entra mx-auto mt-7 max-w-2xl text-[17px] leading-relaxed text-lp-muted sm:text-lg [animation-delay:160ms]">
-            O Leadmatic encontra leads qualificados com o perfil do seu cliente ideal, contata o lead e deixa ele pronto para o seu comercial. Tudo chega montado e funcionando: você só atende quem responde.
+            O Leadmatic encontra empresas com o perfil do seu cliente ideal, fala direto com o dono e deixa a conversa pronta para o seu comercial. Tudo chega montado e funcionando: você só atende quem responde.
           </p>
           <div className="lp-entra mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row [animation-delay:240ms]">
             <a
@@ -137,7 +137,15 @@ export function Hero() {
               <ArrowDown className="h-4 w-4" />
             </a>
           </div>
-          <p className="lp-entra mt-5 text-[13px] text-lp-muted-2 [animation-delay:300ms]">
+          <ul className="lp-entra mt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-1.5 text-[13px] text-lp-muted [animation-delay:280ms]">
+            {["Contato direto com o dono", "Leads qualificados", "Tudo montado para você"].map((t) => (
+              <li key={t} className="flex items-center gap-1.5">
+                <Check className="h-3.5 w-3.5 text-lp-accent" strokeWidth={3} aria-hidden="true" />
+                {t}
+              </li>
+            ))}
+          </ul>
+          <p className="lp-entra mt-3 text-[13px] text-lp-muted-2 [animation-delay:300ms]">
             <Link href="/teste-gratis" className="-my-2 inline-block py-2 text-lp-muted underline decoration-lp-line-2 underline-offset-4 transition-colors hover:text-lp-text">
               Teste grátis por 7 dias, sem cartão
             </Link>
